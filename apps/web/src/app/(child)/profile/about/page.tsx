@@ -8,9 +8,9 @@ import { getCapabilities } from "@/services";
 import {
   executeAction,
   fetchDevnetDemoRuntime,
-  keysApiUrl,
+  crescoApiUrl,
   newIdempotencyKey,
-} from "@/services/keys-backend";
+} from "@/services/cresco-backend";
 import { useStore } from "@/state/store";
 
 const PROGRAM_ID = "ABjE6V5q9VbD3CAHDXxvztY5kXQmDXHRcEP1kZ4KSSfk";
@@ -56,7 +56,7 @@ export default function AboutPage() {
       } else if (result.outcome === "REFUSED") {
         setLiveProof({
           status: "refused",
-          message: `KEYS refused the action: ${result.evaluation.reasonCode}`,
+          message: `CRESCO refused the action: ${result.evaluation.reasonCode}`,
         });
       } else {
         setLiveProof({
@@ -117,8 +117,8 @@ export default function AboutPage() {
           <ChevronDown aria-hidden className="size-5 text-ink-3 transition-transform group-open:rotate-180" />
         </summary>
         <dl className="mt-3 space-y-2 text-[13px]">
-          <Detail k="Authority engine" v="KEYS bounded-autonomy Mandate (contract v0.2, frozen)" />
-          <Detail k="Backend" v={caps.backend === "none" ? "Not configured, using the local policy preview" : `KEYS API at ${keysApiUrl()}`} />
+          <Detail k="Authority engine" v="CRESCO bounded-autonomy Mandate (contract v0.2, frozen)" />
+          <Detail k="Backend" v={caps.backend === "none" ? "Not configured, using the local policy preview" : `CRESCO API at ${crescoApiUrl()}`} />
           <Detail k="Solana program (devnet)" v={PROGRAM_ID} mono />
           <Detail
             k="Money execution from this app"
@@ -139,7 +139,7 @@ export default function AboutPage() {
         <div className="mt-4 rounded-[16px] border border-line-soft bg-surface-soft p-3.5">
           <p className="text-[13px] font-extrabold text-navy-strong">Live Solana proof lane</p>
           <p className="mt-1 text-[12.5px] font-semibold text-ink-2">
-            Runs a $5 AAPL-bounded action through the KEYS devnet program using a demo/mock SPL token and live signed Pyth market
+            Runs a $5 AAPL-bounded action through the CRESCO devnet program using a demo/mock SPL token and live signed Pyth market
             truth. This is not a real share purchase, brokerage or custody flow.
           </p>
           <ActionButton
