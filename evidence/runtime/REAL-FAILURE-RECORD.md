@@ -48,3 +48,25 @@ https://github.com/Faadil1/keys/actions/runs/36150024852
 
 Detailed proof:
 ../solana/ALLOW-ONCE-EXACT-ACTION-CANONICAL-PROOF-2026-09-25.md
+
+## 3. Deterministic demo input-contract failure
+
+Date: 2026-09-25
+
+Signal:
+The public repo cleanup introduced a deterministic v0.2 demo intended to exercise the same bounded-autonomy engine as the tests.
+
+Negative event:
+CI run 36172689653 returned REFUSE / INVALID_AMOUNT for the intended $5 in-bounds action because the script supplied notional without the required amount field.
+
+Observable impact:
+The test workflow failed. The cleaned repo was not promotion-ready.
+
+Design lesson:
+A demo script must obey the exact runtime input contract. Printed intent is not execution proof.
+
+Response:
+The demo now passes both amount and notional in the v0.2 action shape. The demo remains a hard CI step, so the repository cannot silently promote a broken deterministic story.
+
+Proof:
+https://github.com/Faadil1/keys/actions/runs/36172689653
