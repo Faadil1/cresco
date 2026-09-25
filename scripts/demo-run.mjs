@@ -30,6 +30,7 @@ function evaluate(notional) {
     action: {
       type: 'BUY',
       asset: 'AAPL',
+      amount: notional,
       notional,
       expectedNonce: mandate.nonce
     }
@@ -54,6 +55,7 @@ const request = buildBoundaryRequest({
   action: {
     type: 'BUY',
     asset: 'AAPL',
+    amount: 12,
     notional: 12
   },
   reasoningCommitmentHash: 'demo-private-reason-hash'
