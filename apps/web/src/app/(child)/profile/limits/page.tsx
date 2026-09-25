@@ -60,7 +60,10 @@ export default function MyLimitsPage() {
 
             {state.requests.length ? (
               <section className="mt-5">
-                <SectionHeader title="My requests" />
+                <SectionHeader title="My Key history" />
+                <p className="mb-3 text-[13px] font-semibold leading-relaxed text-ink-2">
+                  Only boundary moments appear here — not every in-bounds action. See when you asked for more room, when a one-time yes was used, and when a guardian created a new standing Key.
+                </p>
                 <div className="space-y-2">
                   {state.requests.map((r) => (
                     <RequestStatusCard key={r.id} request={r} companyName={nameOf(r.asset)} />
