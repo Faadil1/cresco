@@ -9,6 +9,7 @@ CRESCO gives young people real room to make financial decisions inside family-se
 ## Live product and proof
 
 - Product: https://cresco-lac.vercel.app
+- Demo video: https://www.youtube.com/watch?v=e8qMwzTrU4M
 - Current CRESCO API: https://keys-api-stocklana.faadil-casecraft.workers.dev
 - Repository: https://github.com/Faadil1/cresco
 - Network: Solana Devnet
