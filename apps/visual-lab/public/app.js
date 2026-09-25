@@ -1,5 +1,5 @@
-const routes = ["garden", "playground", "family"];
-const SANDBOX_KEY = "cresco.visualLab.sandbox.v2";
+const routes = ["garden", "playground", "family", "passport", "atlas", "instrument"];
+const SANDBOX_KEY = "cresco.visualLab.sandbox.v3";
 
 const fallbackMarkets = {
   source: "PYTH_PROOF_SNAPSHOT",
@@ -36,7 +36,7 @@ const marketTints = {
 };
 
 const initialSandbox = () => ({
-  schema: 2,
+  schema: 3,
   child: "Alex",
   guardian: "Sam",
   mandate: {
@@ -58,7 +58,7 @@ const initialSandbox = () => ({
 function loadSandbox() {
   try {
     const parsed = JSON.parse(localStorage.getItem(SANDBOX_KEY) || "null");
-    return parsed && parsed.schema === 2 ? parsed : initialSandbox();
+    return parsed && parsed.schema === 3 ? parsed : initialSandbox();
   } catch {
     return initialSandbox();
   }
@@ -139,12 +139,6 @@ function currentAaplPrice() {
 function tryMoneyMove(amount) {
   const m = sandbox.mandate;
   const allowance = sandbox.allowanceOnce;
-  const exactAllowance =
-    allowance &&
-    !allowance.used &&
-    allowance.amount === amount &&
-    allowance.nonce === m.nonce;
-
   let decision = "REFUSE";
   let reason = "ACTION_LIMIT_EXCEEDED";
 
@@ -155,42 +149,73 @@ function tryMoneyMove(amount) {
   } else if (amount <= m.maxAction) {
     decision = "ALLOW";
     reason = "WITHIN_KEY";
-  } else if (exactAllowance) {
-    decision = "ALLOW";
-    reason = "ALLOW_ONCE";
+  } else if (allowance) {
+    if (allowance.used && allowance.amount === amount) {
+      reason = "ALLOWANCE_ALREADY_USED";
+    } else if (!allowance.used && allowance.nonce !== m.nonce) {
+      reason = "ALLOWANCE_STALE";
+    } else if (!allowance.used && allowance.amount !== amount) {
+      reason = "ALLOWANCE_ACTION_MISMATCH";
+    } else if (!allowance.used && allowance.amount === amount) {
+      decision = "ALLOW";
+      reason = "ALLOW_ONCE";
+    }
   }
 
   if (decision === "ALLOW") {
     const usedAllowance = reason === "ALLOW_ONCE";
+    const standingVersionBefore = m.version;
     m.spent += amount;
     sandbox.money.AAPL.notional += amount;
     sandbox.money.AAPL.actions += 1;
-    if (usedAllowance) sandbox.allowanceOnce.used = true;
+    if (usedAllowance) {
+      sandbox.allowanceOnce.used = true;
+      sandbox.allowanceOnce.usedAt = new Date().toISOString();
+    }
     m.nonce += 1;
-    sandbox.lastDecision = { decision, reason, amount, price: currentAaplPrice(), at: Date.now() };
-    saveSandbox({ type: "MONEY_ALLOW", label: `AAPL ${money(amount)} allowed · ${reason}` });
+    sandbox.lastDecision = {
+      decision, reason, amount, price: currentAaplPrice(),
+      standingVersionBefore, standingVersionAfter: m.version,
+      standingAuthorityChanged: standingVersionBefore !== m.version, at: Date.now()
+    };
+    saveSandbox({
+      type: usedAllowance ? "ALLOW_ONCE_USED" : "MONEY_ALLOW",
+      label: usedAllowance
+        ? `Exact ${money(amount)} permission used · Key v${m.version} unchanged`
+        : `AAPL ${money(amount)} allowed inside Key v${m.version}`
+    });
     return;
   }
 
-  sandbox.lastDecision = { decision, reason, amount, price: currentAaplPrice(), at: Date.now() };
-  saveSandbox({ type: "MONEY_REFUSE", label: `AAPL ${money(amount)} refused · ${reason}` });
+  sandbox.lastDecision = {
+    decision, reason, amount, price: currentAaplPrice(),
+    standingVersionBefore: m.version, standingVersionAfter: m.version,
+    standingAuthorityChanged: false, at: Date.now()
+  };
+  const label = reason === "ALLOWANCE_ACTION_MISMATCH"
+    ? `Tampered ${money(amount)} action refused · exact permission required`
+    : reason === "ALLOWANCE_ALREADY_USED"
+      ? `Replay ${money(amount)} refused · one-time permission already used`
+      : `AAPL ${money(amount)} refused · ${reason}`;
+  saveSandbox({ type: "MONEY_REFUSE", label });
 }
 
-function createBoundaryRequest(amount = 20) {
+function createBoundaryRequest(amount = 12, navigate = true) {
   sandbox.pendingRequest = {
     id: "REQ-" + Date.now().toString(36).toUpperCase(),
-    amount,
+    amount, asset: "AAPL", action: "BUY",
     createdNonce: sandbox.mandate.nonce,
+    standingVersion: sandbox.mandate.version,
     status: "PENDING"
   };
   sandbox.lastDecision = {
-    decision: "REQUESTED",
-    reason: "BOUNDARY_REQUEST_CREATED",
-    amount,
-    at: Date.now()
+    decision: "REQUESTED", reason: "BOUNDARY_REQUEST_CREATED", amount,
+    standingVersionBefore: sandbox.mandate.version,
+    standingVersionAfter: sandbox.mandate.version,
+    standingAuthorityChanged: false, at: Date.now()
   };
-  saveSandbox({ type: "REQUEST", label: `Alex asked Sam for ${money(amount)} once` });
-  setRoute("family");
+  saveSandbox({ type: "REQUEST", label: `Alex asked Sam for exact ${money(amount)} AAPL once` });
+  if (navigate) setRoute("family");
 }
 
 function guardianDecision(action) {
@@ -205,20 +230,32 @@ function guardianDecision(action) {
       used: false
     };
     req.status = "APPROVED_ONCE";
-    sandbox.lastDecision = { decision: "GUARDIAN_ALLOW_ONCE", amount: req.amount, at: Date.now() };
-    saveSandbox({ type: "GUARDIAN", label: `Sam allowed ${money(req.amount)} once` });
+    sandbox.lastDecision = {
+      decision: "GUARDIAN_ALLOW_ONCE", amount: req.amount,
+      standingVersionBefore: sandbox.mandate.version, standingVersionAfter: sandbox.mandate.version,
+      standingAuthorityChanged: false, at: Date.now()
+    };
+    saveSandbox({ type: "GUARDIAN", label: `Sam allowed exact ${money(req.amount)} once · Key v${sandbox.mandate.version} unchanged` });
   } else if (action === "widen") {
     sandbox.mandate.maxAction = Math.max(sandbox.mandate.maxAction, req.amount);
     sandbox.mandate.version += 1;
     sandbox.mandate.nonce += 1;
     sandbox.allowanceOnce = null;
     req.status = "KEY_WIDENED";
-    sandbox.lastDecision = { decision: "GUARDIAN_WIDEN", amount: req.amount, at: Date.now() };
-    saveSandbox({ type: "GUARDIAN", label: `Sam widened the Key to ${money(req.amount)}` });
+    sandbox.lastDecision = {
+      decision: "GUARDIAN_WIDEN", amount: req.amount,
+      standingVersionBefore: sandbox.mandate.version - 1, standingVersionAfter: sandbox.mandate.version,
+      standingAuthorityChanged: true, at: Date.now()
+    };
+    saveSandbox({ type: "GUARDIAN", label: `Sam created Key v${sandbox.mandate.version} · ${money(req.amount)} standing room` });
   } else {
     req.status = "DENIED";
     sandbox.allowanceOnce = null;
-    sandbox.lastDecision = { decision: "GUARDIAN_DENY", amount: req.amount, at: Date.now() };
+    sandbox.lastDecision = {
+      decision: "GUARDIAN_DENY", amount: req.amount,
+      standingVersionBefore: sandbox.mandate.version, standingVersionAfter: sandbox.mandate.version,
+      standingAuthorityChanged: false, at: Date.now()
+    };
     saveSandbox({ type: "GUARDIAN", label: "Sam said not now" });
   }
 }
@@ -276,16 +313,21 @@ function renderDecision() {
 
   if (last.decision === "REFUSE") {
     box.className = "sandbox-decision refuse";
-    box.innerHTML = `<strong>REFUSE</strong> · ${last.reason === "PERIOD_LIMIT_EXCEEDED" ? "weekly space reached" : "outside Alex's current Key"}`;
-    if (last.reason === "ACTION_LIMIT_EXCEEDED" && last.amount === 20) {
-      requestButton.hidden = false;
-    }
+    const reasonText = {
+      PERIOD_LIMIT_EXCEEDED: "weekly space reached",
+      ALLOWANCE_ACTION_MISMATCH: "this is not the exact action Sam approved",
+      ALLOWANCE_ALREADY_USED: "that one-time permission has already been used",
+      ALLOWANCE_STALE: "the Key changed after this permission was issued",
+      ACTION_LIMIT_EXCEEDED: "outside Alex\'s current Key"
+    }[last.reason] || "outside Alex\'s current Key";
+    box.innerHTML = `<strong>REFUSE</strong> · ${reasonText}`;
+    if (last.reason === "ACTION_LIMIT_EXCEEDED" && last.amount === 12) requestButton.hidden = false;
     return;
   }
 
   if (last.decision === "GUARDIAN_ALLOW_ONCE") {
     box.className = "sandbox-decision allow";
-    box.innerHTML = "<strong>Sam allowed $20 once.</strong> Go back to Key Garden and try the $20 move again.";
+    box.innerHTML = "<strong>Sam allowed $12 once.</strong> Key v1 did not move. Try the exact $12 action — or test a changed $11 action.";
     return;
   }
 
@@ -360,7 +402,7 @@ function renderFamilyRequest() {
   } else if (req.status === "PENDING") {
     decision.textContent = "Sam chooses what changes. Learning progress does not decide this.";
   } else if (req.status === "APPROVED_ONCE") {
-    decision.innerHTML = "<strong>Allowed once.</strong> The permission is exact and single-use.";
+    decision.innerHTML = `<strong>Allowed once.</strong> Exact ${money(req.amount)} request only. Key v${sandbox.mandate.version} stays unchanged.`;
   } else if (req.status === "KEY_WIDENED") {
     decision.innerHTML = `<strong>Key widened.</strong> New per-move limit: ${money(sandbox.mandate.maxAction)}.`;
   } else {
@@ -396,6 +438,7 @@ function renderSandbox() {
   renderDecision();
   renderPractice();
   renderFamilyRequest();
+  window.renderParityBoards?.();
 }
 
 function renderMarkets(data, live) {
@@ -449,7 +492,7 @@ async function fetchJson(url) {
 document.querySelectorAll("[data-money-amount]").forEach((button) => {
   button.addEventListener("click", () => tryMoneyMove(Number(button.dataset.moneyAmount)));
 });
-document.getElementById("sandbox-request-button")?.addEventListener("click", () => createBoundaryRequest(20));
+document.getElementById("sandbox-request-button")?.addEventListener("click", () => createBoundaryRequest(12));
 document.querySelectorAll("[data-guardian-action]").forEach((button) => {
   button.addEventListener("click", () => guardianDecision(button.dataset.guardianAction));
 });
