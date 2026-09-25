@@ -16,7 +16,7 @@ for (const asset of catalog) {
     throw new Error(`PRESTOCKS_LIVE_PROOF_MISSING_MINT_${asset.symbol}`);
   }
 
-  if (asset.keysPolicy.authorityEffect !== 'NONE') {
+  if (asset.crescoPolicy.authorityEffect !== 'NONE') {
     throw new Error(`PRESTOCKS_LIVE_PROOF_AUTHORITY_LEAK_${asset.symbol}`);
   }
 
@@ -43,10 +43,10 @@ const proof = {
     tokenPrice: openai.market.tokenPrice,
     premiumDiscountPct: openai.market.premiumDiscountPct
   },
-  keysBoundary: {
-    practiceAvailable: openai.keysPolicy.practiceAvailable,
+  crescoBoundary: {
+    practiceAvailable: openai.crescoPolicy.practiceAvailable,
     executionEligible: openai.eligibility.executionEligible,
-    authorityEffect: openai.keysPolicy.authorityEffect,
+    authorityEffect: openai.crescoPolicy.authorityEffect,
     realMinorSecuritiesExecution:
       summary.truthBoundary.realMinorSecuritiesExecution
   }
