@@ -423,3 +423,240 @@ p { line-height: 1.55; }
   .feed-row-interactive { grid-template-columns: 1fr auto; }
   .lab-note { grid-template-columns: auto 1fr auto; }
 }
+
+
+/* Six-direction comparative lab ------------------------------------------------ */
+.parity-mount { margin-top: 38px; }
+.parity-console {
+  --parity-accent: var(--blue);
+  --parity-soft: var(--blue-soft);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--line-ink);
+  border-radius: 34px;
+  background: rgba(255,255,255,.82);
+  box-shadow: var(--shadow);
+}
+.parity-console::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 6px;
+  background: var(--parity-accent);
+}
+.parity-garden { --parity-accent:#62c993; --parity-soft:#e8faef; border-radius:38px 30px 42px 28px; }
+.parity-playground { --parity-accent:#8f7ee8; --parity-soft:#f1edff; border-radius:28px; }
+.parity-family { --parity-accent:#ec8eaa; --parity-soft:#ffeaf1; border-radius:32px 26px 36px 28px; }
+.parity-passport { --parity-accent:#28615c; --parity-soft:#e3f2ed; border-radius:18px; }
+.parity-atlas { --parity-accent:#d98740; --parity-soft:#fff0dc; border-radius:30px 30px 12px 30px; }
+.parity-instrument { --parity-accent:#1e2d38; --parity-soft:#eef0eb; border-radius:4px; background:#f8f6f0; }
+
+.parity-head {
+  display:grid; grid-template-columns:1fr auto; gap:18px; align-items:start;
+  padding:30px 30px 22px; border-bottom:1px solid var(--line-ink);
+}
+.parity-kicker { color:var(--parity-accent); font-size:9px; font-weight:950; letter-spacing:.12em; }
+.parity-head h2 { margin:7px 0 5px; font-size:32px; }
+.parity-head p { max-width:720px; margin:0; color:var(--ink-soft); font-size:12px; font-weight:700; }
+.parity-route-number { font-family:"Fredoka"; font-size:54px; line-height:1; color:var(--parity-accent); opacity:.28; }
+
+.parity-status-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line-ink); border-bottom:1px solid var(--line-ink); }
+.parity-status-grid article { min-height:112px; background:rgba(255,255,255,.94); padding:18px 20px; display:grid; align-content:center; }
+.parity-status-grid small { color:var(--ink-soft); font-size:8.5px; font-weight:950; letter-spacing:.1em; }
+.parity-status-grid strong { margin-top:5px; font-family:"Fredoka"; font-size:20px; }
+.parity-status-grid span { margin-top:2px; color:var(--ink-soft); font-size:9.5px; font-weight:750; }
+
+.parity-workbench { display:grid; grid-template-columns:1.2fr .8fr; gap:14px; padding:22px 22px 0; }
+.parity-scenario,.parity-guardian,.parity-practice-card,.parity-proof-card,.parity-history-card {
+  border:1px solid var(--line-ink); border-radius:20px; background:white; padding:18px;
+}
+.parity-section-title { display:flex; gap:10px; align-items:center; }
+.parity-section-title > span { display:grid; place-items:center; width:30px; height:30px; border-radius:50%; background:var(--parity-soft); color:var(--parity-accent); font-family:"Fredoka"; font-size:10px; font-weight:900; }
+.parity-section-title > div { display:grid; }
+.parity-section-title strong { font-family:"Fredoka"; font-size:15px; }
+.parity-section-title small { color:var(--ink-soft); font-size:9px; font-weight:750; }
+
+.parity-actions { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; margin-top:17px; }
+.parity-actions button,.parity-inline-actions button,.parity-guardian-actions button,.parity-footer button {
+  border:1px solid var(--line-ink); border-radius:11px; background:#fff; min-height:40px; padding:7px 9px;
+  font-size:9px; font-weight:900; cursor:pointer; transition:transform .18s ease,background .18s ease;
+}
+.parity-actions button:hover,.parity-inline-actions button:hover,.parity-guardian-actions button:hover,.parity-footer button:hover { transform:translateY(-1px); background:var(--parity-soft); }
+.parity-actions button:nth-child(3),.parity-actions button:nth-child(5) { background:var(--ink); color:white; }
+.parity-actions button:nth-child(4),.parity-actions button:nth-child(6) { border-color:rgba(176,73,63,.25); color:#994a40; }
+
+.parity-result { margin-top:12px; min-height:70px; border-radius:14px; padding:12px 14px; display:grid; align-content:center; gap:3px; }
+.parity-result strong { font-size:10px; letter-spacing:.08em; }
+.parity-result span { font-size:11px; font-weight:750; line-height:1.4; }
+.parity-result.neutral { background:#f1f4f3; color:var(--ink-soft); }
+.parity-result.allow { background:var(--mint-soft); color:#276b50; }
+.parity-result.refuse { background:#fff0ed; color:#91473c; }
+.parity-result.request { background:var(--blue-soft); color:#3f5f9e; }
+.parity-result.practice { background:var(--lilac-soft); color:#6351a4; }
+
+.parity-request-card { min-height:104px; margin-top:17px; padding:13px; border-radius:14px; background:var(--parity-soft); display:grid; align-content:center; }
+.parity-request-card p { margin:0; color:var(--ink-soft); font-size:10px; font-weight:750; }
+.parity-request-card small { color:var(--ink-soft); font-size:8px; font-weight:900; }
+.parity-request-card strong { margin:4px 0; font-family:"Fredoka"; font-size:17px; }
+.parity-request-card span { font-size:9px; font-weight:900; color:var(--parity-accent); }
+.parity-guardian-actions { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:10px; }
+.parity-guardian-actions button:nth-child(2) { background:var(--ink); color:white; }
+.parity-guardian-actions button:nth-child(3) { background:var(--parity-accent); color:white; }
+.parity-guardian-actions button:disabled { opacity:.35; cursor:not-allowed; transform:none; }
+
+.parity-support-grid { display:grid; grid-template-columns:.9fr 1.1fr 1fr; gap:14px; padding:14px 22px 22px; }
+.parity-practice-card > p,.parity-proof-card > p { margin:14px 0 10px; color:var(--ink-soft); font-size:10px; font-weight:700; }
+.parity-inline-actions { display:flex; flex-wrap:wrap; gap:7px; }
+.parity-representation-row { display:flex; flex-wrap:wrap; gap:5px; margin-top:12px; }
+.parity-representation-row span { padding:6px 8px; border-radius:999px; background:#f3f5f4; color:var(--ink-soft); font-size:8px; font-weight:850; }
+.parity-proof-sequence { display:flex; align-items:center; flex-wrap:wrap; gap:5px; margin-top:15px; }
+.parity-proof-sequence span { border:1px solid var(--line-ink); border-radius:999px; padding:6px 8px; background:white; font-size:8.5px; font-weight:900; }
+.parity-proof-sequence b { color:var(--parity-accent); }
+.parity-proof-rule { display:inline-block; padding:7px 9px; border-radius:9px; background:var(--ink); color:white; font-size:8.5px; font-weight:900; }
+.parity-proof-card code { font-size:8px; }
+.parity-history { list-style:none; margin:15px 0 0; padding:0; display:grid; gap:9px; }
+.parity-history li { display:grid; grid-template-columns:auto 1fr; gap:8px; align-items:start; }
+.parity-event-dot { width:8px; height:8px; margin-top:4px; border-radius:50%; background:var(--parity-accent); box-shadow:0 0 0 4px var(--parity-soft); }
+.parity-history div { display:grid; }
+.parity-history strong { font-size:9px; line-height:1.35; }
+.parity-history small { color:var(--ink-soft); font-size:8px; }
+.parity-empty { color:var(--ink-soft); font-size:9.5px; line-height:1.5; }
+.parity-footer { display:flex; justify-content:space-between; gap:16px; align-items:center; border-top:1px solid var(--line-ink); padding:15px 22px; background:rgba(245,247,244,.75); }
+.parity-footer > div { display:grid; }
+.parity-footer strong { font-family:"Fredoka"; font-size:11px; }
+.parity-footer span { color:var(--ink-soft); font-size:8.5px; font-weight:700; }
+
+/* 04 · Financial Passport */
+.passport-view { --passport-green:#255f59; }
+.passport-hero { display:grid; grid-template-columns:1fr 1fr; gap:55px; align-items:center; }
+.passport-kicker,.atlas-kicker,.instrument-kicker { margin:0 0 14px; font-size:10px; font-weight:950; letter-spacing:.14em; }
+.passport-kicker { color:var(--passport-green); }
+.passport-copy h1 { font-size:clamp(44px,5.5vw,67px); }
+.passport-copy > p:last-of-type { max-width:650px; color:var(--ink-soft); font-size:16px; font-weight:650; }
+.passport-principles { display:flex; flex-wrap:wrap; gap:8px; margin-top:22px; }
+.passport-principles span { padding:8px 10px; border:1px solid rgba(37,95,89,.18); border-radius:999px; background:#edf7f3; color:#255f59; font-size:9px; font-weight:900; }
+.passport-book { display:grid; grid-template-columns:.82fr 1.18fr; min-height:370px; border-radius:18px; overflow:hidden; border:1px solid rgba(21,47,45,.34); box-shadow:20px 22px 45px rgba(25,56,52,.13); transform:rotate(1deg); }
+.passport-cover { padding:28px; display:grid; align-content:space-between; background:#265f59; color:#f5ecce; }
+.passport-cover small { font-size:9px; letter-spacing:.14em; font-weight:900; }
+.passport-cover strong { font-family:Georgia,serif; font-size:25px; line-height:1.05; letter-spacing:.02em; }
+.passport-emblem { font-size:48px; opacity:.8; }
+.passport-owner { font-size:9px; font-weight:900; letter-spacing:.08em; }
+.passport-page { padding:30px; background:#fbf5e8; display:grid; align-content:center; text-align:center; border-left:1px solid rgba(37,95,89,.18); }
+.passport-page-label { font-size:8px; font-weight:950; letter-spacing:.14em; color:#6f776d; }
+.passport-page > strong { margin-top:14px; font-family:Georgia,serif; font-size:55px; color:#264f49; }
+.passport-page > small { margin-top:-5px; color:#6f776d; font-size:9px; font-weight:800; }
+.passport-stamps { display:flex; justify-content:center; gap:7px; margin:24px 0 18px; }
+.passport-stamps span { display:grid; place-items:center; width:66px; height:66px; border:2px solid #a86b51; border-radius:50%; color:#a86b51; font-family:"Fredoka"; font-size:9px; font-weight:900; transform:rotate(-7deg); }
+.passport-stamps span:nth-child(2) { transform:rotate(5deg); border-color:#4777a0; color:#4777a0; }
+.passport-stamps span:nth-child(3) { transform:rotate(-2deg); border-color:#547c61; color:#547c61; }
+.passport-page p { margin:0; color:#69746e; font-size:9.5px; font-weight:700; }
+.passport-ledger { margin-top:34px; display:grid; grid-template-columns:repeat(4,1fr); border:1px solid rgba(37,95,89,.22); background:#fbf7ec; }
+.passport-ledger > div { min-height:145px; padding:20px; display:grid; align-content:center; border-right:1px solid rgba(37,95,89,.18); }
+.passport-ledger > div:last-child { border-right:0; }
+.passport-ledger small { color:#66766f; font-size:8px; font-weight:950; letter-spacing:.1em; }
+.passport-ledger strong { margin-top:10px; font-family:Georgia,serif; font-size:18px; }
+.passport-ledger span { margin-top:4px; color:#69746e; font-size:9px; font-weight:700; }
+
+/* 05 · Market Atlas */
+.atlas-hero { display:grid; grid-template-columns:.9fr 1.1fr; gap:46px; align-items:center; }
+.atlas-kicker { color:#b1682f; }
+.atlas-hero h1 { font-size:clamp(45px,5.6vw,68px); }
+.atlas-hero > div:first-child > p:last-child { color:var(--ink-soft); font-size:16px; font-weight:650; max-width:620px; }
+.atlas-map { min-height:470px; position:relative; overflow:hidden; border:1px solid #d6b18d; border-radius:34px 34px 10px 34px; background:
+  linear-gradient(rgba(213,171,127,.12) 1px, transparent 1px),
+  linear-gradient(90deg, rgba(213,171,127,.12) 1px, transparent 1px),
+  #fff8e9;
+  background-size:34px 34px;
+  box-shadow:14px 16px 0 rgba(176,104,47,.08);
+}
+.atlas-map::after { content:""; position:absolute; inset:18px; border:1px dashed rgba(174,109,51,.23); border-radius:26px; pointer-events:none; }
+.atlas-node { position:absolute; width:135px; min-height:88px; padding:14px; border:1px solid #b98a61; border-radius:50% 46% 52% 44%; background:#fffdf7; box-shadow:0 8px 18px rgba(130,85,47,.08); display:grid; z-index:2; }
+.atlas-node small { color:#9b704c; font-size:7.5px; font-weight:950; letter-spacing:.1em; }
+.atlas-node strong { font-family:"Fredoka"; font-size:16px; }
+.atlas-node span { color:#7e746c; font-size:8px; font-weight:750; }
+.atlas-node.stocks { left:9%; top:12%; background:#fff0bb; }
+.atlas-node.crypto { right:8%; top:17%; background:#e6f6ef; }
+.atlas-node.fx { left:17%; bottom:12%; background:#e8eeff; }
+.atlas-node.metals { right:12%; bottom:10%; background:#ffe8ef; }
+.atlas-key-marker { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:120px; height:120px; border:7px solid #243f50; border-radius:50%; background:#fffdf7; display:grid; place-content:center; text-align:center; z-index:3; box-shadow:0 0 0 10px rgba(255,255,255,.75); }
+.atlas-key-marker span { font-size:8px; font-weight:950; color:#9b704c; letter-spacing:.1em; }
+.atlas-key-marker strong { font-family:"Fredoka"; font-size:25px; }
+.atlas-key-marker small { color:var(--ink-soft); font-size:8px; font-weight:800; }
+.atlas-route { position:absolute; height:2px; background:#c99562; transform-origin:left center; z-index:1; }
+.route-one { width:62%; left:20%; top:35%; transform:rotate(18deg); }
+.route-two { width:60%; left:21%; top:68%; transform:rotate(-17deg); }
+.atlas-legend { margin-top:18px; display:flex; flex-wrap:wrap; gap:14px; padding:14px 16px; border:1px solid #dbc3a6; border-radius:12px; background:#fffaf0; }
+.atlas-legend span { display:inline-flex; align-items:center; gap:6px; color:#6f665e; font-size:9px; font-weight:850; }
+.atlas-legend i { width:9px; height:9px; border-radius:50%; background:#fff0bb; border:1px solid #ad815d; }
+.atlas-legend .legend-practice { background:#e6f6ef; }
+.atlas-legend .legend-boundary { background:#ffe1d8; }
+.atlas-legend .legend-proof { background:#e8eeff; }
+
+/* 06 · Family Capital Instrument */
+.instrument-view { color:#202c33; }
+.instrument-hero { display:grid; grid-template-columns:auto 1.05fr .95fr; gap:35px; align-items:start; }
+.instrument-number { font-family:Georgia,serif; font-size:90px; line-height:.8; color:#c8c1b4; }
+.instrument-kicker { color:#777066; }
+.instrument-copy h1 { font-family:Georgia,serif; font-weight:500; font-size:clamp(42px,5vw,65px); line-height:1; letter-spacing:-.035em; }
+.instrument-copy > p:last-child { max-width:650px; color:#68645e; font-family:Georgia,serif; font-size:15px; line-height:1.7; }
+.instrument-folio { border-top:4px solid #202c33; border-bottom:1px solid #202c33; padding:19px 0 16px; }
+.instrument-folio > span { font-size:8px; letter-spacing:.13em; font-weight:950; color:#7c766c; }
+.instrument-folio > strong { display:block; margin:14px 0 20px; font-family:Georgia,serif; font-size:39px; font-weight:500; }
+.instrument-folio dl { margin:0; border-top:1px solid #cfc9bd; }
+.instrument-folio dl div { display:grid; grid-template-columns:1fr auto; gap:12px; padding:9px 0; border-bottom:1px solid #d9d3c8; }
+.instrument-folio dt { color:#726d65; font-size:9px; font-weight:700; }
+.instrument-folio dd { margin:0; font-family:Georgia,serif; font-size:11px; }
+.instrument-folio > p { margin:15px 0 0; font-family:Georgia,serif; font-style:italic; font-size:11px; }
+.instrument-thesis { margin-top:42px; display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:center; padding:28px 0; border-top:1px solid #aaa399; border-bottom:1px solid #aaa399; }
+.instrument-thesis blockquote { margin:0; font-family:Georgia,serif; font-size:32px; line-height:1.12; }
+.instrument-thesis > div { display:grid; grid-template-columns:auto 1fr; gap:6px 18px; align-items:baseline; }
+.instrument-thesis small { color:#7a746c; font-size:8px; font-weight:950; letter-spacing:.1em; }
+.instrument-thesis strong { font-family:Georgia,serif; font-weight:500; }
+
+/* Direction-specific parity texture */
+.parity-garden .parity-status-grid article:nth-child(odd) { background:#f8fff9; }
+.parity-playground .parity-scenario { background:linear-gradient(145deg,#fff,#f7f4ff); }
+.parity-family .parity-guardian { background:linear-gradient(145deg,#fff,#fff2f6); }
+.parity-passport { box-shadow:0 16px 40px rgba(35,76,71,.12); }
+.parity-passport .parity-head,.parity-passport .parity-footer { background:#f7f0df; }
+.parity-atlas .parity-head { background:#fff8e9; }
+.parity-atlas .parity-status-grid article { background:#fffdf8; }
+.parity-instrument { font-family:Georgia,serif; }
+.parity-instrument .parity-head h2,.parity-instrument .parity-section-title strong,.parity-instrument .parity-status-grid strong,.parity-instrument .parity-footer strong { font-family:Georgia,serif; font-weight:500; }
+.parity-instrument .parity-actions button,.parity-instrument .parity-inline-actions button,.parity-instrument .parity-guardian-actions button,.parity-instrument .parity-footer button { border-radius:2px; font-family:"Nunito Sans",sans-serif; }
+.parity-instrument .parity-status-grid article,.parity-instrument .parity-scenario,.parity-instrument .parity-guardian,.parity-instrument .parity-practice-card,.parity-instrument .parity-proof-card,.parity-instrument .parity-history-card { border-radius:2px; }
+
+@media (max-width: 1040px) {
+  .parity-status-grid { grid-template-columns:1fr 1fr; }
+  .parity-workbench { grid-template-columns:1fr; }
+  .parity-support-grid { grid-template-columns:1fr 1fr; }
+  .parity-history-card { grid-column:1 / -1; }
+  .passport-hero,.atlas-hero { grid-template-columns:1fr; }
+  .instrument-hero { grid-template-columns:auto 1fr; }
+  .instrument-folio { grid-column:1 / -1; }
+  .passport-book,.atlas-map { max-width:720px; width:100%; }
+}
+@media (max-width: 700px) {
+  .parity-head { padding:24px 18px 18px; }
+  .parity-route-number { font-size:42px; }
+  .parity-status-grid,.parity-support-grid { grid-template-columns:1fr; }
+  .parity-history-card { grid-column:auto; }
+  .parity-workbench { padding:14px 14px 0; }
+  .parity-support-grid { padding:14px; }
+  .parity-actions { grid-template-columns:1fr 1fr; }
+  .parity-guardian-actions { grid-template-columns:1fr; }
+  .parity-footer { align-items:flex-start; flex-direction:column; }
+  .passport-book { grid-template-columns:1fr; }
+  .passport-cover { min-height:250px; }
+  .passport-ledger { grid-template-columns:1fr 1fr; }
+  .atlas-map { min-height:430px; }
+  .atlas-node { width:112px; }
+  .instrument-hero { grid-template-columns:1fr; }
+  .instrument-number { font-size:58px; }
+  .instrument-thesis { grid-template-columns:1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .passport-book,.parity-actions button,.parity-inline-actions button,.parity-guardian-actions button,.parity-footer button { transform:none !important; }
+}
