@@ -1,24 +1,24 @@
-# KEYS — Pyth Multi-Market Discovery Proof
+# CRESCO — Pyth Multi-Market Discovery Proof
 
 Date: 2026-09-25  
 Status: **PASS — LIVE PYTH PRO ENTITLEMENT VERIFIED ACROSS FIVE MARKET CLASSES**
 
 ## Purpose
 
-Prove that KEYS can broaden the **Learn / Practice market universe** without changing the primary Money proof lane.
+Prove that CRESCO can broaden the **Learn / Practice market universe** without changing the primary Money proof lane.
 
 Canonical rule:
 
 > **AAPL is the primary execution proof, not the entire market universe.**
 
-A feed being present in the public Pyth catalog does not imply that the KEYS Pyth key is entitled to it. An entitled/live feed also does not imply KEYS Money execution eligibility.
+A feed being present in the public Pyth catalog does not imply that the CRESCO Pyth key is entitled to it. An entitled/live feed also does not imply CRESCO Money execution eligibility.
 
 ## Canonical runs
 
-- Pyth authenticated discovery proof: https://github.com/Faadil1/keys/actions/runs/36115570744
-- hosted Cloudflare market-discovery proof: https://github.com/Faadil1/keys/actions/runs/36115973480
-- Cresco web validation: https://github.com/Faadil1/keys/actions/runs/36115749327
-- WebKit/iPhone validation: https://github.com/Faadil1/keys/actions/runs/36115749387
+- Pyth authenticated discovery proof: https://github.com/Faadil1/cresco/actions/runs/36115570744
+- hosted Cloudflare market-discovery proof: https://github.com/Faadil1/cresco/actions/runs/36115973480
+- Cresco web validation: https://github.com/Faadil1/cresco/actions/runs/36115749327
+- WebKit/iPhone validation: https://github.com/Faadil1/cresco/actions/runs/36115749387
 
 ## Live verified classes
 
@@ -34,7 +34,7 @@ A feed being present in the public Pyth catalog does not imply that the KEYS Pyt
 - `Crypto.ETH/USD` — feed `2`
 - `Crypto.SOL/USD` — feed `6`
 
-All are **Learn / Practice only** in current KEYS.
+All are **Learn / Practice only** in current CRESCO.
 
 ### FX
 
@@ -58,13 +58,13 @@ The live proof found at least one currently accessible Brent futures feed in the
 
 - `Commodities.BRENTF7/USD` — feed `3682`
 
-This remains **Learn / Practice only**. Futures availability changes over time, so KEYS discovers the current catalog instead of hard-coding this contract as a permanent product dependency.
+This remains **Learn / Practice only**. Futures availability changes over time, so CRESCO discovers the current catalog instead of hard-coding this contract as a permanent product dependency.
 
 ### Rates
 
 No currently selectable live Rates feed was proven in this run.
 
-KEYS therefore does **not** label Rates as live.
+CRESCO therefore does **not** label Rates as live.
 
 ## Runtime design
 
@@ -74,13 +74,13 @@ Public Pyth catalog:
 Authenticated entitlement check:
 Pyth Pro `/v1/latest_price`, server-side only.
 
-KEYS route:
+CRESCO route:
 `GET /api/v0.2/market/discovery`
 
 The route:
 1. fetches current Pyth catalog metadata;
 2. excludes non-active / coming-soon feeds from selected candidates;
-3. probes the KEYS Pyth entitlement server-side;
+3. probes the CRESCO Pyth entitlement server-side;
 4. returns only truthful entitlement states;
 5. marks AAPL as `PRIMARY_MONEY_PROOF`;
 6. marks every other currently accessible feed `LEARN_PRACTICE_ONLY`;
