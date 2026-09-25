@@ -169,11 +169,11 @@ NEXT_PUBLIC_KEYS_API_URL=https://keys-api-stocklana.<account-subdomain>.workers.
 NEXT_PUBLIC_KEYS_EXECUTION=runtime
 ```
 
-The preferred path if Faadil cannot edit Benita's Vercel project:
+For a Git-connected frontend deployment:
 
 1. commit the public Worker base URL as the safe default backend URL in the Cresco adapter;
 2. keep `NEXT_PUBLIC_KEYS_API_URL` as an override;
-3. Benita's Git-connected Vercel deployment only needs to rebuild from `main`.
+3. rebuild the frontend from the current `main`.
 
 No Pyth or Solana private key ever enters Cresco.
 
