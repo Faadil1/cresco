@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "principle": "Real failure > fake success.",
+  "requiredNegativeOutcomes": [
+    "REFUSE",
+    "UNKNOWN"
+  ],
+  "records": [
+    {
+      "id": "devnet-funding-blocked",
+      "signal": "The Solana program build path was ready for a real Devnet deployment proof.",
+      "negativeEvent": "The Devnet payer had 0 lamports and faucet attempts were rate-limited.",
+      "impact": "Deployment could not be truthfully claimed and remained BLOCKED_FUNDING.",
+      "lesson": "A successful build is not a successful deployment. External prerequisites must fail explicitly.",
+      "mitigation": "Retain BLOCKED_FUNDING, use a funded Devnet-only signer, rerun, and require verifiable deployment proof.",
+      "proof": {
+        "url": "https://github.com/Faadil1/keys/actions/runs/35890663439",
+        "evidencePath": "evidence/runtime/REAL-FAILURE-RECORD.md"
+      }
+    },
+    {
+      "id": "allow-once-exact-action-mismatch",
+      "signal": "Allow once should authorize one exception without widening the standing Key.",
+      "negativeEvent": "A guardian-approved $12 request was changed to $11 before execution.",
+      "impact": "The on-chain capital path refused with AllowanceActionMismatch. No changed action executed.",
+      "lesson": "A one-time exception must bind the exact approved action, not behave like an amount ceiling.",
+      "mitigation": "Bind request, asset, Mandate nonce, exact notional, and one successful use; consume after exact execution; refuse replay.",
+      "proof": {
+        "url": "https://github.com/Faadil1/keys/actions/runs/36150024852",
+        "evidencePath": "evidence/solana/ALLOW-ONCE-EXACT-ACTION-CANONICAL-PROOF-2026-09-25.md"
+      }
+    }
+  ]
+}

@@ -25,7 +25,7 @@ MOCK_EXECUTE_SCENARIO=pending-once npm run mock:keys # or: slow | error500-once 
 printf "NEXT_PUBLIC_KEYS_API_URL=http://127.0.0.1:8788\nNEXT_PUBLIC_KEYS_EXECUTION=runtime\n" >> .env.local
 ```
 
-Mock proofs are `simulated: true` with `MOCK…` signatures and are labeled "Test run (simulated)" in the UI. Contract: `docs/CRESCO-BACKEND-INTEGRATION-HANDOFF.md` §3.3.
+Mock proofs are `simulated: true` with `MOCK…` signatures and are labeled "Test run (simulated)" in the UI. The public contract is `docs/FRONTEND-BACKEND-CONTRACT-V0.2.md`.
 
 ## Layout
 
@@ -42,7 +42,7 @@ Mock proofs are `simulated: true` with `MOCK…` signatures and are labeled "Tes
 
 Prices are samples unless tagged **Live · Pyth**. The current AAPL Money lane executes a **demo SPL token on Solana Devnet** through the KEYS program with Pyth evidence. Test funding is backend demo credit only. Cresco does not claim bank/card funding, brokerage, custody, real AAPL ownership, mainnet or real minor securities execution.
 
-Docs: [design system](../../docs/CRESCO-FRONTEND-DESIGN-SYSTEM.md) · [backend handoff](../../docs/CRESCO-BACKEND-INTEGRATION-HANDOFF.md) · [implementation summary](../../docs/CRESCO-FRONTEND-IMPLEMENTATION-SUMMARY.md)
+Docs: [design system](../../docs/CRESCO-FRONTEND-DESIGN-SYSTEM.md) · [contract](../../docs/FRONTEND-BACKEND-CONTRACT-V0.2.md) · [truth boundary](../../docs/TRUTH-BOUNDARY.md)
 
 Live demo: https://cresco-lac.vercel.app (standalone Vercel project `cresco`, deployed from `apps/web`; separate from the KEYS backend project).
 

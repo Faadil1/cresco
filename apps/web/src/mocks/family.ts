@@ -3,7 +3,7 @@
  *
  * Everything here is sample data for the "Alex" demo family. Money Mode values
  * are demo-only: no funding provider, custody or brokerage is connected, and
- * no real money moves (see docs/CRESCO-BACKEND-INTEGRATION-HANDOFF.md).
+ * no real money moves (see docs/TRUTH-BOUNDARY.md).
  */
 import type {
   Achievement,

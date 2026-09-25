@@ -4,7 +4,7 @@
   "version": "0.2.0",
   "description": "KEYS — bounded autonomy for tokenized-stock family capital.",
   "scripts": {
-    "test": "node --test test/*.test.mjs && node --check scripts/dev-api.mjs",
+    "test": "npm run quality:gate && node --test test/*.test.mjs && node --check scripts/dev-api.mjs",
     "test:anchor": "mocha --timeout 120000 tests/anchor-authority-proof.cjs",
     "demo": "node scripts/demo-run.mjs",
     "api": "node scripts/dev-api.mjs",
@@ -12,7 +12,8 @@
     "bootstrap:devnet-demo-runtime": "node scripts/bootstrap-devnet-demo-runtime.cjs",
     "proof:devnet-execution-bridge": "node scripts/devnet-execution-smoke.mjs",
     "proof:tessera": "node scripts/tessera-live-proof.mjs",
-    "proof:pyth-markets": "node scripts/pyth-market-discovery-proof.mjs"
+    "proof:pyth-markets": "node scripts/pyth-market-discovery-proof.mjs",
+    "quality:gate": "node scripts/validate-build-quality.mjs"
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.32.1",

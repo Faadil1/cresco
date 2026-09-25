@@ -1,9 +1,0 @@
-{
-  "name": "Cresco Visual Lab",
-  "short_name": "Cresco Lab",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#fff8ee",
-  "theme_color": "#fff8ee",
-  "description": "A visual exploration lab for Cresco — playful family investing for young people."
-}

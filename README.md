@@ -1,230 +1,270 @@
 # KEYS
 
-**Financial independence shouldn't happen all at once.**
+**Financial independence should not happen all at once.**
 
-KEYS Family is a bounded-autonomy experience for young people learning to use tokenized stocks.
+KEYS is a bounded-authority protocol for capital. Cresco is the family-facing product built on top of it.
 
-A guardian defines an explicit **Mandate**. Inside it, the young person can act freely without asking permission on every action. Outside it, the action is refused or becomes a boundary request. Wider standing authority requires an explicit authorized human transition.
+A guardian defines a standing **Key**, implemented as a versioned Mandate. Inside that Key, a young person can act without asking for permission on every action. At the boundary, the action refuses or becomes a request. The guardian can say **Not this time**, **Allow once**, or **Widen the Key**.
 
-> **Learn in context. Act freely inside bounds. Ask for more freedom only at the boundary.**
+> Learn in context. Act freely inside bounds. Ask for more freedom only at the boundary.
 
-## Why this belongs on Solana
+## Live product and proof
 
-**Solana makes financial assets programmable. Cresco / KEYS makes authority over those assets programmable for humans.**
+- Cresco: https://cresco-lac.vercel.app
+- KEYS API: https://keys-api-stocklana.faadil-casecraft.workers.dev
+- Network: Solana Devnet
+- Program: ABjE6V5q9VbD3CAHDXxvztY5kXQmDXHRcEP1kZ4KSSfk
+- Canonical exact-action proof: https://github.com/Faadil1/keys/actions/runs/36150024852
+- Current web CI: https://github.com/Faadil1/keys/actions/runs/36170242718
+- Current Node/API CI: https://github.com/Faadil1/keys/actions/runs/36170242710
 
-The consumer idea is not "blockchain parental controls." It is a standing authority model:
+The current capital path moves a **demo SPL token**, not real securities. The current proven Money lane is AAPL with live Pyth market evidence. This is not brokerage, custody, mainnet execution, or real minor securities execution.
 
-- inside the Key, the delegate acts without per-action approval;
-- at the boundary, the guardian can refuse, allow this request once, or create a wider standing Key;
-- a one-time permission can be consumed without rewriting the standing Key;
-- market evidence can restrict execution, but it can never grant more human authority.
+## The product model
 
-A conventional backend could reproduce much of the interface. The reason KEYS belongs on Solana is **where the rule is enforced**: for capital placed under the KEYS program-controlled path, the boundary is checked in the same execution path that moves the demo asset. The UI is not the guard.
+The Key is standing authority, not a per-action approval queue.
 
-This also complements Solana's native delegation/allowance primitives rather than pretending they do not exist. A native allowance delegates spend capacity. KEYS adds a human authority grammar around standing rules, boundary events and non-precedent exceptions.
+| Situation | Result |
+| --- | --- |
+| Action is inside the active Key | ALLOW. No guardian approval is required. |
+| Action reaches a standing boundary | REFUSE. The user can adjust, practice, or ask. |
+| Guardian chooses Not this time | Standing Key stays unchanged. |
+| Guardian chooses Allow once | One exact request can cross once. Standing Key stays unchanged. |
+| Guardian chooses Widen the Key | A new standing Key version is created. |
+| Market evidence is stale or insufficient | REFUSE or UNKNOWN. Never fabricate success. |
+| Execution cannot be confirmed | PENDING or UNKNOWN. Never show a confirmed purchase. |
 
-Current deployed ALLOW_ONCE truth: the strengthened canonical Devnet program now proves request/mint/Mandate-nonce-bound single use **and** exact-notional action binding in the capital path. In canonical run `36150024852`, a materially altered $11 action against a guardian-approved $12 request refused with `AllowanceActionMismatch`; the approved $12 action then executed successfully; the standing Mandate stayed v7 → v7 (`standingAuthorityChanged=false`); and replay refused with `AllowanceAlreadyUsed`. The Solana path recomputes the Pyth-derived USD notional and allows only unavoidable one-base-unit token rounding.
+Learning, XP, P&L, badges, and AI scores never grant or widen authority.
 
+Pyth can restrict or stop an action. Pyth can never grant more human authority.
 
-## Product primitive
+## Canonical demo
 
-The long-term primitive is a versioned, revocable permission envelope over capital:
+The current judge-safe path is intentionally small:
 
-- principal / guardian;
-- delegate / beneficiary;
-- asset scope;
-- allowed actions;
-- per-action and per-period limits;
-- expiry;
-- market conditions;
-- escalation / revocation;
-- version / nonce.
+1. **$5 AAPL** inside the Key: ALLOW.
+2. **$12 AAPL** outside the current $10 action limit: REFUSE.
+3. Ask for more room.
+4. Guardian chooses **Allow once** for exactly $12.
+5. Change the action to **$11**: REFUSE with AllowanceActionMismatch.
+6. Restore the approved **$12**: ALLOW.
+7. One-time permission becomes USED.
+8. Standing Key remains **v7 to v7**.
+9. Replay the same $12 permission: REFUSE with AllowanceAlreadyUsed.
 
-**Stages are Family UX. Mandates are technical truth.**
+The product point is simple:
 
-The familiar `LEARN → PRACTICE → PROPOSE → BOUNDED → INDEPENDENT` progression remains useful as a Family policy pack, but it is not the universal protocol architecture.
+> **The exception moved. The boundary did not.**
 
-## Learning stays
+The technical point comes after the human interaction:
 
-Learning is contextual rather than bureaucratic:
+> **The UI is not the guard. The capital path is.**
 
-- first use of a new asset/action;
-- Practice mode;
-- boundary explanations;
-- Pyth-driven market-condition changes;
-- post-action review.
+## Why Solana
 
-Learning completion, quizzes, P&L or AI scoring never auto-grant authority.
+A normal database can reproduce much of the interface. KEYS uses Solana because the authority boundary is enforced in the same execution path that moves the demo capital.
 
-See [docs/FAMILY-LEARNING-LAYER.md](docs/FAMILY-LEARNING-LAYER.md).
+The current program proves:
 
-## v0.2 bounded autonomy — canonical devnet proof PASS
+- program-controlled demo-token capital;
+- in-bounds execution without guardian approval;
+- out-of-bounds refusal;
+- versioned Mandate and nonce lineage;
+- stale authorization refusal;
+- explicit guardian widening;
+- pause and downward authority;
+- exact single-use Allow once;
+- replay refusal;
+- signed Pyth verification in the capital path;
+- Pyth-derived USD/notional enforcement;
+- precommitted market-condition refusal.
 
-KEYS now proves the core product mechanism on local Solana and the canonical devnet program.
+## Real failure over fake success
 
-Canonical program:
+**Real failure > fake success.**
 
-`ABjE6V5q9VbD3CAHDXxvztY5kXQmDXHRcEP1kZ4KSSfk`
+Every build must retain at least one concrete, observable, verifiable negative event. A theoretical risk is not enough.
 
-Canonical devnet run:
+The required pattern is:
 
-https://github.com/Faadil1/keys/actions/runs/35959137364
+1. **Positive signal / opportunity**: why the problem is worth building for.
+2. **Concrete negative event**: what actually failed, degraded, was rejected, lost value, or underperformed.
+3. **Observable impact**: time, money, friction, blocked execution, error, churn, manual work, or another visible consequence.
+4. **Design lesson**: what the failure teaches us the product must do or avoid.
+5. **Response / mitigation**: how the build reduces, detects, contains, or refuses the failure.
 
-Result:
+Current examples are recorded in [evidence/BUILD-QUALITY-RECORD.json](evidence/BUILD-QUALITY-RECORD.json) and [docs/BUILD-QUALITY-RULES.md](docs/BUILD-QUALITY-RULES.md).
 
-**12 passing**
+Two concrete examples are preserved:
 
-The runtime proves:
+- A Devnet deployment was blocked by an unfunded payer and faucet rate limiting. The workflow kept the state as BLOCKED_FUNDING instead of claiming deployment.
+- A guardian-approved $12 one-time request was changed to $11. The Solana path refused it with AllowanceActionMismatch. The exact $12 then executed once, and replay refused with AllowanceAlreadyUsed.
 
-1. program-controlled demo-token vault;
-2. explicit AssetRule / permission boundary;
-3. in-bounds action executes without guardian approval;
-4. out-of-bounds action refuses inside the Solana program;
-5. explicit guardian widening advances version/nonce;
-6. stale execution material refuses;
-7. the same larger action succeeds after widening;
-8. pause/downward authority blocks execution;
-9. live signed Pyth Pro/Lazer AAPL evidence is verified inside the Solana capital path;
-10. Pyth-derived USD/notional limits are load-bearing;
-11. a notional breach refuses;
-12. a precommitted max-price condition refuses;
-13. Pyth has **no authority-widening effect**.
-
-Canonical Pyth proof feed:
-
-`Equity.US.AAPL/USD` — feed id `922`.
-
-Current AAPL entitlement proof: `https://github.com/Faadil1/keys/actions/runs/36035283447`
-
-Current AAPL HTTP→Solana devnet proof: `https://github.com/Faadil1/keys/actions/runs/36034651466`
-
-Historical TSLA proofs remain valid evidence of the same mechanism.
-
-Evidence:
-
-- [Devnet Pyth bounded-autonomy proof](evidence/pyth/DEVNET-ONCHAIN-PYTH-BOUNDARY-PROOF-2026-09-24.md)
-- [Local Pyth bounded-autonomy proof](evidence/pyth/LOCAL-ONCHAIN-PYTH-BOUNDARY-PROOF-2026-09-24.md)
-- [Earlier bounded-capital devnet proof](evidence/solana/DEVNET-BOUNDED-AUTONOMY-RUNTIME-PROOF-2026-09-23.md)
-
-## Frozen v0.2 integration contract
-
-The current frontend/backend semantic contract is:
-
-[docs/FRONTEND-BACKEND-CONTRACT-V0.2.md](docs/FRONTEND-BACKEND-CONTRACT-V0.2.md)
-
-Current v0.2 API includes:
-
-- `POST /api/v0.2/auth/demo-session`
-- `GET /api/v0.2/family/state`
-- `GET /api/v0.2/mandates/current`
-- `POST /api/v0.2/mandates/transition`
-- `POST /api/v0.2/actions/evaluate`
-- `POST /api/v0.2/actions/execute`
-- `POST /api/v0.2/boundary-requests`
-- `POST /api/v0.2/boundary-requests/:id/decision`
-- `POST /api/v0.2/funding/deposits`
-- `POST /api/v0.2/learning/progress`
-- `GET /api/v0.2/portfolio?mode=money`
-- `GET /api/v0.2/market/quotes`
-- `GET /api/v0.2/demo/runtime`
-- `GET /api/v0.2/demo/maya`
-
-The Family execution bridge uses a server-held Devnet demo signer, live signed Pyth AAPL evidence, a demo SPL token, and Durable Object state/idempotency. Do not interpret it as production wallet/custody/brokerage architecture.
-
-The old v0.1 contract remains historical proof only.
-
-## Multi-market discovery
-
-AAPL remains the canonical Money execution proof, but it is no longer the Explore market boundary.
-
-KEYS now exposes an entitlement-checked Pyth discovery route:
-
-`GET /api/v0.2/market/discovery`
-
-Current live/proven discovery spans US equities, crypto, FX, metals and commodities. Non-AAPL feeds remain Learn/Practice only; Pyth entitlement never grants KEYS authority or Money eligibility.
-
-Proof:
-- authenticated discovery: https://github.com/Faadil1/keys/actions/runs/36115570744
-- hosted non-mutating route: https://github.com/Faadil1/keys/actions/runs/36115973480
-
-See [multi-market evidence](evidence/pyth/PYTH-MULTI-MARKET-DISCOVERY-PROOF-2026-09-25.md).
-
-## Sponsor integrations
-
-KEYS currently targets the Stocklana main track plus two sponsor tracks that strengthen the locked product: Pyth and Tessera.
-
-### Pyth — proven
-
-Pyth is load-bearing market truth in the canonical Solana capital path: signed live Pyth Pro/Lazer evidence, on-chain verification, USD/notional enforcement, market-condition refusal, and authority effect `NONE`.
-
-### PreStocks bounty eligibility note
-
-The PreStocks integration remains in KEYS as a fail-closed representation/Practice surface. However, the canonical submitted build also integrates Tessera, and the official PreStocks bounty excludes projects integrating any non-PreStocks pre-IPO token. KEYS therefore does **not** target the PreStocks bounty in the current submission configuration.
-
-### PreStocks — live API integration
-
-KEYS consumes the official PreStocks public token catalog:
-
-`https://prestocks.com/api/prestocks`
-
-Current routes:
-
-- `GET /api/v0.2/integrations/prestocks`
-- `GET /api/v0.2/integrations/prestocks/:symbol`
-
-The adapter exposes the exact Solana representation plus live mark/token pricing for contextual Practice and representation understanding.
-
-It defaults fail-closed:
-
-- `eligibility.status = UNKNOWN`
-- `executionEligible = false`
-- `practiceAvailable = true`
-- `authorityEffect = NONE`
-
-Live proof command:
-
-`npm run proof:prestocks`
-
-### Tessera — live representation integration
-
-KEYS consumes Tessera's public T-Token metadata through:
-
-- `GET /api/v0.2/integrations/tessera`
-- `GET /api/v0.2/integrations/tessera/:asset`
-
-The integration currently exposes T-OpenAI, T-Kalshi and T-SpaceX as **loan participation rights**, not direct equity. KEYS keeps them Learn/Practice-only by default: `executionEligible=false`, `authorityEffect=NONE`.
-
-Live API proof: https://github.com/Faadil1/keys/actions/runs/36112072978  
-Hosted Cloudflare proof: https://github.com/Faadil1/keys/actions/runs/36112229684
-
-See [docs/BOUNTY-INTEGRATION-GATE-2026-09-24.md](docs/BOUNTY-INTEGRATION-GATE-2026-09-24.md).
-
+Negative evidence stays in the record. It is not cleaned up simply because a later build passes.
+
+## Fail-closed contract
+
+KEYS treats refusal and uncertainty as first-class outcomes.
+
+- **REFUSE** means the rule or evidence says the action must not execute.
+- **PENDING** means execution was submitted but not confirmed.
+- **UNKNOWN** means the system cannot prove the result.
+- **ALLOW** is shown only when the relevant authority and proof are sufficient.
+
+Examples covered by tests include stale authorization, stale or unavailable market evidence, unknown eligibility, unavailable authority runtime, out-of-bounds notional, changed one-time action, and replayed one-time permission.
+
+## Architecture
+
+~~~
+Cresco
+  |
+  v
+KEYS Cloudflare API
+  |
+  +-- Family state and reservations
+  |     Durable Object / SQLite
+  |
+  +-- Market truth
+  |     Pyth Pro / Pyth Lazer
+  |
+  v
+KEYS Solana program
+  |
+  +-- Mandate
+  +-- AssetRule
+  +-- exact Allow once
+  +-- version / nonce
+  +-- refusal paths
+  |
+  v
+Demo SPL-token capital movement
+~~~
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the technical map.
+
+## Market and representation truth
+
+AAPL is the current proven Money execution lane.
+
+The Explore layer can expose additional entitlement-checked Pyth markets for Learn and Practice, including equities, crypto, FX, metals, and commodities. Feed availability does not create Money eligibility.
+
+Tessera and PreStocks are representation-learning integrations. They do not automatically create execution eligibility or KEYS authority.
+
+A company, a token representation, holder eligibility, and KEYS authority are separate questions.
 
 ## Truth boundary
 
-The current capital proof uses an explicitly labeled **demo/mock SPL token** with real live Pyth market evidence.
+What is proven now:
 
-KEYS does **not** currently claim:
+- Solana Devnet program;
+- program-controlled demo-token execution;
+- AAPL live Pyth evidence in the execution path;
+- role-scoped child/guardian demo sessions;
+- persistent Family state;
+- boundary requests and guardian decisions;
+- durable reservations and idempotency;
+- exact one-time permission;
+- confirmed Devnet receipts;
+- source-backed Learn and Practice;
+- mobile and WebKit coverage.
 
+What is not claimed:
+
+- production KYC or identity verification;
+- embedded production wallet custody;
+- bank or card funding;
+- brokerage;
+- real AAPL or tokenized-stock ownership;
+- Solana mainnet;
 - real minor securities execution;
-- brokerage or custodial service;
-- legal conventional-share ownership from a token balance;
-- Solana mainnet deployment;
-- universal issuer/venue/jurisdiction eligibility.
+- universal issuer, venue, or jurisdiction eligibility.
 
-The current proof lane establishes live AAPL entitlement and on-chain Pyth-backed execution. Historical TSLA proofs remain valid evidence.
+See [docs/TRUTH-BOUNDARY.md](docs/TRUTH-BOUNDARY.md).
 
-## Consumer frontend — Cresco
+## Repository map
 
-The family-facing app is **Cresco**, built in [`apps/web`](apps/web). The hackathon Family flow is now connected to the stateful KEYS v0.2 backend: role-scoped demo sessions, shared Family state, server-owned Mandate evaluation, persistent boundary requests, guardian decisions, durable idempotency/reservations, test funding, learning/portfolio sync, and the proven AAPL Solana Devnet demo-token execution lane.
+| Path | Purpose |
+| --- | --- |
+| apps/web | Cresco consumer frontend |
+| programs/keys | Solana program |
+| src | KEYS backend, runtime, market adapters, and Cloudflare state |
+| test | Node/API policy and fail-closed tests |
+| tests | Anchor/Solana proof tests |
+| evidence | Verifiable proof and retained failure records |
+| docs | Public architecture, API, product rules, demo, and truth boundary |
+| product/PRD.md | Current product requirements |
 
-See [Cresco implementation summary](docs/CRESCO-FRONTEND-IMPLEMENTATION-SUMMARY.md) and [backend integration handoff](docs/CRESCO-BACKEND-INTEGRATION-HANDOFF.md).
+Exploratory design work, collaborator handoffs, temporary state files, and submission strategy are intentionally not part of the public main tree.
 
-## Collaboration
+## Local development
 
-- Frontend / product experience: **Benita**
-- Backend / Solana / Pyth / proof: **Faadil**
+Root backend and tests:
 
-Backend v0.2 is now in proof-maintenance/integration-support mode. Benita can integrate against the frozen v0.2 contract.
+~~~bash
+npm install
+npm test
+npm run demo
+~~~
 
-See [docs/BENITA-FRONTEND-HANDOFF.md](docs/BENITA-FRONTEND-HANDOFF.md).
+Cresco:
+
+~~~bash
+cd apps/web
+npm install
+npm run check
+npm run dev
+~~~
+
+The web check runs typecheck, lint, human-copy lint, tests, and a production build.
+
+## Build gates
+
+The public repo enforces:
+
+- Node/API tests;
+- Solana/Anchor proof workflows;
+- web typecheck, lint, tests, and build;
+- WebKit mobile checks;
+- human-copy lint;
+- build-quality evidence validation;
+- hosted smoke tests;
+- fail-closed market and execution behavior.
+
+Run the build-quality gate directly:
+
+~~~bash
+npm run quality:gate
+~~~
+
+The gate requires at least one real negative event with all five fields and proof.
+
+## Public docs
+
+- [Product requirements](product/PRD.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Build quality rules](docs/BUILD-QUALITY-RULES.md)
+- [Demo](docs/DEMO.md)
+- [Backend API](docs/BACKEND-API.md)
+- [Frontend/backend contract v0.2](docs/FRONTEND-BACKEND-CONTRACT-V0.2.md)
+- [Family learning layer](docs/FAMILY-LEARNING-LAYER.md)
+- [Cresco design system](docs/CRESCO-FRONTEND-DESIGN-SYSTEM.md)
+- [Truth boundary](docs/TRUTH-BOUNDARY.md)
+- [Cloudflare deployment](docs/CLOUDFLARE-BACKEND-DEPLOYMENT.md)
+- [Evidence](evidence)
+
+## Canonical invariants
+
+- Proposal is not authority.
+- Evidence is not maturity.
+- Profit is not decision quality.
+- Silence is not consent.
+- UNKNOWN is not eligible.
+- Practice is not custody.
+- Learning completion is not authority.
+- Market evidence may restrict, expire, or refuse. It never widens human authority.
+- Old authorization material cannot survive a new Mandate nonce.
+- Allow once binds one exact request and one successful use.
+- A token balance is not automatically conventional shareholder title.
+- Private family reasoning is not public-chain data.
+- The frontend is not the enforcement boundary.
+- Real failure stays visible.

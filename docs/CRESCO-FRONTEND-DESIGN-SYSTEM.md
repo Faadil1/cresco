@@ -127,7 +127,7 @@ One `ModeSwitch` (sliding segmented control) drives global `state.mode`. The sam
 | Company CTA | **Add to Practice Portfolio** | Evaluated: **Invest $5** / **Practice this instead** / **Not available in Money Mode** / paused state |
 | Invest | Virtual cash, instant | Mandate decision → ALLOW immediately, or boundary |
 
-Bounded-autonomy UX rules (from `docs/CONCEPT-LOCK.md`):
+Bounded-autonomy UX rules (from `product/PRD.md`):
 1. **Inside the Mandate → act now.** No approval screen. The success screen literally says "allowed with no parent approval needed".
 2. **Outside → explain + options.** `BoundaryMessage`: *This is outside your current limit.* + amounts, then **Ask for more room** (only when `boundaryRequestAvailable`), **Adjust amount**, **Practice instead**.
 3. **Ask** is one short line (≤140 chars), private, never on-chain.

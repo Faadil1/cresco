@@ -5,7 +5,7 @@
  *   npm run mock:keys                       # http://127.0.0.1:8788
  *   MOCK_EXECUTE_SCENARIO=pending-once npm run mock:keys
  *
- * Implements (see docs/CRESCO-BACKEND-INTEGRATION-HANDOFF.md §3.3):
+ * Implements the public v0.2 frontend/backend contract:
  *   POST /api/v0.2/actions/execute          frozen technical proof contract, idempotent by key
  *   POST /api/v0.2/actions/evaluate         frozen action-evaluation route
  *   GET  /api/v0.1/capabilities

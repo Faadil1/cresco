@@ -1,8 +1,8 @@
 /**
  * Service boundaries. Components consume these through hooks; they never
  * import mock modules directly. Each interface has a mock/demo implementation
- * today and a documented backend requirement in
- * docs/CRESCO-BACKEND-INTEGRATION-HANDOFF.md.
+ * today and a documented backend contract in
+ * docs/FRONTEND-BACKEND-CONTRACT-V0.2.md.
  */
 import type {
   ActionEvaluation,
