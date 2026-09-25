@@ -13,6 +13,24 @@ The final Cresco build is the coordinated union of three mandatory sources:
 
 No source may silently overwrite another. The final build is a merge, not a reset.
 
+## Deployment sequencing — Benita first
+
+For the current submission, **Benita's Cresco version is the deployment base**.
+
+Phase 1 — submission-safe promotion:
+- start from Benita's existing product structure and visual implementation;
+- merge every already-proven product/backend delta into that structure;
+- preserve every useful Benita route, interaction and responsive/accessibility behavior;
+- pass the full deployment coverage gate;
+- promote only after no-regression verification.
+
+Phase 2 — visual refinement:
+- evaluate the six visual directions;
+- selectively improve the already-complete Benita-based product;
+- never replace the submission-safe version with a visually stronger but functionally thinner build.
+
+The six visual directions are therefore an improvement layer, **not a prerequisite for preserving or deploying Benita's complete product**.
+
 ## Non-regression rule
 
 Nothing useful already present in Benita's product may disappear simply because the visual direction changes.
