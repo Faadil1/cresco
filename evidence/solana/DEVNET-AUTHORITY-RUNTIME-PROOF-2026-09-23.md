@@ -1,11 +1,11 @@
-# KEYS — Solana Devnet Authority Runtime Proof
+# CRESCO — Solana Devnet Authority Runtime Proof
 
 Date: 2026-09-23  
 Status: **PASS — DEVNET**
 
 Canonical workflow run:
 
-https://github.com/Faadil1/keys/actions/runs/35904484604
+https://github.com/Faadil1/cresco/actions/runs/35904484604
 
 Workflow:
 
@@ -58,7 +58,7 @@ Authority assertions:
 
 ## What this proves
 
-KEYS now has executable authority-state evidence on Solana devnet, not only a local validator proof.
+CRESCO now has executable authority-state evidence on Solana devnet, not only a local validator proof.
 
 The proof demonstrates that review evidence does not itself create authority: an unauthorized signer cannot widen the mandate, an authorized guardian can perform the explicit forward transition, state version/nonce advance, and old review material cannot be replayed.
 
@@ -79,7 +79,7 @@ It does not prove:
 
 Canonical stabilization run:
 
-https://github.com/Faadil1/keys/actions/runs/35905841296
+https://github.com/Faadil1/cresco/actions/runs/35905841296
 
 The repository was updated to pin the deployed devnet program id:
 
@@ -108,7 +108,7 @@ Verified after upgrade:
 
 A concurrent local regression proof also completed successfully:
 
-https://github.com/Faadil1/keys/actions/runs/35905834783
+https://github.com/Faadil1/cresco/actions/runs/35905834783
 
 Result:
 
