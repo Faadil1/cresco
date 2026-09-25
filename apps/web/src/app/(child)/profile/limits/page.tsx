@@ -62,7 +62,7 @@ export default function MyLimitsPage() {
               <section className="mt-5">
                 <SectionHeader title="My Key history" />
                 <p className="mb-3 text-[13px] font-semibold leading-relaxed text-ink-2">
-                  Only boundary moments appear here — not every in-bounds action. See when you asked for more room, when a one-time yes was used, and when a guardian created a new standing Key.
+                  Only boundary moments appear here, not every action inside your Key. See when you asked for more room, when a one-time yes was used, and when a guardian created a new standing Key.
                 </p>
                 <div className="space-y-2">
                   {state.requests.map((r) => (
