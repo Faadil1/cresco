@@ -75,14 +75,14 @@ export function normalizeTesseraToken(row, {
         ? null
         : 'JURISDICTION_AND_USER_ELIGIBILITY_NOT_VERIFIED'
     },
-    keysPolicy: {
+    crescoPolicy: {
       practiceAvailable: true,
       representationLearningAvailable: true,
       executionEligible,
       moneyModeDefault: 'INELIGIBLE',
       authorityEffect: 'NONE',
       rule:
-        'Tessera representation data may support Learn/Practice and representation understanding; it never creates KEYS authority or Money eligibility.'
+        'Tessera representation data may support Learn/Practice and representation understanding; it never creates CRESCO authority or Money eligibility.'
     }
   };
 }
