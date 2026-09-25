@@ -32,7 +32,7 @@ for (const [id, mint] of required) {
   if (asset.eligibility.executionEligible !== false) {
     throw new Error(`TESSERA_LIVE_PROOF_FAIL_CLOSED_BROKEN_${id}`);
   }
-  if (asset.keysPolicy.authorityEffect !== 'NONE') {
+  if (asset.crescoPolicy.authorityEffect !== 'NONE') {
     throw new Error(`TESSERA_LIVE_PROOF_AUTHORITY_LEAK_${id}`);
   }
 }
@@ -53,12 +53,12 @@ const proof = {
     holders: openai.market.holders,
     tokenStandard: openai.tokenStandard
   },
-  keysBoundary: {
+  crescoBoundary: {
     representationKind: openai.representation.kind,
     directEquityOwnership: openai.representation.directEquityOwnership,
-    practiceAvailable: openai.keysPolicy.practiceAvailable,
+    practiceAvailable: openai.crescoPolicy.practiceAvailable,
     executionEligible: openai.eligibility.executionEligible,
-    authorityEffect: openai.keysPolicy.authorityEffect,
+    authorityEffect: openai.crescoPolicy.authorityEffect,
     realMinorSecuritiesExecution:
       summary.truthBoundary.realMinorSecuritiesExecution
   }
