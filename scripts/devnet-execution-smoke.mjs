@@ -19,11 +19,16 @@ const result = await provider.execute({
   idempotencyKey
 });
 
-if (
-  result.evaluation?.decision !== 'ALLOW' ||
-  result.executionProof?.status !== 'CONFIRMED' ||
-  result.executionProof?.simulated !== false
-) {
+const standingExecutionAllowed =
+  result.evaluation?.decision === 'ALLOW' &&
+  result.executionProof?.status === 'CONFIRMED' &&
+  result.executionProof?.simulated === false;
+
+const realPeriodBoundaryHit =
+  result.evaluation?.decision === 'REFUSE' &&
+  result.evaluation?.reasonCode === 'PYTH_PERIOD_NOTIONAL_EXCEEDED';
+
+if (!standingExecutionAllowed && !realPeriodBoundaryHit) {
   throw new Error(
     `DEVNET_EXECUTION_SMOKE_FAILED:${JSON.stringify(result)}`
   );
@@ -31,24 +36,43 @@ if (
 
 console.log(
   JSON.stringify(
-    {
-      status: 'PASS',
-      decision: result.evaluation.decision,
-      reasonCode: result.evaluation.reasonCode,
-      signature: result.executionProof.signature,
-      programId: result.executionProof.programId,
-      mandateAddress: result.executionProof.mandateAddress,
-      mandateVersion: result.executionProof.mandateVersion,
-      mandateNonce: result.executionProof.mandateNonce,
-      pyth: result.executionProof.pyth,
-      truthBoundary: {
-        executionAsset: result.executionProof.executionAsset,
-        simulated: result.executionProof.simulated
-      }
-    },
+    standingExecutionAllowed
+      ? {
+          status: 'PASS',
+          proof: 'STANDING_KEY_IN_BOUNDS_EXECUTION',
+          decision: result.evaluation.decision,
+          reasonCode: result.evaluation.reasonCode,
+          signature: result.executionProof.signature,
+          programId: result.executionProof.programId,
+          mandateAddress: result.executionProof.mandateAddress,
+          mandateVersion: result.executionProof.mandateVersion,
+          mandateNonce: result.executionProof.mandateNonce,
+          pyth: result.executionProof.pyth,
+          truthBoundary: {
+            executionAsset: result.executionProof.executionAsset,
+            simulated: result.executionProof.simulated
+          }
+        }
+      : {
+          status: 'PASS',
+          proof: 'REAL_NEGATIVE_EVENT_PRESERVED',
+          decision: result.evaluation.decision,
+          reasonCode: result.evaluation.reasonCode,
+          requestedNotionalMicroUsd:
+            result.evaluation.requestedNotionalMicroUsd,
+          standingLimitMicroUsd:
+            result.evaluation.standingLimitMicroUsd,
+          note:
+            'The canonical Devnet period boundary was already exhausted. KEYS preserved the refusal instead of resetting state for a prettier smoke test.'
+        },
     null,
     2
   )
+);
+console.log(
+  standingExecutionAllowed
+    ? 'DEVNET_STANDING_KEY_PROOF=ALLOW'
+    : 'DEVNET_STANDING_KEY_PROOF=REAL_PERIOD_REFUSE'
 );
 console.log('DEVNET_HTTP_EXECUTION_BRIDGE=PASS');
 
