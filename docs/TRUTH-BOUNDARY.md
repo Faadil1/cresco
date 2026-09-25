@@ -28,14 +28,14 @@ Canonical live Pyth proof feed:
 
 ## Real in v0.2
 
-KEYS Family v0.2 now has a proven **bounded-autonomy capital path** on local Solana and the canonical devnet program.
+CRESCO Family v0.2 now has a proven **bounded-autonomy capital path** on local Solana and the canonical devnet program.
 
 Runtime proof now covers:
 
 - permission-matrix core / AssetRule;
 - program-controlled demo-token vault;
 - in-bounds capital execution without guardian approval;
-- out-of-bounds capital refusal inside the KEYS program;
+- out-of-bounds capital refusal inside the CRESCO program;
 - explicit human widening with version/nonce advance;
 - stale execution refusal;
 - the same larger action succeeding after the widen;
@@ -44,7 +44,7 @@ Runtime proof now covers:
 
 Now additionally **proven on a local Solana validator with live authenticated Pyth AAPL evidence**:
 
-- Pyth signature/message verification inside the KEYS capital execution path;
+- Pyth signature/message verification inside the CRESCO capital execution path;
 - Pyth-derived USD/notional enforcement;
 - fail-closed refusal when notional exceeds the standing Mandate;
 - fail-closed refusal when a precommitted max-price condition is invalidated;
@@ -71,9 +71,9 @@ Still not claimed:
 - real minor securities execution;
 - real family identity verification;
 - automatic legal handoff at age of majority;
-- venue acceptance of a KEYS record;
+- venue acceptance of a CRESCO record;
 - continuous Pyth monitoring without an external service;
-- any claim that KEYS measures financial maturity or investment competence.
+- any claim that CRESCO measures financial maturity or investment competence.
 
 ## Required semantic rules
 
