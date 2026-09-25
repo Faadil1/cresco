@@ -12,7 +12,7 @@ import {
   fetchTesseraRepresentations,
   type PythMarketClass,
   type TesseraRepresentation,
-} from "@/services/keys-backend";
+} from "@/services/cresco-backend";
 
 const FILTERS = ["All", "Technology", "Consumer", "Retail", "More"] as const;
 type Filter = (typeof FILTERS)[number];
