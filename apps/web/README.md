@@ -1,6 +1,6 @@
 # Cresco web (`apps/web`)
 
-Consumer frontend for Cresco, the family-facing experience on top of the KEYS bounded-autonomy backend in this repository.
+Consumer frontend for Cresco, the family-facing experience on top of the CRESCO bounded-autonomy backend in this repository.
 
 > Learn in context. Act freely inside bounds. Ask for more freedom only at the boundary.
 
@@ -10,19 +10,19 @@ npm run dev        # http://localhost:3000
 npm run check      # typecheck + lint + test + build
 ```
 
-Production uses the hosted KEYS v0.2 Cloudflare API by default. For local development you can point the frontend at a local API:
+Production uses the hosted CRESCO v0.2 Cloudflare API by default. For local development you can point the frontend at a local API:
 
 ```bash
 (cd ../.. && npm install && npm run api)                          # 127.0.0.1:8787
-echo "NEXT_PUBLIC_KEYS_API_URL=http://127.0.0.1:8787" > .env.local
+echo "NEXT_PUBLIC_CRESCO_API_URL=http://127.0.0.1:8787" > .env.local
 ```
 
 ### Execute integration (local simulated test server)
 
 ```bash
-npm run mock:keys                                   # mock KEYS API on 127.0.0.1:8788
-MOCK_EXECUTE_SCENARIO=pending-once npm run mock:keys # or: slow | error500-once | malformed
-printf "NEXT_PUBLIC_KEYS_API_URL=http://127.0.0.1:8788\nNEXT_PUBLIC_KEYS_EXECUTION=runtime\n" >> .env.local
+npm run mock:cresco                                   # mock CRESCO API on 127.0.0.1:8788
+MOCK_EXECUTE_SCENARIO=pending-once npm run mock:cresco # or: slow | error500-once | malformed
+printf "NEXT_PUBLIC_CRESCO_API_URL=http://127.0.0.1:8788\nNEXT_PUBLIC_CRESCO_EXECUTION=runtime\n" >> .env.local
 ```
 
 Mock proofs are `simulated: true` with `MOCK…` signatures and are labeled "Test run (simulated)" in the UI. The public contract is `docs/FRONTEND-BACKEND-CONTRACT-V0.2.md`.
@@ -33,17 +33,17 @@ Mock proofs are `simulated: true` with `MOCK…` signatures and are labeled "Tes
 |---|---|
 | `src/app` | Routes (child app in `(child)`, parent area in `parent/(dash)`, full-screen flows `lesson`, `invest`, `onboarding`, `start`) |
 | `src/components` | Design-system components and SVG illustrations |
-| `src/domain` | Types (KEYS contract vocabulary), policy preview, formatting |
-| `src/services` | Service interfaces + hosted KEYS v0.2 HTTP adapter |
+| `src/domain` | Types (CRESCO contract vocabulary), policy preview, formatting |
+| `src/services` | Service interfaces + hosted CRESCO v0.2 HTTP adapter |
 | `src/mocks` | Practice/sample data only; live evidence overlays are explicitly tagged |
 | `src/state` | UI cache + local preferences; Family authority/state re-syncs from Cloudflare |
 
 ## Truth labels
 
-Prices are samples unless tagged **Live · Pyth**. The current AAPL Money lane executes a **demo SPL token on Solana Devnet** through the KEYS program with Pyth evidence. Test funding is backend demo credit only. Cresco does not claim bank/card funding, brokerage, custody, real AAPL ownership, mainnet or real minor securities execution.
+Prices are samples unless tagged **Live · Pyth**. The current AAPL Money lane executes a **demo SPL token on Solana Devnet** through the CRESCO program with Pyth evidence. Test funding is backend demo credit only. Cresco does not claim bank/card funding, brokerage, custody, real AAPL ownership, mainnet or real minor securities execution.
 
 Docs: [design system](../../docs/CRESCO-FRONTEND-DESIGN-SYSTEM.md) · [contract](../../docs/FRONTEND-BACKEND-CONTRACT-V0.2.md) · [truth boundary](../../docs/TRUTH-BOUNDARY.md)
 
-Live demo: https://cresco-lac.vercel.app (standalone Vercel project `cresco`, deployed from `apps/web`; separate from the KEYS backend project).
+Live demo: https://cresco-lac.vercel.app (standalone Vercel project `cresco`, deployed from `apps/web`; separate from the CRESCO backend project).
 
 Deploy as its own Vercel project with root directory `apps/web`. `next build` typechecks app code via `tsconfig.build.json`; tests (including the backend parity test, which needs the full repo) are typechecked by `npm run typecheck`.
