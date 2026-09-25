@@ -1,9 +1,9 @@
-# KEYS Family — Learning & Practice Layer
+# CRESCO Family — Learning & Practice Layer
 
 Date: 2026-09-24  
 Status: **CANONICAL PRODUCT RULE**
 
-KEYS Family keeps learning because tokenized-stock markets are complex and young users need context. The change is that learning is no longer bureaucratic permission homework.
+CRESCO Family keeps learning because tokenized-stock markets are complex and young users need context. The change is that learning is no longer bureaucratic permission homework.
 
 ## Principle
 
@@ -19,7 +19,7 @@ For the hackathon learning path:
 - stock ownership / issuance / risk / diversification use Investor.gov / SEC material;
 - tokenized-security structure and holder-right distinctions use current SEC material;
 - each sourced lesson shows the organization, source title, link and date checked;
-- current market facts come from KEYS/Pyth only when the backend marks the evidence fresh;
+- current market facts come from CRESCO/Pyth only when the backend marks the evidence fresh;
 - sample values remain visibly sample;
 - source-backed education is not personalized investment advice.
 
