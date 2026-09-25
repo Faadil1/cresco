@@ -10,9 +10,9 @@ import { useModuleStates } from "@/hooks/data";
 import { lessonById, moduleById } from "@/mocks/learning";
 import { useStore } from "@/state/store";
 import {
-  keysBackendConfigured,
+  crescoBackendConfigured,
   persistLearningProgress,
-} from "@/services/keys-backend";
+} from "@/services/cresco-backend";
 
 export function LessonPlayer({ lessonId }: { lessonId: string }) {
   const lesson = lessonById(lessonId)!;
@@ -33,7 +33,7 @@ export function LessonPlayer({ lessonId }: { lessonId: string }) {
   const advance = () => {
     if (isLast) {
       dispatch({ type: "completeLesson", lessonId: lesson.id, xp: lesson.xp });
-      if (keysBackendConfigured()) {
+      if (crescoBackendConfigured()) {
         void persistLearningProgress({
           lessonId: lesson.id,
           xp: alreadyDone ? 0 : lesson.xp,
