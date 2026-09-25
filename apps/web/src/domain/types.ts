@@ -1,7 +1,7 @@
 /**
  * Cresco frontend domain types.
  *
- * Names that map to the KEYS v0.2 draft contract
+ * Names that map to the CRESCO v0.2 contract
  * (docs/FRONTEND-BACKEND-CONTRACT-V0.2-DRAFT.md) keep the backend vocabulary:
  * currentMandate, assetRule, actionEvaluation, learningContext,
  * boundaryRequest, executionProof.
@@ -76,7 +76,7 @@ export type PortfolioView = {
 };
 
 /* ------------------------------------------------------------------ */
-/* Authority (maps to KEYS v0.2 draft)                                */
+/* Authority (maps to CRESCO v0.2)                                */
 /* ------------------------------------------------------------------ */
 
 export type MandateStatus = "ACTIVE" | "PAUSED" | "REVOKED";
@@ -167,7 +167,7 @@ export type ActionEvaluation = {
   mandateVersion?: number;
   mandateNonce?: number;
   /** Where the decision came from. "local-preview" is never authority. */
-  source: "keys-backend" | "keys-runtime" | "local-preview";
+  source: "cresco-backend" | "cresco-runtime" | "local-preview";
 };
 
 /** learningContext — short contextual explanation. Never a score. */
