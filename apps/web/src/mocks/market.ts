@@ -5,7 +5,7 @@
  * intended xStocks-style tokenized product on Solana. Prices and daily changes
  * below are illustrative samples, marked dataStatus "mock" / priceSource "mock".
  *
- * The hosted KEYS backend may overlay an entitled Pyth quote when it is FRESH.
+ * The hosted CRESCO backend may overlay an entitled Pyth quote when it is FRESH.
  * AAPL is the current proven Money proof asset; TSLA retains historical proof.
  * Unentitled/unconfigured symbols remain these clearly labeled sample values.
  */
