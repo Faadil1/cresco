@@ -1,9 +1,9 @@
-# KEYS — Local Bounded-Autonomy Runtime Proof
+# CRESCO — Local Bounded-Autonomy Runtime Proof
 
 Date: 2026-09-23  
 Network: local Solana validator  
 Workflow: `solana-authority-proof`  
-Run: https://github.com/Faadil1/keys/actions/runs/35930619326  
+Run: https://github.com/Faadil1/cresco/actions/runs/35930619326  
 Result: **PASS — 11 passing**
 
 ## What this proof establishes
@@ -16,12 +16,12 @@ It proves, on a local Solana validator:
 2. Unauthorized mandate transition refuses.
 3. Guardian-authorized `PROPOSE → BOUNDED` transition succeeds.
 4. Old nonce-bound review material refuses after transition.
-5. A mock-stock SPL mint is created and funded into a KEYS program-controlled vault token account.
+5. A mock-stock SPL mint is created and funded into a CRESCO program-controlled vault token account.
 6. Guardian creates an AssetRule with:
    - max action amount: 250 token units;
    - max period amount: 1000 token units.
 7. Maya/beneficiary executes 100 units **without a guardian approval transaction**.
-8. The same delegate attempts 500 units under the 250-unit boundary and the KEYS program refuses with `ActionAmountExceeded`; vault balance does not move.
+8. The same delegate attempts 500 units under the 250-unit boundary and the CRESCO program refuses with `ActionAmountExceeded`; vault balance does not move.
 9. Guardian explicitly widens the AssetRule from 250 → 500, advancing Mandate version/nonce.
 10. Execution material using the old nonce refuses with `StaleNonce`.
 11. The same 500-unit action that previously failed succeeds under the new Mandate nonce.
@@ -74,6 +74,6 @@ Signed Pyth Pro Solana payload availability is proven separately, but Pyth verif
 
 Therefore this proof supports:
 
-> **The KEYS program can hold demo assets, allow a beneficiary to act freely inside an explicit standing boundary, refuse a larger action on-chain, accept an explicit human widening, reject stale authorization, and then allow the same larger action.**
+> **The CRESCO program can hold demo assets, allow a beneficiary to act freely inside an explicit standing boundary, refuse a larger action on-chain, accept an explicit human widening, reject stale authorization, and then allow the same larger action.**
 
 It does not support claims of brokerage, custody service, mainnet tokenized-stock execution, legal minor ownership, or on-chain Pyth enforcement.
