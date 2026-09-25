@@ -3,6 +3,8 @@
 Date: 2026-09-24  
 Status: **V0.2 FROZEN / ALL CURRENT HACKATHON TECHNICAL GATES PASS**
 
+> Final integration rule: `docs/CRESCO-FINAL-INTEGRATION-CONTRACT.md` is mandatory. The winning visual direction must preserve Benita's complete useful product surface while integrating all later product/backend deltas; nothing is removed by accident.
+
 ## Ownership
 
 Benita owns the judge-facing frontend, interaction/visual system, responsive behavior and final frontend hosting. Faadil owns KEYS backend/Solana/Pyth proof maintenance and integration support.
