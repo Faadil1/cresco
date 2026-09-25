@@ -122,7 +122,7 @@ export const LESSONS: Lesson[] = [
       {
         kind: "concept", title: "Know what you actually own", illustration: "scale",
         body: "Before treating a token as 'the stock,' check who issued it, what legal or economic rights it represents, whether redemption exists, and whether you are eligible to hold or use it.",
-        realityCheck: "KEYS keeps four facts separate: the company, the token representation, holder eligibility, and the authority in your family Key. One does not automatically prove the others.",
+        realityCheck: "CRESCO keeps four facts separate: the company, the token representation, holder eligibility, and the authority in your family Key. One does not automatically prove the others.",
         source: LEARNING_SOURCES.tokenizedSecurities,
         apply: { label: "Compare representations", href: "/explore", body: "Use Explore to compare conventional company identity with tokenized representation labels. Live sponsor representations stay Learn/Practice unless execution eligibility is actually proven." },
       },
