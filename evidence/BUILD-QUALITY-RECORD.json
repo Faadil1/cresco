@@ -14,7 +14,7 @@
       "lesson": "A successful build is not a successful deployment. External prerequisites must fail explicitly.",
       "mitigation": "Retain BLOCKED_FUNDING, use a funded Devnet-only signer, rerun, and require verifiable deployment proof.",
       "proof": {
-        "url": "https://github.com/Faadil1/keys/actions/runs/35890663439",
+        "url": "https://github.com/Faadil1/cresco/actions/runs/35890663439",
         "evidencePath": "evidence/runtime/REAL-FAILURE-RECORD.md"
       }
     },
@@ -26,7 +26,7 @@
       "lesson": "A one-time exception must bind the exact approved action, not behave like an amount ceiling.",
       "mitigation": "Bind request, asset, Mandate nonce, exact notional, and one successful use; consume after exact execution; refuse replay.",
       "proof": {
-        "url": "https://github.com/Faadil1/keys/actions/runs/36150024852",
+        "url": "https://github.com/Faadil1/cresco/actions/runs/36150024852",
         "evidencePath": "evidence/solana/ALLOW-ONCE-EXACT-ACTION-CANONICAL-PROOF-2026-09-25.md"
       }
     },
@@ -38,7 +38,7 @@
       "lesson": "A deterministic demo must exercise the exact engine input contract, not merely print the intended product story.",
       "mitigation": "Pass both amount and notional in the v0.2 action shape and keep npm run demo as a hard CI step.",
       "proof": {
-        "url": "https://github.com/Faadil1/keys/actions/runs/36172689653",
+        "url": "https://github.com/Faadil1/cresco/actions/runs/36172689653",
         "evidencePath": "evidence/runtime/REAL-FAILURE-RECORD.md"
       }
     }
