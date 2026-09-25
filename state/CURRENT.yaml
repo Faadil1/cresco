@@ -261,9 +261,10 @@ active_step:
   next:
     - "Keep the passing Devnet ALLOW_ONCE single-use proof, hosted Pyth-history proof and Durable Object concurrency proof as submission evidence."
     - "Record the judge demo with the confirmed Devnet program/receipt/signatures visible in the proof lane."
-    - "Record the judge demo: My Key -> in-bounds Devnet action -> boundary REFUSE -> guardian ALLOW_ONCE -> exact action ALLOW -> replay REFUSE AllowanceAlreadyUsed."
+    - "Record the judge demo around the deployed truth: My Key -> in-bounds Devnet action -> boundary REFUSE -> guardian ALLOW_ONCE -> approved request ALLOW -> replay REFUSE AllowanceAlreadyUsed. Use the stronger 'materially changed action REFUSE' beat only after canonical Devnet upgrade proof passes."
     - "Surface the confirmed Devnet receipt/program/version/nonce/Pyth evidence without turning the UI into a protocol dashboard."
     - "Use Tessera only as a secondary Learn/Practice representation surface: loan participation right, not direct equity; never present it as current Money execution."
     - "Use Pyth multi-market discovery to broaden Learn/Practice across verified live equities, crypto, FX, metals and commodities while keeping AAPL as the primary Money proof."
     - "Deploy apps/visual-lab as a separate Cloudflare Pages project for visual exploration only; keep cresco-lac.vercel.app as the submission frontend."
     - "Keep production auth/KYC, wallets, fiat rails, custody/mainnet and all-symbol history explicitly outside the hackathon truth boundary."
+    - "Exact-notional ALLOW_ONCE hardening: SOURCE_LOCAL_PASS / CANONICAL_DEVNET_UPGRADE_BLOCKED_EXTERNAL_FUNDING (~0.67 devnet SOL shortfall at last proof)."

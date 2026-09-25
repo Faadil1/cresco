@@ -414,7 +414,7 @@ Solana already makes assets programmable and provides delegation primitives. KEY
 
 ### “How is this different from a native Solana allowance?”
 
-A native allowance delegates spend capacity. A KEYS Key is a standing authority object with asset/action scope, limits and market conditions plus a boundary workflow. ALLOW_ONCE handles one approved boundary request without mutating that standing Key. The strengthened execution path binds the exception to the request, mint, Mandate nonce and guardian-approved USD notional; a materially different amount refuses on-chain, and successful use consumes the exception. We do not overclaim a generic canonical hash over every possible future action field.
+A native allowance delegates spend capacity. A KEYS Key is a standing authority object with asset/action scope, limits and market conditions plus a boundary workflow. The **deployed** ALLOW_ONCE proof already shows request/mint/Mandate-nonce-bound single use, consumption and replay refusal without changing the standing Key. We have also implemented an exact-notional hardening that rejects a materially changed Pyth-derived USD amount; source/local tests pass, but we do not claim that stronger rule as canonical Devnet-deployed until the upgrade proof passes.
 
 ### “Why does this need Pyth?”
 
