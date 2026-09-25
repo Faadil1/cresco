@@ -38,6 +38,15 @@
         <button class="direction-button" data-route="family">
           <span>03</span> Family Room
         </button>
+        <button class="direction-button" data-route="passport">
+          <span>04</span> Financial Passport
+        </button>
+        <button class="direction-button" data-route="atlas">
+          <span>05</span> Market Atlas
+        </button>
+        <button class="direction-button" data-route="instrument">
+          <span>06</span> Family Capital Instrument
+        </button>
       </nav>
 
       <div class="live-pill" id="live-pill">
@@ -126,13 +135,13 @@
             <div class="sandbox-amount-buttons" aria-label="AAPL sandbox amount">
               <button type="button" data-money-amount="5">$5</button>
               <button type="button" data-money-amount="10">$10</button>
-              <button type="button" data-money-amount="20">$20</button>
+              <button type="button" data-money-amount="12">$12</button>
             </div>
             <div id="sandbox-decision" class="sandbox-decision neutral" aria-live="polite">
               Choose an amount. Inside the Key is instant; outside the Key is refused.
             </div>
             <button id="sandbox-request-button" class="sandbox-request-button" type="button" hidden>
-              Ask Sam for $20 once →
+              Ask Sam for $12 once →
             </button>
           </div>
         </section>
@@ -193,6 +202,7 @@
             <span class="bubble b3">ask</span>
           </div>
         </div>
+        <section class="parity-mount" data-capability-mount data-direction="garden" aria-label="Key Garden functional parity scenario"></section>
       </section>
 
       <section id="view-playground" class="direction-view" data-view="playground">
@@ -271,6 +281,7 @@
             </article>
           </div>
         </div>
+        <section class="parity-mount" data-capability-mount data-direction="playground" aria-label="Market Playground functional parity scenario"></section>
       </section>
 
       <section id="view-family" class="direction-view" data-view="family">
@@ -330,7 +341,7 @@
             </div>
             <div id="guardian-request-empty" class="guardian-empty">
               <strong>No request waiting.</strong>
-              <p>Try a $20 AAPL move in Key Garden, then ask Sam for more room.</p>
+              <p>Try a $12 AAPL move in Key Garden, then ask Sam for more room.</p>
             </div>
             <div id="guardian-request-live" hidden>
               <div class="request-compare">
@@ -366,6 +377,83 @@
             <p>Receipts are there when needed; the main experience still speaks human.</p>
           </article>
         </div>
+        <section class="parity-mount" data-capability-mount data-direction="family" aria-label="Family Room functional parity scenario"></section>
+      </section>
+
+      <section id="view-passport" class="direction-view passport-view" data-view="passport">
+        <div class="passport-hero">
+          <div class="passport-copy">
+            <p class="passport-kicker">04 · FINANCIAL PASSPORT</p>
+            <h1>Your financial freedom, written like a credential you can understand.</h1>
+            <p>The Key becomes a personal passport: what Alex can do alone, where the boundary sits, and which one-time permission has been used — without turning family trust into a settings matrix.</p>
+            <div class="passport-principles"><span>Standing room</span><span>Visible versions</span><span>One-time stamps</span></div>
+          </div>
+          <article class="passport-book" aria-label="Alex financial passport concept">
+            <div class="passport-cover">
+              <span class="passport-emblem">◇</span><small>CRESCO</small><strong>FINANCIAL<br />PASSPORT</strong><span class="passport-owner">ALEX · KEY v1</span>
+            </div>
+            <div class="passport-page">
+              <span class="passport-page-label">AUTHORITY</span><strong>$10</strong><small>each move</small>
+              <div class="passport-stamps"><span>INSIDE<br />GO</span><span>EDGE<br />ASK</span><span>ONCE<br />×1</span></div>
+              <p>Learning informs. Only Sam can issue the next standing Key.</p>
+            </div>
+          </article>
+        </div>
+        <section class="passport-ledger">
+          <div><small>01 · ACCESS</small><strong>AAPL money lane</strong><span>Practice can explore more.</span></div>
+          <div><small>02 · BOUNDARY</small><strong>$10 per move</strong><span>The line is explicit before action.</span></div>
+          <div><small>03 · EXCEPTION</small><strong>Single-use stamp</strong><span>One request can cross once.</span></div>
+          <div><small>04 · GROWTH</small><strong>New passport version</strong><span>Only guardian-issued.</span></div>
+        </section>
+        <section class="parity-mount" data-capability-mount data-direction="passport" aria-label="Financial Passport functional parity scenario"></section>
+      </section>
+
+      <section id="view-atlas" class="direction-view atlas-view" data-view="atlas">
+        <div class="atlas-hero">
+          <div>
+            <p class="atlas-kicker">05 · MARKET ATLAS</p>
+            <h1>Map the money world. See exactly where your Key opens doors.</h1>
+            <p>Markets become places rather than tickers. Practice can travel broadly; the Money lane stays explicit. Boundaries are geography, not punishment.</p>
+          </div>
+          <div class="atlas-map" aria-label="Market atlas concept">
+            <span class="atlas-route route-one"></span><span class="atlas-route route-two"></span>
+            <article class="atlas-node stocks"><small>STOCKS</small><strong>AAPL</strong><span>Money + Practice</span></article>
+            <article class="atlas-node crypto"><small>CRYPTO</small><strong>BTC · SOL</strong><span>Practice</span></article>
+            <article class="atlas-node fx"><small>FX</small><strong>EUR/USD</strong><span>Practice</span></article>
+            <article class="atlas-node metals"><small>METALS</small><strong>GOLD</strong><span>Practice</span></article>
+            <div class="atlas-key-marker"><span>KEY</span><strong>$10</strong><small>standing edge</small></div>
+          </div>
+        </div>
+        <section class="atlas-legend">
+          <span><i class="legend-money"></i> Money lane</span><span><i class="legend-practice"></i> Practice territory</span><span><i class="legend-boundary"></i> Boundary</span><span><i class="legend-proof"></i> Pyth market truth</span>
+        </section>
+        <section class="parity-mount" data-capability-mount data-direction="atlas" aria-label="Market Atlas functional parity scenario"></section>
+      </section>
+
+      <section id="view-instrument" class="direction-view instrument-view" data-view="instrument">
+        <div class="instrument-hero">
+          <div class="instrument-number">06</div>
+          <div class="instrument-copy">
+            <p class="instrument-kicker">FAMILY CAPITAL INSTRUMENT</p>
+            <h1>A family agreement, expressed with the clarity of a financial instrument.</h1>
+            <p>Premium, calm and evidence-led. The standing Key reads like a compact family agreement: autonomy inside, explicit intervention at the edge, exact exceptions with no accidental precedent.</p>
+          </div>
+          <aside class="instrument-folio">
+            <span>FAMILY CAPITAL · ALEX / SAM</span><strong>KEY v1</strong>
+            <dl>
+              <div><dt>Standing limit</dt><dd>$10 / action</dd></div>
+              <div><dt>Period room</dt><dd>$50 / week</dd></div>
+              <div><dt>Money lane</dt><dd>AAPL</dd></div>
+              <div><dt>Authority growth</dt><dd>Guardian only</dd></div>
+            </dl>
+            <p>Exception ≠ precedent.</p>
+          </aside>
+        </div>
+        <section class="instrument-thesis">
+          <blockquote>“Approve the rules, not every trade.”</blockquote>
+          <div><small>INSIDE</small><strong>Independent</strong><small>BOUNDARY</small><strong>Intentional</strong><small>ONCE</small><strong>Consumable</strong><small>GROWTH</small><strong>Explicit</strong></div>
+        </section>
+        <section class="parity-mount" data-capability-mount data-direction="instrument" aria-label="Family Capital Instrument functional parity scenario"></section>
       </section>
     </main>
 
