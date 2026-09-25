@@ -20,12 +20,12 @@ import type {
 
 export type Capabilities = {
   /** "none" → frontend runs fully on local demo state. */
-  backend: "none" | "keys-v0.2-frozen";
+  backend: "none" | "cresco-v0.2-frozen";
   marketData: "mock" | "mock-with-live-aapl";
   moneyMode: "demo" | "runtime";
   funding: "demo" | "devnet-test";
   auth: "demo" | "backend-demo";
-  execution: "demo-not-executed" | "keys-runtime";
+  execution: "demo-not-executed" | "cresco-runtime";
 };
 
 export interface MarketDataService {
