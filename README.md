@@ -14,7 +14,10 @@ CRESCO gives young people real room to make financial decisions inside family-se
 - Network: Solana Devnet
 - Program: `ABjE6V5q9VbD3CAHDXxvztY5kXQmDXHRcEP1kZ4KSSfk`
 - Canonical exact-action proof: https://github.com/Faadil1/cresco/actions/runs/36150024852
-- Current Node/API quality proof: https://github.com/Faadil1/cresco/actions/runs/36172981694
+- Current Node/API quality proof: https://github.com/Faadil1/cresco/actions/runs/36178796069
+- Current web CI: https://github.com/Faadil1/cresco/actions/runs/36178751111
+- Current WebKit mobile CI: https://github.com/Faadil1/cresco/actions/runs/36178751051
+- Hosted market-discovery smoke: https://github.com/Faadil1/cresco/actions/runs/36178796222
 
 The current API URL keeps its original Cloudflare worker hostname so the already-deployed runtime stays reachable. It serves CRESCO and is treated only as a legacy infrastructure identifier.
 
