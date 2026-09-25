@@ -248,6 +248,7 @@ async function handleExecute(env, body) {
     method: "POST",
     body: {
       asset: body.asset,
+      type: body.type,
       notional: body.notional,
       idempotencyKey: key,
       allowOnceRequestId: body.allowOnceRequestId || null

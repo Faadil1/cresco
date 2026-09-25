@@ -264,6 +264,7 @@ export class FamilyState {
       const key = String(body.idempotencyKey || "");
       const amount = Number(body.notional || 0);
       const asset = String(body.asset || "").toUpperCase();
+      const actionType = String(body.type || "BUY").toUpperCase();
       if (!key) return json({ error: "IDEMPOTENCY_KEY_REQUIRED" }, 400);
 
       if (state.executionResults[key])
@@ -276,18 +277,33 @@ export class FamilyState {
         0
       );
       const allowOnceRequestId = String(body.allowOnceRequestId || "");
-      const allowance = allowOnceRequestId
-        ? state.requests.find(
-            (r) =>
-              r.id === allowOnceRequestId &&
-              r.status === "ALLOWED_ONCE" &&
-              !!r.chainProof?.allowanceReceipt &&
-              !r.usedAt &&
-              r.asset === asset &&
-              r.mandateNonce === state.mandate.nonce &&
-              amount <= r.requestedNotional
-          )
+      const allowanceCandidate = allowOnceRequestId
+        ? state.requests.find((r) => r.id === allowOnceRequestId) || null
         : null;
+      const amountMicro = Math.round(amount * 1_000_000);
+      const allowance = allowanceCandidate &&
+        allowanceCandidate.status === "ALLOWED_ONCE" &&
+        !!allowanceCandidate.chainProof?.allowanceReceipt &&
+        !allowanceCandidate.usedAt &&
+        allowanceCandidate.asset === asset &&
+        allowanceCandidate.actionType === actionType &&
+        allowanceCandidate.mandateNonce === state.mandate.nonce &&
+        amountMicro ===
+          Math.round(Number(allowanceCandidate.requestedNotional || 0) * 1_000_000)
+          ? allowanceCandidate
+          : null;
+
+      if (
+        allowOnceRequestId &&
+        allowanceCandidate?.status === "ALLOWED_ONCE" &&
+        !allowance
+      ) {
+        return json({
+          allowed: false,
+          reasonCode: "ALLOW_ONCE_ACTION_MISMATCH",
+          boundaryRequestAvailable: false
+        });
+      }
 
       const actionOk = amount <= state.mandate.maxActionNotional;
       const periodOk =
@@ -310,6 +326,7 @@ export class FamilyState {
       const reservation = {
         idempotencyKey: key,
         asset,
+        actionType,
         notional: amount,
         mandateNonce: state.mandate.nonce,
         allowOnceRequestId: allowance?.id || null,

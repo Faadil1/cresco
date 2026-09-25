@@ -125,7 +125,8 @@ if (
   onceResult.evaluation?.decision !== 'ALLOW' ||
   onceResult.executionProof?.status !== 'CONFIRMED' ||
   onceResult.executionProof?.oneTimeAllowance?.consumed !== true ||
-  onceResult.executionProof?.oneTimeAllowance?.requestId !== allowanceRequestId
+  onceResult.executionProof?.oneTimeAllowance?.requestId !== allowanceRequestId ||
+  onceResult.executionProof?.oneTimeAllowance?.standingAuthorityChanged !== false
 ) {
   throw new Error(
     `DEVNET_ALLOW_ONCE_EXECUTION_FAILED:${JSON.stringify(onceResult)}`,
@@ -161,6 +162,12 @@ console.log(
       requestHash: allowanceGrant.requestHash,
       executionSignature: onceResult.executionProof.signature,
       consumed: onceResult.executionProof.oneTimeAllowance.consumed,
+      standingMandateVersionBefore:
+        onceResult.executionProof.oneTimeAllowance.standingMandateVersionBefore,
+      standingMandateVersionAfter:
+        onceResult.executionProof.oneTimeAllowance.standingMandateVersionAfter,
+      standingAuthorityChanged:
+        onceResult.executionProof.oneTimeAllowance.standingAuthorityChanged,
       tamperDecision: tamperedResult.evaluation.decision,
       tamperReasonCode: tamperedResult.evaluation.reasonCode,
       reuseDecision: reuseResult.evaluation.decision,

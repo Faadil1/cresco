@@ -956,6 +956,19 @@ export function createDevnetExecutionProvider({
         });
 
         const after = await loadRuntime();
+        let consumedAllowance = null;
+        if (allowOnceRequestId && allowanceReceipt) {
+          const allowanceInfo = await rpc.getAccountInfo(
+            allowanceReceipt,
+            'confirmed'
+          );
+          if (allowanceInfo) {
+            consumedAllowance = parseAllowanceReceiptAccount(
+              Buffer.from(allowanceInfo.data)
+            );
+          }
+        }
+
         const result = {
           evaluation: evaluation({
             decision: 'ALLOW',
@@ -980,7 +993,16 @@ export function createDevnetExecutionProvider({
               ? {
                   requestId: allowOnceRequestId,
                   receipt: allowanceReceipt?.toBase58() ?? null,
-                  consumed: true
+                  consumed: consumedAllowance?.used === true,
+                  approvedNotionalMicroUsd:
+                    consumedAllowance?.maxNotionalMicroUsd ??
+                    requestedNotionalMicroUsd,
+                  mandateNonce:
+                    consumedAllowance?.mandateNonce ?? mandate.nonce,
+                  standingMandateVersionBefore: mandate.version,
+                  standingMandateVersionAfter: after.mandate.version,
+                  standingAuthorityChanged:
+                    Number(after.mandate.version) !== Number(mandate.version)
                 }
               : null,
             pyth: {

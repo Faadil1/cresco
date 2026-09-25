@@ -234,12 +234,47 @@ test("allow-once becomes executable only after chain proof and is consumed once"
   const completed = await body(completedResponse);
   assert.equal(completed.request.status, "ALLOWED_ONCE");
 
+  const changedAmountResponse = await state.fetch(
+    new Request("https://family.internal/reserve", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        asset: "AAPL",
+        type: "BUY",
+        notional: 19,
+        idempotencyKey: "allow-once-tamper",
+        allowOnceRequestId: created.id
+      })
+    })
+  );
+  const changedAmount = await body(changedAmountResponse);
+  assert.equal(changedAmount.allowed, false);
+  assert.equal(changedAmount.reasonCode, "ALLOW_ONCE_ACTION_MISMATCH");
+
+  const changedActionResponse = await state.fetch(
+    new Request("https://family.internal/reserve", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        asset: "AAPL",
+        type: "SELL",
+        notional: 20,
+        idempotencyKey: "allow-once-action-tamper",
+        allowOnceRequestId: created.id
+      })
+    })
+  );
+  const changedAction = await body(changedActionResponse);
+  assert.equal(changedAction.allowed, false);
+  assert.equal(changedAction.reasonCode, "ALLOW_ONCE_ACTION_MISMATCH");
+
   const reserveResponse = await state.fetch(
     new Request("https://family.internal/reserve", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         asset: "AAPL",
+        type: "BUY",
         notional: 20,
         idempotencyKey: "allow-once-use",
         allowOnceRequestId: created.id
@@ -275,6 +310,7 @@ test("allow-once becomes executable only after chain proof and is consumed once"
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         asset: "AAPL",
+        type: "BUY",
         notional: 20,
         idempotencyKey: "allow-once-reuse",
         allowOnceRequestId: created.id

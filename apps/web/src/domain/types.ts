@@ -135,6 +135,8 @@ export type ReasonCode =
   | "PERIOD_LIMIT_EXCEEDED"
   /** On-chain one-time permission exists but the attempted action differs from the approved notional. */
   | "AllowanceActionMismatch"
+  /** Durable request guard rejected a changed asset/action/notional before Solana execution. */
+  | "ALLOW_ONCE_ACTION_MISMATCH"
   /** The exact one-time permission was already consumed on-chain. */
   | "AllowanceAlreadyUsed"
   /** Frontend-side balance check; not part of the backend policy facade. */
