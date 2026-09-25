@@ -10,8 +10,8 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "check": "npm run typecheck && npm run lint && npm run copy:lint && npm run test && npm run build",
-    "mock:keys": "node scripts/mock-keys-api.mjs",
-    "copy:lint": "node scripts/copy-lint.mjs"
+    "copy:lint": "node scripts/copy-lint.mjs",
+    "mock:cresco": "node scripts/mock-cresco-api.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.47.0",
