@@ -4,11 +4,11 @@ Status: **PASS**
 
 Canonical hosted workflow:
 
-https://github.com/Faadil1/keys/actions/runs/36066208304
+https://github.com/Faadil1/cresco/actions/runs/36066208304
 
 ## What the hosted smoke proved
 
-The public Cloudflare KEYS backend successfully served the current stateful Family implementation and passed the new proof gates:
+The public Cloudflare CRESCO backend successfully served the current stateful Family implementation and passed the new proof gates:
 
 1. A child demo session was issued by the hosted API.
 2. A guardian demo session was issued by the hosted API.
