@@ -512,7 +512,7 @@ test('v0.2 exposes PreStocks as a live sponsor integration without granting auth
       executionEligible: false,
       reasonCode: 'ELIGIBILITY_NOT_VERIFIED'
     },
-    keysPolicy: {
+    crescoPolicy: {
       practiceAvailable: true,
       executionEligible: false,
       authorityEffect: 'NONE'
@@ -546,7 +546,7 @@ test('v0.2 PreStocks asset route resolves a sponsor asset by symbol', async () =
         symbol: 'OPENAI',
         contractAddress: 'PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF',
         eligibility: { status: 'UNKNOWN', executionEligible: false },
-        keysPolicy: { authorityEffect: 'NONE' }
+        crescoPolicy: { authorityEffect: 'NONE' }
       }]
     }
   });
@@ -554,7 +554,7 @@ test('v0.2 PreStocks asset route resolves a sponsor asset by symbol', async () =
   assert.equal(result.status, 200);
   assert.equal(result.body.type, 'PRESTOCKS_INTEGRATION_ASSET');
   assert.equal(result.body.asset.symbol, 'OPENAI');
-  assert.equal(result.body.asset.keysPolicy.authorityEffect, 'NONE');
+  assert.equal(result.body.asset.crescoPolicy.authorityEffect, 'NONE');
 });
 
 test('v0.2 PreStocks asset route fails explicitly for an unknown symbol', async () => {
@@ -716,7 +716,7 @@ test('v0.2 exposes Tessera as a live representation sponsor integration without 
       executionEligible: false,
       reasonCode: 'JURISDICTION_AND_USER_ELIGIBILITY_NOT_VERIFIED'
     },
-    keysPolicy: {
+    crescoPolicy: {
       practiceAvailable: true,
       executionEligible: false,
       authorityEffect: 'NONE'
@@ -752,7 +752,7 @@ test('v0.2 Tessera asset route resolves a T-Token by underlying company', async 
         underlyingCompany: 'OpenAI',
         contractAddress: 'oPAiAikWTaFj9RYoRFD35ccfwhnMcB3ThgBZRHSkjTZ',
         eligibility: { status: 'UNKNOWN', executionEligible: false },
-        keysPolicy: { authorityEffect: 'NONE' }
+        crescoPolicy: { authorityEffect: 'NONE' }
       }]
     }
   });
@@ -760,7 +760,7 @@ test('v0.2 Tessera asset route resolves a T-Token by underlying company', async 
   assert.equal(result.status, 200);
   assert.equal(result.body.type, 'TESSERA_INTEGRATION_ASSET');
   assert.equal(result.body.asset.id, 'T-OpenAI');
-  assert.equal(result.body.asset.keysPolicy.authorityEffect, 'NONE');
+  assert.equal(result.body.asset.crescoPolicy.authorityEffect, 'NONE');
 });
 
 test('v0.2 Tessera asset route fails explicitly for an unknown representation', async () => {
