@@ -1,5 +1,5 @@
 /**
- * Execute integration against the MOCK KEYS API (scripts/mock-keys-api.mjs).
+ * Execute integration against the MOCK CRESCO API (scripts/mock-cresco-api.mjs).
  *
  * These tests intentionally exercise the isolated technical execution adapter
  * directly. The normal Family Money lane remains demo/policy-only and must not
@@ -7,7 +7,7 @@
  */
 import type { AddressInfo } from "node:net";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { createMockKeysServer } from "../../scripts/mock-keys-api.mjs";
+import { createMockCrescoServer } from "../../scripts/mock-cresco-api.mjs";
 import { isVerifiableOnChain } from "@/components/proof";
 import { assetRuleFor } from "@/domain/policy";
 import { DEMO_MANDATE } from "@/mocks/family";
@@ -15,14 +15,14 @@ import { MOCK_ASSETS } from "@/mocks/market";
 import { moneyExecution } from ".";
 import {
   buildExecuteRequest,
-  configureKeysBackend,
+  configureCrescoBackend,
   executeAction,
-} from "./keys-backend";
+} from "./cresco-backend";
 
 type Mock = { server: import("node:http").Server; stats: { executions: number } };
 
 async function start(scenario: string): Promise<{ mock: Mock; url: string }> {
-  const mock = createMockKeysServer({ scenario, slowMs: 400 }) as Mock;
+  const mock = createMockCrescoServer({ scenario, slowMs: 400 }) as Mock;
   await new Promise<void>((r) => mock.server.listen(0, "127.0.0.1", r));
   const { port } = mock.server.address() as AddressInfo;
   return { mock, url: `http://127.0.0.1:${port}` };
@@ -64,11 +64,11 @@ const servers: Mock[] = [];
 async function withScenario(scenario: string, timeoutMs = 2000) {
   const { mock, url } = await start(scenario);
   servers.push(mock);
-  configureKeysBackend({ url, execution: "runtime", timeoutMs });
+  configureCrescoBackend({ url, execution: "runtime", timeoutMs });
   return mock;
 }
 
-afterEach(() => configureKeysBackend(null));
+afterEach(() => configureCrescoBackend(null));
 afterAll(async () => {
   await Promise.all(servers.map((s) => new Promise((r) => s.server.close(r))));
 });
@@ -78,7 +78,7 @@ describe("isolated runtime execute adapter (mock KEYS API)", () => {
     const mock = await withScenario("confirm");
     const res = await executeAction(runtimeRequest(5, "intent-confirm-1"));
     expect(res.outcome).toBe("EXECUTED");
-    expect(res.evaluation.source).toBe("keys-runtime");
+    expect(res.evaluation.source).toBe("cresco-runtime");
     expect(res.evaluation.guardianApprovalRequired).toBe(false);
     expect(res.proof?.status).toBe("RUNTIME_CONFIRMED");
     expect(res.proof?.simulated).toBe(true);
@@ -121,7 +121,7 @@ describe("isolated runtime execute adapter (mock KEYS API)", () => {
     expect(first.evaluation.reasonCode).toBe("EXECUTION_UNCONFIRMED");
 
     const address = mock.server.address() as AddressInfo;
-    configureKeysBackend({
+    configureCrescoBackend({
       url: `http://127.0.0.1:${address.port}`,
       execution: "runtime",
       timeoutMs: 2000,
@@ -150,7 +150,7 @@ describe("isolated runtime execute adapter (mock KEYS API)", () => {
   });
 
   it("an unreachable runtime is UNKNOWN", async () => {
-    configureKeysBackend({
+    configureCrescoBackend({
       url: "http://127.0.0.1:1",
       execution: "runtime",
       timeoutMs: 500,
@@ -200,7 +200,7 @@ describe("Family Money lane uses the configured devnet-test runtime", () => {
 });
 
 describe("demo mode is unchanged without runtime config", () => {
-  beforeAll(() => configureKeysBackend(null));
+  beforeAll(() => configureCrescoBackend(null));
 
   it("labels the proof DEMO_NOT_EXECUTED", async () => {
     const res = await moneyExecution.execute(familyInput(5, "intent-demo"));
