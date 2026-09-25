@@ -1,22 +1,22 @@
-# KEYS — Local On-Chain Pyth Bounded-Autonomy Proof
+# CRESCO — Local On-Chain Pyth Bounded-Autonomy Proof
 
 Date: 2026-09-24  
 Network: local Solana validator with cloned canonical Pyth Lazer verifier/state  
 Workflow: `solana-authority-proof`  
-Run: https://github.com/Faadil1/keys/actions/runs/35956618933  
+Run: https://github.com/Faadil1/cresco/actions/runs/35956618933  
 Result: **PASS — 12 passing**
 
 ## What this proof establishes
 
-KEYS now verifies authenticated Pyth Pro/Lazer market evidence **inside the Solana capital-execution path** on a local validator.
+CRESCO now verifies authenticated Pyth Pro/Lazer market evidence **inside the Solana capital-execution path** on a local validator.
 
 The transaction contains:
 
 1. a Pyth-signed Solana-format TSLA market message;
 2. a preceding Ed25519 verification instruction;
-3. the KEYS `execute_within_mandate_with_pyth` instruction carrying the exact signed message bytes;
-4. a CPI from KEYS into the canonical Pyth Lazer verifier;
-5. KEYS parsing the already-verified payload and applying Mandate policy before capital can move.
+3. the CRESCO `execute_within_mandate_with_pyth` instruction carrying the exact signed message bytes;
+4. a CPI from CRESCO into the canonical Pyth Lazer verifier;
+5. CRESCO parsing the already-verified payload and applying Mandate policy before capital can move.
 
 The proof shows all three required market-evidence roles:
 
@@ -49,12 +49,12 @@ PROOF pyth_market_condition=REFUSE verified_price=378.21999999999997 max_price_m
 
 ## Architecture detail
 
-The KEYS SBF program intentionally does **not** embed the full Pyth off-chain protocol SDK.
+The CRESCO SBF program intentionally does **not** embed the full Pyth off-chain protocol SDK.
 
 Instead:
 
 - cryptographic signer verification is delegated to the canonical Pyth Lazer Solana program;
-- KEYS carries a small parser for only the signed properties it explicitly requests:
+- CRESCO carries a small parser for only the signed properties it explicitly requests:
   - price;
   - exponent;
   - confidence;
@@ -64,7 +64,7 @@ Instead:
 - freshness and confidence are then checked against the active Mandate;
 - price is converted to micro-USD for deterministic integer notional checks.
 
-This keeps the verifier load-bearing without unnecessarily inflating the KEYS program binary.
+This keeps the verifier load-bearing without unnecessarily inflating the CRESCO program binary.
 
 ## Truth boundary
 
