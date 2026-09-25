@@ -13,10 +13,12 @@ jobs:
     timeout-minutes: 15
     env:
       DEVNET_PAYER: "FuKsZH234Zcy11rXPHWwiPwyuhLjth7brBVsd5BD5Nzk"
-      TARGET_LAMPORTS: "2500000000"
+      TARGET_LAMPORTS: "8750000000"
       DEVNET_KEYPAIR_JSON: ${{ secrets.DEVNET_KEYPAIR_JSON }}
     steps:
       - name: Request only the required Devnet shortfall from provider faucet
+        # Current canonical program upgrade needs a temporary deploy buffer. The
+        # target is intentionally just above the measured 8.691 SOL requirement.
         shell: bash
         run: |
           set -euo pipefail
