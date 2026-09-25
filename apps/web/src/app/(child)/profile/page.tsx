@@ -7,7 +7,7 @@ import { Avatar, Card, IconCircle, PageHeader } from "@/components/ui/primitives
 import { formatAmount } from "@/domain/format";
 import { GOALS } from "@/mocks/family";
 import { useStore } from "@/state/store";
-import { clearBackendSessionToken } from "@/services/keys-backend";
+import { clearBackendSessionToken } from "@/services/cresco-backend";
 
 export default function ProfilePage() {
   const router = useRouter();
