@@ -1,4 +1,4 @@
-# KEYS — Hosted Cloudflare AAPL HTTP-to-Solana Proof
+# CRESCO — Hosted Cloudflare AAPL HTTP-to-Solana Proof
 
 Date: 2026-09-24  
 Status: **PASS — PUBLIC HOSTED BACKEND PROVEN**
@@ -19,7 +19,7 @@ Workflow:
 
 Run:
 
-https://github.com/Faadil1/keys/actions/runs/36049479465
+https://github.com/Faadil1/cresco/actions/runs/36049479465
 
 Result:
 
@@ -117,20 +117,20 @@ Cloudflare Worker
   ↓
 authenticated Solana Devnet RPC
   ↓
-KEYS stable Mandate
+CRESCO stable Mandate
   ↓
 live signed Pyth AAPL evidence
   ↓
 Pyth Lazer verification
   ↓
-KEYS program
+CRESCO program
   ↓
 confirmed Solana devnet transaction
 ```
 
 ## Truth boundary
 
-This is a public hosted proof of the KEYS execution engine.
+This is a public hosted proof of the CRESCO execution engine.
 
 It is still:
 
@@ -144,7 +144,7 @@ It is still:
 
 Canonical sentence:
 
-> The public KEYS Cloudflare backend enforces bounded demo-token capital actions on Solana devnet using live signed Pyth AAPL market truth.
+> The public CRESCO Cloudflare backend enforces bounded demo-token capital actions on Solana devnet using live signed Pyth AAPL market truth.
 
 Authority invariant:
 
