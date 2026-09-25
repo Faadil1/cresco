@@ -1,8 +1,8 @@
 {
-  "name": "keys-stocklana",
+  "name": "cresco-stocklana",
   "private": true,
   "version": "0.2.0",
-  "description": "KEYS — bounded autonomy for tokenized-stock family capital.",
+  "description": "CRESCO: bounded autonomy for family capital on Solana.",
   "scripts": {
     "test": "npm run quality:gate && node --test test/*.test.mjs && node --check scripts/dev-api.mjs",
     "test:anchor": "mocha --timeout 120000 tests/anchor-authority-proof.cjs",
