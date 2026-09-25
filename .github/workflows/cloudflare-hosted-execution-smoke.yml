@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
-      KEYS_API_URL: https://keys-api-stocklana.faadil-casecraft.workers.dev
+      CRESCO_API_URL: https://keys-api-stocklana.faadil-casecraft.workers.dev
 
     steps:
       - uses: actions/checkout@v4
@@ -21,7 +21,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error "$KEYS_API_URL/" | tee /tmp/health.json
+          curl --fail --silent --show-error "$CRESCO_API_URL/" | tee /tmp/health.json
           node -e '
             const fs = require("fs");
             const x = JSON.parse(fs.readFileSync("/tmp/health.json","utf8"));
@@ -37,7 +37,7 @@ jobs:
         run: |
           set -euo pipefail
           for attempt in $(seq 1 24); do
-            status=$(curl --silent --show-error --output /tmp/markets.json --write-out '%{http_code}'               "$KEYS_API_URL/api/v0.2/market/discovery" || true)
+            status=$(curl --silent --show-error --output /tmp/markets.json --write-out '%{http_code}'               "$CRESCO_API_URL/api/v0.2/market/discovery" || true)
             if [ "$status" = "200" ] && node -e '
               const fs = require("fs");
               const x = JSON.parse(fs.readFileSync("/tmp/markets.json","utf8"));
@@ -78,7 +78,7 @@ jobs:
         run: |
           set -euo pipefail
           for attempt in $(seq 1 24); do
-            status=$(curl --silent --show-error --output /tmp/tessera.json --write-out '%{http_code}'               "$KEYS_API_URL/api/v0.2/integrations/tessera" || true)
+            status=$(curl --silent --show-error --output /tmp/tessera.json --write-out '%{http_code}'               "$CRESCO_API_URL/api/v0.2/integrations/tessera" || true)
             if [ "$status" = "200" ] && node -e '
               const fs = require("fs");
               const x = JSON.parse(fs.readFileSync("/tmp/tessera.json","utf8"));
@@ -94,7 +94,7 @@ jobs:
                   a.representation?.kind === "LOAN_PARTICIPATION_RIGHT" &&
                   a.representation?.directEquityOwnership === false &&
                   a.eligibility?.executionEligible === false &&
-                  a.keysPolicy?.authorityEffect === "NONE"
+                  a.crescoPolicy?.authorityEffect === "NONE"
                 );
               process.exit(ok ? 0 : 1);
             '; then
@@ -118,7 +118,7 @@ jobs:
               -X POST \
               -H "content-type: application/json" \
               --data '{"role":"child","displayName":"Hosted Smoke Child"}' \
-              "$KEYS_API_URL/api/v0.2/auth/demo-session" \
+              "$CRESCO_API_URL/api/v0.2/auth/demo-session" \
               > /tmp/child-session.json
 
             if node -e '
@@ -150,7 +150,7 @@ jobs:
             -X POST \
             -H "content-type: application/json" \
             --data '{"role":"guardian","displayName":"Hosted Smoke Guardian"}' \
-            "$KEYS_API_URL/api/v0.2/auth/demo-session" \
+            "$CRESCO_API_URL/api/v0.2/auth/demo-session" \
             > /tmp/guardian-session.json
           node -e '
             const fs = require("fs");
@@ -166,15 +166,15 @@ jobs:
           set -euo pipefail
           curl --fail --silent --show-error \
             -H "authorization: Bearer $CHILD_TOKEN" \
-            "$KEYS_API_URL/api/v0.2/family/state" \
+            "$CRESCO_API_URL/api/v0.2/family/state" \
             | tee /tmp/family.json
           curl --fail --silent --show-error \
-            "$KEYS_API_URL/api/v0.2/market/quotes?symbols=AAPL,NVDA" \
+            "$CRESCO_API_URL/api/v0.2/market/quotes?symbols=AAPL,NVDA" \
             | tee /tmp/quotes.json
 
           for attempt in $(seq 1 24); do
             curl --fail --silent --show-error \
-              "$KEYS_API_URL/api/v0.2/market/series?symbol=AAPL&period=1M" \
+              "$CRESCO_API_URL/api/v0.2/market/series?symbol=AAPL&period=1M" \
               > /tmp/history.json
             if node -e '
               const fs = require("fs");
@@ -218,7 +218,7 @@ jobs:
             -H "content-type: application/json" \
             -H "authorization: Bearer $GUARDIAN_TOKEN" \
             --data '{}' \
-            "$KEYS_API_URL/api/v0.2/proofs/concurrency" \
+            "$CRESCO_API_URL/api/v0.2/proofs/concurrency" \
             | tee /tmp/concurrency.json
           node -e '
             const fs = require("fs");
@@ -245,7 +245,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error "$KEYS_API_URL/api/v0.2/demo/runtime" | tee /tmp/runtime.json
+          curl --fail --silent --show-error "$CRESCO_API_URL/api/v0.2/demo/runtime" | tee /tmp/runtime.json
           node - <<'NODE'
           const fs = require("fs");
           const x = JSON.parse(fs.readFileSync("/tmp/runtime.json","utf8"));
@@ -287,7 +287,7 @@ jobs:
             -H "authorization: Bearer $CHILD_TOKEN" \
             -H "idempotency-key: ${IDEMPOTENCY_KEY}" \
             --data-binary @/tmp/request.json \
-            "$KEYS_API_URL/api/v0.2/actions/execute" \
+            "$CRESCO_API_URL/api/v0.2/actions/execute" \
             | tee /tmp/execute.json
 
           node - <<'NODE'
