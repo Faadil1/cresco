@@ -1,4 +1,4 @@
-# KEYS / Cresco Product Requirements
+# CRESCO Product Requirements
 
 Version: 0.2
 Status: current
@@ -63,10 +63,10 @@ Canonical proof:
 1. User sees My Key in plain language.
 2. Contextual learning and Practice are available without changing authority.
 3. User performs an in-bounds action.
-4. KEYS evaluates standing authority and required market evidence.
+4. CRESCO evaluates standing authority and required market evidence.
 5. In-bounds action ALLOWs without guardian approval.
 6. User attempts an out-of-bounds action.
-7. KEYS REFUSEs in the execution path.
+7. CRESCO REFUSEs in the execution path.
 8. User may adjust, practice, or create a private boundary request.
 9. Guardian chooses Not this time, Allow once, or Widen the Key.
 10. Exact one-time permission can execute once without changing the standing Key.
@@ -108,7 +108,7 @@ Learning can improve understanding. It cannot mint permission.
 
 ## Representation literacy
 
-Cresco separates four questions:
+CRESCO separates four questions:
 
 1. What company or asset is this?
 2. What does this token or representation legally/economically represent?
