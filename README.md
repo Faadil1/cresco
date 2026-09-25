@@ -23,7 +23,7 @@ A conventional backend could reproduce much of the interface. The reason KEYS be
 
 This also complements Solana's native delegation/allowance primitives rather than pretending they do not exist. A native allowance delegates spend capacity. KEYS adds a human authority grammar around standing rules, boundary events and non-precedent exceptions.
 
-Current deployed ALLOW_ONCE truth: the canonical Devnet program already proves request/mint/Mandate-nonce-bound single use and on-chain replay refusal. A stronger exact-action hardening is implemented and passes source/local tests: the Solana path recomputes the Pyth-derived USD notional and rejects a materially changed amount, allowing only unavoidable one-base-unit rounding. That strengthened binary is **not yet claimed as deployed on the canonical Devnet program**; the upgrade is currently blocked only by temporary Devnet buffer funding. Until the upgrade proof passes, submission claims must distinguish the deployed single-use proof from the exact-notional hardening.
+Current deployed ALLOW_ONCE truth: the strengthened canonical Devnet program now proves request/mint/Mandate-nonce-bound single use **and** exact-notional action binding in the capital path. In canonical run `36150024852`, a materially altered $11 action against a guardian-approved $12 request refused with `AllowanceActionMismatch`; the approved $12 action then executed successfully; the standing Mandate stayed v7 → v7 (`standingAuthorityChanged=false`); and replay refused with `AllowanceAlreadyUsed`. The Solana path recomputes the Pyth-derived USD notional and allows only unavoidable one-base-unit token rounding.
 
 
 ## Product primitive

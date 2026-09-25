@@ -256,10 +256,10 @@ next_work:
   support_owner: Benita
   sequence:
     - "Preserve the passing Devnet ALLOW_ONCE proof, hosted Pyth-history proof and multi-asset Durable Object concurrency proof as judge evidence."
-    - "Record the canonical Family demo around the currently deployed ALLOW_ONCE proof: in-bound ALLOW -> boundary REFUSE -> guardian one-time approval -> approved request ALLOW -> replay REFUSE AllowanceAlreadyUsed. Add the materially-changed-action REFUSE only after the canonical Devnet upgrade proof passes."
+    - "Record the canonical Family demo around the proven exact-action ALLOW_ONCE flow: in-bound ALLOW -> boundary REFUSE -> guardian approves $12 once -> altered $11 REFUSE AllowanceActionMismatch -> approved $12 ALLOW -> standing Key unchanged -> replay REFUSE AllowanceAlreadyUsed."
     - "Prepare submission copy and Q&A using only verified claims."
     - "Do not reopen production auth/KYC, embedded wallets, fiat rails, custody/mainnet or all-symbol history before submission unless required by judging."
-    - "Exact-notional ALLOW_ONCE hardening is implemented and locally proven, but canonical Devnet deployment is blocked by external Devnet buffer funding; do not overclaim it until rerun is green."
+    - "Exact-notional ALLOW_ONCE hardening is canonical Devnet deployed and proven in run 36150024852. Safe claim: materially altered amount refuses on-chain before allowance consumption; approved amount executes once; standing Key does not change; replay refuses."
 
 key_files:
   - state/CURRENT.yaml
