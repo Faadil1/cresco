@@ -52,6 +52,42 @@ Makes the guardian relationship feel like a shared agreement rather than remote 
 
 The guardian appears only when the young person reaches the boundary.
 
+### Financial Passport
+
+Treats the Key as a personal authority credential rather than a control panel.
+
+Versions, scope, one-time permissions and standing room should feel legible enough to carry, inspect and discuss.
+
+### Market Atlas
+
+Treats markets as navigable territory. Practice can travel widely; Money access is an explicit region rather than a generic buy button.
+
+Pyth is environmental truth in the map, not a sponsor dashboard.
+
+### Family Capital Instrument
+
+A calmer, premium editorial direction. The Key reads as a compact family-capital agreement: standing authority, precise exceptions, explicit growth and verifiable evidence without crypto chrome.
+
+## Functional parity requirement
+
+No direction may be selected until all six can carry the same Cresco scenario and the same proof burden.
+
+Shared test sequence:
+`inside $5 ALLOW → boundary $12 REFUSE → exact $12 request → guardian decision → tampered $11 REFUSE → exact $12 ALLOW → one-time USED → replay REFUSE → standing Key unchanged`.
+
+`Widen the Key` is the explicit alternative that creates `Key vN+1`.
+
+Every direction must also surface:
+- Practice as virtual money, visually distinct from Money;
+- Pyth market truth;
+- representation literacy (Tessera / PreStocks as Learn/Practice context);
+- contextual refusal explanation;
+- boundary-only Key history rather than a surveillance feed;
+- canonical Solana proof as a secondary evidence layer;
+- mobile behavior and reduced-motion support.
+
+The sandbox state is shared across directions so switching visual language never resets the product truth.
+
 ## Data / interaction boundary
 
 Live external data remains read-only through Pages Functions, while product interactions are writable **inside an isolated browser sandbox**.
