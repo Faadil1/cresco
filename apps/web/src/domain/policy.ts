@@ -184,6 +184,17 @@ export function explainEvaluation(
         title: "Your limits just changed.",
         body: "This action was prepared under older limits. Check the new ones and try again.",
       };
+    case "ALLOW_ONCE_ACTION_MISMATCH":
+    case "AllowanceActionMismatch":
+      return {
+        title: "This isn't the action that was approved.",
+        body: "The one-time permission only covers the exact request your parent or guardian approved. Use that request, or ask again for this one.",
+      };
+    case "AllowanceAlreadyUsed":
+      return {
+        title: "That one-time yes has already been used.",
+        body: "Your standing Key never changed. This action is back at the normal boundary.",
+      };
     case "MARKET_EVIDENCE_UNAVAILABLE":
     case "MARKET_EVIDENCE_STALE":
     case "MARKET_CONFIDENCE_TOO_WIDE":
