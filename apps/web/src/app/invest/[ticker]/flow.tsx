@@ -494,8 +494,8 @@ function Flow({ asset, mode, initialAmount }: { asset: MarketAsset; mode: Mode; 
 }
 
 const SOURCE_LABEL: Record<ActionEvaluation["source"], string> = {
-  "cresco-runtime": "KEYS runtime",
-  "keys-backend": "KEYS backend",
+  "cresco-runtime": "CRESCO runtime",
+  "keys-backend": "CRESCO backend",
   "local-preview": "local preview",
 };
 

@@ -73,7 +73,7 @@ afterAll(async () => {
   await Promise.all(servers.map((s) => new Promise((r) => s.server.close(r))));
 });
 
-describe("isolated runtime execute adapter (mock KEYS API)", () => {
+describe("isolated runtime execute adapter (mock CRESCO API)", () => {
   it("executes an in-bounds action and returns a simulated, non-linkable proof", async () => {
     const mock = await withScenario("confirm");
     const res = await executeAction(runtimeRequest(5, "intent-confirm-1"));
