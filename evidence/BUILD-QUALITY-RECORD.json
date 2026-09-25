@@ -29,6 +29,18 @@
         "url": "https://github.com/Faadil1/keys/actions/runs/36150024852",
         "evidencePath": "evidence/solana/ALLOW-ONCE-EXACT-ACTION-CANONICAL-PROOF-2026-09-25.md"
       }
+    },
+    {
+      "id": "deterministic-demo-input-contract",
+      "signal": "The public repository cleanup introduced a deterministic v0.2 demo that should exercise the same policy engine as the tests.",
+      "negativeEvent": "CI run 36172689653 returned REFUSE / INVALID_AMOUNT for the intended $5 in-bounds demo because the script supplied notional without the required amount field.",
+      "impact": "The test workflow failed and the cleaned repository could not be treated as promotion-ready.",
+      "lesson": "A deterministic demo must exercise the exact engine input contract, not merely print the intended product story.",
+      "mitigation": "Pass both amount and notional in the v0.2 action shape and keep npm run demo as a hard CI step.",
+      "proof": {
+        "url": "https://github.com/Faadil1/keys/actions/runs/36172689653",
+        "evidencePath": "evidence/runtime/REAL-FAILURE-RECORD.md"
+      }
     }
   ]
 }
