@@ -27,7 +27,7 @@ import {
   DEMO_PROFILE,
 } from "@/mocks/family";
 import { setDemoFlags, type DemoFlags } from "@/services";
-import { fetchFamilyState, keysBackendConfigured } from "@/services/keys-backend";
+import { fetchFamilyState, crescoBackendConfigured } from "@/services/cresco-backend";
 
 export type ActivityItem = {
   id: string;
@@ -333,7 +333,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [state, hydrated]);
 
   useEffect(() => {
-    if (!hydrated || !keysBackendConfigured()) return;
+    if (!hydrated || !crescoBackendConfigured()) return;
 
     let cancelled = false;
     const sync = async () => {
