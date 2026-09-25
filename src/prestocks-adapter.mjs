@@ -66,12 +66,12 @@ export function normalizePreStock(row, {
       executionEligible,
       reasonCode: executionEligible ? null : 'ELIGIBILITY_NOT_VERIFIED'
     },
-    keysPolicy: {
+    crescoPolicy: {
       practiceAvailable: true,
       executionEligible,
       authorityEffect: 'NONE',
       rule:
-        'PreStocks representation data may inform Practice and asset understanding; it never creates KEYS authority.'
+        'PreStocks representation data may inform Practice and asset understanding; it never creates CRESCO authority.'
     }
   };
 }
