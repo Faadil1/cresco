@@ -3,7 +3,7 @@
 Status: **Implemented in `apps/web`**. This is the frontend source of truth (the Hackathon OS `DESIGN.md` for the consumer app).
 Visual reference: the approved 10-screen mockup board. Product spec: `CRESCO-FRONTEND-DESIGN-SPEC.md`. Backend truth: `docs/TRUTH-BOUNDARY.md`.
 
-Cresco is the consumer brand. KEYS is the bounded-autonomy protocol and backend underneath it; that naming is unchanged.
+Cresco is the consumer brand. CRESCO is the bounded-autonomy protocol and backend underneath it; that naming is unchanged.
 
 ---
 
@@ -214,9 +214,9 @@ Blockchain vocabulary appears only in secondary metadata ("AAPLx on Solana") and
 
 | Claim | Visible evidence |
 |---|---|
-| Prices | `DataStatusTag`: **Sample prices** (mock), **Live · Pyth** only when the KEYS backend returns FRESH evidence (TSLA only today) |
+| Prices | `DataStatusTag`: **Sample prices** (mock), **Live · Pyth** only when the CRESCO backend returns FRESH evidence (TSLA only today) |
 | Money balance | **Demo money** tag on every Money balance |
-| Money action | Success says demo; *View transaction details* shows `On-chain: Not sent. No transaction exists for this action.` and whether the decision came from the KEYS backend (draft) or the local preview |
+| Money action | Success says demo; *View transaction details* shows `On-chain: Not sent. No transaction exists for this action.` and whether the decision came from the CRESCO backend (draft) or the local preview |
 | Funding | "Demo mode: no bank or card is connected, and no payment is taken." |
 | Sign-in | "Demo sign-in: Cresco doesn't create an account…" |
 | Learning vs authority | Stated on Learn, Wins, My limits, lesson completion |
