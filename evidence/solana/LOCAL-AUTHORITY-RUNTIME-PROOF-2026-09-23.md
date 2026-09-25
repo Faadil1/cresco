@@ -1,11 +1,11 @@
-# KEYS — Local Solana Authority Runtime Proof
+# CRESCO — Local Solana Authority Runtime Proof
 
 Date: 2026-09-23  
 Status: **PASS — LOCAL VALIDATOR**
 
 Canonical workflow run:
 
-https://github.com/Faadil1/keys/actions/runs/35890368959
+https://github.com/Faadil1/cresco/actions/runs/35890368959
 
 Workflow:
 
@@ -146,7 +146,7 @@ Result:
 
 ## What this proves
 
-This is executable evidence for the KEYS authority primitive:
+This is executable evidence for the CRESCO authority primitive:
 
 **Evidence can make a mandate eligible for review, but evidence does not itself grant authority. An authorized signer is required for the transition, and previous review material becomes stale after state advancement.**
 
@@ -168,7 +168,7 @@ Those remain separate gates.
 
 A later repository state re-ran the complete local authority proof successfully:
 
-https://github.com/Faadil1/keys/actions/runs/35894538107
+https://github.com/Faadil1/cresco/actions/runs/35894538107
 
 `solana-authority-proof #17`
 
@@ -200,7 +200,7 @@ This confirms the authority primitive remained executable after subsequent backe
 
 The latest current-repository authority proof completed successfully:
 
-https://github.com/Faadil1/keys/actions/runs/35895608533
+https://github.com/Faadil1/cresco/actions/runs/35895608533
 
 `solana-authority-proof #18`
 
