@@ -1,9 +1,9 @@
-# KEYS — Canonical Devnet On-Chain Pyth Bounded-Autonomy Proof
+# CRESCO — Canonical Devnet On-Chain Pyth Bounded-Autonomy Proof
 
 Date: 2026-09-24  
 Network: Solana devnet  
 Workflow: `solana-devnet-authority-proof`  
-Run: https://github.com/Faadil1/keys/actions/runs/35959137364  
+Run: https://github.com/Faadil1/cresco/actions/runs/35959137364  
 Result: **PASS — 12 passing**
 
 ## Canonical program
@@ -26,7 +26,7 @@ Upgrade signature:
 
 ## What is proven
 
-The canonical devnet KEYS program now proves the full v0.2 bounded-autonomy path with **live authenticated Pyth Pro/Lazer TSLA market evidence verified inside the Solana capital path**.
+The canonical devnet CRESCO program now proves the full v0.2 bounded-autonomy path with **live authenticated Pyth Pro/Lazer TSLA market evidence verified inside the Solana capital path**.
 
 The runtime proves:
 
@@ -37,11 +37,11 @@ The runtime proves:
 5. Program-controlled demo-token vault.
 6. AssetRule / permission boundary.
 7. In-bounds action succeeds without guardian approval.
-8. Out-of-bounds action is refused by the KEYS program.
+8. Out-of-bounds action is refused by the CRESCO program.
 9. Explicit human widening advances version/nonce.
 10. Stale execution material refuses.
 11. The same larger action succeeds after widening.
-12. A Pyth-signed Solana-format message is verified through the canonical Pyth Lazer verifier inside the KEYS execution path.
+12. A Pyth-signed Solana-format message is verified through the canonical Pyth Lazer verifier inside the CRESCO execution path.
 13. A Pyth-derived USD-notional boundary allows one unit and refuses two units with `PythNotionalExceeded`.
 14. A precommitted max-price condition refuses with `MarketConditionInvalidated`.
 15. Market evidence has no authority-widening effect.
@@ -61,7 +61,7 @@ Observed live price during canonical devnet proof:
 
 approximately `378.5675 USD`.
 
-The exact signed Pyth message was included in the Solana transaction and verified by CPI into the canonical Pyth Lazer verifier before KEYS parsed the signed payload and enforced the Mandate.
+The exact signed Pyth message was included in the Solana transaction and verified by CPI into the canonical Pyth Lazer verifier before CRESCO parsed the signed payload and enforced the Mandate.
 
 ## Key proof markers
 
@@ -124,7 +124,7 @@ Pause:
 
 ## Architecture truth
 
-KEYS does not trust a browser-supplied price.
+CRESCO does not trust a browser-supplied price.
 
 The capital path verifies a Pyth-signed Solana message through the canonical Pyth Lazer verifier, parses only the required signed properties, then applies:
 
@@ -141,7 +141,7 @@ Pyth can cause an action to fail. It cannot widen the Mandate.
 
 ## Truth boundary
 
-The asset moved by KEYS is still an explicitly labeled **demo/mock SPL token**.
+The asset moved by CRESCO is still an explicitly labeled **demo/mock SPL token**.
 
 This proof does **not** claim:
 
@@ -154,4 +154,4 @@ This proof does **not** claim:
 
 The correct claim is:
 
-> **On the canonical Solana devnet program, KEYS now cryptographically enforces bounded capital actions using live Pyth market truth while preserving human-only authority widening.**
+> **On the canonical Solana devnet program, CRESCO now cryptographically enforces bounded capital actions using live Pyth market truth while preserving human-only authority widening.**
