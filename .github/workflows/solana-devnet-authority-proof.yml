@@ -170,6 +170,28 @@ jobs:
           BALANCE=${BALANCE:-0}
           echo "PROOF devnet_balance_after_buffer_reclaim_lamports=$BALANCE"
 
+          # Agave loader-v3 requires at least 10,240 additional ProgramData
+          # bytes per explicit extension. Pre-extend when the freshly built
+          # binary is larger so `solana program deploy` does not request a
+          # too-small exact delta and fail before the upgrade.
+          CURRENT_PROGRAM_DATA_LEN=$(printf '%s\n' "$PROGRAM_SHOW_BEFORE" | awk -F': ' '/^Data Length:/ {print $2; exit}' | awk '{print $1}')
+          NEW_PROGRAM_LEN=$(stat -c%s target/deploy/keys.so)
+          CURRENT_PROGRAM_DATA_LEN=${CURRENT_PROGRAM_DATA_LEN:-0}
+          echo "PROOF devnet_program_data_len_current=$CURRENT_PROGRAM_DATA_LEN binary_len=$NEW_PROGRAM_LEN"
+
+          if [ "$NEW_PROGRAM_LEN" -gt "$CURRENT_PROGRAM_DATA_LEN" ]; then
+            REQUIRED_EXTENSION=$((NEW_PROGRAM_LEN - CURRENT_PROGRAM_DATA_LEN))
+            EXTEND_BY=$REQUIRED_EXTENSION
+            if [ "$EXTEND_BY" -lt 10240 ]; then
+              EXTEND_BY=10240
+            fi
+            echo "PROOF devnet_manual_program_extend required=$REQUIRED_EXTENSION extend_by=$EXTEND_BY"
+            solana program extend "$PROGRAM_ID" "$EXTEND_BY" --url https://api.devnet.solana.com
+            echo "PROOF devnet_manual_program_extend=PASS"
+            PROGRAM_SHOW_BEFORE=$(solana program show "$PROGRAM_ID" --url https://api.devnet.solana.com)
+            echo "$PROGRAM_SHOW_BEFORE"
+          fi
+
           # Try the upgrade with the balance already on the canonical authority
           # before asking any faucet for more Devnet SOL. A smaller SBF binary
           # can therefore deploy immediately without an arbitrary balance gate.
