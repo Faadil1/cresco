@@ -44,7 +44,7 @@ let override: Partial<CrescoConfig> | null = null;
 
 type BackendRole = "child" | "guardian";
 
-const BACKEND_SESSION_KEYS: Record<BackendRole, string> = {
+const BACKEND_SESSION_CRESCO: Record<BackendRole, string> = {
   child: "cresco-session-child-v1",
   guardian: "cresco-session-guardian-v1",
 };
@@ -56,12 +56,12 @@ function backendSessionToken(role?: BackendRole | null) {
     const resolved =
       role ??
       (window.localStorage.getItem(BACKEND_ACTIVE_ROLE_KEY) as BackendRole | null);
-    if (resolved && BACKEND_SESSION_KEYS[resolved]) {
-      return window.localStorage.getItem(BACKEND_SESSION_KEYS[resolved]);
+    if (resolved && BACKEND_SESSION_CRESCO[resolved]) {
+      return window.localStorage.getItem(BACKEND_SESSION_CRESCO[resolved]);
     }
     return (
-      window.localStorage.getItem(BACKEND_SESSION_KEYS.child) ??
-      window.localStorage.getItem(BACKEND_SESSION_KEYS.guardian)
+      window.localStorage.getItem(BACKEND_SESSION_CRESCO.child) ??
+      window.localStorage.getItem(BACKEND_SESSION_CRESCO.guardian)
     );
   } catch {
     return null;
@@ -71,7 +71,7 @@ function backendSessionToken(role?: BackendRole | null) {
 function saveBackendSessionToken(token: string, role: BackendRole) {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(BACKEND_SESSION_KEYS[role], token);
+    window.localStorage.setItem(BACKEND_SESSION_CRESCO[role], token);
     window.localStorage.setItem(BACKEND_ACTIVE_ROLE_KEY, role);
   } catch {
     // Storage may be unavailable; the current call still completed safely.
@@ -96,8 +96,8 @@ function requiredRoleForRequest(path: string, method = "GET"): BackendRole | nul
 export function clearBackendSessionToken() {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.removeItem(BACKEND_SESSION_KEYS.child);
-    window.localStorage.removeItem(BACKEND_SESSION_KEYS.guardian);
+    window.localStorage.removeItem(BACKEND_SESSION_CRESCO.child);
+    window.localStorage.removeItem(BACKEND_SESSION_CRESCO.guardian);
     window.localStorage.removeItem(BACKEND_ACTIVE_ROLE_KEY);
     // Clean up the pre-role-split key if it exists from an older deployment.
     window.localStorage.removeItem("cresco-session-v1");
@@ -111,7 +111,7 @@ export function configureCrescoBackend(next: Partial<CrescoConfig> | null) {
   override = next;
 }
 
-export function crescoConfig(): KeysConfig {
+export function crescoConfig(): CrescoConfig {
   const productionFallback =
     process.env.NODE_ENV === "production" ? PUBLIC_HOSTED_CRESCO_API : "";
 
@@ -165,7 +165,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     },
     signal: AbortSignal.timeout(crescoConfig().timeoutMs),
   });
-  if (!res.ok) throw new Error(`KEYS backend ${path} responded ${res.status}`);
+  if (!res.ok) throw new Error(`CRESCO backend ${path} responded ${res.status}`);
   return (await res.json()) as T;
 }
 
