@@ -19,7 +19,7 @@ export const LEARNING_SOURCES = {
   },
   stocks: {
     organization: "Investor.gov · U.S. SEC",
-    title: "Stocks — FAQs",
+    title: "Stocks: FAQs",
     url: "https://www.investor.gov/introduction-investing/investing-basics/investment-products/stocks",
     verifiedAt: VERIFIED_AT,
   },
@@ -126,7 +126,7 @@ export const LESSONS: Lesson[] = [
         source: LEARNING_SOURCES.tokenizedSecurities,
         apply: { label: "Compare representations", href: "/explore", body: "Use Explore to compare conventional company identity with tokenized representation labels. Live sponsor representations stay Learn/Practice unless execution eligibility is actually proven." },
       },
-      { kind: "quiz", title: "Same company, same rights?", illustration: "shares", prompt: "Two tokens both reference the same private company, but they were created under different structures.", question: "Can you assume they give holders exactly the same rights?", options: [{ id: "yes", label: "Yes — same company means same rights" }, { id: "no", label: "No — check each token's structure and rights" }, { id: "price", label: "Yes — if their prices are similar" }], correctId: "no", correctExplanation: "Correct. The underlying company name is not enough. The representation and holder rights must be checked.", retryHint: "Think about what the SEC says can vary between tokenized-security models." },
+      { kind: "quiz", title: "Same company, same rights?", illustration: "shares", prompt: "Two tokens both reference the same private company, but they were created under different structures.", question: "Can you assume they give holders exactly the same rights?", options: [{ id: "yes", label: "Yes, the company name is enough" }, { id: "no", label: "No. Check each token's structure and rights" }, { id: "price", label: "Yes, if their prices are similar" }], correctId: "no", correctExplanation: "Correct. The underlying company name is not enough. The representation and holder rights must be checked.", retryHint: "Think about what the SEC says can vary between tokenized-security models." },
     ],
   },
   {
@@ -139,7 +139,7 @@ export const LESSONS: Lesson[] = [
         source: LEARNING_SOURCES.investingBasics,
         apply: { label: "Check a market snapshot", href: "/explore/AAPL", body: "Open Apple and look for the data label. If Pyth evidence is fresh it is marked live; otherwise Cresco keeps sample data clearly labeled instead of pretending it is live." },
       },
-      { kind: "quiz", title: "Price is not a promise", illustration: "chart", prompt: "A company reports strong results and many investors become more willing to buy its shares.", question: "What can you conclude with certainty?", options: [{ id: "rise", label: "The price must rise tomorrow" }, { id: "guarantee", label: "The stock is now guaranteed to be profitable" }, { id: "none", label: "Neither — markets can still move differently" }], correctId: "none", correctExplanation: "Right. New information can influence buyers and sellers, but it does not guarantee the next price move.", retryHint: "Markets reflect many people, expectations and new information. Is tomorrow's price ever guaranteed?" },
+      { kind: "quiz", title: "Price is not a promise", illustration: "chart", prompt: "A company reports strong results and many investors become more willing to buy its shares.", question: "What can you conclude with certainty?", options: [{ id: "rise", label: "The price must rise tomorrow" }, { id: "guarantee", label: "The stock is now guaranteed to be profitable" }, { id: "none", label: "Neither. Markets can still move differently" }], correctId: "none", correctExplanation: "Right. New information can influence buyers and sellers, but it does not guarantee the next price move.", retryHint: "Markets reflect many people, expectations and new information. Is tomorrow's price ever guaranteed?" },
     ],
   },
   {
@@ -152,7 +152,7 @@ export const LESSONS: Lesson[] = [
         source: LEARNING_SOURCES.risk,
         apply: { label: "Try it in Practice", href: "/explore", body: "Choose a company in Practice and test a small decision without real capital. Notice how changing the amount changes exposure, not your authority." },
       },
-      { kind: "quiz", title: "Risk check", illustration: "scale", prompt: "A stock has gone up quickly for several weeks.", question: "Does that remove the chance of losing money next?", options: [{ id: "yes", label: "Yes — the trend proves it is safe" }, { id: "no", label: "No — gains do not remove investment risk" }, { id: "xp", label: "Only if I finished the lesson" }], correctId: "no", correctExplanation: "Correct. Past gains and lesson completion do not make an investment risk-free.", retryHint: "Risk is about what can happen next, not a reward for past performance or learning." },
+      { kind: "quiz", title: "Risk check", illustration: "scale", prompt: "A stock has gone up quickly for several weeks.", question: "Does that remove the chance of losing money next?", options: [{ id: "yes", label: "Yes, the trend proves it is safe" }, { id: "no", label: "No. Gains do not remove investment risk" }, { id: "xp", label: "Only if I finished the lesson" }], correctId: "no", correctExplanation: "Correct. Past gains and lesson completion do not make an investment risk-free.", retryHint: "Risk is about what can happen next, not a reward for past performance or learning." },
     ],
   },
   {
@@ -165,7 +165,7 @@ export const LESSONS: Lesson[] = [
         source: LEARNING_SOURCES.diversification,
         apply: { label: "Inspect your Practice portfolio", href: "/portfolio", body: "Look at the weights of your holdings. Ask whether one company or one sector dominates instead of treating 'more tickers' as automatic diversification." },
       },
-      { kind: "quiz", title: "Diversified or just more tickers?", illustration: "basket", prompt: "A portfolio owns four different companies, but all four depend on the same narrow technology trend.", question: "Is 'four stocks' automatically well diversified?", options: [{ id: "yes", label: "Yes — four is always diversified" }, { id: "no", label: "No — concentration can still exist" }, { id: "profit", label: "Only if all four are profitable" }], correctId: "no", correctExplanation: "Exactly. Diversification is about spreading risk, not just counting tickers.", retryHint: "Ask whether the holdings could all be hurt by the same kind of event." },
+      { kind: "quiz", title: "Diversified or just more tickers?", illustration: "basket", prompt: "A portfolio owns four different companies, but all four depend on the same narrow technology trend.", question: "Is 'four stocks' automatically well diversified?", options: [{ id: "yes", label: "Yes, four is always diversified" }, { id: "no", label: "No. Concentration can still exist" }, { id: "profit", label: "Only if all four are profitable" }], correctId: "no", correctExplanation: "Exactly. Diversification is about spreading risk, not just counting tickers.", retryHint: "Ask whether the holdings could all be hurt by the same kind of event." },
     ],
   },
 ];
