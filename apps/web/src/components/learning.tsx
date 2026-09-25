@@ -115,7 +115,7 @@ export function ModuleRow({
         </p>
         <p className={cn("mt-0.5 text-[12.5px] font-semibold", current ? "text-white" : "text-ink-2")}>{module.subtitle}</p>
         <p className={cn("mt-0.5 text-[12.5px] font-extrabold", current ? "text-white" : "text-ink-3")}>
-          Learning only · no authority unlock
+          Learning only · does not change your Key
         </p>
       </div>
       {state === "complete" ? (
