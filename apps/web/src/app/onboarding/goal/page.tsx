@@ -22,7 +22,7 @@ export default function GoalStep() {
       total={4}
       back="/onboarding/about"
       title="What are you saving for?"
-      subtitle="Choose a goal to personalize your learning journey."
+      subtitle="Choose a goal so the lessons fit what you are saving for."
       footer={
         <ActionButton
           arrow
