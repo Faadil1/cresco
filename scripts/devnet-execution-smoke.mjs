@@ -11,7 +11,7 @@ if (!provider) {
 const state = await provider.getState();
 const proofRunKey =
   process.env.GITHUB_RUN_ID
-    ? `${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT ?? '1'}`
+    ? `${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT ?? '1'}-${Date.now()}`
     : String(Date.now());
 const idempotencyKey = `ci-smoke-${proofRunKey}`;
 
