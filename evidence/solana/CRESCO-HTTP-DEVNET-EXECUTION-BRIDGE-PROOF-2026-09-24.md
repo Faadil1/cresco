@@ -1,14 +1,14 @@
-# KEYS — Cresco HTTP → Solana Devnet Execution Bridge Proof
+# CRESCO — Cresco HTTP → Solana Devnet Execution Bridge Proof
 
 Date: 2026-09-24  
 Network: Solana devnet  
 Workflow: `devnet-execution-bridge`  
-Canonical successful run: https://github.com/Faadil1/keys/actions/runs/36008701813  
+Canonical successful run: https://github.com/Faadil1/cresco/actions/runs/36008701813  
 Result: **PASS**
 
 ## What this proof establishes
 
-The KEYS frontend/backend bridge now proves the following end-to-end demo path:
+The CRESCO frontend/backend bridge now proves the following end-to-end demo path:
 
 ```
 Cresco / HTTP client
@@ -19,9 +19,9 @@ server-held devnet demo signer
     ↓
 live signed Pyth TSLA message
     ↓
-KEYS execute_within_mandate_with_pyth
+CRESCO execute_within_mandate_with_pyth
     ↓
-canonical KEYS Solana devnet program
+canonical CRESCO Solana devnet program
     ↓
 confirmed transaction signature
 ```
@@ -169,7 +169,7 @@ The moved capital asset is an explicitly labeled demo/mock SPL token.
 
 The correct claim is:
 
-> **Cresco can now invoke the KEYS backend and receive a real confirmed Solana devnet transaction in which live signed Pyth market truth is verified inside the KEYS capital path.**
+> **Cresco can now invoke the CRESCO backend and receive a real confirmed Solana devnet transaction in which live signed Pyth market truth is verified inside the CRESCO capital path.**
 
 ## Product routing
 
