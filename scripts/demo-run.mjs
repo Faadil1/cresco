@@ -37,7 +37,7 @@ function evaluate(notional) {
   });
 }
 
-console.log('\nKEYS v0.2 deterministic product slice');
+console.log('\nCRESCO v0.2 deterministic product slice');
 
 const inside = evaluate(5);
 console.log('1) $5 inside Key v7');
@@ -70,7 +70,7 @@ console.log('   $11 -> REFUSE / AllowanceActionMismatch');
 console.log('   $12 -> ALLOW');
 console.log('   standing Key v7 -> v7');
 console.log('   replay -> REFUSE / AllowanceAlreadyUsed');
-console.log('   proof: https://github.com/Faadil1/keys/actions/runs/36150024852');
+console.log('   proof: https://github.com/Faadil1/cresco/actions/runs/36150024852');
 
 console.log('5) Truth boundary');
 console.log('   Solana Devnet + demo SPL token + live Pyth market truth');
