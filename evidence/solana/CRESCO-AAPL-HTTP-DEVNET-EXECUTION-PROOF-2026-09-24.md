@@ -1,13 +1,13 @@
-# KEYS — AAPL Pyth + Cresco HTTP-to-Solana Devnet Proof
+# CRESCO — AAPL Pyth + Cresco HTTP-to-Solana Devnet Proof
 
 Date: 2026-09-24  
 Status: **PASS — AAPL CURRENT PROOF LANE**
 
 ## Headline
 
-KEYS now proves the current Cresco technical proof lane with:
+CRESCO now proves the current Cresco technical proof lane with:
 
-`Cresco / KEYS API → live signed Pyth AAPL → KEYS Solana devnet program → CONFIRMED demo-token execution`
+`Cresco / CRESCO API → live signed Pyth AAPL → CRESCO Solana devnet program → CONFIRMED demo-token execution`
 
 This replaces TSLA as the **current** judge-facing proof asset.
 
@@ -31,7 +31,7 @@ Workflow:
 
 Run:
 
-https://github.com/Faadil1/keys/actions/runs/36035283447
+https://github.com/Faadil1/cresco/actions/runs/36035283447
 
 Observed:
 
@@ -65,7 +65,7 @@ Workflow:
 
 Run:
 
-https://github.com/Faadil1/keys/actions/runs/36034651466
+https://github.com/Faadil1/cresco/actions/runs/36034651466
 
 Result:
 
@@ -175,7 +175,7 @@ Apple UX
   ↓
 Pyth Equity.US.AAPL/USD
   ↓
-KEYS Mandate
+CRESCO Mandate
   ↓
 Solana devnet
   ↓
@@ -197,7 +197,7 @@ This proof establishes:
 - authenticated AAPL market evidence;
 - signed Solana-format Pyth payload;
 - AAPL feed id `922`;
-- Pyth Lazer verification in the KEYS capital path;
+- Pyth Lazer verification in the CRESCO capital path;
 - real Solana devnet transaction confirmation;
 - bounded demo-token execution.
 
@@ -213,7 +213,7 @@ This proof does **not** establish:
 
 Canonical sentence:
 
-> KEYS enforces bounded demo-token capital actions on Solana devnet using live signed Pyth AAPL market truth.
+> CRESCO enforces bounded demo-token capital actions on Solana devnet using live signed Pyth AAPL market truth.
 
 Authority invariant:
 
