@@ -73,7 +73,7 @@ export function ExecutionProofNote({
           <FlaskConical aria-hidden className="size-4" /> Test run (simulated)
         </p>
         <p className="mt-1">
-          {approvalText} A KEYS test server answered this request. No Solana transaction exists and no money moved.
+          {approvalText} A CRESCO test server answered this request. No Solana transaction exists and no money moved.
         </p>
       </div>
     );
