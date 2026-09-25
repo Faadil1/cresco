@@ -9,7 +9,7 @@ Cresco web app
   |
   | HTTPS
   v
-KEYS Cloudflare API
+CRESCO Cloudflare API
   |
   +-- role-scoped demo sessions
   +-- Family state
@@ -21,7 +21,7 @@ KEYS Cloudflare API
   +--------------------+
   |                    |
   v                    v
-Pyth market truth      KEYS Solana program
+Pyth market truth      CRESCO Solana program
                        |
                        +-- Mandate
                        +-- AssetRule
