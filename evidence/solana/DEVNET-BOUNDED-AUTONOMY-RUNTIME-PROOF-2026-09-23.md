@@ -1,9 +1,9 @@
-# KEYS — Devnet Bounded-Autonomy Runtime Proof
+# CRESCO — Devnet Bounded-Autonomy Runtime Proof
 
 Date: 2026-09-23  
 Network: Solana devnet  
 Workflow: `solana-devnet-authority-proof`  
-Run: https://github.com/Faadil1/keys/actions/runs/35931280449  
+Run: https://github.com/Faadil1/cresco/actions/runs/35931280449  
 Result: **PASS — 11 passing**
 
 ## Canonical program
@@ -26,12 +26,12 @@ Deployment / upgrade signature:
 
 ## What this proof establishes
 
-On the canonical devnet program, KEYS v0.2 now proves:
+On the canonical devnet program, CRESCO v0.2 now proves:
 
 1. a program-controlled demo-token vault exists;
 2. an explicit AssetRule is attached to the Mandate;
 3. an in-bounds beneficiary action executes with no guardian approval transaction;
-4. an out-of-bounds action is refused by the KEYS program and capital does not move;
+4. an out-of-bounds action is refused by the CRESCO program and capital does not move;
 5. guardian widening changes Mandate version/nonce;
 6. stale execution material is refused after the version/nonce change;
 7. the same larger action that previously failed succeeds after the explicit human widen;
@@ -106,4 +106,4 @@ The current on-chain boundary is expressed in token units. Pyth-signed Solana pa
 
 Therefore the correct current claim is:
 
-> **KEYS now has real devnet program-controlled capital enforcement for bounded autonomy. Pyth is live and signed-payload-capable, but on-chain Pyth verification remains the next backend proof.**
+> **CRESCO now has real devnet program-controlled capital enforcement for bounded autonomy. Pyth is live and signed-payload-capable, but on-chain Pyth verification remains the next backend proof.**
