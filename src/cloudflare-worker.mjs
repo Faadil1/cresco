@@ -1,4 +1,4 @@
-import { routeKeysHttp } from './http-api.mjs';
+import { routeCrescoHttp } from './http-api.mjs';
 import { handleFamilyApi } from './cloudflare-family-api.mjs';
 import { FamilyState } from './cloudflare-family-state.mjs';
 export { FamilyState };
@@ -7,8 +7,8 @@ const DEFAULT_CRESCO_ORIGIN = 'https://cresco-lac.vercel.app';
 
 function allowedOrigin(request, env = {}) {
   const configured =
-    env.KEYS_CORS_ORIGIN ||
-    process.env.KEYS_CORS_ORIGIN ||
+    env.CRESCO_CORS_ORIGIN ||
+    process.env.CRESCO_CORS_ORIGIN ||
     DEFAULT_CRESCO_ORIGIN;
   const origin = request.headers.get('origin');
 
@@ -36,7 +36,7 @@ async function readJsonBody(request) {
   return JSON.parse(text);
 }
 
-export async function handleKeysCloudflareRequest(request, env = {}) {
+export async function handleCrescoCloudflareRequest(request, env = {}) {
   const url = new URL(request.url);
   const path = url.pathname === '/' ? '/health' : url.pathname;
 
@@ -57,7 +57,7 @@ export async function handleKeysCloudflareRequest(request, env = {}) {
     }
 
     const body = await readJsonBody(request);
-    const result = await routeKeysHttp({
+    const result = await routeCrescoHttp({
       method: request.method,
       path,
       body
@@ -90,6 +90,6 @@ export async function handleKeysCloudflareRequest(request, env = {}) {
 
 export default {
   async fetch(request, env) {
-    return handleKeysCloudflareRequest(request, env);
+    return handleCrescoCloudflareRequest(request, env);
   }
 };

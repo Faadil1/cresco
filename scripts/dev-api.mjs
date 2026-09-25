@@ -1,9 +1,9 @@
 import http from 'node:http';
-import { routeKeysHttp } from '../src/http-api.mjs';
+import { routeCrescoHttp } from '../src/http-api.mjs';
 
-const host = process.env.KEYS_API_HOST || '127.0.0.1';
-const port = Number(process.env.KEYS_API_PORT || 8787);
-const corsOrigin = process.env.KEYS_CORS_ORIGIN || '*';
+const host = process.env.CRESCO_API_HOST || '127.0.0.1';
+const port = Number(process.env.CRESCO_API_PORT || 8787);
+const corsOrigin = process.env.CRESCO_CORS_ORIGIN || '*';
 
 async function readJson(req) {
   const chunks = [];
@@ -15,7 +15,7 @@ async function readJson(req) {
 const server = http.createServer(async (req, res) => {
   try {
     const body = req.method === 'POST' ? await readJson(req) : null;
-    const result = await routeKeysHttp({
+    const result = await routeCrescoHttp({
       method: req.method,
       path: new URL(req.url, `http://${req.headers.host || 'localhost'}`).pathname,
       body
@@ -51,6 +51,6 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(port, host, () => {
-  console.log(`KEYS_API=http://${host}:${port}`);
-  console.log('KEYS_API_MODE=LOCAL_DEMO_ONLY');
+  console.log(`CRESCO_API=http://${host}:${port}`);
+  console.log('CRESCO_API_MODE=LOCAL_DEMO_ONLY');
 });

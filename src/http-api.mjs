@@ -49,10 +49,10 @@ export const CANONICAL_DEVNET_EXPLORER =
   `https://explorer.solana.com/address/${CANONICAL_DEVNET_PROGRAM_ID}?cluster=devnet`;
 
 export const CANONICAL_DEVNET_PROOF_RUN =
-  'https://github.com/Faadil1/keys/actions/runs/35959137364';
+  'https://github.com/Faadil1/cresco/actions/runs/35959137364';
 
 export const CANONICAL_PYTH_PROOF_RUN =
-  'https://github.com/Faadil1/keys/actions/runs/36034651466';
+  'https://github.com/Faadil1/cresco/actions/runs/36034651466';
 
 async function defaultMarketEvidenceProvider({ asset, now }) {
   const feed = PYTH_PRO_EQUITY_FEEDS[asset];
@@ -79,7 +79,7 @@ async function defaultEligibilityProvider() {
 }
 
 function liveDemoAsset() {
-  const requested = process.env.KEYS_DEMO_LIVE_EQUITY || 'AAPL';
+  const requested = process.env.CRESCO_DEMO_LIVE_EQUITY || 'AAPL';
   return PYTH_PRO_EQUITY_FEEDS[requested] ? requested : 'AAPL';
 }
 
@@ -204,7 +204,7 @@ async function resolveBackendEvidence({ body, services }) {
   return { now, market, eligibility };
 }
 
-export async function routeKeysHttp({
+export async function routeCrescoHttp({
   method,
   path,
   body = null,
@@ -224,7 +224,7 @@ export async function routeKeysHttp({
       headers: JSON_HEADERS,
       body: {
         ok: true,
-        service: 'keys-backend',
+        service: 'cresco-backend',
         contractVersion: V2_CONTRACT_VERSION,
         legacyContractVersion: FRONTEND_CONTRACT_VERSION
       }

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  handleKeysVercelRequest,
+  handleCrescoVercelRequest,
   vercelApiPathFromQuery
 } from '../src/vercel-adapter.mjs';
 
@@ -39,7 +39,7 @@ test('Vercel adapter preserves deterministic frontend route and CORS', async () 
   };
   const res = responseRecorder();
 
-  await handleKeysVercelRequest({
+  await handleCrescoVercelRequest({
     req,
     res,
     path: '/api/v0.1/demo/maya'
@@ -60,7 +60,7 @@ test('Vercel adapter exposes health without secrets', async () => {
   };
   const res = responseRecorder();
 
-  await handleKeysVercelRequest({
+  await handleCrescoVercelRequest({
     req,
     res,
     path: '/health'
@@ -69,5 +69,5 @@ test('Vercel adapter exposes health without secrets', async () => {
   assert.equal(res.statusCode, 200);
   const body = JSON.parse(res.payload);
   assert.equal(body.ok, true);
-  assert.equal(body.service, 'keys-backend');
+  assert.equal(body.service, 'cresco-backend');
 });

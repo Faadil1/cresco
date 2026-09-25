@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { Stage, makeCharter, makeMandate, makeProposal } from '../src/model.mjs';
-import { routeKeysHttp } from '../src/http-api.mjs';
+import { routeCrescoHttp } from '../src/http-api.mjs';
 
 const createdAt = '2026-09-23T16:00:00Z';
 
@@ -58,7 +58,7 @@ function proposalBody() {
 }
 
 test('HTTP adapter exposes health and contract version', async () => {
-  const result = await routeKeysHttp({ method: 'GET', path: '/health' });
+  const result = await routeCrescoHttp({ method: 'GET', path: '/health' });
   assert.equal(result.status, 200);
   assert.equal(result.body.ok, true);
   assert.equal(result.body.contractVersion, '0.2');
@@ -66,7 +66,7 @@ test('HTTP adapter exposes health and contract version', async () => {
 });
 
 test('HTTP adapter exposes fail-closed backend capabilities', async () => {
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'GET',
     path: '/api/v0.1/capabilities'
   });
@@ -89,7 +89,7 @@ test('HTTP adapter exposes fail-closed backend capabilities', async () => {
 });
 
 test('HTTP adapter advertises frozen v0.2 runtime proof', async () => {
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'GET',
     path: '/api/v0.1/capabilities'
   });
@@ -100,12 +100,12 @@ test('HTTP adapter advertises frozen v0.2 runtime proof', async () => {
   assert.equal(result.body.v2.demoRoute, '/api/v0.2/demo/maya');
   assert.equal(
     result.body.v2.canonicalDevnetProofRun,
-    'https://github.com/Faadil1/keys/actions/runs/35959137364'
+    'https://github.com/Faadil1/cresco/actions/runs/35959137364'
   );
 });
 
 test('HTTP adapter reports injected providers as ready capabilities', async () => {
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'GET',
     path: '/api/v0.1/capabilities',
     services: {
@@ -126,7 +126,7 @@ test('HTTP adapter reports injected providers as ready capabilities', async () =
 });
 
 test('HTTP adapter exposes canonical Maya fixture', async () => {
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'GET',
     path: '/api/v0.1/demo/maya'
   });
@@ -141,7 +141,7 @@ test('HTTP adapter exposes canonical Maya fixture', async () => {
 
 
 test('live demo proof surface exposes live evidence plus public devnet proof without secrets', async () => {
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'GET',
     path: '/api/v0.1/demo/live-proof',
     services: {
@@ -182,7 +182,7 @@ test('live demo proof surface exposes live evidence plus public devnet proof wit
 });
 
 test('live demo proof fails closed when live market evidence is unavailable', async () => {
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'GET',
     path: '/api/v0.1/demo/live-proof',
     services: {
@@ -205,7 +205,7 @@ test('live demo proof fails closed when live market evidence is unavailable', as
 });
 
 test('normal proposal endpoint uses backend-owned evidence', async () => {
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'POST',
     path: '/api/v0.1/proposals/evaluate',
     body: {
@@ -226,7 +226,7 @@ test('normal proposal endpoint uses backend-owned evidence', async () => {
 });
 
 test('normal proposal endpoint reaches guardian review with trusted backend evidence', async () => {
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'POST',
     path: '/api/v0.1/proposals/evaluate',
     body: proposalBody(),
@@ -241,7 +241,7 @@ test('normal proposal endpoint reaches guardian review with trusted backend evid
 });
 
 test('simulation endpoint accepts explicit simulated evidence and labels the response', async () => {
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'POST',
     path: '/api/v0.1/simulations/proposals/evaluate',
     body: {
@@ -260,7 +260,7 @@ test('simulation endpoint accepts explicit simulated evidence and labels the res
 });
 
 test('HTTP transition preview refuses missing authorization without committing authority', async () => {
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'POST',
     path: '/api/v0.1/mandates/transition/preview',
     body: {
@@ -281,7 +281,7 @@ test('HTTP transition preview refuses missing authorization without committing a
 });
 
 test('HTTP committed transition fails closed when authority runtime is unavailable', async () => {
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'POST',
     path: '/api/v0.1/mandates/transition',
     body: {
@@ -298,7 +298,7 @@ test('HTTP committed transition fails closed when authority runtime is unavailab
 });
 
 test('HTTP committed transition returns normalized proof from authority provider', async () => {
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'POST',
     path: '/api/v0.1/mandates/transition',
     body: {
@@ -337,7 +337,7 @@ test('HTTP committed transition returns normalized proof from authority provider
 });
 
 test('HTTP execution endpoint preserves UNKNOWN fail-closed behavior', async () => {
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'POST',
     path: '/api/v0.1/execution/evaluate',
     body: {
@@ -355,7 +355,7 @@ test('HTTP execution endpoint preserves UNKNOWN fail-closed behavior', async () 
 });
 
 test('HTTP adapter returns 404 envelope for unknown routes', async () => {
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'GET',
     path: '/api/v0.1/nope'
   });
@@ -366,7 +366,7 @@ test('HTTP adapter returns 404 envelope for unknown routes', async () => {
 
 
 test('v0.2 demo exposes frozen bounded-autonomy semantics', async () => {
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'GET',
     path: '/api/v0.2/demo/maya'
   });
@@ -379,7 +379,7 @@ test('v0.2 demo exposes frozen bounded-autonomy semantics', async () => {
 });
 
 test('v0.2 action endpoint allows an in-bounds action with backend-owned market evidence', async () => {
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'POST',
     path: '/api/v0.2/actions/evaluate',
     body: {
@@ -428,7 +428,7 @@ test('v0.2 action endpoint allows an in-bounds action with backend-owned market 
 });
 
 test('v0.2 action endpoint exposes the boundary instead of auto-escalating every action', async () => {
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'POST',
     path: '/api/v0.2/actions/evaluate',
     body: {
@@ -471,7 +471,7 @@ test('v0.2 action endpoint exposes the boundary instead of auto-escalating every
 });
 
 test('v0.2 boundary request remains a pending human decision', async () => {
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'POST',
     path: '/api/v0.2/boundary-requests',
     body: {
@@ -519,7 +519,7 @@ test('v0.2 exposes PreStocks as a live sponsor integration without granting auth
     }
   };
 
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'GET',
     path: '/api/v0.2/integrations/prestocks',
     services: {
@@ -537,7 +537,7 @@ test('v0.2 exposes PreStocks as a live sponsor integration without granting auth
 });
 
 test('v0.2 PreStocks asset route resolves a sponsor asset by symbol', async () => {
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'GET',
     path: '/api/v0.2/integrations/prestocks/openai',
     services: {
@@ -558,7 +558,7 @@ test('v0.2 PreStocks asset route resolves a sponsor asset by symbol', async () =
 });
 
 test('v0.2 PreStocks asset route fails explicitly for an unknown symbol', async () => {
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'GET',
     path: '/api/v0.2/integrations/prestocks/unknown',
     services: {
@@ -572,7 +572,7 @@ test('v0.2 PreStocks asset route fails explicitly for an unknown symbol', async 
 
 
 test('v0.2 exposes the stable devnet demo runtime through an injected execution provider', async () => {
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'GET',
     path: '/api/v0.2/demo/runtime',
     services: {
@@ -606,7 +606,7 @@ test('v0.2 exposes the stable devnet demo runtime through an injected execution 
 test('v0.2 execute route returns a real-proof-shaped response from the runtime provider', async () => {
   let received = null;
 
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'POST',
     path: '/api/v0.2/actions/execute',
     body: {
@@ -663,7 +663,7 @@ test('v0.2 execute route returns a real-proof-shaped response from the runtime p
 });
 
 test('v0.2 execute route preserves an on-chain refusal without fabricating proof', async () => {
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'POST',
     path: '/api/v0.2/actions/execute',
     body: {
@@ -723,7 +723,7 @@ test('v0.2 exposes Tessera as a live representation sponsor integration without 
     }
   };
 
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'GET',
     path: '/api/v0.2/integrations/tessera',
     services: {
@@ -740,7 +740,7 @@ test('v0.2 exposes Tessera as a live representation sponsor integration without 
 });
 
 test('v0.2 Tessera asset route resolves a T-Token by underlying company', async () => {
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'GET',
     path: '/api/v0.2/integrations/tessera/openai',
     services: {
@@ -764,7 +764,7 @@ test('v0.2 Tessera asset route resolves a T-Token by underlying company', async 
 });
 
 test('v0.2 Tessera asset route fails explicitly for an unknown representation', async () => {
-  const result = await routeKeysHttp({
+  const result = await routeCrescoHttp({
     method: 'GET',
     path: '/api/v0.2/integrations/tessera/unknown',
     services: {

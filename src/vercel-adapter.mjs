@@ -1,4 +1,4 @@
-import { routeKeysHttp } from './http-api.mjs';
+import { routeCrescoHttp } from './http-api.mjs';
 
 const DEFAULT_CORS_ORIGIN =
   process.env.NODE_ENV === 'production'
@@ -26,7 +26,7 @@ async function readRequestBody(req) {
 }
 
 function setResponseHeaders(res, headers = {}) {
-  const corsOrigin = process.env.KEYS_CORS_ORIGIN || DEFAULT_CORS_ORIGIN;
+  const corsOrigin = process.env.CRESCO_CORS_ORIGIN || DEFAULT_CORS_ORIGIN;
   res.setHeader('access-control-allow-origin', corsOrigin);
   res.setHeader('access-control-allow-methods', 'GET,POST,OPTIONS');
   res.setHeader(
@@ -50,7 +50,7 @@ export function vercelApiPathFromQuery(query = {}) {
   return '/api/' + parts.filter(Boolean).join('/');
 }
 
-export async function handleKeysVercelRequest({
+export async function handleCrescoVercelRequest({
   req,
   res,
   path,
@@ -58,7 +58,7 @@ export async function handleKeysVercelRequest({
 }) {
   try {
     const body = await readRequestBody(req);
-    const result = await routeKeysHttp({
+    const result = await routeCrescoHttp({
       method: req.method,
       path,
       body,

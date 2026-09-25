@@ -1,5 +1,5 @@
 import {
-  handleKeysVercelRequest,
+  handleCrescoVercelRequest,
   vercelApiPathFromQuery
 } from '../../src/vercel-adapter.mjs';
 
@@ -8,7 +8,7 @@ export const config = {
 };
 
 export default async function handler(req, res) {
-  return handleKeysVercelRequest({
+  return handleCrescoVercelRequest({
     req,
     res,
     path: vercelApiPathFromQuery(req.query)
