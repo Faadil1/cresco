@@ -1,7 +1,7 @@
 /**
  * Service registry. Today every service is a demo implementation over local
- * state, with the KEYS backend used for Money-mode decisions and fresh Pyth
- * quotes when NEXT_PUBLIC_KEYS_API_URL is configured.
+ * state, with the CRESCO backend used for Money-mode decisions and fresh Pyth
+ * quotes when NEXT_PUBLIC_CRESCO_API_URL is configured.
  */
 import { assetRuleFor, evaluateBoundedAction } from "@/domain/policy";
 import type {
@@ -22,11 +22,11 @@ import {
   executeAction,
   fetchMarketQuotes,
   fetchMarketSeries,
-  keysBackendConfigured,
-  keysRuntimeExecutionEnabled,
+  crescoBackendConfigured,
+  crescoRuntimeExecutionEnabled,
   newIdempotencyKey,
   transitionCurrentMandate,
-} from "./keys-backend";
+} from "./cresco-backend";
 import type {
   AuthService,
   BoundaryRequestService,
@@ -60,15 +60,15 @@ function latency(base = 280) {
 }
 
 export function getCapabilities(): Capabilities {
-  const backend = keysBackendConfigured();
-  const runtime = keysRuntimeExecutionEnabled();
+  const backend = crescoBackendConfigured();
+  const runtime = crescoRuntimeExecutionEnabled();
   return {
-    backend: backend ? "keys-v0.2-frozen" : "none",
+    backend: backend ? "cresco-v0.2-frozen" : "none",
     marketData: backend ? "mock-with-live-aapl" : "mock",
     moneyMode: runtime ? "runtime" : "demo",
     funding: backend ? "devnet-test" : "demo",
     auth: backend ? "backend-demo" : "demo",
-    execution: runtime ? "keys-runtime" : "demo-not-executed",
+    execution: runtime ? "cresco-runtime" : "demo-not-executed",
   };
 }
 
@@ -81,7 +81,7 @@ let quoteOverlay:
   | null = null;
 
 async function withLiveOverlay(assets: MarketAsset[]): Promise<MarketAsset[]> {
-  if (!keysBackendConfigured()) return assets;
+  if (!crescoBackendConfigured()) return assets;
 
   quoteOverlay ??= fetchMarketQuotes(assets.map((asset) => asset.ticker)).catch(
     () => null,
@@ -125,7 +125,7 @@ export const marketData: MarketDataService = {
     await latency(160);
     if (flags.marketFailure) throw new Error("Market data unavailable");
 
-    if (keysBackendConfigured()) {
+    if (crescoBackendConfigured()) {
       try {
         const live = await fetchMarketSeries(ticker, period);
         if (live.status !== "UNAVAILABLE" && live.points.length > 1) {
@@ -188,13 +188,13 @@ export const practiceExecution: PracticeExecutionService = {
 };
 
 /* ------------------------------------------------------------------ */
-/* Money execution — decision from KEYS backend when configured        */
+/* Money execution — decision from CRESCO backend when configured        */
 /* ------------------------------------------------------------------ */
 
 function preflight(input: MoneyActionInput): ActionEvaluation | null {
   if (
     input.asset.moneyModeStatus === "unavailable" ||
-    (keysRuntimeExecutionEnabled() && input.asset.ticker !== "AAPL")
+    (crescoRuntimeExecutionEnabled() && input.asset.ticker !== "AAPL")
   ) {
     return {
       decision: "REFUSE",
@@ -212,7 +212,7 @@ function allowOnceCovers(input: MoneyActionInput): boolean {
     r.status === "ALLOWED_ONCE" &&
     r.asset === input.asset.ticker &&
     r.mandateNonce === input.mandate.nonce &&
-    input.amount <= r.requestedNotional
+    input.amount === r.requestedNotional
   );
 }
 
@@ -221,7 +221,7 @@ async function decide(input: MoneyActionInput): Promise<ActionEvaluation> {
   if (pre) return pre;
 
   let evaluation: ActionEvaluation;
-  if (keysBackendConfigured()) {
+  if (crescoBackendConfigured()) {
     try {
       evaluation = await evaluateAction({
         mandate: input.mandate,
@@ -232,7 +232,7 @@ async function decide(input: MoneyActionInput): Promise<ActionEvaluation> {
       });
     } catch {
       // Fail closed: an unreachable backend never becomes an ALLOW.
-      return { decision: "REFUSE", reasonCode: "DECISION_UNAVAILABLE", source: "keys-backend" };
+      return { decision: "REFUSE", reasonCode: "DECISION_UNAVAILABLE", source: "cresco-backend" };
     }
   } else {
     evaluation = evaluateBoundedAction({
@@ -275,7 +275,7 @@ export const moneyExecution: MoneyExecutionService = {
   async execute(input) {
     await latency(520);
 
-    if (keysBackendConfigured() && keysRuntimeExecutionEnabled()) {
+    if (crescoBackendConfigured() && crescoRuntimeExecutionEnabled()) {
       const key = input.idempotencyKey ?? newIdempotencyKey();
       const runtime = await executeAction(
         buildExecuteRequest({
@@ -342,7 +342,7 @@ function bumpMandate(mandate: CurrentMandate, changes: Partial<CurrentMandate>):
 
 export const boundaryRequests: BoundaryRequestService = {
   async create({ mandate, evaluation, asset, type, amount, reason }) {
-    if (keysBackendConfigured()) {
+    if (crescoBackendConfigured()) {
       return createPersistentBoundaryRequest({
         mandate,
         evaluation,
@@ -373,7 +373,7 @@ export const boundaryRequests: BoundaryRequestService = {
   },
 
   async decide({ request, decision, mandate, newLimits, note }) {
-    if (keysBackendConfigured()) {
+    if (crescoBackendConfigured()) {
       return decidePersistentBoundaryRequest({
         requestId: request.id,
         decision,
@@ -412,7 +412,7 @@ export const boundaryRequests: BoundaryRequestService = {
 
 export const mandates: MandateService = {
   async update({ mandate, changes }) {
-    if (keysBackendConfigured()) {
+    if (crescoBackendConfigured()) {
       const result = await transitionCurrentMandate({
         expectedNonce: mandate.nonce,
         changes,
@@ -426,7 +426,7 @@ export const mandates: MandateService = {
 
 export const funding: FundingService = {
   async addMoney({ amount }) {
-    if (keysBackendConfigured()) {
+    if (crescoBackendConfigured()) {
       return addDevnetTestFunds(amount);
     }
     await latency(500);
@@ -436,7 +436,7 @@ export const funding: FundingService = {
 
 export const auth: AuthService = {
   async signInDemo(role, displayName) {
-    if (keysBackendConfigured()) {
+    if (crescoBackendConfigured()) {
       return createBackendDemoSession(role, displayName);
     }
     await latency(250);
