@@ -1,21 +1,21 @@
-# KEYS Backend — Cloudflare Workers Deployment
+# CRESCO Backend — Cloudflare Workers Deployment
 
 Date: 2026-09-24  
 Status: **DEPLOYMENT-READY**
 
 ## Architecture
 
-This remains one KEYS/Cresco product.
+This remains one CRESCO/Cresco product.
 
 ```
 Cresco frontend
 https://cresco-lac.vercel.app
         ↓
-KEYS API — Cloudflare Worker
+CRESCO API — Cloudflare Worker
         ↓
 Pyth AAPL / feed 922
         ↓
-KEYS Mandate
+CRESCO Mandate
         ↓
 Solana devnet
 ```
@@ -34,13 +34,13 @@ Entry point:
 
 Worker name:
 
-`keys-api-stocklana`
+`cresco-api-stocklana`
 
 Compatibility date:
 
 `2026-09-24`
 
-The current compatibility date gives Workers the Node.js compatibility required by the existing KEYS runtime.
+The current compatibility date gives Workers the Node.js compatibility required by the existing CRESCO runtime.
 
 ## Required secrets
 
@@ -64,8 +64,8 @@ Do not place these secrets in Cresco.
 
 Already defined in `wrangler.jsonc`:
 
-- `KEYS_CORS_ORIGIN=https://cresco-lac.vercel.app`
-- `KEYS_DEMO_LIVE_EQUITY=AAPL`
+- `CRESCO_CORS_ORIGIN=https://cresco-lac.vercel.app`
+- `CRESCO_DEMO_LIVE_EQUITY=AAPL`
 
 ## Deploy through Cloudflare Git integration
 
@@ -73,7 +73,7 @@ In Cloudflare:
 
 1. Go to **Workers & Pages**.
 2. Create a Worker / import an existing Git repository.
-3. Select `Faadil1/keys`.
+3. Select `Faadil1/cresco`.
 4. Use the repository root.
 5. Worker configuration is read from `wrangler.jsonc`.
 6. Add the two required secrets.
@@ -103,7 +103,7 @@ Do not paste secret values into Git or shell history when avoidable.
 
 Assume Cloudflare gives:
 
-`https://keys-api-stocklana.<account-subdomain>.workers.dev`
+`https://cresco-api-stocklana.<account-subdomain>.workers.dev`
 
 ### 1. Health
 
@@ -162,17 +162,17 @@ Expected:
 
 ## Connect Cresco
 
-Once the Worker URL is known, Cresco needs only two **public frontend values**:
+Once the renamed Worker is deployed, CRESCO needs only two **public frontend values**:
 
 ```
-NEXT_PUBLIC_KEYS_API_URL=https://keys-api-stocklana.<account-subdomain>.workers.dev
-NEXT_PUBLIC_KEYS_EXECUTION=runtime
+NEXT_PUBLIC_CRESCO_API_URL=https://cresco-api-stocklana.<account-subdomain>.workers.dev
+NEXT_PUBLIC_CRESCO_EXECUTION=runtime
 ```
 
 For a Git-connected frontend deployment:
 
 1. commit the public Worker base URL as the safe default backend URL in the Cresco adapter;
-2. keep `NEXT_PUBLIC_KEYS_API_URL` as an override;
+2. keep `NEXT_PUBLIC_CRESCO_API_URL` as an override;
 3. rebuild the frontend from the current `main`.
 
 No Pyth or Solana private key ever enters Cresco.
@@ -181,12 +181,12 @@ No Pyth or Solana private key ever enters Cresco.
 
 AAPL entitlement / signed payload:
 
-https://github.com/Faadil1/keys/actions/runs/36035283447
+https://github.com/Faadil1/cresco/actions/runs/36035283447
 
 AAPL HTTP→Solana devnet execution:
 
-https://github.com/Faadil1/keys/actions/runs/36034651466
+https://github.com/Faadil1/cresco/actions/runs/36034651466
 
 AAPL bridge revalidation:
 
-https://github.com/Faadil1/keys/actions/runs/36035543689
+https://github.com/Faadil1/cresco/actions/runs/36035543689
