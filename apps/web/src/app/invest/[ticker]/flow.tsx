@@ -13,7 +13,7 @@ import { assetRuleFor, evaluateBoundedAction, explainEvaluation, maxAllowedNow, 
 import type { ActionEvaluation, ExecutionResult, MarketAsset, Mode } from "@/domain/types";
 import { useAsset } from "@/hooks/data";
 import { boundaryRequests, moneyExecution, practiceExecution } from "@/services";
-import { newIdempotencyKey } from "@/services/keys-backend";
+import { newIdempotencyKey } from "@/services/cresco-backend";
 import { ExecutionProofNote, onChainLabel } from "@/components/proof";
 import { useSingleFlight } from "@/hooks/single-flight";
 import { useStore } from "@/state/store";
@@ -90,7 +90,7 @@ function Flow({ asset, mode, initialAmount }: { asset: MarketAsset; mode: Mode; 
           result: {
             ok: false,
             outcome: "UNKNOWN",
-            evaluation: { decision: "REFUSE", reasonCode: "EXECUTION_UNCONFIRMED", source: "keys-runtime" },
+            evaluation: { decision: "REFUSE", reasonCode: "EXECUTION_UNCONFIRMED", source: "cresco-runtime" },
             ticker: resumable.ticker,
             amount: resumable.amount,
           },
@@ -262,7 +262,7 @@ function Flow({ asset, mode, initialAmount }: { asset: MarketAsset; mode: Mode; 
           </dl>
           {phase.result.proof?.status === "DEMO_NOT_EXECUTED" || phase.result.proof?.status === "PRACTICE_LOCAL" ? (
             <p className="mt-3 text-[12.5px] font-semibold text-ink-3">
-              When Money Mode is connected to the KEYS Solana program, this screen shows the network, transaction signature and a
+              When Money Mode is connected to the CRESCO Solana program, this screen shows the network, transaction signature and a
               link to view it on Solana.
             </p>
           ) : null}
@@ -494,7 +494,7 @@ function Flow({ asset, mode, initialAmount }: { asset: MarketAsset; mode: Mode; 
 }
 
 const SOURCE_LABEL: Record<ActionEvaluation["source"], string> = {
-  "keys-runtime": "KEYS runtime",
+  "cresco-runtime": "KEYS runtime",
   "keys-backend": "KEYS backend",
   "local-preview": "local preview",
 };
