@@ -22,7 +22,7 @@ Response:
 The proof path retained the explicit BLOCKED_FUNDING state. A later run used a funded Devnet-only signer and produced a verifiable deployment.
 
 Initial run:
-https://github.com/Faadil1/keys/actions/runs/35890663439
+https://github.com/Faadil1/cresco/actions/runs/35890663439
 
 ## 2. Exact one-time action mismatch
 
@@ -44,7 +44,7 @@ Response:
 The deployed program binds the permission to the request, execution asset, Mandate nonce, exact notional, and one successful use. The exact $12 action executes. Standing Key stays v7 to v7. Replay refuses with AllowanceAlreadyUsed.
 
 Canonical run:
-https://github.com/Faadil1/keys/actions/runs/36150024852
+https://github.com/Faadil1/cresco/actions/runs/36150024852
 
 Detailed proof:
 ../solana/ALLOW-ONCE-EXACT-ACTION-CANONICAL-PROOF-2026-09-25.md
@@ -69,4 +69,4 @@ Response:
 The demo now passes both amount and notional in the v0.2 action shape. The demo remains a hard CI step, so the repository cannot silently promote a broken deterministic story.
 
 Proof:
-https://github.com/Faadil1/keys/actions/runs/36172689653
+https://github.com/Faadil1/cresco/actions/runs/36172689653
