@@ -9,7 +9,11 @@ if (!provider) {
 }
 
 const state = await provider.getState();
-const idempotencyKey = `ci-smoke-${process.env.GITHUB_RUN_ID ?? Date.now()}`;
+const proofRunKey =
+  process.env.GITHUB_RUN_ID
+    ? `${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT ?? '1'}`
+    : String(Date.now());
+const idempotencyKey = `ci-smoke-${proofRunKey}`;
 
 const result = await provider.execute({
   asset: 'AAPL',
@@ -78,7 +82,7 @@ console.log('DEVNET_HTTP_EXECUTION_BRIDGE=PASS');
 
 
 const allowanceRequestId =
-  `ci-allow-once-${process.env.GITHUB_RUN_ID ?? Date.now()}`;
+  `ci-allow-once-${proofRunKey}`;
 let allowanceGrant = null;
 let allowanceError = null;
 
@@ -119,7 +123,7 @@ const tamperedResult = await provider.execute({
   notional: 11,
   expectedNonce: state.mandate.nonce,
   idempotencyKey:
-    `ci-allow-once-tamper-${process.env.GITHUB_RUN_ID ?? Date.now()}`,
+    `ci-allow-once-tamper-${proofRunKey}`,
   allowOnceRequestId: allowanceRequestId,
 });
 
@@ -141,7 +145,7 @@ const onceResult = await provider.execute({
   notional: 12,
   expectedNonce: state.mandate.nonce,
   idempotencyKey:
-    `ci-allow-once-use-${process.env.GITHUB_RUN_ID ?? Date.now()}`,
+    `ci-allow-once-use-${proofRunKey}`,
   allowOnceRequestId: allowanceRequestId,
 });
 
@@ -163,7 +167,7 @@ const reuseResult = await provider.execute({
   notional: 12,
   expectedNonce: state.mandate.nonce,
   idempotencyKey:
-    `ci-allow-once-reuse-${process.env.GITHUB_RUN_ID ?? Date.now()}`,
+    `ci-allow-once-reuse-${proofRunKey}`,
   allowOnceRequestId: allowanceRequestId,
 });
 
