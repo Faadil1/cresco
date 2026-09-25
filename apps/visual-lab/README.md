@@ -12,14 +12,28 @@ Explore a visual language that feels:
 - family-oriented without feeling like parental surveillance;
 - financial without looking like a crypto terminal or adult bank app.
 
-Three directions ship in one lab:
+Six directions ship in one lab:
 - **Key Garden** — warm, personal, autonomy-first;
 - **Market Playground** — broad market discovery with Pyth;
-- **Family Room** — shared family trust / boundary story.
+- **Family Room** — shared family trust / boundary story;
+- **Financial Passport** — the Key as a legible personal authority credential;
+- **Market Atlas** — markets as navigable territory with an explicit Money boundary;
+- **Family Capital Instrument** — premium, editorial expression of a standing family-capital agreement.
+
+## Functional parity rule
+
+All six directions render the **same shared sandbox state machine**. A direction may change composition, hierarchy, metaphor, typography and motion, but it may not win by omitting product complexity.
+
+The parity scenario is:
+`inside $5 ALLOW → boundary $12 REFUSE → exact $12 request → guardian Not now / Allow once / Widen → tampered $11 REFUSE → exact $12 ALLOW → permission USED → replay $12 REFUSE → standing Key unchanged`.
+
+The lab also exposes the same Practice, market-truth, representation-literacy, Key-history and canonical-proof surfaces in every direction.
+
+Canonical proof is displayed as evidence only. The local parity scenario remains isolated browser state and never impersonates an on-chain transaction.
 
 ## Interactive sandbox + safety boundary
 
-The lab is now interactive, but its writable state is **isolated browser sandbox state** stored under `localStorage` key `cresco.visualLab.sandbox.v2`.
+The lab is now interactive, but its writable state is **isolated browser sandbox state** stored under `localStorage` key `cresco.visualLab.sandbox.v3`.
 
 It supports:
 - virtual Practice buys across live Pyth markets;
