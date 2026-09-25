@@ -1,54 +1,77 @@
-import { Stage, makeCharter, makeMandate, makeProposal } from '../src/model.mjs';
-import { evaluateProposal, summarizeEvidence, mandateReviewEligibility, transitionMandate } from '../src/engine.mjs';
+import {
+  ActionDecision,
+  MandateStatus,
+  buildBoundaryRequest,
+  evaluateBoundedAction
+} from '../src/bounded-autonomy.mjs';
 
-const charter = makeCharter({
-  familyId: 'keys-demo-family', beneficiaryId: 'maya', guardianId: 'guardian', jurisdiction: 'CA-QC',
-  assetUniverse: ['AAPL', 'NVDA', 'SPY'], maxProposalNotional: 50, maxBoundedNotional: 25
+const mandate = {
+  status: MandateStatus.ACTIVE,
+  version: 7,
+  nonce: 6,
+  expiresAt: '2026-12-01T00:00:00Z'
+};
+
+const assetRule = {
+  enabled: true,
+  asset: 'AAPL',
+  allowedActions: ['BUY'],
+  quoteUnit: 'USD',
+  maxActionNotional: 10,
+  maxPeriodNotional: 50,
+  spentThisPeriod: 0,
+  requiresMarketEvidence: false
+};
+
+function evaluate(notional) {
+  return evaluateBoundedAction({
+    mandate,
+    assetRule,
+    action: {
+      type: 'BUY',
+      asset: 'AAPL',
+      notional,
+      expectedNonce: mandate.nonce
+    }
+  });
+}
+
+console.log('\nKEYS v0.2 deterministic product slice');
+
+const inside = evaluate(5);
+console.log('1) $5 inside Key v7');
+console.log('   ', inside.decision, inside.reasonCode);
+if (inside.decision !== ActionDecision.ALLOW) process.exitCode = 1;
+
+const boundary = evaluate(12);
+console.log('2) $12 reaches the standing boundary');
+console.log('   ', boundary.decision, boundary.reasonCode);
+if (boundary.decision !== ActionDecision.REFUSE) process.exitCode = 1;
+
+const request = buildBoundaryRequest({
+  mandate,
+  assetRule,
+  action: {
+    type: 'BUY',
+    asset: 'AAPL',
+    notional: 12
+  },
+  reasoningCommitmentHash: 'demo-private-reason-hash'
 });
-let mandate = makeMandate({ stage: Stage.PROPOSE, effectiveAt: '2026-09-23T14:00:00Z' });
-const proposal = makeProposal({
-  id: 'demo-001', asset: 'AAPL', amount: 25,
-  rationale: 'I use the products and want to understand long-term ownership.',
-  counterargument: 'A familiar brand can still be overpriced or face slowing demand.',
-  horizonDays: 180,
-  invalidation: 'Review if the original long-term business assumption materially changes.',
-  createdAt: '2026-09-23T14:05:00Z'
-});
 
-console.log('\nKEYS v0.1 — deterministic vertical slice');
-console.log('1) Maya proposes $25 of Apple under PROPOSE mandate.');
-let result = evaluateProposal({
-  charter, mandate, proposal,
-  market: { status: 'FRESH', confidenceBps: 7, maxConfidenceBps: 100 },
-  eligibility: { status: 'UNKNOWN' },
-  now: '2026-09-23T14:06:00Z'
-});
-console.log('   ', result.decision, result.reasonCode);
+console.log('3) Boundary request');
+console.log('   ', request.status, request.decisions.join(' | '));
 
-console.log('2) Evidence accumulates through proposals, reviews and market-event reviews.');
-const evidence = summarizeEvidence([
-  {type:'PROPOSAL'}, {type:'PROPOSAL'}, {type:'PROPOSAL'},
-  {type:'REVIEW_COMPLETED'}, {type:'REVIEW_COMPLETED'}, {type:'REVIEW_COMPLETED'},
-  {type:'MARKET_EVENT_REVIEW'}
-]);
-const review = mandateReviewEligibility({ mandate, evidence, thresholds: { minReviews: 3, minProposals: 3, minMarketEventReviews: 1, maxScopeViolations: 0 } });
-console.log('   eligibleForMandateReview =', review.eligibleForReview);
+console.log('4) Canonical Devnet exact-action proof');
+console.log('   guardian approves $12 once');
+console.log('   $11 -> REFUSE / AllowanceActionMismatch');
+console.log('   $12 -> ALLOW');
+console.log('   standing Key v7 -> v7');
+console.log('   replay -> REFUSE / AllowanceAlreadyUsed');
+console.log('   proof: https://github.com/Faadil1/keys/actions/runs/36150024852');
 
-console.log('3) KEYS refuses to auto-promote real financial authority.');
-let transition = transitionMandate({ mandate, toStage: Stage.BOUNDED, authorizedBy: null, at: '2026-09-24T14:00:00Z', evidenceSummary: evidence, reviewEligibility: review });
-console.log('   ', transition.ok ? 'PROMOTED' : 'REFUSED', transition.reasonCode ?? '');
+console.log('5) Truth boundary');
+console.log('   Solana Devnet + demo SPL token + live Pyth market truth');
+console.log('   no brokerage, custody, mainnet, or real minor securities claim');
 
-console.log('4) An authorized guardian explicitly signs the new mandate.');
-transition = transitionMandate({ mandate, toStage: Stage.BOUNDED, authorizedBy: 'guardian', at: '2026-09-24T14:00:00Z', evidenceSummary: evidence, reviewEligibility: review });
-mandate = transition.mandate;
-console.log('   new mandate =', mandate.stage);
-
-console.log('5) Real execution still fails closed when eligibility is unknown.');
-result = evaluateProposal({
-  charter, mandate, proposal,
-  market: { status: 'FRESH', confidenceBps: 7, maxConfidenceBps: 100 },
-  eligibility: { status: 'UNKNOWN' },
-  now: '2026-09-24T14:01:00Z'
-});
-console.log('   ', result.decision, result.reasonCode);
-console.log('\nTruth boundary: no real minor execution, no live Pyth call, no brokerage/custody claim.\n');
+console.log('\nReal failure > fake success.\n');
