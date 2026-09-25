@@ -83,11 +83,22 @@ let quoteOverlay:
 async function withLiveOverlay(assets: MarketAsset[]): Promise<MarketAsset[]> {
   if (!crescoBackendConfigured()) return assets;
 
-  quoteOverlay ??= fetchMarketQuotes(assets.map((asset) => asset.ticker)).catch(
-    () => null,
-  );
+  // Explore/company navigation must never be held hostage by the optional
+  // live quote overlay. Render the local market snapshot immediately when
+  // the backend is slow or unreachable, while still using fresh Pyth data
+  // whenever it arrives within the normal interactive budget.
+  quoteOverlay ??= Promise.race([
+    fetchMarketQuotes(assets.map((asset) => asset.ticker)),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+  ]).catch(() => null);
+
   const response = await quoteOverlay;
-  if (!response) return assets;
+  if (!response) {
+    // Allow a later navigation/reload to retry instead of caching a timeout
+    // for the rest of the browser session.
+    quoteOverlay = null;
+    return assets;
+  }
 
   const bySymbol = new Map(response.quotes.map((quote) => [quote.symbol, quote]));
   return assets.map((asset) => {
