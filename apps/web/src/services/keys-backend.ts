@@ -600,6 +600,16 @@ export type ExecuteResponse = {
     executedAt: string;
     idempotencyKey: string;
     simulated: boolean;
+    oneTimeAllowance?: {
+      requestId: string;
+      receipt?: string | null;
+      consumed: boolean;
+      approvedNotionalMicroUsd?: number;
+      mandateNonce?: number;
+      standingMandateVersionBefore?: number;
+      standingMandateVersionAfter?: number;
+      standingAuthorityChanged?: boolean;
+    } | null;
   };
 };
 
@@ -649,6 +659,7 @@ function parseExecuteResponse(raw: unknown, idempotencyKey: string): ExecuteResu
     executedAt: p.executedAt,
     simulated: p.simulated,
     idempotencyKey: p.idempotencyKey,
+    oneTimeAllowance: p.oneTimeAllowance ?? null,
   };
   return { outcome: p.status === "CONFIRMED" ? "EXECUTED" : "PENDING", evaluation, proof };
 }

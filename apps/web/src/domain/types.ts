@@ -227,6 +227,16 @@ export type ExecutionProof = {
    */
   simulated?: boolean;
   idempotencyKey?: string;
+  oneTimeAllowance?: {
+    requestId: string;
+    receipt?: string | null;
+    consumed: boolean;
+    approvedNotionalMicroUsd?: number;
+    mandateNonce?: number;
+    standingMandateVersionBefore?: number;
+    standingMandateVersionAfter?: number;
+    standingAuthorityChanged?: boolean;
+  } | null;
 };
 
 /**

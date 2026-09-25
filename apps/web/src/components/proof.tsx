@@ -41,6 +41,18 @@ export function ExecutionProofNote({
         <p className="mt-1 text-navy">
           {approvalText} This used devnet demo tokens, not real money or shares.
         </p>
+        {proof.oneTimeAllowance?.consumed ? (
+          <div className="mt-2 rounded-[12px] border border-green/20 bg-surface/70 px-3 py-2 text-navy">
+            <p className="font-extrabold">Once means once · permission consumed</p>
+            {proof.oneTimeAllowance.standingAuthorityChanged === false &&
+            proof.oneTimeAllowance.standingMandateVersionBefore != null &&
+            proof.oneTimeAllowance.standingMandateVersionAfter != null ? (
+              <p className="mt-0.5 text-[12px] font-semibold text-ink-2">
+                Standing Key v{proof.oneTimeAllowance.standingMandateVersionBefore} → v{proof.oneTimeAllowance.standingMandateVersionAfter} · unchanged
+              </p>
+            ) : null}
+          </div>
+        ) : null}
         <a
           href={explorerTxUrl(proof.signature)}
           target="_blank"
