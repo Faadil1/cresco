@@ -1,8 +1,8 @@
-# KEYS
+# CRESCO
 
 **Financial independence should not happen all at once.**
 
-KEYS is a bounded-authority protocol for capital. Cresco is the family-facing product built on top of it.
+CRESCO is a bounded-authority protocol for capital. Cresco is the family-facing product built on top of it.
 
 A guardian defines a standing **Key**, implemented as a versioned Mandate. Inside that Key, a young person can act without asking for permission on every action. At the boundary, the action refuses or becomes a request. The guardian can say **Not this time**, **Allow once**, or **Widen the Key**.
 
