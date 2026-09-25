@@ -115,7 +115,7 @@ function Flow({ asset, mode, initialAmount }: { asset: MarketAsset; mode: Mode; 
     });
   }, [mode, validAmount, mandate, asset.ticker, amount]);
 
-  const coveredByAllowOnce = !!allowOnce && validAmount && amount <= allowOnce.requestedNotional;
+  const coveredByAllowOnce = !!allowOnce && validAmount && amount === allowOnce.requestedNotional;
 
   const submit = guard(async () => {
     if (!validAmount) return;
