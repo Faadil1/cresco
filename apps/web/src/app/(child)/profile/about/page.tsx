@@ -28,7 +28,7 @@ export default function AboutPage() {
   }>({ status: "idle" });
 
   async function runLiveDevnetProof() {
-    if (caps.execution !== "keys-runtime" || proofRunning) return;
+    if (caps.execution !== "cresco-runtime" || proofRunning) return;
     setProofRunning(true);
     setLiveProof({ status: "idle" });
 
@@ -89,7 +89,7 @@ export default function AboutPage() {
     {
       title: "Money Mode",
       body:
-        caps.execution === "keys-runtime"
+        caps.execution === "cresco-runtime"
           ? "Money Mode uses bounded Solana Devnet test capital with a demo SPL token and live Pyth market truth for the proven AAPL lane. It is not brokerage, custody or a real securities purchase."
           : "Money Mode is a demo. It isn't connected to a bank, broker or custodian, so no real money moves and nothing is bought.",
     },
@@ -122,7 +122,7 @@ export default function AboutPage() {
           <Detail k="Solana program (devnet)" v={PROGRAM_ID} mono />
           <Detail
             k="Money execution from this app"
-            v={caps.execution === "keys-runtime" ? "AAPL Money lane executes on Solana Devnet with demo-token capital" : "Not connected (demo only)"}
+            v={caps.execution === "cresco-runtime" ? "AAPL Money lane executes on Solana Devnet with demo-token capital" : "Not connected (demo only)"}
           />
           <Detail k="Mandate version" v={`v${state.mandate.version} · nonce ${state.mandate.nonce}`} />
           <Detail k="Proven live market feed" v="Pyth Pro Equity.US.AAPL/USD (server-side only)" />
@@ -145,12 +145,12 @@ export default function AboutPage() {
           <ActionButton
             className="mt-3"
             variant="secondary"
-            disabled={caps.execution !== "keys-runtime" || proofRunning}
+            disabled={caps.execution !== "cresco-runtime" || proofRunning}
             onClick={runLiveDevnetProof}
           >
             {proofRunning
               ? "Running devnet proof…"
-              : caps.execution === "keys-runtime"
+              : caps.execution === "cresco-runtime"
                 ? "Run live devnet proof"
                 : "Live proof backend not connected"}
           </ActionButton>
