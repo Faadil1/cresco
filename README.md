@@ -2,37 +2,37 @@
 
 **Financial independence should not happen all at once.**
 
-CRESCO is a bounded-authority protocol for capital. Cresco is the family-facing product built on top of it.
+CRESCO gives young people real room to make financial decisions inside family-set boundaries. A guardian defines a standing **Key**, represented technically by a versioned Mandate. Inside that Key, the young person can act without asking for permission every time. At the boundary, CRESCO refuses, explains why, and lets the family decide what should happen next.
 
-A guardian defines a standing **Key**, implemented as a versioned Mandate. Inside that Key, a young person can act without asking for permission on every action. At the boundary, the action refuses or becomes a request. The guardian can say **Not this time**, **Allow once**, or **Widen the Key**.
-
-> Learn in context. Act freely inside bounds. Ask for more freedom only at the boundary.
+> **Learn in context. Act freely inside bounds. Ask for more freedom only at the boundary.**
 
 ## Live product and proof
 
-- Cresco: https://cresco-lac.vercel.app
-- KEYS API: https://keys-api-stocklana.faadil-casecraft.workers.dev
+- Product: https://cresco-lac.vercel.app
+- Current CRESCO API: https://keys-api-stocklana.faadil-casecraft.workers.dev
+- Repository: https://github.com/Faadil1/cresco
 - Network: Solana Devnet
-- Program: ABjE6V5q9VbD3CAHDXxvztY5kXQmDXHRcEP1kZ4KSSfk
-- Canonical exact-action proof: https://github.com/Faadil1/keys/actions/runs/36150024852
-- Current web CI: https://github.com/Faadil1/keys/actions/runs/36170242718
-- Current Node/API CI: https://github.com/Faadil1/keys/actions/runs/36170242710
+- Program: `ABjE6V5q9VbD3CAHDXxvztY5kXQmDXHRcEP1kZ4KSSfk`
+- Canonical exact-action proof: https://github.com/Faadil1/cresco/actions/runs/36150024852
+- Current Node/API quality proof: https://github.com/Faadil1/cresco/actions/runs/36172981694
 
-The current capital path moves a **demo SPL token**, not real securities. The current proven Money lane is AAPL with live Pyth market evidence. This is not brokerage, custody, mainnet execution, or real minor securities execution.
+The current API URL keeps its original Cloudflare worker hostname so the already-deployed runtime stays reachable. It serves CRESCO and is treated only as a legacy infrastructure identifier.
+
+The current capital path moves a **demo SPL token**, not real securities. AAPL is the current proven Money lane with live Pyth market evidence. CRESCO does not claim brokerage, custody, mainnet execution, or real minor securities execution.
 
 ## The product model
 
 The Key is standing authority, not a per-action approval queue.
 
-| Situation | Result |
+| Situation | CRESCO behavior |
 | --- | --- |
 | Action is inside the active Key | ALLOW. No guardian approval is required. |
-| Action reaches a standing boundary | REFUSE. The user can adjust, practice, or ask. |
+| Action reaches a standing boundary | REFUSE. Adjust, Practice, or Ask for more room. |
 | Guardian chooses Not this time | Standing Key stays unchanged. |
 | Guardian chooses Allow once | One exact request can cross once. Standing Key stays unchanged. |
 | Guardian chooses Widen the Key | A new standing Key version is created. |
 | Market evidence is stale or insufficient | REFUSE or UNKNOWN. Never fabricate success. |
-| Execution cannot be confirmed | PENDING or UNKNOWN. Never show a confirmed purchase. |
+| Execution cannot be confirmed | PENDING or UNKNOWN. Never render confirmed success. |
 
 Learning, XP, P&L, badges, and AI scores never grant or widen authority.
 
@@ -40,29 +40,29 @@ Pyth can restrict or stop an action. Pyth can never grant more human authority.
 
 ## Canonical demo
 
-The current judge-safe path is intentionally small:
+The canonical CRESCO flow is intentionally small:
 
 1. **$5 AAPL** inside the Key: ALLOW.
 2. **$12 AAPL** outside the current $10 action limit: REFUSE.
 3. Ask for more room.
 4. Guardian chooses **Allow once** for exactly $12.
-5. Change the action to **$11**: REFUSE with AllowanceActionMismatch.
+5. Change the action to **$11**: REFUSE with `AllowanceActionMismatch`.
 6. Restore the approved **$12**: ALLOW.
 7. One-time permission becomes USED.
 8. Standing Key remains **v7 to v7**.
-9. Replay the same $12 permission: REFUSE with AllowanceAlreadyUsed.
+9. Replay the same $12 permission: REFUSE with `AllowanceAlreadyUsed`.
 
-The product point is simple:
+The product point:
 
 > **The exception moved. The boundary did not.**
 
-The technical point comes after the human interaction:
+The technical point:
 
 > **The UI is not the guard. The capital path is.**
 
 ## Why Solana
 
-A normal database can reproduce much of the interface. KEYS uses Solana because the authority boundary is enforced in the same execution path that moves the demo capital.
+A conventional backend can reproduce much of the interface. CRESCO uses Solana because the authority boundary is enforced in the same execution path that moves the demo capital.
 
 The current program proves:
 
@@ -74,6 +74,7 @@ The current program proves:
 - explicit guardian widening;
 - pause and downward authority;
 - exact single-use Allow once;
+- changed-action refusal;
 - replay refusal;
 - signed Pyth verification in the capital path;
 - Pyth-derived USD/notional enforcement;
@@ -83,52 +84,55 @@ The current program proves:
 
 **Real failure > fake success.**
 
-Every build must retain at least one concrete, observable, verifiable negative event. A theoretical risk is not enough.
+Every build must retain at least one concrete, observable, verifiable negative event rooted in reality. A theoretical risk is not enough.
 
-The required pattern is:
+Each build record must contain five elements:
 
-1. **Positive signal / opportunity**: why the problem is worth building for.
+1. **Positive signal / opportunity**: why the problem or opportunity deserves a build.
 2. **Concrete negative event**: what actually failed, degraded, was rejected, lost value, or underperformed.
-3. **Observable impact**: time, money, friction, blocked execution, error, churn, manual work, or another visible consequence.
-4. **Design lesson**: what the failure teaches us the product must do or avoid.
-5. **Response / mitigation**: how the build reduces, detects, contains, or refuses the failure.
+3. **Observable impact**: blocked execution, delay, error, friction, manual work, money, churn, or another visible consequence.
+4. **Design lesson**: what the failure proves the product must do or avoid.
+5. **Response / mitigation**: how the build detects, reduces, contains, or refuses that situation.
 
-Current examples are recorded in [evidence/BUILD-QUALITY-RECORD.json](evidence/BUILD-QUALITY-RECORD.json) and [docs/BUILD-QUALITY-RULES.md](docs/BUILD-QUALITY-RULES.md).
+Current failures are preserved in [evidence/BUILD-QUALITY-RECORD.json](evidence/BUILD-QUALITY-RECORD.json) and [evidence/runtime/REAL-FAILURE-RECORD.md](evidence/runtime/REAL-FAILURE-RECORD.md).
 
-Two concrete examples are preserved:
+Examples already retained:
 
-- A Devnet deployment was blocked by an unfunded payer and faucet rate limiting. The workflow kept the state as BLOCKED_FUNDING instead of claiming deployment.
-- A guardian-approved $12 one-time request was changed to $11. The Solana path refused it with AllowanceActionMismatch. The exact $12 then executed once, and replay refused with AllowanceAlreadyUsed.
+- Devnet deployment was blocked by an unfunded payer and faucet rate limiting. The workflow stayed `BLOCKED_FUNDING` instead of claiming deployment.
+- A guardian-approved $12 one-time request was changed to $11. The Solana path refused with `AllowanceActionMismatch`.
+- A deterministic v0.2 demo used the wrong engine input shape. CI returned `INVALID_AMOUNT`, failed the workflow, and the failure stayed in the record until the script was corrected.
 
-Negative evidence stays in the record. It is not cleaned up simply because a later build passes.
+Failures remain evidence even after a later build passes.
 
 ## Fail-closed contract
 
-KEYS treats refusal and uncertainty as first-class outcomes.
+CRESCO treats refusal and uncertainty as first-class outcomes.
 
-- **REFUSE** means the rule or evidence says the action must not execute.
-- **PENDING** means execution was submitted but not confirmed.
-- **UNKNOWN** means the system cannot prove the result.
-- **ALLOW** is shown only when the relevant authority and proof are sufficient.
+- **REFUSE**: authority or evidence says the action must not execute.
+- **PENDING**: execution was submitted but is not confirmed.
+- **UNKNOWN**: the system cannot prove the final result.
+- **ALLOW**: shown only when the required authority and proof are sufficient.
 
-Examples covered by tests include stale authorization, stale or unavailable market evidence, unknown eligibility, unavailable authority runtime, out-of-bounds notional, changed one-time action, and replayed one-time permission.
+The repository tests stale authorization, unavailable market evidence, unknown eligibility, unavailable runtime, out-of-bounds notional, changed one-time actions, replay, timeouts, malformed responses, and other negative paths.
+
+A build that only demonstrates success is incomplete.
 
 ## Architecture
 
-~~~
-Cresco
+```text
+CRESCO web
   |
   v
-KEYS Cloudflare API
+CRESCO API
   |
-  +-- Family state and reservations
-  |     Durable Object / SQLite
+  +-- Family state and durable reservations
+  |     Cloudflare Durable Object / SQLite
   |
   +-- Market truth
   |     Pyth Pro / Pyth Lazer
   |
   v
-KEYS Solana program
+CRESCO Solana program
   |
   +-- Mandate
   +-- AssetRule
@@ -138,28 +142,35 @@ KEYS Solana program
   |
   v
 Demo SPL-token capital movement
-~~~
+```
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the technical map.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Market and representation truth
 
 AAPL is the current proven Money execution lane.
 
-The Explore layer can expose additional entitlement-checked Pyth markets for Learn and Practice, including equities, crypto, FX, metals, and commodities. Feed availability does not create Money eligibility.
+Explore can expose additional entitlement-checked Pyth markets for Learn and Practice across equities, crypto, FX, metals, and commodities. Feed availability does not create Money eligibility.
 
-Tessera and PreStocks are representation-learning integrations. They do not automatically create execution eligibility or KEYS authority.
+Tessera and PreStocks are representation-learning integrations. They do not automatically create execution eligibility or CRESCO authority.
 
-A company, a token representation, holder eligibility, and KEYS authority are separate questions.
+CRESCO separates four questions:
+
+1. What company or asset is this?
+2. What does this token or representation actually represent?
+3. Is this user eligible to use it?
+4. Does the current Key authorize this action?
+
+A positive answer to one question does not imply the others.
 
 ## Truth boundary
 
-What is proven now:
+Proven now:
 
 - Solana Devnet program;
 - program-controlled demo-token execution;
 - AAPL live Pyth evidence in the execution path;
-- role-scoped child/guardian demo sessions;
+- role-scoped child and guardian demo sessions;
 - persistent Family state;
 - boundary requests and guardian decisions;
 - durable reservations and idempotency;
@@ -168,7 +179,7 @@ What is proven now:
 - source-backed Learn and Practice;
 - mobile and WebKit coverage.
 
-What is not claimed:
+Not claimed:
 
 - production KYC or identity verification;
 - embedded production wallet custody;
@@ -185,41 +196,41 @@ See [docs/TRUTH-BOUNDARY.md](docs/TRUTH-BOUNDARY.md).
 
 | Path | Purpose |
 | --- | --- |
-| apps/web | Cresco consumer frontend |
-| programs/keys | Solana program |
-| src | KEYS backend, runtime, market adapters, and Cloudflare state |
-| test | Node/API policy and fail-closed tests |
-| tests | Anchor/Solana proof tests |
-| evidence | Verifiable proof and retained failure records |
-| docs | Public architecture, API, product rules, demo, and truth boundary |
-| product/PRD.md | Current product requirements |
+| `apps/web` | CRESCO consumer frontend |
+| `programs/keys` | Deployed Solana program source. The folder/crate name is a legacy technical identifier retained for proof reproducibility. |
+| `src` | CRESCO backend, runtime, market adapters, and Cloudflare state |
+| `test` | Node/API policy and fail-closed tests |
+| `tests` | Anchor/Solana proof tests |
+| `evidence` | Verifiable proof and retained failure records |
+| `docs` | Public architecture, API, product rules, demo, and truth boundary |
+| `product/PRD.md` | Current CRESCO product requirements |
 
-Exploratory design work, collaborator handoffs, temporary state files, and submission strategy are intentionally not part of the public main tree.
+Exploratory design work, collaborator handoffs, temporary state files, and submission strategy are intentionally absent from the public main tree.
 
 ## Local development
 
-Root backend and tests:
+Backend and policy tests:
 
-~~~bash
+```bash
 npm install
 npm test
 npm run demo
-~~~
+```
 
-Cresco:
+CRESCO web:
 
-~~~bash
+```bash
 cd apps/web
 npm install
 npm run check
 npm run dev
-~~~
+```
 
 The web check runs typecheck, lint, human-copy lint, tests, and a production build.
 
 ## Build gates
 
-The public repo enforces:
+The public repository enforces:
 
 - Node/API tests;
 - Solana/Anchor proof workflows;
@@ -232,13 +243,13 @@ The public repo enforces:
 
 Run the build-quality gate directly:
 
-~~~bash
+```bash
 npm run quality:gate
-~~~
+```
 
-The gate requires at least one real negative event with all five fields and proof.
+The gate requires a real negative event with all five canonical fields and verifiable proof.
 
-## Public docs
+## Public documentation
 
 - [Product requirements](product/PRD.md)
 - [Architecture](docs/ARCHITECTURE.md)
@@ -247,7 +258,7 @@ The gate requires at least one real negative event with all five fields and proo
 - [Backend API](docs/BACKEND-API.md)
 - [Frontend/backend contract v0.2](docs/FRONTEND-BACKEND-CONTRACT-V0.2.md)
 - [Family learning layer](docs/FAMILY-LEARNING-LAYER.md)
-- [Cresco design system](docs/CRESCO-FRONTEND-DESIGN-SYSTEM.md)
+- [CRESCO design system](docs/CRESCO-FRONTEND-DESIGN-SYSTEM.md)
 - [Truth boundary](docs/TRUTH-BOUNDARY.md)
 - [Cloudflare deployment](docs/CLOUDFLARE-BACKEND-DEPLOYMENT.md)
 - [Evidence](evidence)
