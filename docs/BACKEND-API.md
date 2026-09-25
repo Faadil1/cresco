@@ -1,4 +1,4 @@
-# KEYS Backend API — Cresco / v0.2
+# CRESCO Backend API — Cresco / v0.2
 
 Date: 2026-09-24  
 Status: **FROZEN SEMANTICS / STATEFUL DEVNET DEMO IMPLEMENTED**
@@ -11,7 +11,7 @@ CORS production origin:
 
 `https://cresco-lac.vercel.app`
 
-This API is a hackathon-grade Devnet implementation of KEYS bounded autonomy. It is not a brokerage/custody API and does not claim real minor securities execution.
+This API is a hackathon-grade Devnet implementation of CRESCO bounded autonomy. It is not a brokerage/custody API and does not claim real minor securities execution.
 
 ## Session model
 
@@ -64,7 +64,7 @@ Body:
 }
 ```
 
-Supported current Devnet demo changes are policy notional limits and status. They call the KEYS Solana program and return Devnet proof signatures. Browser data is not the authority source.
+Supported current Devnet demo changes are policy notional limits and status. They call the CRESCO Solana program and return Devnet proof signatures. Browser data is not the authority source.
 
 ## Evaluate
 
@@ -109,7 +109,7 @@ Execution sequence:
 3. serialize balance and period-boundary checks;
 4. verify optional exact ALLOW_ONCE request;
 5. fetch live signed Pyth AAPL evidence;
-6. submit KEYS Devnet transaction;
+6. submit CRESCO Devnet transaction;
 7. wait for confirmation;
 8. finalize durable balance/portfolio/request state;
 9. return proof.
@@ -186,7 +186,7 @@ Family session required. Returns holdings/activity finalized from confirmed Mone
 
 ### GET /api/v0.2/market/discovery
 
-Public KEYS market-discovery surface backed by the current Pyth Pro catalog plus **server-side entitlement probes**.
+Public CRESCO market-discovery surface backed by the current Pyth Pro catalog plus **server-side entitlement probes**.
 
 It currently proves live accessible discovery across:
 - US equities / ETFs;
@@ -200,7 +200,7 @@ The response distinguishes:
 - `LEARN_PRACTICE_ONLY` — every other discovered market feed.
 
 Important invariants:
-- public Pyth catalog presence does not equal KEYS entitlement;
+- public Pyth catalog presence does not equal CRESCO entitlement;
 - entitlement does not equal Money execution eligibility;
 - market evidence has `authorityEffect=NONE`;
 - unavailable feeds never become fabricated prices.
@@ -262,7 +262,7 @@ Live public API integration, fail-closed for execution eligibility:
 
 Live public API integration using Tessera's public token-details surface.
 
-The normalized response explicitly models T-Tokens as **loan participation rights**, not direct equity. Default KEYS policy is fail-closed:
+The normalized response explicitly models T-Tokens as **loan participation rights**, not direct equity. Default CRESCO policy is fail-closed:
 
 `eligibility=UNKNOWN`, `executionEligible=false`, `practiceAvailable=true`, `authorityEffect=NONE`.
 
