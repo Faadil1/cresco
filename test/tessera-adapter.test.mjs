@@ -35,8 +35,8 @@ test('Tessera adapter normalizes a T-Token as a loan participation right without
   assert.equal(out.representation.directEquityOwnership, false);
   assert.equal(out.eligibility.status, TesseraEligibilityStatus.UNKNOWN);
   assert.equal(out.eligibility.executionEligible, false);
-  assert.equal(out.keysPolicy.practiceAvailable, true);
-  assert.equal(out.keysPolicy.authorityEffect, 'NONE');
+  assert.equal(out.crescoPolicy.practiceAvailable, true);
+  assert.equal(out.crescoPolicy.authorityEffect, 'NONE');
 });
 
 test('Tessera catalog uses the public token-details API and stays fail-closed by default', async () => {
@@ -73,7 +73,7 @@ test('Tessera remains authority-neutral even when an explicit eligibility resolv
   });
 
   assert.equal(catalog[0].eligibility.executionEligible, true);
-  assert.equal(catalog[0].keysPolicy.authorityEffect, 'NONE');
+  assert.equal(catalog[0].crescoPolicy.authorityEffect, 'NONE');
 });
 
 test('Tessera integration summary preserves representation and minor-execution truth boundaries', () => {
