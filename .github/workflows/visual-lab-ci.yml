@@ -29,6 +29,7 @@ jobs:
       - name: Check browser and Pages Function JavaScript
         run: |
           node --check apps/visual-lab/public/app.js
+          node --check apps/visual-lab/public/parity.js
           node --check apps/visual-lab/functions/api/markets.js
           node --check apps/visual-lab/functions/api/tessera.js
           node --check apps/visual-lab/functions/api/prestocks.js
@@ -42,7 +43,7 @@ jobs:
           grep -R -n '/api/v0.2/market/discovery' apps/visual-lab/functions/api/markets.js
           grep -R -n '/api/v0.2/integrations/tessera' apps/visual-lab/functions/api/tessera.js
           grep -R -n '/api/v0.2/integrations/prestocks' apps/visual-lab/functions/api/prestocks.js
-          grep -q 'cresco.visualLab.sandbox.v2' apps/visual-lab/public/app.js
+          grep -q 'cresco.visualLab.sandbox.v3' apps/visual-lab/public/app.js
           grep -q 'data-money-amount="20"' apps/visual-lab/public/index.html
           grep -q 'data-guardian-action="allow-once"' apps/visual-lab/public/index.html
           grep -q 'Practice $25' apps/visual-lab/public/app.js
@@ -56,5 +57,12 @@ jobs:
           grep -q 'Key Garden' apps/visual-lab/public/index.html
           grep -q 'Market Playground' apps/visual-lab/public/index.html
           grep -q 'Family Room' apps/visual-lab/public/index.html
+          grep -q 'Financial Passport' apps/visual-lab/public/index.html
+          grep -q 'Market Atlas' apps/visual-lab/public/index.html
+          grep -q 'Family Capital Instrument' apps/visual-lab/public/index.html
+          grep -q 'data-capability-mount' apps/visual-lab/public/index.html
+          grep -q 'ALLOWANCE_ACTION_MISMATCH' apps/visual-lab/public/app.js
+          grep -q 'ALLOWANCE_ALREADY_USED' apps/visual-lab/public/app.js
+          grep -q '36150024852' apps/visual-lab/public/parity.js
           grep -q 'AAPL stays the primary Money proof' apps/visual-lab/public/index.html
           echo "CRESCO_VISUAL_LAB_CI=PASS"
