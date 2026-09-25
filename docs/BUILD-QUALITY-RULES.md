@@ -99,7 +99,7 @@ The record should make the evolution legible:
 
 failure -> impact -> lesson -> mitigation -> retest.
 
-## Current KEYS examples
+## Current CRESCO examples
 
 ### Exact-action mismatch
 
@@ -116,10 +116,10 @@ Lesson:
 Allow once cannot behave like an upper-bound allowance. It must bind the exact approved action.
 
 Mitigation:
-KEYS binds the permission to the request, asset, Mandate nonce, and exact notional. The exact $12 action executes once. Replay refuses with AllowanceAlreadyUsed.
+CRESCO binds the permission to the request, asset, Mandate nonce, and exact notional. The exact $12 action executes once. Replay refuses with AllowanceAlreadyUsed.
 
 Proof:
-https://github.com/Faadil1/keys/actions/runs/36150024852
+https://github.com/Faadil1/cresco/actions/runs/36150024852
 
 ### Devnet funding block
 
@@ -139,7 +139,7 @@ Mitigation:
 The workflow retained BLOCKED_FUNDING, then reran using a funded Devnet-only signer and produced a verifiable deployment.
 
 Initial run:
-https://github.com/Faadil1/keys/actions/runs/35890663439
+https://github.com/Faadil1/cresco/actions/runs/35890663439
 
 ## Machine-readable gate
 
