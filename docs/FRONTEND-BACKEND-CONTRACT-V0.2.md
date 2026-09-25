@@ -1,4 +1,4 @@
-# KEYS — Frontend / Backend Contract v0.2
+# CRESCO — Frontend / Backend Contract v0.2
 
 Date: 2026-09-24  
 Status: **FROZEN FOR FAMILY EXPERIENCE INTEGRATION**
@@ -12,7 +12,7 @@ This contract is frozen against the proven v0.2 semantics:
 
 Canonical devnet evidence:
 
-https://github.com/Faadil1/keys/actions/runs/35959137364
+https://github.com/Faadil1/cresco/actions/runs/35959137364
 
 ## Product contract
 
@@ -202,7 +202,7 @@ The current runtime proof uses a **demo/mock SPL token** with real live Pyth equ
 Frontend copy must not imply:
 
 - that the user legally owns conventional shares;
-- that KEYS is a broker or custodian;
+- that CRESCO is a broker or custodian;
 - that a minor can execute real tokenized-stock trades in all jurisdictions;
 - that AAPL is live under the current Pyth trial entitlement;
 - that mainnet execution is already integrated.
