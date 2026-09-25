@@ -34,8 +34,8 @@ test('PreStocks adapter normalizes live representation data without creating aut
   assert.equal(out.market.premiumDiscountPct, 25);
   assert.equal(out.eligibility.status, PreStocksEligibilityStatus.UNKNOWN);
   assert.equal(out.eligibility.executionEligible, false);
-  assert.equal(out.keysPolicy.practiceAvailable, true);
-  assert.equal(out.keysPolicy.authorityEffect, 'NONE');
+  assert.equal(out.crescoPolicy.practiceAvailable, true);
+  assert.equal(out.crescoPolicy.authorityEffect, 'NONE');
 });
 
 test('PreStocks catalog uses the official public API and stays fail-closed by default', async () => {
@@ -82,10 +82,10 @@ test('PreStocks may become execution-eligible only through an explicit eligibili
   });
 
   assert.equal(catalog[0].eligibility.executionEligible, true);
-  assert.equal(catalog[0].keysPolicy.authorityEffect, 'NONE');
+  assert.equal(catalog[0].crescoPolicy.authorityEffect, 'NONE');
 });
 
-test('PreStocks integration summary preserves the KEYS truth boundary', () => {
+test('PreStocks integration summary preserves the CRESCO truth boundary', () => {
   const summary = preStocksIntegrationSummary();
 
   assert.equal(summary.status, 'LIVE_PUBLIC_API_INTEGRATED');
