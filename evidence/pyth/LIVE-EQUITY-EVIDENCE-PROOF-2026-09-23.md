@@ -1,11 +1,11 @@
-# KEYS — Live Pyth Equity Evidence Proof
+# CRESCO — Live Pyth Equity Evidence Proof
 
 Date: 2026-09-23  
 Status: **PASS — AUTHENTICATED LIVE EQUITY**
 
 Canonical workflow run:
 
-https://github.com/Faadil1/keys/actions/runs/35910460176
+https://github.com/Faadil1/cresco/actions/runs/35910460176
 
 Workflow:
 
@@ -35,7 +35,7 @@ The user-visible Pyth Terminal trial surface showed trial-entitled equities incl
 
 A prior control proof established that the API token itself was valid: BTC/USD returned `FRESH` while AAPL returned `PYTH_NOT_ENTITLED`.
 
-KEYS therefore made the live proof asset-configurable rather than purchasing AAPL access or pretending AAPL was available.
+CRESCO therefore made the live proof asset-configurable rather than purchasing AAPL access or pretending AAPL was available.
 
 ## Authenticated live equity snapshot
 
@@ -58,9 +58,9 @@ Observed normalized snapshot:
 
 This is real authenticated market evidence returned by Pyth Pro during the workflow run.
 
-## Load-bearing KEYS decision
+## Load-bearing CRESCO decision
 
-The fresh acceptable Pyth snapshot was passed into the KEYS proposal evaluator.
+The fresh acceptable Pyth snapshot was passed into the CRESCO proposal evaluator.
 
 Observed:
 
@@ -80,7 +80,7 @@ Fresh market evidence allows the proposal to reach the appropriate mandate decis
 
 ## Asset independence
 
-The proof intentionally does not make KEYS dependent on TSLA.
+The proof intentionally does not make CRESCO dependent on TSLA.
 
 The Pyth proof script now selects its equity feed through configuration. The product mechanism remains about evidence-backed progressive authority, not a specific ticker.
 
@@ -93,7 +93,7 @@ This proof establishes:
 - authenticated live Pyth Pro access;
 - a live entitled US-equity feed;
 - price/confidence/freshness normalization;
-- load-bearing integration with the KEYS decision engine.
+- load-bearing integration with the CRESCO decision engine.
 
 It does not establish:
 
