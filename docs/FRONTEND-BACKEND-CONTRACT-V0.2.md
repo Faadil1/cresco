@@ -201,13 +201,13 @@ The current runtime proof uses a **demo/mock SPL token** with real live Pyth equ
 
 Frontend copy must not imply:
 
-- that Maya legally owns conventional shares;
+- that the user legally owns conventional shares;
 - that KEYS is a broker or custodian;
 - that a minor can execute real tokenized-stock trades in all jurisdictions;
 - that AAPL is live under the current Pyth trial entitlement;
 - that mainnet execution is already integrated.
 
-## Benita integration target
+## Frontend integration target
 
 The primary experience should expose:
 
