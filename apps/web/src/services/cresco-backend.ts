@@ -498,7 +498,7 @@ export type TesseraRepresentation = {
     executionEligible: boolean;
     reasonCode?: string | null;
   };
-  keysPolicy: {
+  crescoPolicy: {
     practiceAvailable: boolean;
     representationLearningAvailable: boolean;
     executionEligible: boolean;
