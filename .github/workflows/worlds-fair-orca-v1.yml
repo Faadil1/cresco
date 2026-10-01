@@ -1,0 +1,76 @@
+name: worlds-fair-orca-v1
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "programs/keys/**"
+      - "Anchor.toml"
+      - "Cargo.toml"
+      - ".github/workflows/worlds-fair-orca-v1.yml"
+  workflow_dispatch:
+
+jobs:
+  compile-and-unit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Resolve SBF-compatible dependency lock
+        shell: bash
+        run: |
+          cargo generate-lockfile --manifest-path Cargo.toml
+          cargo update --manifest-path Cargo.toml -p anchor-attribute-access-control --precise 0.32.1
+          cargo update --manifest-path Cargo.toml -p anchor-attribute-account --precise 0.32.1
+          cargo update --manifest-path Cargo.toml -p anchor-attribute-constant --precise 0.32.1
+          cargo update --manifest-path Cargo.toml -p anchor-attribute-error --precise 0.32.1
+          cargo update --manifest-path Cargo.toml -p anchor-attribute-event --precise 0.32.1
+          cargo update --manifest-path Cargo.toml -p anchor-attribute-program --precise 0.32.1
+          cargo update --manifest-path Cargo.toml -p anchor-derive-accounts --precise 0.32.1
+          cargo update --manifest-path Cargo.toml -p anchor-derive-serde --precise 0.32.1
+          cargo update --manifest-path Cargo.toml -p anchor-derive-space --precise 0.32.1
+          cargo update --manifest-path Cargo.toml -p anchor-syn --precise 0.32.1
+          cargo update --manifest-path Cargo.toml -p borsh@1.8.1 --precise 1.5.7
+          cargo update --manifest-path Cargo.toml -p proc-macro-crate@3.5.0 --precise 3.4.0
+          if grep -q 'name = "blake3"' Cargo.lock; then cargo update --manifest-path Cargo.toml -p blake3 --precise 1.8.2; fi
+          if grep -q 'name = "constant_time_eq"' Cargo.lock; then cargo update --manifest-path Cargo.toml -p constant_time_eq --precise 0.3.1; fi
+          if grep -q 'name = "base64ct"' Cargo.lock; then cargo update --manifest-path Cargo.toml -p base64ct --precise 1.7.3; fi
+          INDEXMAP_V2=$(awk '/name = "indexmap"/ {getline; gsub(/[" ]/, "", $3); if ($3 ~ /^2\./) {print $3; exit}}' Cargo.lock)
+          if [ -n "$INDEXMAP_V2" ] && [ "$INDEXMAP_V2" != "2.11.4" ]; then
+            cargo update --manifest-path Cargo.toml -p "indexmap@$INDEXMAP_V2" --precise 2.11.4
+          fi
+          if grep -q 'name = "zeroize"' Cargo.lock; then cargo update --manifest-path Cargo.toml -p zeroize --precise 1.8.1; fi
+          if grep -q 'name = "zeroize_derive"' Cargo.lock; then cargo update --manifest-path Cargo.toml -p zeroize_derive --precise 1.4.2; fi
+          if grep -q 'version = "0.23.10+spec-1.0.0"' Cargo.lock; then cargo update --manifest-path Cargo.toml -p 'toml_edit@0.23.10+spec-1.0.0' --precise 0.23.7; fi
+          if grep -q 'name = "toml_parser"' Cargo.lock; then cargo update --manifest-path Cargo.toml -p toml_parser --precise 1.0.4; fi
+          if grep -q 'name = "unicode-segmentation"' Cargo.lock; then cargo update --manifest-path Cargo.toml -p unicode-segmentation --precise 1.12.0; fi
+          if grep -q 'name = "serde_with"' Cargo.lock; then cargo update --manifest-path Cargo.toml -p serde_with --precise 3.12.0; fi
+          if grep -q 'name = "time"' Cargo.lock; then cargo update --manifest-path Cargo.toml -p time --precise 0.3.45; fi
+          sed -i 's/^version = 4$/version = 3/' Cargo.lock
+
+      - name: Unit tests
+        run: cargo test --workspace --lib
+
+      - name: Install Solana CLI 2.3.0
+        shell: bash
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/v2.3.0/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+
+      - name: Install Anchor CLI 0.32.1
+        shell: bash
+        run: |
+          cargo install --git https://github.com/otter-sec/anchor avm --force
+          avm install 0.32.1
+          avm use 0.32.1
+          echo "$HOME/.avm/bin" >> "$GITHUB_PATH"
+
+      - name: Anchor SBF build
+        shell: bash
+        run: |
+          export PATH="$HOME/.local/share/solana/install/active_release/bin:$HOME/.avm/bin:$PATH"
+          anchor build
+          echo "WORLD_FAIR_ORCA_V1_BUILD=PASS"
