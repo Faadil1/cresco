@@ -1,6 +1,5 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::{
-    hash::hashv,
     instruction::{AccountMeta, Instruction},
     program::{invoke, invoke_signed},
     pubkey,
@@ -9,6 +8,7 @@ use anchor_lang::solana_program::{
 use anchor_spl::token_interface::{
     self, Mint, TokenAccount, TokenInterface, TransferChecked,
 };
+use solana_sha256_hasher::hashv;
 declare_id!("ABjE6V5q9VbD3CAHDXxvztY5kXQmDXHRcEP1kZ4KSSfk");
 
 pub const STAGE_LEARN: u8 = 0;
