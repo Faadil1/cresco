@@ -682,7 +682,6 @@ pub mod keys {
     ) -> Result<()> {
         require!(input_amount > 0, KeysError::InvalidAmount);
         require!(min_output_amount > 0, KeysError::InvalidAmount);
-        require!(sqrt_price_limit > 0, KeysError::InvalidOrcaPriceLimit);
         require!(!pyth_message.is_empty(), KeysError::PythMessageInvalid);
 
         let now = Clock::get()?.unix_timestamp;
@@ -824,7 +823,6 @@ pub mod keys {
     ) -> Result<()> {
         require!(input_amount > 0, KeysError::InvalidAmount);
         require!(min_output_amount > 0, KeysError::InvalidAmount);
-        require!(sqrt_price_limit > 0, KeysError::InvalidOrcaPriceLimit);
         require!(!pyth_message.is_empty(), KeysError::PythMessageInvalid);
 
         let now = Clock::get()?.unix_timestamp;
