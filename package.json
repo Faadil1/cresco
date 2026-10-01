@@ -13,12 +13,16 @@
     "proof:devnet-execution-bridge": "node scripts/devnet-execution-smoke.mjs",
     "proof:tessera": "node scripts/tessera-live-proof.mjs",
     "proof:pyth-markets": "node scripts/pyth-market-discovery-proof.mjs",
-    "quality:gate": "node scripts/validate-build-quality.mjs"
+    "quality:gate": "node scripts/validate-build-quality.mjs",
+    "proof:worlds-fair-orca": "node scripts/worlds-fair-orca-v1-proof.cjs"
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.32.1",
     "@solana/spl-token": "0.4.14",
-    "@pythnetwork/pyth-lazer-solana-sdk": "0.1.2"
+    "@pythnetwork/pyth-lazer-solana-sdk": "0.1.2",
+    "@orca-so/common-sdk": "0.7.1",
+    "@orca-so/whirlpools-sdk": "0.22.0",
+    "@solana/web3.js": "1.98.4"
   },
   "devDependencies": {
     "mocha": "11.7.2"
