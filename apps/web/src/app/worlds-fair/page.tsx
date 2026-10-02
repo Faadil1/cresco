@@ -292,7 +292,7 @@ export default function WorldsFairPage() {
                   Mandate nonce
                 </p>
                 <p className="mt-2 text-[25px] font-black tabular text-navy-strong">
-                  {mandate?.nonce ?? "—"}
+                  {mandate?.nonce ?? "Not ready"}
                 </p>
               </div>
               <div className="rounded-[18px] bg-surface-soft p-4">
@@ -302,7 +302,7 @@ export default function WorldsFairPage() {
                 <p className="mt-2 text-[25px] font-black tabular text-navy-strong">
                   {mandate
                     ? `$${(mandate.maxActionNotionalMicroUsd / 1_000_000).toFixed(2)}`
-                    : "—"}
+                    : "Not ready"}
                 </p>
               </div>
             </div>
@@ -407,7 +407,7 @@ export default function WorldsFairPage() {
                   role="alert"
                   className="mt-5 rounded-[16px] border border-loss/25 bg-loss-soft p-4 text-[13px] font-bold text-loss-text"
                 >
-                  Live outcome is UNKNOWN — {runError}. CRESCO does not display
+                  Live outcome is UNKNOWN: {runError}. CRESCO does not display
                   success when confirmation is uncertain.
                 </div>
               ) : null}
