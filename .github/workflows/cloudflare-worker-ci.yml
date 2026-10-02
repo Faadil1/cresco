@@ -3,10 +3,11 @@ name: cloudflare-worker-ci
 on:
   push:
     branches: [main]
-    paths:
+    paths: &worker_paths
       - "src/cloudflare-worker.mjs"
       - "src/http-api.mjs"
       - "src/devnet-execution-provider.mjs"
+      - "src/worlds-fair-orca-provider.mjs"
       - "src/pyth-adapter.mjs"
       - "scripts/pyth-market-discovery-proof.mjs"
       - "src/prestocks-adapter.mjs"
@@ -15,7 +16,11 @@ on:
       - "wrangler.jsonc"
       - "package.json"
       - "test/cloudflare-worker.test.mjs"
+      - "test/http-api.test.mjs"
       - ".github/workflows/cloudflare-worker-ci.yml"
+  pull_request:
+    branches: [main]
+    paths: *worker_paths
   workflow_dispatch:
 
 jobs:
