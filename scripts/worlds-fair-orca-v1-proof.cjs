@@ -814,7 +814,7 @@ async function main() {
   const rollbackRefusal = await expectRefusal(
     'orca_failure_rollback',
     () => executeException(rollback, { inputAmount: ROLLBACK_INPUT }),
-    ['OrcaSwapFailed', 'Orca swap CPI failed'],
+    ['OrcaSwapFailed', 'Orca swap CPI failed', 'AmountOutBelowMinimum', 'Amount out below minimum threshold'],
   );
   const rollbackAllowanceAfter =
     await program.account.allowanceReceipt.fetch(rollback.allowance);
