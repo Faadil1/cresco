@@ -116,7 +116,7 @@ jobs:
 
           if [ -n "${WORLD_FAIR_REUSE_PROGRAM_ID:-}" ]; then
             echo "WORLD_FAIR_PROGRAM_ID=$WORLD_FAIR_REUSE_PROGRAM_ID" >> "$GITHUB_ENV"
-            python3 -c 'from pathlib import Path; import os,re; p=Path("programs/keys/src/lib.rs"); s=p.read_text(); pid=os.environ["WORLD_FAIR_REUSE_PROGRAM_ID"]; s2,n=re.subn(r"declare_id!\\(\"[1-9A-HJ-NP-Za-km-z]{32,44}\"\\);", f"declare_id!(\"{pid}\");", s, count=1); n == 1 or (_ for _ in ()).throw(SystemExit("failed to bind reused program id into source")); p.write_text(s2)'
+            python3 -c 'from pathlib import Path; import os; p=Path("programs/keys/src/lib.rs"); s=p.read_text(); old="declare_id!(\"ABjE6V5q9VbD3CAHDXxvztY5kXQmDXHRcEP1kZ4KSSfk\");"; pid=os.environ["WORLD_FAIR_REUSE_PROGRAM_ID"]; old in s or (_ for _ in ()).throw(SystemExit("baseline declare_id not found")); p.write_text(s.replace(old, f"declare_id!(\"{pid}\");", 1))'
             anchor build 2>&1 | tee /tmp/worlds-fair-anchor-build.log
             node -e '
               const fs=require("fs");
