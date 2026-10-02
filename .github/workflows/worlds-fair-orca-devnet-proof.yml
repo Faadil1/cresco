@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 55
     env:
-      ANCHOR_PROVIDER_URL: https://api.devnet.solana.com
+      ANCHOR_PROVIDER_URL: ${{ secrets.SOLANA_DEVNET_RPC_URL || 'https://api.devnet.solana.com' }}
       PYTH_PRO_API_KEY: ${{ secrets.PYTH_PRO_API_KEY }}
       DEVNET_KEYPAIR_JSON: ${{ secrets.DEVNET_KEYPAIR_JSON }}
 
@@ -102,9 +102,9 @@ jobs:
           chmod 600 "$HOME/.config/solana/id.json"
           echo "ANCHOR_WALLET=$HOME/.config/solana/id.json" >> "$GITHUB_ENV"
           export PATH="$HOME/.local/share/solana/install/active_release/bin:$HOME/.avm/bin:$PATH"
-          solana config set --url https://api.devnet.solana.com --keypair "$HOME/.config/solana/id.json"
+          solana config set --url "$ANCHOR_PROVIDER_URL" --keypair "$HOME/.config/solana/id.json"
           echo "PROOF principal=$(solana address)"
-          echo "PROOF balance_before=$(solana balance --url https://api.devnet.solana.com)"
+          echo "PROOF balance_before=$(solana balance --url "$ANCHOR_PROVIDER_URL")"
 
       - name: Build ephemeral World’s Fair program
         shell: bash
@@ -137,7 +137,7 @@ jobs:
             set +e
             DEPLOY_OUT=$(solana program deploy target/deploy/keys.so \
               --program-id target/deploy/keys-keypair.json \
-              --url https://api.devnet.solana.com \
+              --url "$ANCHOR_PROVIDER_URL" \
               --keypair "$HOME/.config/solana/id.json" 2>&1)
             DEPLOY_RC=$?
             set -e
@@ -148,7 +148,7 @@ jobs:
             FAILED_BUFFER=$(printf '%s\n' "$DEPLOY_OUT" | awk '/^solana program close / {print $4; exit}')
             if [ -n "$FAILED_BUFFER" ]; then
               set +e
-              solana program close "$FAILED_BUFFER" --url https://api.devnet.solana.com
+              solana program close "$FAILED_BUFFER" --url "$ANCHOR_PROVIDER_URL"
               set -e
             fi
           }
@@ -162,7 +162,7 @@ jobs:
               exit $DEPLOY_RC
             fi
 
-            BALANCE=$(solana balance --lamports --url https://api.devnet.solana.com 2>/dev/null | tr -dc '0-9' || true)
+            BALANCE=$(solana balance --lamports --url "$ANCHOR_PROVIDER_URL" 2>/dev/null | tr -dc '0-9' || true)
             BALANCE=${BALANCE:-0}
             REQUIRED_SOL=$(printf '%s\n' "$DEPLOY_OUT" | sed -nE 's/.*insufficient funds for spend \(([0-9.]+) SOL\) \+ fee \(([0-9.]+) SOL\).*/\1 \2/p' | tail -1)
 
@@ -175,32 +175,32 @@ jobs:
             echo "PROOF funding_target_lamports=$TARGET_BALANCE_LAMPORTS current=$BALANCE"
 
             for ATTEMPT in 1 2 3; do
-              BALANCE=$(solana balance --lamports --url https://api.devnet.solana.com 2>/dev/null | tr -dc '0-9' || true)
+              BALANCE=$(solana balance --lamports --url "$ANCHOR_PROVIDER_URL" 2>/dev/null | tr -dc '0-9' || true)
               BALANCE=${BALANCE:-0}
               if [ "$BALANCE" -ge "$TARGET_BALANCE_LAMPORTS" ]; then break; fi
               SHORTFALL=$((TARGET_BALANCE_LAMPORTS - BALANCE))
               AIRDROP_SOL=$(python3 -c 'import sys; x=int(sys.argv[1]); print(f"{min(x/1_000_000_000+0.02,1.0):.9f}")' "$SHORTFALL")
               set +e
-              solana airdrop "$AIRDROP_SOL" --url https://api.devnet.solana.com
+              solana airdrop "$AIRDROP_SOL" --url "$ANCHOR_PROVIDER_URL"
               set -e
               sleep 12
             done
 
-            BALANCE=$(solana balance --lamports --url https://api.devnet.solana.com 2>/dev/null | tr -dc '0-9' || true)
+            BALANCE=$(solana balance --lamports --url "$ANCHOR_PROVIDER_URL" 2>/dev/null | tr -dc '0-9' || true)
             BALANCE=${BALANCE:-0}
 
             if [ "$BALANCE" -lt "$TARGET_BALANCE_LAMPORTS" ]; then
               echo "PROOF devnet_pow_faucet=START"
               cargo install devnet-pow
               set +e
-              devnet-pow -k "$HOME/.config/solana/id.json" -u https://api.devnet.solana.com \
+              devnet-pow -k "$HOME/.config/solana/id.json" -u "$ANCHOR_PROVIDER_URL" \
                 -c confirmed mine -d 3 --reward 0.02 --no-infer -t "$TARGET_BALANCE_LAMPORTS"
               POW_RC=$?
               set -e
               echo "PROOF devnet_pow_faucet_rc=$POW_RC"
             fi
 
-            BALANCE=$(solana balance --lamports --url https://api.devnet.solana.com 2>/dev/null | tr -dc '0-9' || true)
+            BALANCE=$(solana balance --lamports --url "$ANCHOR_PROVIDER_URL" 2>/dev/null | tr -dc '0-9' || true)
             BALANCE=${BALANCE:-0}
             if [ "$BALANCE" -lt "$TARGET_BALANCE_LAMPORTS" ]; then
               echo "WORLD_FAIR_DEVNET_DEPLOY=BLOCKED_EXTERNAL_FUNDING target=$TARGET_BALANCE_LAMPORTS actual=$BALANCE"
@@ -215,7 +215,7 @@ jobs:
             fi
           fi
 
-          PROGRAM_SHOW=$(solana program show "$WORLD_FAIR_PROGRAM_ID" --url https://api.devnet.solana.com)
+          PROGRAM_SHOW=$(solana program show "$WORLD_FAIR_PROGRAM_ID" --url "$ANCHOR_PROVIDER_URL")
           echo "$PROGRAM_SHOW"
           echo "PROOF explorer=https://explorer.solana.com/address/$WORLD_FAIR_PROGRAM_ID?cluster=devnet"
           echo "WORLD_FAIR_EPHEMERAL_DEPLOY=PASS"
