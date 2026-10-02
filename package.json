@@ -14,7 +14,8 @@
     "proof:tessera": "node scripts/tessera-live-proof.mjs",
     "proof:pyth-markets": "node scripts/pyth-market-discovery-proof.mjs",
     "quality:gate": "node scripts/validate-build-quality.mjs",
-    "proof:worlds-fair-orca": "node scripts/worlds-fair-orca-v1-proof.cjs"
+    "proof:worlds-fair-orca": "node scripts/worlds-fair-orca-v1-proof.cjs",
+    "inspect:orca-devnet": "node scripts/orca-devnet-inspect.mjs"
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.32.1",
@@ -22,7 +23,8 @@
     "@pythnetwork/pyth-lazer-solana-sdk": "0.1.2",
     "@orca-so/common-sdk": "0.7.1",
     "@orca-so/whirlpools-sdk": "0.22.0",
-    "@solana/web3.js": "1.98.4"
+    "@solana/web3.js": "1.98.4",
+    "decimal.js": "10.5.0"
   },
   "devDependencies": {
     "mocha": "11.7.2"
