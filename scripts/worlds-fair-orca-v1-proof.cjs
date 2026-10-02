@@ -450,7 +450,7 @@ async function main() {
     payer.publicKey,
   );
 
-  const requiredFunding = 3_000_000;
+  // Successful scenarios consume 1.15 devUSDC total; keep a bounded margin\n  // without overfunding the CI wallet or depending on repeated faucet-like swaps.\n  const requiredFunding = 1_500_000;
   let payerUsdcState = await getAccount(provider.connection, payerUsdc.address);
   if (Number(payerUsdcState.amount) < requiredFunding) {
     const solUsdcPool = await orcaClient.getPool(ORCA_SOL_USDC_POOL);
@@ -568,11 +568,22 @@ async function main() {
     () => executeStanding(EXCEPTION_INPUT, boundaryPyth, boundaryQuote),
     ['PythNotionalExceeded', 'Pyth notional'],
   );
+  const boundaryNotionalMicroUsd =
+    (BigInt(EXCEPTION_INPUT) * BigInt(boundaryPyth.unitPriceMicroUsd)) / 1_000_000n;
   receipt.scenarios.softBoundary = {
     status: 'PASS',
     decision: 'REFUSE',
     reason: boundaryRefusal.code,
     standingMaxNotionalMicroUsd: STANDING_MAX_NOTIONAL_MICRO_USD,
+    requestedNotionalMicroUsd: Number(boundaryNotionalMicroUsd),
+    policyDiff: {
+      supportedProgram: 'PASS',
+      supportedPool: 'PASS',
+      supportedPair: 'PASS',
+      marketEvidence: 'PASS',
+      perActionNotional: 'VIOLATED',
+      violatedDimensions: ['MAX_ACTION_NOTIONAL'],
+    },
   };
 
   async function grantSwapException({
@@ -749,6 +760,36 @@ async function main() {
     decision: 'REFUSE',
     reason: hardBoundary.code,
     exceptionPath: false,
+  };
+
+  // EXTERNAL EVIDENCE FAILURE: the same otherwise-valid standing action must
+  // fail closed when required Pyth evidence is absent.
+  await targetPool.refreshData();
+  const evidenceFailureQuote = await quoteFor(STANDING_INPUT);
+  const evidenceFailureDeadline = Math.floor(Date.now() / 1000) + 300;
+  const evidenceFailure = await expectRefusal(
+    'missing_pyth_evidence',
+    async () =>
+      program.methods
+        .executeSwapWithinMandateWithPyth(
+          Buffer.alloc(0),
+          new anchor.BN(STANDING_INPUT),
+          evidenceFailureQuote.otherAmountThreshold,
+          evidenceFailureQuote.sqrtPriceLimit,
+          new anchor.BN(evidenceFailureDeadline),
+          new anchor.BN(executionNonce),
+        )
+        .accountsStrict(await buildAccounts(evidenceFailureQuote))
+        .signers([delegate])
+        .rpc(),
+    ['PythMessageInvalid', 'Pyth signed message is invalid'],
+  );
+  receipt.scenarios.evidenceFailure = {
+    status: 'PASS',
+    decision: 'REFUSE',
+    reason: evidenceFailure.code,
+    dependency: 'PYTH_LAZER',
+    evidenceStatus: 'MISSING',
   };
 
   // FAILURE / ROLLBACK: authority is valid but Orca cannot satisfy the
