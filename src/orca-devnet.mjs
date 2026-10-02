@@ -45,6 +45,9 @@ export async function inspectOrcaDevnetUsdcUsdt({
 
   const ctx = WhirlpoolContext.withProvider(
     provider,
+    undefined,
+    undefined,
+    {},
     ORCA_DEVNET_PROGRAM_ID,
   );
   const client = buildWhirlpoolClient(ctx);
