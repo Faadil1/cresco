@@ -4,7 +4,7 @@
   "version": "0.2.0",
   "description": "CRESCO: bounded autonomy for family capital on Solana.",
   "scripts": {
-    "test": "npm run quality:gate && node --test test/*.test.mjs && node --check scripts/dev-api.mjs",
+    "test": "npm run quality:gate && node --test test/*.test.mjs && node --check scripts/dev-api.mjs && node --check scripts/worlds-fair-orca-v1-proof.cjs",
     "test:anchor": "mocha --timeout 120000 tests/anchor-authority-proof.cjs",
     "demo": "node scripts/demo-run.mjs",
     "api": "node scripts/dev-api.mjs",
