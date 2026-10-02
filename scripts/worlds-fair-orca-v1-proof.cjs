@@ -719,7 +719,7 @@ async function main() {
   const hardEd = createEd25519Instruction(hardPyth.message, 1, 12);
   const hardBoundary = await expectRefusal(
     'hard_unsupported_program',
-    () =>
+    async () =>
       program.methods
         .executeSwapWithinMandateWithPyth(
           hardPyth.message,
