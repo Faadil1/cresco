@@ -450,7 +450,9 @@ async function main() {
     payer.publicKey,
   );
 
-  // Successful scenarios consume 1.15 devUSDC total; keep a bounded margin\n  // without overfunding the CI wallet or depending on repeated faucet-like swaps.\n  const requiredFunding = 1_500_000;
+  // Successful scenarios consume 1.15 devUSDC total; keep a bounded margin
+  // without overfunding the CI wallet or depending on repeated faucet-like swaps.
+  const requiredFunding = 1_500_000;
   let payerUsdcState = await getAccount(provider.connection, payerUsdc.address);
   if (Number(payerUsdcState.amount) < requiredFunding) {
     const solUsdcPool = await orcaClient.getPool(ORCA_SOL_USDC_POOL);
