@@ -1,4 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
+import BN from "bn.js";
 import { Percentage } from "@orca-so/common-sdk";
 import {
   IGNORE_CACHE,
@@ -69,7 +70,7 @@ export async function inspectOrcaDevnetUsdcUsdt({
   const swapQuote = await swapQuoteByInputToken(
     whirlpool,
     DEV_USDC_MINT,
-    new anchor.BN(inputAmountBaseUnits),
+    new BN(inputAmountBaseUnits),
     Percentage.fromFraction(slippageNumerator, slippageDenominator),
     ctx.program.programId,
     ctx.fetcher,
