@@ -220,6 +220,32 @@ jobs:
           echo "PROOF explorer=https://explorer.solana.com/address/$WORLD_FAIR_PROGRAM_ID?cluster=devnet"
           echo "WORLD_FAIR_EPHEMERAL_DEPLOY=PASS"
 
+      - name: Cool down devnet RPC after program deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Program deployment is RPC-intensive. Do not launch the product flow
+          # into the public devnet rate-limit window left by deployment.
+          sleep 25
+          for ATTEMPT in 1 2 3 4 5 6; do
+            BODY=$(curl -sS --max-time 15 \
+              -H 'Content-Type: application/json' \
+              -d '{"jsonrpc":"2.0","id":1,"method":"getHealth"}' \
+              "$ANCHOR_PROVIDER_URL" || true)
+            if printf '%s' "$BODY" | grep -q '"result":"ok"'; then
+              echo "WORLD_FAIR_DEVNET_RPC_PREFLIGHT=PASS"
+              break
+            fi
+            if [ "$ATTEMPT" -eq 6 ]; then
+              echo "WORLD_FAIR_DEVNET_RPC_PREFLIGHT=BLOCKED"
+              printf '%s\n' "$BODY"
+              exit 1
+            fi
+            sleep 10
+          done
+          # Keep a small quiet window before the account-heavy live slice.
+          sleep 8
+
       - name: Run first live Orca vertical slice
         shell: bash
         run: |
