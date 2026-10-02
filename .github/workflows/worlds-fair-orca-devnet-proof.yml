@@ -153,6 +153,29 @@ jobs:
             fi
           }
 
+          # Reclaim rent from a prior CI-only ephemeral World’s Fair program when
+          # the same protected devnet principal still controls it. This program id
+          # came from an earlier successful proof run and is not the public CRESCO baseline.
+          PRIOR_EPHEMERAL_PROGRAMS=(
+            "6fo7kPmWAZg6XgLASv1e21rSiGnXQexk6dg2ja1uZyAi"
+          )
+          for OLD_PROGRAM in "${PRIOR_EPHEMERAL_PROGRAMS[@]}"; do
+            if solana program show "$OLD_PROGRAM" --url "$ANCHOR_PROVIDER_URL" >/tmp/old-program.txt 2>/dev/null; then
+              CURRENT_AUTHORITY=$(solana address)
+              OLD_AUTHORITY=$(awk -F': ' '/^Authority:/ {print $2}' /tmp/old-program.txt | tr -d '[:space:]')
+              if [ "$OLD_AUTHORITY" = "$CURRENT_AUTHORITY" ]; then
+                echo "PROOF reclaiming_prior_ephemeral_program=$OLD_PROGRAM"
+                set +e
+                solana program close "$OLD_PROGRAM" --url "$ANCHOR_PROVIDER_URL" --keypair "$HOME/.config/solana/id.json"
+                RECLAIM_RC=$?
+                set -e
+                echo "PROOF reclaim_prior_ephemeral_rc=$RECLAIM_RC"
+              else
+                echo "PROOF prior_ephemeral_not_owned=$OLD_PROGRAM"
+              fi
+            fi
+          done
+
           attempt_deploy
           if [ $DEPLOY_RC -ne 0 ]; then
             close_failed_buffer
