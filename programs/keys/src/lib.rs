@@ -1333,11 +1333,10 @@ fn parse_verified_market_evidence(
     );
     let payload_timestamp_us = reader.read_u64_le()?;
     let channel_id = reader.read_u8()?;
-    // Accept Pyth fixed-rate channels (50ms, 200ms, 1000ms). Freshness is
-    // enforced independently by the Mandate, so faster fixed-rate channels are
-    // not weaker evidence.
+    // Pyth Lazer channel ids: 1 = real_time, 2/3/4 = fixed-rate
+    // 50ms/200ms/1000ms. Freshness is enforced independently by the Mandate.
     require!(
-        matches!(channel_id, 2 | 3 | 4),
+        matches!(channel_id, 1 | 2 | 3 | 4),
         KeysError::PythChannelMismatch
     );
 
