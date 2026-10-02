@@ -166,8 +166,17 @@ async function resolvePythUsdcFeed(apiKey) {
     });
     if (!row) continue;
 
+    // Pyth's current symbols API names the numeric Lazer feed field
+    // `pyth_lazer_id` (observed for Crypto.USDC/USD on 2026-10-02).
+    // Keep older aliases for forward/backward compatibility without guessing.
     const feedId = Number(
-      row.price_feed_id ?? row.priceFeedId ?? row.feed_id ?? row.feedId ?? row.id
+      row.pyth_lazer_id ??
+        row.pythLazerId ??
+        row.price_feed_id ??
+        row.priceFeedId ??
+        row.feed_id ??
+        row.feedId ??
+        row.id
     );
     const minChannel =
       row.min_channel ?? row.minChannel ?? row.minimum_channel ?? 'fixed_rate@200ms';
