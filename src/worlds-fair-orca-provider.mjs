@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-import * as anchor from '@coral-xyz/anchor';
+import anchor from '@coral-xyz/anchor';
 import {
   TOKEN_PROGRAM_ID,
   NATIVE_MINT,
