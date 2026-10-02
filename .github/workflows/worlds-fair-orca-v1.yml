@@ -72,5 +72,11 @@ jobs:
         shell: bash
         run: |
           export PATH="$HOME/.local/share/solana/install/active_release/bin:$HOME/.avm/bin:$PATH"
-          anchor build
+          set -euo pipefail
+          anchor build 2>&1 | tee /tmp/worlds-fair-anchor-build.log
+          if grep -Eq "Stack offset .* exceeded max offset|overwrites values in the frame" /tmp/worlds-fair-anchor-build.log; then
+            echo "WORLD_FAIR_SBF_STACK_SAFETY=FAIL"
+            exit 1
+          fi
+          echo "WORLD_FAIR_SBF_STACK_SAFETY=PASS"
           echo "WORLD_FAIR_ORCA_V1_BUILD=PASS"
