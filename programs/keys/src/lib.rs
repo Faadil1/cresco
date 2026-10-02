@@ -2092,7 +2092,7 @@ pub struct ExecuteSwapWithinMandateWithPyth<'info> {
         token::authority = mandate,
         token::token_program = token_program
     )]
-    pub input_trade_vault: InterfaceAccount<'info, TokenAccount>,
+    pub input_trade_vault: Box<InterfaceAccount<'info, TokenAccount>>,
     #[account(
         mut,
         seeds = [b"trade-vault", mandate.key().as_ref(), output_mint.key().as_ref()],
@@ -2101,9 +2101,9 @@ pub struct ExecuteSwapWithinMandateWithPyth<'info> {
         token::authority = mandate,
         token::token_program = token_program
     )]
-    pub output_trade_vault: InterfaceAccount<'info, TokenAccount>,
-    pub input_mint: InterfaceAccount<'info, Mint>,
-    pub output_mint: InterfaceAccount<'info, Mint>,
+    pub output_trade_vault: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub input_mint: Box<InterfaceAccount<'info, Mint>>,
+    pub output_mint: Box<InterfaceAccount<'info, Mint>>,
     #[account(mut)]
     pub beneficiary: Signer<'info>,
 
@@ -2198,7 +2198,7 @@ pub struct ExecuteSwapOnceWithPyth<'info> {
         token::authority = mandate,
         token::token_program = token_program
     )]
-    pub input_trade_vault: InterfaceAccount<'info, TokenAccount>,
+    pub input_trade_vault: Box<InterfaceAccount<'info, TokenAccount>>,
     #[account(
         mut,
         seeds = [b"trade-vault", mandate.key().as_ref(), output_mint.key().as_ref()],
@@ -2207,9 +2207,9 @@ pub struct ExecuteSwapOnceWithPyth<'info> {
         token::authority = mandate,
         token::token_program = token_program
     )]
-    pub output_trade_vault: InterfaceAccount<'info, TokenAccount>,
-    pub input_mint: InterfaceAccount<'info, Mint>,
-    pub output_mint: InterfaceAccount<'info, Mint>,
+    pub output_trade_vault: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub input_mint: Box<InterfaceAccount<'info, Mint>>,
+    pub output_mint: Box<InterfaceAccount<'info, Mint>>,
     #[account(mut)]
     pub beneficiary: Signer<'info>,
 
