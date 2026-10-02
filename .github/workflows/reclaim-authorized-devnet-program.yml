@@ -1,0 +1,181 @@
+name: reclaim-authorized-devnet-program
+
+on:
+  workflow_dispatch:
+    inputs:
+      program_id:
+        description: "Exact authorized Devnet Program ID"
+        required: true
+        type: string
+      confirmation:
+        description: "Type CLOSE_AUTHORIZED_PROGRAM"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  reclaim:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    env:
+      AUTHORIZED_PROGRAM_ID: "6fo7kPmWAZg6XgLASv1e21rSiGnXQexk6dg2ja1uZyAi"
+      DEVNET_KEYPAIR_JSON: ${{ secrets.DEVNET_KEYPAIR_JSON }}
+      SOLANA_URL: "https://api.devnet.solana.com"
+
+    steps:
+      - name: Validate explicit human authorization boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ "${{ inputs.program_id }}" != "$AUTHORIZED_PROGRAM_ID" ]; then
+            echo "REFUSED: Program ID does not match the explicitly authorized ID."
+            exit 1
+          fi
+
+          if [ "${{ inputs.confirmation }}" != "CLOSE_AUTHORIZED_PROGRAM" ]; then
+            echo "REFUSED: confirmation string is incorrect."
+            exit 1
+          fi
+
+          echo "HUMAN_ACTION_BOUNDARY=PASS"
+          echo "AUTHORIZED_PROGRAM_ID=$AUTHORIZED_PROGRAM_ID"
+
+      - name: Install Solana CLI 2.3.0
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for ATTEMPT in 1 2 3; do
+            rm -rf "$HOME/.local/share/solana/install/releases/2.3.0"
+
+            if INSTALLER="$(
+              curl \
+                --retry 5 \
+                --retry-all-errors \
+                --connect-timeout 20 \
+                -sSfL \
+                https://release.anza.xyz/v2.3.0/install
+            )" && sh -c "$INSTALLER"; then
+              break
+            fi
+
+            if [ "$ATTEMPT" -eq 3 ]; then
+              exit 1
+            fi
+
+            sleep 5
+          done
+
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+
+      - name: Configure protected Devnet principal
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test -n "$DEVNET_KEYPAIR_JSON"
+
+          mkdir -p "$HOME/.config/solana"
+          printf '%s' "$DEVNET_KEYPAIR_JSON" > "$HOME/.config/solana/id.json"
+          chmod 600 "$HOME/.config/solana/id.json"
+
+          solana config set \
+            --url "$SOLANA_URL" \
+            --keypair "$HOME/.config/solana/id.json"
+
+          PRINCIPAL="$(solana address)"
+          BALANCE="$(solana balance --url "$SOLANA_URL")"
+
+          echo "PROOF principal=$PRINCIPAL"
+          echo "PROOF balance_before=$BALANCE"
+
+      - name: Verify program and authority
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          solana program show \
+            "$AUTHORIZED_PROGRAM_ID" \
+            --url "$SOLANA_URL" \
+            > /tmp/program-before.txt
+
+          cat /tmp/program-before.txt
+
+          CURRENT_AUTHORITY="$(solana address)"
+          PROGRAM_AUTHORITY="$(
+            awk -F': ' '/^Authority:/ {print $2}' /tmp/program-before.txt \
+            | tr -d '[:space:]'
+          )"
+
+          echo "PROOF wallet_authority=$CURRENT_AUTHORITY"
+          echo "PROOF program_authority=$PROGRAM_AUTHORITY"
+
+          if [ "$PROGRAM_AUTHORITY" != "$CURRENT_AUTHORITY" ]; then
+            echo "REFUSED: connected CI wallet does not control the authorized program."
+            exit 1
+          fi
+
+          echo "PROGRAM_AUTHORITY_CHECK=PASS"
+
+      - name: Close explicitly authorized CI-only Devnet program
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BALANCE_BEFORE="$(
+            solana balance \
+              --lamports \
+              --url "$SOLANA_URL" \
+            | tr -dc '0-9'
+          )"
+
+          echo "PROOF balance_before_lamports=$BALANCE_BEFORE"
+          echo "PROOF closing_program=$AUTHORIZED_PROGRAM_ID"
+
+          solana program close \
+            "$AUTHORIZED_PROGRAM_ID" \
+            --url "$SOLANA_URL" \
+            --keypair "$HOME/.config/solana/id.json" \
+            --bypass-warning
+
+          BALANCE_AFTER="$(
+            solana balance \
+              --lamports \
+              --url "$SOLANA_URL" \
+            | tr -dc '0-9'
+          )"
+
+          RECLAIMED=$((BALANCE_AFTER - BALANCE_BEFORE))
+
+          echo "PROOF balance_after_lamports=$BALANCE_AFTER"
+          echo "PROOF reclaimed_lamports=$RECLAIMED"
+          echo "AUTHORIZED_DEVNET_PROGRAM_CLOSE=PASS"
+
+      - name: Verify irreversible closure
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          set +e
+          OUTPUT="$(
+            solana program show \
+              "$AUTHORIZED_PROGRAM_ID" \
+              --url "$SOLANA_URL" \
+              2>&1
+          )"
+          RC=$?
+          set -e
+
+          printf '%s\n' "$OUTPUT"
+
+          if [ "$RC" -eq 0 ]; then
+            echo "VERIFY_CLOSE=FAIL_PROGRAM_STILL_VISIBLE"
+            exit 1
+          fi
+
+          echo "VERIFY_CLOSE=PASS"
+          echo "CLOSED_PROGRAM_ID=$AUTHORIZED_PROGRAM_ID"
