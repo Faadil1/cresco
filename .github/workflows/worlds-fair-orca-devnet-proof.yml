@@ -116,6 +116,17 @@ jobs:
 
           if [ -n "${WORLD_FAIR_REUSE_PROGRAM_ID:-}" ]; then
             echo "WORLD_FAIR_PROGRAM_ID=$WORLD_FAIR_REUSE_PROGRAM_ID" >> "$GITHUB_ENV"
+            python3 - <<'PY'
+from pathlib import Path
+import os, re
+p = Path("programs/keys/src/lib.rs")
+s = p.read_text()
+program_id = os.environ["WORLD_FAIR_REUSE_PROGRAM_ID"]
+s2, n = re.subn(r'declare_id!\("[1-9A-HJ-NP-Za-km-z]{32,44}"\);', f'declare_id!("{program_id}");', s, count=1)
+if n != 1:
+    raise SystemExit("failed to bind reused program id into source")
+p.write_text(s2)
+PY
             anchor build 2>&1 | tee /tmp/worlds-fair-anchor-build.log
             node -e '
               const fs=require("fs");
@@ -246,6 +257,23 @@ jobs:
           echo "$PROGRAM_SHOW"
           echo "PROOF explorer=https://explorer.solana.com/address/$WORLD_FAIR_PROGRAM_ID?cluster=devnet"
           echo "WORLD_FAIR_EPHEMERAL_DEPLOY=PASS"
+
+      - name: Verify runtime binary binding
+        if: ${{ env.WORLD_FAIR_REUSE_PROGRAM_ID != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.local/share/solana/install/active_release/bin:$HOME/.avm/bin:$PATH"
+          solana program dump "$WORLD_FAIR_REUSE_PROGRAM_ID" /tmp/worlds-fair-onchain.so --url "$ANCHOR_PROVIDER_URL"
+          LOCAL_SHA=$(sha256sum target/deploy/keys.so | awk '{print $1}')
+          ONCHAIN_SHA=$(sha256sum /tmp/worlds-fair-onchain.so | awk '{print $1}')
+          echo "PROOF local_program_sha256=$LOCAL_SHA"
+          echo "PROOF onchain_program_sha256=$ONCHAIN_SHA"
+          if [ "$LOCAL_SHA" != "$ONCHAIN_SHA" ]; then
+            echo "WORLD_FAIR_RUNTIME_COMMIT_BINDING=FAIL"
+            exit 1
+          fi
+          echo "WORLD_FAIR_RUNTIME_COMMIT_BINDING=PASS"
 
       - name: Cool down devnet RPC after program deployment
         shell: bash
