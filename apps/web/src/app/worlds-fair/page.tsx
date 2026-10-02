@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Activity,
@@ -186,8 +187,28 @@ export default function WorldsFairPage() {
   }, []);
 
   useEffect(() => {
-    void refreshRuntime();
-  }, [refreshRuntime]);
+    let cancelled = false;
+
+    void fetchWorldFairRuntime()
+      .then((nextRuntime) => {
+        if (!cancelled) {
+          setRuntime(nextRuntime);
+          setRuntimeError(null);
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setRuntime(null);
+          setRuntimeError(
+            error instanceof Error ? error.message : "Runtime unavailable",
+          );
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const runLive = useCallback(async () => {
     setRunning(true);
@@ -223,12 +244,12 @@ export default function WorldsFairPage() {
       <div className="relative mx-auto max-w-[1240px] px-5 pb-20 pt-6 md:px-10 md:pt-8">
         <header className="flex items-center justify-between gap-4">
           <Wordmark size="md" />
-          <a
+          <Link
             href="/"
             className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-extrabold text-navy shadow-soft hover:border-blue/35"
           >
             Product home
-          </a>
+          </Link>
         </header>
 
         <section className="mt-12 grid gap-8 lg:grid-cols-[1.18fr_0.82fr] lg:items-end">
