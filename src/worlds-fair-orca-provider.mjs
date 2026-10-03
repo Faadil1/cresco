@@ -102,6 +102,11 @@ export const WORLD_FAIR_ORCA_READ_RETRY_PROFILE = Object.freeze({
   baseDelayMs: 2_000
 });
 
+export const WORLD_FAIR_READ_CONNECTION_CONFIG = Object.freeze({
+  commitment: 'confirmed',
+  disableRetryOnRateLimit: true
+});
+
 export const WORLD_FAIR_PYTH_FEED = Object.freeze({
   symbol: 'Crypto.USDC/USD',
   feedId: 7,
@@ -540,6 +545,12 @@ export function createWorldFairOrcaProvider({
   if (!pythApiKey) throw new Error('PYTH_API_KEY_REQUIRED');
 
   const rpc = connection ?? new Connection(rpcUrl, 'confirmed');
+  // Safe reads own their retry policy explicitly. Avoid stacking web3.js's
+  // built-in HTTP 429 retry delays underneath CRESCO's bounded read backoff.
+  // Injected test connections remain shared so existing deterministic fakes
+  // continue to exercise both paths.
+  const readRpc =
+    connection ?? new Connection(rpcUrl, WORLD_FAIR_READ_CONNECTION_CONFIG);
   const delegate = deriveWorldFairDelegate(guardian);
   const wallet = {
     publicKey: guardian.publicKey,
@@ -555,7 +566,7 @@ export function createWorldFairOrcaProvider({
       return Promise.all(transactions.map((transaction) => this.signTransaction(transaction)));
     }
   };
-  const orcaContext = WhirlpoolContext.from(rpc, wallet);
+  const orcaContext = WhirlpoolContext.from(readRpc, wallet);
   const orcaClient = buildWhirlpoolClient(orcaContext);
 
   const [charter] = PublicKey.findProgramAddressSync(
@@ -604,7 +615,7 @@ export function createWorldFairOrcaProvider({
       outputVaultInfo
     ] = await withTransientRpcReadRetry(
       () =>
-        rpc.getMultipleAccountsInfo(
+        readRpc.getMultipleAccountsInfo(
           [
             charter,
             mandate,
@@ -713,7 +724,7 @@ export function createWorldFairOrcaProvider({
     );
 
     const reviewInfo = await withTransientRpcReadRetry(
-      () => rpc.getAccountInfo(reviewReceipt, 'confirmed'),
+      () => readRpc.getAccountInfo(reviewReceipt, 'confirmed'),
       WORLD_FAIR_STATE_READ_RETRY_PROFILE
     );
     let reviewSignature = null;
@@ -838,7 +849,7 @@ export function createWorldFairOrcaProvider({
 
   async function ensureDelegateFunding() {
     const balance = await withTransientRpcReadRetry(
-      () => rpc.getBalance(delegate.publicKey, 'confirmed'),
+      () => readRpc.getBalance(delegate.publicKey, 'confirmed'),
       WORLD_FAIR_STATE_READ_RETRY_PROFILE
     );
     if (balance >= DELEGATE_MIN_LAMPORTS) return null;
@@ -859,7 +870,7 @@ export function createWorldFairOrcaProvider({
 
   async function readTokenAccount(address) {
     return withTransientRpcReadRetry(
-      () => getAccount(rpc, address, 'confirmed', TOKEN_PROGRAM_ID),
+      () => getAccount(readRpc, address, 'confirmed', TOKEN_PROGRAM_ID),
       WORLD_FAIR_STATE_READ_RETRY_PROFILE
     );
   }
@@ -1058,7 +1069,7 @@ export function createWorldFairOrcaProvider({
 
     const storageInfo = await withTransientRpcReadRetry(
       () =>
-        rpc.getAccountInfo(
+        readRpc.getAccountInfo(
           PYTH_LAZER_STORAGE_ID,
           'confirmed'
         ),
@@ -1290,7 +1301,7 @@ export function createWorldFairOrcaProvider({
 
   async function loadAllowance(address) {
     const info = await withTransientRpcReadRetry(
-      () => rpc.getAccountInfo(address, 'confirmed'),
+      () => readRpc.getAccountInfo(address, 'confirmed'),
       WORLD_FAIR_STATE_READ_RETRY_PROFILE
     );
     if (!info) throw new Error('WORLD_FAIR_ALLOWANCE_NOT_FOUND');
