@@ -1,6 +1,15 @@
 import { createHash } from 'node:crypto';
 
-import anchor from '@coral-xyz/anchor';
+import BN from 'bn.js';
+import {
+  Connection,
+  Keypair,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+  TransactionInstruction,
+  SYSVAR_INSTRUCTIONS_PUBKEY
+} from '@solana/web3.js';
 import {
   TOKEN_PROGRAM_ID,
   NATIVE_MINT,
@@ -19,16 +28,6 @@ import { Percentage } from '@orca-so/common-sdk';
 import { createEd25519Instruction } from '@pythnetwork/pyth-lazer-solana-sdk';
 
 import { fetchPythProSolanaPayload } from './pyth-adapter.mjs';
-
-const {
-  Connection,
-  Keypair,
-  PublicKey,
-  SystemProgram,
-  Transaction,
-  TransactionInstruction,
-  SYSVAR_INSTRUCTIONS_PUBKEY
-} = anchor.web3;
 
 export const WORLD_FAIR_PROGRAM_ID = new PublicKey(
   '7pgPuPZSUUtFcvFtVGmS3piCE1bHY35kjb14vct9v45Z'
@@ -73,7 +72,7 @@ const ACTION_SWAP_EXACT_IN = 2;
 const STANDING_INPUT = 200_000;
 const EXCEPTION_INPUT = 750_000;
 const ROLLBACK_INPUT = 700_000;
-const VAULT_TARGET_BASE_UNITS = 5_000_000;
+const VAULT_TARGET_BASE_UNITS = 1_500_000;
 const DELEGATE_MIN_LAMPORTS = 50_000_000;
 const DELEGATE_TOPUP_LAMPORTS = 100_000_000;
 
@@ -400,7 +399,20 @@ export function createWorldFairOrcaProvider({
 
   const rpc = connection ?? new Connection(rpcUrl, 'confirmed');
   const delegate = deriveWorldFairDelegate(guardian);
-  const wallet = new anchor.Wallet(guardian);
+  const wallet = {
+    publicKey: guardian.publicKey,
+    async signTransaction(transaction) {
+      if (typeof transaction.partialSign === 'function') {
+        transaction.partialSign(guardian);
+      } else {
+        transaction.sign([guardian]);
+      }
+      return transaction;
+    },
+    async signAllTransactions(transactions) {
+      return Promise.all(transactions.map((transaction) => this.signTransaction(transaction)));
+    }
+  };
   const orcaContext = WhirlpoolContext.from(rpc, wallet);
   const orcaClient = buildWhirlpoolClient(orcaContext);
 
@@ -715,7 +727,7 @@ export function createWorldFairOrcaProvider({
       const quote = await swapQuoteByInputToken(
         solUsdcPool,
         NATIVE_MINT,
-        new anchor.BN(100_000_000),
+        new BN(100_000_000),
         Percentage.fromFraction(1, 100),
         ORCA_WHIRLPOOL_PROGRAM_ID,
         orcaContext.fetcher
@@ -878,7 +890,7 @@ export function createWorldFairOrcaProvider({
     return swapQuoteByInputToken(
       pool,
       WORLD_FAIR_DEV_USDC,
-      new anchor.BN(inputAmount),
+      new BN(inputAmount),
       Percentage.fromFraction(1, 100),
       ORCA_WHIRLPOOL_PROGRAM_ID,
       orcaContext.fetcher
@@ -1279,7 +1291,7 @@ export function createWorldFairOrcaProvider({
       const mutatedQuote = {
         ...exactQuote,
         otherAmountThreshold: exactQuote.otherAmountThreshold.sub(
-          new anchor.BN(1)
+          new BN(1)
         )
       };
       const mutation = await expectRefusal(
@@ -1377,7 +1389,7 @@ export function createWorldFairOrcaProvider({
       const impossibleQuote = {
         ...rollbackQuoteBase,
         otherAmountThreshold: rollbackQuoteBase.estimatedAmountOut.mul(
-          new anchor.BN(100)
+          new BN(100)
         )
       };
       const rollback = await grantSwapException({
