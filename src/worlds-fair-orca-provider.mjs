@@ -22,7 +22,8 @@ import {
   buildWhirlpoolClient,
   swapQuoteByInputToken,
   ORCA_WHIRLPOOL_PROGRAM_ID,
-  PDAUtil
+  PDAUtil,
+  IGNORE_CACHE
 } from '@orca-so/whirlpools-sdk';
 import { Percentage } from '@orca-so/common-sdk';
 import { createEd25519Instruction } from '@pythnetwork/pyth-lazer-solana-sdk';
@@ -730,7 +731,7 @@ export function createWorldFairOrcaProvider({
       if (Number(guardianUsdcState.amount) >= required) break;
 
       const solUsdcPool = await withTransientRpcReadRetry(
-        () => orcaClient.getPool(ORCA_SOL_USDC_POOL)
+        () => orcaClient.getPool(ORCA_SOL_USDC_POOL, IGNORE_CACHE)
       );
       const quote = await swapQuoteByInputToken(
         solUsdcPool,
@@ -738,7 +739,8 @@ export function createWorldFairOrcaProvider({
         new BN(100_000_000),
         Percentage.fromFraction(1, 100),
         ORCA_WHIRLPOOL_PROGRAM_ID,
-        orcaContext.fetcher
+        orcaContext.fetcher,
+        IGNORE_CACHE
       );
       const fundingTx = await solUsdcPool.swap(quote);
 
@@ -894,7 +896,7 @@ export function createWorldFairOrcaProvider({
 
   async function orcaContextState() {
     const pool = await withTransientRpcReadRetry(
-      () => orcaClient.getPool(WORLD_FAIR_ORCA_POOL)
+      () => orcaClient.getPool(WORLD_FAIR_ORCA_POOL, IGNORE_CACHE)
     );
     await withTransientRpcReadRetry(() => pool.refreshData());
     const data = pool.getData();
