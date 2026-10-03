@@ -1,0 +1,61 @@
+name: worlds-fair-orca-quote-read-premerge
+
+on:
+  push:
+    branches:
+      - fix/worlds-fair-orca-quote-read-backoff-v1
+  workflow_dispatch:
+
+jobs:
+  backend-and-worker:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install backend dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Run backend regression
+        run: npm test
+
+      - name: Bundle backend Cloudflare Worker without deployment
+        run: npx --yes wrangler@4 deploy --dry-run --outdir dist/cloudflare
+
+      - name: Verify backend bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f dist/cloudflare/index.js || find dist/cloudflare -maxdepth 2 -type f
+          echo "ORCA_QUOTE_READ_BACKOFF_BACKEND_DRY_RUN=PASS"
+
+  web:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install web dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run full web check
+        run: npm run check
+
+      - name: Build Cloudflare frontend
+        run: npm run build:vinext
+
+      - name: Dry-run frontend Worker packaging
+        run: npx vinext-cloudflare deploy --config dist/server/wrangler.json --dry-run
