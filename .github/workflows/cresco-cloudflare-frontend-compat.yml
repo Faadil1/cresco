@@ -6,6 +6,9 @@ on:
       - feature/cresco-cloudflare-frontend-v1
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   compatibility:
     runs-on: ubuntu-24.04
@@ -70,6 +73,17 @@ jobs:
           fs.writeFileSync("package.json", JSON.stringify(p, null, 2) + "\n");
           NODE
 
+      - name: Lock frontend Worker identity to CRESCO
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require("node:fs");
+          const path = "wrangler.jsonc";
+          const cfg = JSON.parse(fs.readFileSync(path, "utf8"));
+          cfg.name = "cresco";
+          fs.writeFileSync(path, JSON.stringify(cfg, null, 2) + "\n");
+          NODE
+
       - name: Install generated vinext dependency set
         run: npm install --no-audit --no-fund
 
@@ -98,3 +112,20 @@ jobs:
             apps/web/.gitignore
             apps/web/vinext-compatibility.txt
           if-no-files-found: warn
+
+      - name: Commit proven migration files to feature branch
+        if: success() && github.event_name == 'push' && github.actor != 'github-actions[bot]'
+        working-directory: .
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add             apps/web/package.json             apps/web/package-lock.json             apps/web/vite.config.ts             apps/web/wrangler.jsonc             apps/web/.gitignore
+          if git diff --cached --quiet; then
+            echo "CLOUDFLARE_MIGRATION_COMMIT=NO_CHANGES"
+            exit 0
+          fi
+          git commit -m "build: add proven Cloudflare runtime for full CRESCO frontend"
+          git push origin HEAD:feature/cresco-cloudflare-frontend-v1
+          echo "CLOUDFLARE_MIGRATION_COMMIT=PASS"
