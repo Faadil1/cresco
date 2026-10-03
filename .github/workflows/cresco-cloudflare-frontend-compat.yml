@@ -1,0 +1,132 @@
+name: cresco-cloudflare-frontend-compat
+# exact-head validation marker
+
+on:
+  push:
+    branches:
+      - feature/cresco-cloudflare-frontend-v1
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  compatibility:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    defaults:
+      run:
+        working-directory: apps/web
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Reconcile existing frontend lockfile in runner
+        run: npm install --no-audit --no-fund
+
+      - name: Verify historical Next.js baseline
+        run: npm run check
+
+      - name: Run vinext compatibility check
+        shell: bash
+        run: |
+          set -o pipefail
+          npx --yes vinext@1.0.1 check 2>&1 | tee vinext-compatibility.txt
+
+      - name: Generate non-destructive Cloudflare migration
+        run: >-
+          npx --yes vinext@1.0.1 init
+          --platform=cloudflare
+          --legacy-wrangler-cloudflare-init
+          --skip-check
+          --no-install
+          --cdn-cache=none
+          --data-cache=none
+          --image-optimization=none
+
+      - name: Pin vinext stack to CRESCO React compatibility
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require("node:fs");
+          const p = JSON.parse(fs.readFileSync("package.json", "utf8"));
+          p.dependencies = {
+            ...p.dependencies,
+            vinext: "1.0.1",
+            "@vinext/cloudflare": "1.0.1",
+            "react-server-dom-webpack": "19.2.8"
+          };
+          p.devDependencies = {
+            ...p.devDependencies,
+            vite: "8.3.0",
+            "@vitejs/plugin-rsc": "0.5.34",
+            "@cloudflare/vite-plugin": "1.50.0",
+            wrangler: "4.118.0"
+          };
+          p.engines = { ...p.engines, node: ">=22" };
+          fs.writeFileSync("package.json", JSON.stringify(p, null, 2) + "\n");
+          NODE
+
+      - name: Lock frontend Worker identity to CRESCO
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require("node:fs");
+          const path = "wrangler.jsonc";
+          const cfg = JSON.parse(fs.readFileSync(path, "utf8"));
+          cfg.name = "cresco";
+          fs.writeFileSync(path, JSON.stringify(cfg, null, 2) + "\n");
+          NODE
+
+      - name: Install generated vinext dependency set
+        run: npm install --no-audit --no-fund
+
+      - name: Verify Next.js still works after migration
+        run: npm run check
+
+      - name: Build full CRESCO frontend for Cloudflare Workers
+        run: npm run build:vinext
+
+      - name: Dry-run Cloudflare Worker packaging
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx vinext-cloudflare deploy             --config dist/server/wrangler.json             --dry-run
+
+      - name: Preserve generated migration files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cresco-cloudflare-vinext-generated
+          path: |
+            apps/web/package.json
+            apps/web/package-lock.json
+            apps/web/vite.config.ts
+            apps/web/wrangler.jsonc
+            apps/web/.gitignore
+            apps/web/vinext-compatibility.txt
+          if-no-files-found: warn
+
+      - name: Commit proven migration files to feature branch
+        if: success() && github.event_name == 'push' && github.actor != 'github-actions[bot]'
+        working-directory: .
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add             apps/web/package.json             apps/web/package-lock.json             apps/web/vite.config.ts             apps/web/wrangler.jsonc             apps/web/.gitignore
+          if git diff --cached --quiet; then
+            echo "CLOUDFLARE_MIGRATION_COMMIT=NO_CHANGES"
+            exit 0
+          fi
+          git commit -m "build: add proven Cloudflare runtime for full CRESCO frontend"
+          git push origin HEAD:feature/cresco-cloudflare-frontend-v1
+          echo "CLOUDFLARE_MIGRATION_COMMIT=PASS"

@@ -11,13 +11,20 @@
     "test": "vitest run",
     "check": "npm run typecheck && npm run lint && npm run copy:lint && npm run test && npm run build",
     "copy:lint": "node scripts/copy-lint.mjs",
-    "mock:cresco": "node scripts/mock-cresco-api.mjs"
+    "mock:cresco": "node scripts/mock-cresco-api.mjs",
+    "dev:vinext": "vite dev --port 3001",
+    "build:vinext": "vite build",
+    "start:vinext": "wrangler dev --config dist/server/wrangler.json",
+    "deploy:vinext": "vinext-cloudflare deploy --config dist/server/wrangler.json"
   },
   "dependencies": {
     "lucide-react": "^1.47.0",
     "next": "16.3.6",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "vinext": "1.0.1",
+    "react-server-dom-webpack": "19.2.8",
+    "@vinext/cloudflare": "1.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -34,9 +41,14 @@
     "jsdom": "^29.1.1",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^5.0.1"
+    "vitest": "^5.0.1",
+    "vite": "8.3.0",
+    "@vitejs/plugin-rsc": "0.5.34",
+    "@cloudflare/vite-plugin": "1.50.0",
+    "wrangler": "4.118.0"
   },
   "engines": {
-    "node": ">=20.9"
-  }
+    "node": ">=22"
+  },
+  "type": "module"
 }
