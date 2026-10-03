@@ -4,7 +4,10 @@ import { FamilyState } from './cloudflare-family-state.mjs';
 import { configuredWorldFairOrcaProviderFromEnv } from './worlds-fair-orca-provider.mjs';
 export { FamilyState };
 
-const DEFAULT_CRESCO_ORIGIN = 'https://cresco-lac.vercel.app';
+const DEFAULT_CRESCO_ORIGINS = Object.freeze([
+  'https://cresco-lac.vercel.app',
+  'https://cresco.faadil-casecraft.workers.dev'
+]);
 const WORLD_FAIR_LOCK_NAME = 'cresco-worlds-fair-operator-lab-live-lock';
 
 function worldFairLockStub(env = {}) {
@@ -36,20 +39,38 @@ async function worldFairLockCall(env, path, requestId) {
   return { status: response.status, body };
 }
 
-function allowedOrigin(request, env = {}) {
+function configuredCorsOrigins(env = {}) {
   const configured =
+    env.CRESCO_CORS_ORIGINS ||
+    (typeof process !== 'undefined' ? process.env?.CRESCO_CORS_ORIGINS : null) ||
     env.CRESCO_CORS_ORIGIN ||
-    process.env.CRESCO_CORS_ORIGIN ||
-    DEFAULT_CRESCO_ORIGIN;
+    (typeof process !== 'undefined' ? process.env?.CRESCO_CORS_ORIGIN : null) ||
+    DEFAULT_CRESCO_ORIGINS.join(',');
+
+  return [...new Set(
+    String(configured)
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean)
+  )];
+}
+
+function allowedOrigin(request, env = {}) {
+  const configured = configuredCorsOrigins(env);
   const origin = request.headers.get('origin');
 
-  if (!origin) return configured;
-  return origin === configured ? origin : configured;
+  if (!origin) return configured[0] ?? DEFAULT_CRESCO_ORIGINS[0];
+  return configured.includes(origin) ? origin : null;
 }
 
 function withCors(headers, request, env) {
   const next = new Headers(headers ?? {});
-  next.set('access-control-allow-origin', allowedOrigin(request, env));
+  const origin = allowedOrigin(request, env);
+  if (origin) {
+    next.set('access-control-allow-origin', origin);
+  } else {
+    next.delete('access-control-allow-origin');
+  }
   next.set('access-control-allow-methods', 'GET,POST,OPTIONS');
   next.set(
     'access-control-allow-headers',
