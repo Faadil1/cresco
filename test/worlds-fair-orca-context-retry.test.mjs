@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   classifyWorldFairRunFailure,
   withTransientRpcReadRetry,
+  WORLD_FAIR_STATE_READ_RETRY_PROFILE,
   WORLD_FAIR_ORCA_READ_RETRY_PROFILE
 } from '../src/worlds-fair-orca-provider.mjs';
 
@@ -115,4 +116,33 @@ test('Orca read profile remains bounded and does not retry semantic failures', a
   );
 
   assert.equal(calls, 1);
+});
+
+
+test('World’s Fair preflight/state reads use the same bounded recovery budget', () => {
+  assert.deepEqual(WORLD_FAIR_STATE_READ_RETRY_PROFILE, {
+    attempts: 6,
+    baseDelayMs: 2_000
+  });
+});
+
+test('preflight/state read profile can recover on the sixth bounded attempt', async () => {
+  let calls = 0;
+
+  const value = await withTransientRpcReadRetry(
+    async () => {
+      calls += 1;
+      if (calls < 6) {
+        throw new Error('429 Too Many Requests');
+      }
+      return 'state-ready';
+    },
+    {
+      ...WORLD_FAIR_STATE_READ_RETRY_PROFILE,
+      baseDelayMs: 0
+    }
+  );
+
+  assert.equal(value, 'state-ready');
+  assert.equal(calls, 6);
 });
