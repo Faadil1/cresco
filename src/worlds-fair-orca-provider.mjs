@@ -102,6 +102,11 @@ export const WORLD_FAIR_ORCA_READ_RETRY_PROFILE = Object.freeze({
   baseDelayMs: 2_000
 });
 
+export const WORLD_FAIR_PYTH_READ_RETRY_PROFILE = Object.freeze({
+  attempts: 4,
+  baseDelayMs: 1_000
+});
+
 export const WORLD_FAIR_READ_CONNECTION_CONFIG = Object.freeze({
   commitment: 'confirmed',
   disableRetryOnRateLimit: true
@@ -113,6 +118,55 @@ export const WORLD_FAIR_PYTH_FEED = Object.freeze({
   exponent: -8,
   minChannel: 'fixed_rate@200ms'
 });
+
+const RETRYABLE_PYTH_EVIDENCE_REASON_CODES = new Set([
+  'PYTH_UPSTREAM_UNREACHABLE',
+  'PYTH_UPSTREAM_ERROR',
+  'PYTH_FEED_MISSING_FROM_RESPONSE',
+  'PYTH_SOLANA_PAYLOAD_MISSING',
+  'PYTH_PRICE_UNAVAILABLE'
+]);
+
+function pythEvidenceReady(snapshot) {
+  return (
+    snapshot?.status === 'FRESH' &&
+    snapshot?.solanaPayload?.status === 'AVAILABLE'
+  );
+}
+
+export function isRetryablePythEvidenceSnapshot(snapshot) {
+  if (snapshot?.status === 'STALE') return true;
+  const reasonCode =
+    snapshot?.solanaPayload?.reasonCode ??
+    snapshot?.reasonCode ??
+    null;
+  return RETRYABLE_PYTH_EVIDENCE_REASON_CODES.has(reasonCode);
+}
+
+export async function withTransientPythEvidenceRetry(
+  operation,
+  { attempts = 4, baseDelayMs = 1_000 } = {}
+) {
+  let lastSnapshot = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    lastSnapshot = await operation();
+    if (pythEvidenceReady(lastSnapshot)) return lastSnapshot;
+
+    if (
+      !isRetryablePythEvidenceSnapshot(lastSnapshot) ||
+      attempt === attempts
+    ) {
+      return lastSnapshot;
+    }
+
+    await new Promise((resolve) =>
+      setTimeout(resolve, baseDelayMs * attempt)
+    );
+  }
+
+  return lastSnapshot;
+}
 
 const STANDING_MAX_NOTIONAL_MICRO_USD = 500_000;
 const PERIOD_MAX_NOTIONAL_MICRO_USD = 10_000_000;
@@ -1018,13 +1072,17 @@ export function createWorldFairOrcaProvider({
   }
 
   async function livePyth() {
-    const snapshot = await fetchPythProSolanaPayload({
-      apiKey: pythApiKey,
-      feed: WORLD_FAIR_PYTH_FEED,
-      channel: WORLD_FAIR_PYTH_FEED.minChannel,
-      maxAgeSeconds: 120,
-      maxConfidenceBps: 100
-    });
+    const snapshot = await withTransientPythEvidenceRetry(
+      () =>
+        fetchPythProSolanaPayload({
+          apiKey: pythApiKey,
+          feed: WORLD_FAIR_PYTH_FEED,
+          channel: WORLD_FAIR_PYTH_FEED.minChannel,
+          maxAgeSeconds: 120,
+          maxConfidenceBps: 100
+        }),
+      WORLD_FAIR_PYTH_READ_RETRY_PROFILE
+    );
 
     if (
       snapshot.status !== 'FRESH' ||
