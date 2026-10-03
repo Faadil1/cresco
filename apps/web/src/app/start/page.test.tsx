@@ -2,9 +2,11 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const push = vi.fn();
-const dispatch = vi.fn();
-const signInDemo = vi.fn();
+const { push, dispatch, signInDemo } = vi.hoisted(() => ({
+  push: vi.fn(),
+  dispatch: vi.fn(),
+  signInDemo: vi.fn(),
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push }),
