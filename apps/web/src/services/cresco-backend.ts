@@ -828,6 +828,85 @@ type WorldFairScenario = {
   [key: string]: unknown;
 };
 
+export type WorldFairRunDiagnostic = {
+  phase: string;
+  phaseKind: "READ" | "WRITE" | "ASSERT";
+  failureClass:
+    | "TRANSIENT_RPC"
+    | "UNKNOWN_CONFIRMATION"
+    | "DEPENDENCY_FAILURE"
+    | "INVARIANT_FAILURE"
+    | "SEMANTIC_REFUSAL"
+    | "UNKNOWN_RUNTIME"
+    | string;
+  reasonCode: string;
+  retryPolicy:
+    | "SAFE_RETRY_READ"
+    | "REQUIRES_STATE_RECONCILIATION"
+    | "NOT_AUTOMATICALLY_RETRYABLE"
+    | string;
+  message: string;
+};
+
+export type WorldFairRunProgress = {
+  currentPhase: string;
+  completedPhases: string[];
+  confirmedEffects: Array<{
+    label: string;
+    signature: string;
+  }>;
+  failure?: WorldFairRunDiagnostic;
+};
+
+export type WorldFairPartialReceipt = {
+  schemaVersion: number;
+  type: "CRESCO_WORLD_FAIR_OPERATOR_LAB_RECEIPT";
+  status: "UNKNOWN";
+  productState: "WORLD_FAIR_OPERATOR_LAB_PARTIAL";
+  observedAt: string;
+  network: "solana-devnet";
+  programId: string;
+  programSha256: string;
+  principal: string;
+  delegate: string;
+  mandate: string;
+  startingNonce: number;
+  scenarios: Partial<Record<
+    | "standingAutonomy"
+    | "softBoundary"
+    | "exactException"
+    | "hardBoundary"
+    | "evidenceFailure"
+    | "rollback"
+    | "staleAuthority",
+    WorldFairScenario
+  >>;
+  progress?: WorldFairRunProgress;
+  [key: string]: unknown;
+};
+
+export class WorldFairLiveRunError extends Error {
+  code: string;
+  diagnostic: WorldFairRunDiagnostic;
+  partialReceipt: WorldFairPartialReceipt | null;
+
+  constructor({
+    code,
+    diagnostic,
+    partialReceipt,
+  }: {
+    code: string;
+    diagnostic: WorldFairRunDiagnostic;
+    partialReceipt: WorldFairPartialReceipt | null;
+  }) {
+    super(diagnostic.message);
+    this.name = "WorldFairLiveRunError";
+    this.code = code;
+    this.diagnostic = diagnostic;
+    this.partialReceipt = partialReceipt;
+  }
+}
+
 export type WorldFairLiveReceipt = {
   schemaVersion: number;
   type: "CRESCO_WORLD_FAIR_OPERATOR_LAB_RECEIPT";
@@ -862,6 +941,7 @@ export type WorldFairLiveReceipt = {
     rollback: WorldFairScenario;
     staleAuthority: WorldFairScenario;
   };
+  progress?: WorldFairRunProgress;
   explorer: { program: string };
 };
 
@@ -882,22 +962,66 @@ export async function runWorldFairCanonicalLiveSequence(): Promise<{
       signal: AbortSignal.timeout(120_000),
     });
   } catch {
-    throw new Error("WORLD_FAIR_RUN_NETWORK_OR_TIMEOUT");
+    throw new WorldFairLiveRunError({
+      code: "WORLD_FAIR_RUN_NETWORK_OR_TIMEOUT",
+      diagnostic: {
+        phase: "CLIENT_HTTP_POST",
+        phaseKind: "WRITE",
+        failureClass: "UNKNOWN_RUNTIME",
+        reasonCode: "CLIENT_NETWORK_OR_TIMEOUT",
+        retryPolicy: "REQUIRES_STATE_RECONCILIATION",
+        message:
+          "The browser lost contact with the live run before CRESCO could prove its outcome.",
+      },
+      partialReceipt: null,
+    });
   }
 
   let raw: unknown;
   try {
     raw = await res.json();
   } catch {
-    throw new Error("WORLD_FAIR_RUN_MALFORMED_JSON");
+    throw new WorldFairLiveRunError({
+      code: "WORLD_FAIR_RUN_MALFORMED_JSON",
+      diagnostic: {
+        phase: "CLIENT_HTTP_RESPONSE",
+        phaseKind: "READ",
+        failureClass: "UNKNOWN_RUNTIME",
+        reasonCode: "MALFORMED_API_RESPONSE",
+        retryPolicy: "REQUIRES_STATE_RECONCILIATION",
+        message:
+          "The live API response could not be verified as a valid receipt.",
+      },
+      partialReceipt: null,
+    });
   }
 
   if (!res.ok) {
-    const detail =
-      typeof raw === "object" && raw !== null && "error" in raw
-        ? String((raw as { error?: unknown }).error ?? "UNKNOWN")
-        : `HTTP_${res.status}`;
-    throw new Error(detail);
+    const envelope =
+      typeof raw === "object" && raw !== null
+        ? (raw as {
+            error?: unknown;
+            diagnostic?: WorldFairRunDiagnostic;
+            partialReceipt?: WorldFairPartialReceipt | null;
+          })
+        : null;
+
+    const diagnostic: WorldFairRunDiagnostic =
+      envelope?.diagnostic ?? {
+        phase: "RUN_UNKNOWN",
+        phaseKind: "WRITE",
+        failureClass: "UNKNOWN_RUNTIME",
+        reasonCode: "WORLD_FAIR_RUNTIME_FAILURE",
+        retryPolicy: "REQUIRES_STATE_RECONCILIATION",
+        message:
+          "The live sequence stopped before CRESCO could prove a complete outcome.",
+      };
+
+    throw new WorldFairLiveRunError({
+      code: String(envelope?.error ?? `HTTP_${res.status}`),
+      diagnostic,
+      partialReceipt: envelope?.partialReceipt ?? null,
+    });
   }
 
   if (
@@ -905,7 +1029,19 @@ export async function runWorldFairCanonicalLiveSequence(): Promise<{
     raw === null ||
     (raw as { status?: unknown }).status !== "PASS"
   ) {
-    throw new Error("WORLD_FAIR_RUN_UNCONFIRMED");
+    throw new WorldFairLiveRunError({
+      code: "WORLD_FAIR_RUN_UNCONFIRMED",
+      diagnostic: {
+        phase: "CLIENT_RECEIPT_VALIDATION",
+        phaseKind: "ASSERT",
+        failureClass: "UNKNOWN_RUNTIME",
+        reasonCode: "UNCONFIRMED_API_STATUS",
+        retryPolicy: "REQUIRES_STATE_RECONCILIATION",
+        message:
+          "The API did not return a confirmed PASS receipt.",
+      },
+      partialReceipt: null,
+    });
   }
 
   const receipt = (raw as { receipt?: WorldFairLiveReceipt }).receipt;
@@ -914,7 +1050,19 @@ export async function runWorldFairCanonicalLiveSequence(): Promise<{
     receipt.status !== "PASS" ||
     receipt.productState !== "WORLD_FAIR_OPERATOR_LAB_LIVE"
   ) {
-    throw new Error("WORLD_FAIR_RECEIPT_INVALID");
+    throw new WorldFairLiveRunError({
+      code: "WORLD_FAIR_RECEIPT_INVALID",
+      diagnostic: {
+        phase: "CLIENT_RECEIPT_VALIDATION",
+        phaseKind: "ASSERT",
+        failureClass: "INVARIANT_FAILURE",
+        reasonCode: "INVALID_PASS_RECEIPT",
+        retryPolicy: "NOT_AUTOMATICALLY_RETRYABLE",
+        message:
+          "CRESCO rejected an invalid or incomplete PASS receipt.",
+      },
+      partialReceipt: null,
+    });
   }
 
   return { status: "PASS", receipt };
