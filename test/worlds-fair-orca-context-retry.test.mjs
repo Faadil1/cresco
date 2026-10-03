@@ -5,7 +5,8 @@ import {
   classifyWorldFairRunFailure,
   withTransientRpcReadRetry,
   WORLD_FAIR_STATE_READ_RETRY_PROFILE,
-  WORLD_FAIR_ORCA_READ_RETRY_PROFILE
+  WORLD_FAIR_ORCA_READ_RETRY_PROFILE,
+  WORLD_FAIR_READ_CONNECTION_CONFIG
 } from '../src/worlds-fair-orca-provider.mjs';
 
 test('transient Orca-context reads retry before succeeding', async () => {
@@ -145,4 +146,12 @@ test('preflight/state read profile can recover on the sixth bounded attempt', as
 
   assert.equal(value, 'state-ready');
   assert.equal(calls, 6);
+});
+
+
+test('World’s Fair safe-read connection disables web3 rate-limit auto-retry', () => {
+  assert.deepEqual(WORLD_FAIR_READ_CONNECTION_CONFIG, {
+    commitment: 'confirmed',
+    disableRetryOnRateLimit: true
+  });
 });
