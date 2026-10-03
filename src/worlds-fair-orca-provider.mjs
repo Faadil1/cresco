@@ -15,19 +15,25 @@ import {
   NATIVE_MINT,
   getAccount,
   getOrCreateAssociatedTokenAccount,
-  transfer
+  createTransferInstruction
 } from '@solana/spl-token';
 import {
   WhirlpoolContext,
   buildWhirlpoolClient,
   swapQuoteByInputToken,
   ORCA_WHIRLPOOL_PROGRAM_ID,
-  PDAUtil
+  PDAUtil,
+  IGNORE_CACHE
 } from '@orca-so/whirlpools-sdk';
 import { Percentage } from '@orca-so/common-sdk';
 import { createEd25519Instruction } from '@pythnetwork/pyth-lazer-solana-sdk';
 
 import { fetchPythProSolanaPayload } from './pyth-adapter.mjs';
+import {
+  confirmSignatureOverRpc,
+  executeTransactionBuilderOverRpc,
+  isBlockhashExpiryError
+} from './solana-transaction-reliability.mjs';
 
 export const WORLD_FAIR_PROGRAM_ID = new PublicKey(
   '7pgPuPZSUUtFcvFtVGmS3piCE1bHY35kjb14vct9v45Z'
@@ -53,6 +59,41 @@ export const PYTH_LAZER_PROGRAM_ID = new PublicKey(
 export const PYTH_LAZER_STORAGE_ID = new PublicKey(
   '3rdJbqfnagQ4yx9HXJViD4zc4xpiSqmFsKpPuSCQVyQL'
 );
+
+function isTransientRpcReadError(error) {
+  const message = String(error?.message ?? error ?? '');
+  return (
+    message.includes('429 Too Many Requests') ||
+    message.includes('Unable to fetch TokenAccountInfo for vault') ||
+    message.includes('fetch failed') ||
+    message.includes('ECONNRESET') ||
+    message.includes('ETIMEDOUT') ||
+    message.includes('UND_ERR_CONNECT_TIMEOUT')
+  );
+}
+
+async function withTransientRpcReadRetry(
+  operation,
+  { attempts = 4, baseDelayMs = 1_500 } = {}
+) {
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      if (!isTransientRpcReadError(error) || attempt === attempts) {
+        throw error;
+      }
+      await new Promise((resolve) =>
+        setTimeout(resolve, baseDelayMs * attempt)
+      );
+    }
+  }
+
+  throw lastError;
+}
 
 export const WORLD_FAIR_PYTH_FEED = Object.freeze({
   symbol: 'Crypto.USDC/USD',
@@ -268,42 +309,6 @@ async function expectRefusal(fn, markers) {
   throw new Error('WORLD_FAIR_EXPECTED_REFUSAL_EXECUTED');
 }
 
-async function confirmSignatureOverRpc({
-  rpc,
-  signature,
-  lastValidBlockHeight,
-  timeoutMs = 30_000,
-  pollMs = 750
-}) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    const statuses = await rpc.getSignatureStatuses([signature]);
-    const status = statuses?.value?.[0] ?? null;
-
-    if (status?.err) {
-      throw new Error(
-        `SOLANA_CONFIRMATION_FAILED:${JSON.stringify(status.err)}`
-      );
-    }
-    if (
-      status &&
-      ['confirmed', 'finalized'].includes(status.confirmationStatus)
-    ) {
-      return status;
-    }
-    await new Promise((resolve) => setTimeout(resolve, pollMs));
-  }
-
-  const blockHeight = await rpc.getBlockHeight('confirmed');
-  if (
-    Number.isFinite(lastValidBlockHeight) &&
-    blockHeight > lastValidBlockHeight
-  ) {
-    throw new Error('SOLANA_BLOCKHASH_EXPIRED');
-  }
-  throw new Error('SOLANA_CONFIRMATION_TIMEOUT');
-}
-
 async function sendInstructions({
   rpc,
   feePayer,
@@ -454,14 +459,24 @@ export function createWorldFairOrcaProvider({
   );
 
   async function loadState() {
-    const [charterInfo, mandateInfo, ruleInfo, inputVaultInfo, outputVaultInfo] =
-      await Promise.all([
-        rpc.getAccountInfo(charter, 'confirmed'),
-        rpc.getAccountInfo(mandate, 'confirmed'),
-        rpc.getAccountInfo(assetRule, 'confirmed'),
-        rpc.getAccountInfo(inputTradeVault, 'confirmed'),
-        rpc.getAccountInfo(outputTradeVault, 'confirmed')
-      ]);
+    const [
+      charterInfo,
+      mandateInfo,
+      ruleInfo,
+      inputVaultInfo,
+      outputVaultInfo
+    ] = await withTransientRpcReadRetry(() =>
+      rpc.getMultipleAccountsInfo(
+        [
+          charter,
+          mandate,
+          assetRule,
+          inputTradeVault,
+          outputTradeVault
+        ],
+        'confirmed'
+      )
+    );
 
     return {
       charter: charterInfo ? parseCharter(Buffer.from(charterInfo.data)) : null,
@@ -722,18 +737,44 @@ export function createWorldFairOrcaProvider({
     const required =
       VAULT_TARGET_BASE_UNITS - Number(vault.amount);
 
-    if (Number(guardianUsdcState.amount) < required) {
-      const solUsdcPool = await orcaClient.getPool(ORCA_SOL_USDC_POOL);
-      const quote = await swapQuoteByInputToken(
-        solUsdcPool,
-        NATIVE_MINT,
-        new BN(100_000_000),
-        Percentage.fromFraction(1, 100),
-        ORCA_WHIRLPOOL_PROGRAM_ID,
-        orcaContext.fetcher
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      if (Number(guardianUsdcState.amount) >= required) break;
+
+      const solUsdcPool = await withTransientRpcReadRetry(
+        () => orcaClient.getPool(ORCA_SOL_USDC_POOL, IGNORE_CACHE)
+      );
+      const quote = await withTransientRpcReadRetry(() =>
+        swapQuoteByInputToken(
+          solUsdcPool,
+          NATIVE_MINT,
+          new BN(100_000_000),
+          Percentage.fromFraction(1, 100),
+          ORCA_WHIRLPOOL_PROGRAM_ID,
+          orcaContext.fetcher,
+          IGNORE_CACHE
+        )
       );
       const fundingTx = await solUsdcPool.swap(quote);
-      await fundingTx.buildAndExecute();
+
+      try {
+        await executeTransactionBuilderOverRpc({
+          rpc,
+          builder: fundingTx,
+          payerSigner: guardian,
+          timeoutMs: 60_000
+        });
+      } catch (error) {
+        guardianUsdcState = await getAccount(
+          rpc,
+          guardianUsdc.address,
+          'confirmed',
+          TOKEN_PROGRAM_ID
+        );
+
+        if (Number(guardianUsdcState.amount) >= required) break;
+        if (!isBlockhashExpiryError(error) || attempt === 2) throw error;
+      }
+
       guardianUsdcState = await getAccount(
         rpc,
         guardianUsdc.address,
@@ -746,14 +787,21 @@ export function createWorldFairOrcaProvider({
       throw new Error('WORLD_FAIR_LAB_DEV_USDC_FUNDING_UNAVAILABLE');
     }
 
-    return transfer(
+    return sendInstructions({
       rpc,
-      guardian,
-      guardianUsdc.address,
-      inputTradeVault,
-      guardian,
-      required
-    );
+      feePayer: guardian,
+      signers: [guardian],
+      instructions: [
+        createTransferInstruction(
+          guardianUsdc.address,
+          inputTradeVault,
+          guardian.publicKey,
+          required,
+          [],
+          TOKEN_PROGRAM_ID
+        )
+      ]
+    });
   }
 
   async function ensureReady() {
@@ -859,8 +907,10 @@ export function createWorldFairOrcaProvider({
   }
 
   async function orcaContextState() {
-    const pool = await orcaClient.getPool(WORLD_FAIR_ORCA_POOL);
-    await pool.refreshData();
+    const pool = await withTransientRpcReadRetry(
+      () => orcaClient.getPool(WORLD_FAIR_ORCA_POOL, IGNORE_CACHE)
+    );
+    await withTransientRpcReadRetry(() => pool.refreshData());
     const data = pool.getData();
 
     if (
@@ -886,14 +936,17 @@ export function createWorldFairOrcaProvider({
   }
 
   async function quoteFor(pool, inputAmount) {
-    await pool.refreshData();
-    return swapQuoteByInputToken(
-      pool,
-      WORLD_FAIR_DEV_USDC,
-      new BN(inputAmount),
-      Percentage.fromFraction(1, 100),
-      ORCA_WHIRLPOOL_PROGRAM_ID,
-      orcaContext.fetcher
+    await withTransientRpcReadRetry(() => pool.refreshData());
+    return withTransientRpcReadRetry(() =>
+      swapQuoteByInputToken(
+        pool,
+        WORLD_FAIR_DEV_USDC,
+        new BN(inputAmount),
+        Percentage.fromFraction(1, 100),
+        ORCA_WHIRLPOOL_PROGRAM_ID,
+        orcaContext.fetcher,
+        IGNORE_CACHE
+      )
     );
   }
 
