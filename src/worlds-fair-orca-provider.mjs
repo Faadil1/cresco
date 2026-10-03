@@ -32,7 +32,8 @@ import { fetchPythProSolanaPayload } from './pyth-adapter.mjs';
 import {
   confirmSignatureOverRpc,
   executeTransactionBuilderOverRpc,
-  isBlockhashExpiryError
+  isBlockhashExpiryError,
+  isTransientSolanaRpcError
 } from './solana-transaction-reliability.mjs';
 
 export const WORLD_FAIR_PROGRAM_ID = new PublicKey(
@@ -63,12 +64,8 @@ export const PYTH_LAZER_STORAGE_ID = new PublicKey(
 function isTransientRpcReadError(error) {
   const message = String(error?.message ?? error ?? '');
   return (
-    message.includes('429 Too Many Requests') ||
-    message.includes('Unable to fetch TokenAccountInfo for vault') ||
-    message.includes('fetch failed') ||
-    message.includes('ECONNRESET') ||
-    message.includes('ETIMEDOUT') ||
-    message.includes('UND_ERR_CONNECT_TIMEOUT')
+    isTransientSolanaRpcError(error) ||
+    message.includes('Unable to fetch TokenAccountInfo for vault')
   );
 }
 
@@ -290,6 +287,124 @@ function reasonFromError(error) {
     'TradeActionExpired'
   ];
   return markers.find((marker) => text.includes(marker)) ?? 'WORLD_FAIR_EXECUTION_REFUSED';
+}
+
+export function classifyWorldFairRunFailure(
+  error,
+  { phase = 'RUN_UNKNOWN', phaseKind = 'READ' } = {}
+) {
+  const text = errorText(error);
+
+  let failureClass = 'UNKNOWN_RUNTIME';
+  let reasonCode = 'WORLD_FAIR_RUNTIME_FAILURE';
+  let message =
+    'The live sequence stopped before CRESCO could prove a complete outcome.';
+
+  if (
+    isTransientSolanaRpcError(error) ||
+    text.includes('Unable to fetch TokenAccountInfo for vault')
+  ) {
+    failureClass = 'TRANSIENT_RPC';
+    reasonCode = 'SOLANA_RPC_TRANSIENT';
+    message =
+      'Solana Devnet RPC was temporarily rate-limited or unavailable.';
+  } else if (
+    isBlockhashExpiryError(error) ||
+    text.includes('SOLANA_CONFIRMATION_TIMEOUT')
+  ) {
+    failureClass = 'UNKNOWN_CONFIRMATION';
+    reasonCode = 'SOLANA_CONFIRMATION_UNCERTAIN';
+    message =
+      'A submitted Solana transaction did not reach a confirmed state before CRESCO could prove its outcome.';
+  } else if (
+    text.includes('WORLD_FAIR_PYTH_UNAVAILABLE') ||
+    text.includes('WORLD_FAIR_PYTH_PAYLOAD_INVALID') ||
+    text.includes('WORLD_FAIR_PYTH_PRICE_INVALID') ||
+    text.includes('WORLD_FAIR_PYTH_STORAGE_UNAVAILABLE')
+  ) {
+    failureClass = 'DEPENDENCY_FAILURE';
+    reasonCode = 'PYTH_EVIDENCE_UNAVAILABLE';
+    message =
+      'Required Pyth market evidence was unavailable or invalid.';
+  } else if (
+    text.includes('WORLD_FAIR_ROLLBACK_INVARIANT_FAILED') ||
+    text.includes('WORLD_FAIR_LAB_') ||
+    text.includes('WORLD_FAIR_ORCA_POOL_PAIR_MISMATCH')
+  ) {
+    failureClass = 'INVARIANT_FAILURE';
+    reasonCode = 'WORLD_FAIR_INVARIANT_FAILURE';
+    message =
+      'CRESCO detected a runtime invariant mismatch and stopped fail-closed.';
+  } else if (
+    text.includes('WORLD_FAIR_UNEXPECTED_REFUSAL') ||
+    [
+      'PythNotionalExceeded',
+      'AllowanceActionMismatch',
+      'AllowanceAlreadyUsed',
+      'InvalidOrcaProgram',
+      'PythMessageInvalid',
+      'AmountOutBelowMinimum',
+      'OrcaSwapFailed',
+      'StaleNonce',
+      'MandateNotActive',
+      'TradeActionExpired'
+    ].some((marker) => text.includes(marker))
+  ) {
+    failureClass = 'SEMANTIC_REFUSAL';
+    reasonCode = 'WORLD_FAIR_UNEXPECTED_SEMANTIC_REFUSAL';
+    message =
+      'An on-chain policy refusal occurred outside the expected canonical branch.';
+  }
+
+  const retryPolicy =
+    failureClass === 'TRANSIENT_RPC' && phaseKind === 'READ'
+      ? 'SAFE_RETRY_READ'
+      : failureClass === 'TRANSIENT_RPC' ||
+          failureClass === 'UNKNOWN_CONFIRMATION'
+        ? 'REQUIRES_STATE_RECONCILIATION'
+        : 'NOT_AUTOMATICALLY_RETRYABLE';
+
+  return {
+    phase,
+    phaseKind,
+    failureClass,
+    reasonCode,
+    retryPolicy,
+    message
+  };
+}
+
+function createWorldFairRunFailure({
+  error,
+  phase,
+  phaseKind,
+  receipt
+}) {
+  const diagnostic = classifyWorldFairRunFailure(error, {
+    phase,
+    phaseKind
+  });
+
+  const partialReceipt = receipt
+    ? {
+        ...receipt,
+        status: 'UNKNOWN',
+        productState: 'WORLD_FAIR_OPERATOR_LAB_PARTIAL',
+        progress: {
+          ...receipt.progress,
+          currentPhase: phase,
+          failure: diagnostic
+        }
+      }
+    : null;
+
+  const wrapped = new Error(diagnostic.message);
+  wrapped.name = 'WorldFairRunError';
+  wrapped.code = 'WORLD_FAIR_LIVE_RUN_UNCONFIRMED';
+  wrapped.worldFairDiagnostic = diagnostic;
+  wrapped.worldFairPartialReceipt = partialReceipt;
+  wrapped.cause = error;
+  return wrapped;
 }
 
 async function expectRefusal(fn, markers) {
