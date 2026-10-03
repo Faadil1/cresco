@@ -1,0 +1,77 @@
+name: cresco-cloudflare-frontend-compat
+
+on:
+  push:
+    branches:
+      - feature/cresco-cloudflare-frontend-v1
+  workflow_dispatch:
+
+jobs:
+  compatibility:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    defaults:
+      run:
+        working-directory: apps/web
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install existing frontend dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Verify historical Next.js baseline
+        run: npm run check
+
+      - name: Run vinext compatibility check
+        shell: bash
+        run: |
+          set -o pipefail
+          npx --yes vinext@1.0.1 check 2>&1 | tee vinext-compatibility.txt
+
+      - name: Generate non-destructive Cloudflare migration
+        run: >-
+          npx --yes vinext@1.0.1 init
+          --platform=cloudflare
+          --legacy-wrangler-cloudflare-init
+          --skip-check
+          --no-install
+          --cdn-cache=none
+          --data-cache=none
+          --image-optimization=none
+
+      - name: Install generated vinext dependency set
+        run: npm install --no-audit --no-fund
+
+      - name: Verify Next.js still works after migration
+        run: npm run check
+
+      - name: Build full CRESCO frontend for Cloudflare Workers
+        run: npm run build:vinext
+
+      - name: Dry-run Cloudflare Worker packaging
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx vinext-cloudflare deploy             --config dist/server/wrangler.json             --dry-run
+
+      - name: Preserve generated migration files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cresco-cloudflare-vinext-generated
+          path: |
+            apps/web/package.json
+            apps/web/package-lock.json
+            apps/web/vite.config.ts
+            apps/web/wrangler.jsonc
+            apps/web/.gitignore
+            apps/web/vinext-compatibility.txt
+          if-no-files-found: warn
