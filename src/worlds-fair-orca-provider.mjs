@@ -1493,19 +1493,23 @@ export function createWorldFairOrcaProvider({
 
 let configuredProvider = null;
 
-export function configuredWorldFairOrcaProviderFromEnv() {
+export function configuredWorldFairOrcaProviderFromEnv(env = null) {
   if (configuredProvider) return configuredProvider;
 
-  if (!process.env.DEVNET_KEYPAIR_JSON || !process.env.PYTH_PRO_API_KEY) {
-    return null;
-  }
+  const read = (key) =>
+    env?.[key] ??
+    (typeof process !== 'undefined' ? process.env?.[key] : null);
+
+  const keypairJson = read('DEVNET_KEYPAIR_JSON');
+  const pythApiKey = read('PYTH_PRO_API_KEY');
+  if (!keypairJson || !pythApiKey) return null;
 
   configuredProvider = createWorldFairOrcaProvider({
     rpcUrl:
-      process.env.SOLANA_DEVNET_RPC_URL ??
+      read('SOLANA_DEVNET_RPC_URL') ??
       'https://api.devnet.solana.com',
-    guardian: parseKeypair(process.env.DEVNET_KEYPAIR_JSON),
-    pythApiKey: process.env.PYTH_PRO_API_KEY
+    guardian: parseKeypair(keypairJson),
+    pythApiKey
   });
 
   return configuredProvider;
