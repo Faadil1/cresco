@@ -459,14 +459,24 @@ export function createWorldFairOrcaProvider({
   );
 
   async function loadState() {
-    const [charterInfo, mandateInfo, ruleInfo, inputVaultInfo, outputVaultInfo] =
-      await Promise.all([
-        rpc.getAccountInfo(charter, 'confirmed'),
-        rpc.getAccountInfo(mandate, 'confirmed'),
-        rpc.getAccountInfo(assetRule, 'confirmed'),
-        rpc.getAccountInfo(inputTradeVault, 'confirmed'),
-        rpc.getAccountInfo(outputTradeVault, 'confirmed')
-      ]);
+    const [
+      charterInfo,
+      mandateInfo,
+      ruleInfo,
+      inputVaultInfo,
+      outputVaultInfo
+    ] = await withTransientRpcReadRetry(() =>
+      rpc.getMultipleAccountsInfo(
+        [
+          charter,
+          mandate,
+          assetRule,
+          inputTradeVault,
+          outputTradeVault
+        ],
+        'confirmed'
+      )
+    );
 
     return {
       charter: charterInfo ? parseCharter(Buffer.from(charterInfo.data)) : null,
