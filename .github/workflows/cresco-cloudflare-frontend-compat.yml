@@ -24,8 +24,8 @@ jobs:
           cache: npm
           cache-dependency-path: apps/web/package-lock.json
 
-      - name: Install existing frontend dependencies
-        run: npm ci --no-audit --no-fund
+      - name: Reconcile existing frontend lockfile in runner
+        run: npm install --no-audit --no-fund
 
       - name: Verify historical Next.js baseline
         run: npm run check
