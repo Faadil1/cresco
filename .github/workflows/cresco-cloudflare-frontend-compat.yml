@@ -1,4 +1,5 @@
 name: cresco-cloudflare-frontend-compat
+# exact-head validation marker
 
 on:
   push:
