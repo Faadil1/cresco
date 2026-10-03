@@ -25,6 +25,8 @@ function workerEnv() {
   const instances = new Map();
   return {
     CRESCO_CORS_ORIGIN: 'https://cresco-lac.vercel.app',
+    CRESCO_CORS_ORIGINS:
+      'https://cresco-lac.vercel.app,https://cresco.faadil-casecraft.workers.dev',
     FAMILY_STATE: {
       idFromName(name) {
         return name;
@@ -88,6 +90,46 @@ test('Cloudflare adapter handles CORS preflight without touching runtime secrets
   );
 });
 
+
+
+
+test('Cloudflare adapter allows the new CRESCO Workers frontend origin', async () => {
+  const response = await handleCrescoCloudflareRequest(
+    new Request('https://cresco-api-stocklana.example/', {
+      headers: {
+        Origin: 'https://cresco.faadil-casecraft.workers.dev'
+      }
+    }),
+    {
+      CRESCO_CORS_ORIGINS:
+        'https://cresco-lac.vercel.app,https://cresco.faadil-casecraft.workers.dev'
+    }
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(
+    response.headers.get('access-control-allow-origin'),
+    'https://cresco.faadil-casecraft.workers.dev'
+  );
+});
+
+test('Cloudflare adapter does not grant CORS to an untrusted browser origin', async () => {
+  const response = await handleCrescoCloudflareRequest(
+    new Request('https://cresco-api-stocklana.example/api/v0.2/actions/execute', {
+      method: 'OPTIONS',
+      headers: {
+        Origin: 'https://example-attacker.invalid'
+      }
+    }),
+    {
+      CRESCO_CORS_ORIGINS:
+        'https://cresco-lac.vercel.app,https://cresco.faadil-casecraft.workers.dev'
+    }
+  );
+
+  assert.equal(response.status, 204);
+  assert.equal(response.headers.get('access-control-allow-origin'), null);
+});
 
 test('Cloudflare World’s Fair live route refuses overlap while the durable lease is active', async () => {
   const env = workerEnv();
