@@ -13,12 +13,20 @@ export default function ParentSignIn() {
   const { state, dispatch } = useStore();
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const signIn = async () => {
     setBusy(true);
-    const session = await auth.signInDemo("parent", state.profile.parentName);
-    dispatch({ type: "signIn", session });
-    router.push("/parent");
+    setError(null);
+    try {
+      const session = await auth.signInDemo("parent", state.profile.parentName);
+      dispatch({ type: "signIn", session });
+      router.push("/parent");
+    } catch {
+      setError("CRESCO could not start the parent demo session. Please try again.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -54,6 +62,14 @@ export default function ParentSignIn() {
       <p className="mt-3 rounded-[14px] bg-surface-soft px-3.5 py-3 text-[12.5px] font-semibold text-ink-2">
         Demo sign-in: CRESCO issues a temporary guardian session so authority-changing actions are role-gated. This is not identity verification, KYC or a production account.
       </p>
+      {error ? (
+        <p
+          role="alert"
+          className="mt-3 rounded-[14px] border border-loss/25 bg-loss-soft px-3.5 py-3 text-[12.5px] font-bold text-loss-text"
+        >
+          {error}
+        </p>
+      ) : null}
     </OnboardingFrame>
   );
 }
