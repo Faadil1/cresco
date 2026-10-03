@@ -92,6 +92,11 @@ export async function withTransientRpcReadRetry(
   throw lastError;
 }
 
+export const WORLD_FAIR_ORCA_READ_RETRY_PROFILE = Object.freeze({
+  attempts: 6,
+  baseDelayMs: 2_000
+});
+
 export const WORLD_FAIR_PYTH_FEED = Object.freeze({
   symbol: 'Crypto.USDC/USD',
   feedId: 7,
@@ -1035,9 +1040,13 @@ export function createWorldFairOrcaProvider({
 
   async function orcaContextState() {
     const pool = await withTransientRpcReadRetry(
-      () => orcaClient.getPool(WORLD_FAIR_ORCA_POOL, IGNORE_CACHE)
+      () => orcaClient.getPool(WORLD_FAIR_ORCA_POOL, IGNORE_CACHE),
+      WORLD_FAIR_ORCA_READ_RETRY_PROFILE
     );
-    await withTransientRpcReadRetry(() => pool.refreshData());
+    await withTransientRpcReadRetry(
+      () => pool.refreshData(),
+      WORLD_FAIR_ORCA_READ_RETRY_PROFILE
+    );
     const data = pool.getData();
 
     if (
@@ -1047,11 +1056,13 @@ export function createWorldFairOrcaProvider({
       throw new Error('WORLD_FAIR_ORCA_POOL_PAIR_MISMATCH');
     }
 
-    const storageInfo = await withTransientRpcReadRetry(() =>
-      rpc.getAccountInfo(
-        PYTH_LAZER_STORAGE_ID,
-        'confirmed'
-      )
+    const storageInfo = await withTransientRpcReadRetry(
+      () =>
+        rpc.getAccountInfo(
+          PYTH_LAZER_STORAGE_ID,
+          'confirmed'
+        ),
+      WORLD_FAIR_ORCA_READ_RETRY_PROFILE
     );
     if (!storageInfo || storageInfo.data.length < 72) {
       throw new Error('WORLD_FAIR_PYTH_STORAGE_UNAVAILABLE');
@@ -1065,17 +1076,22 @@ export function createWorldFairOrcaProvider({
   }
 
   async function quoteFor(pool, inputAmount) {
-    await withTransientRpcReadRetry(() => pool.refreshData());
-    return withTransientRpcReadRetry(() =>
-      swapQuoteByInputToken(
-        pool,
-        WORLD_FAIR_DEV_USDC,
-        new BN(inputAmount),
-        Percentage.fromFraction(1, 100),
-        ORCA_WHIRLPOOL_PROGRAM_ID,
-        orcaContext.fetcher,
-        IGNORE_CACHE
-      )
+    await withTransientRpcReadRetry(
+      () => pool.refreshData(),
+      WORLD_FAIR_ORCA_READ_RETRY_PROFILE
+    );
+    return withTransientRpcReadRetry(
+      () =>
+        swapQuoteByInputToken(
+          pool,
+          WORLD_FAIR_DEV_USDC,
+          new BN(inputAmount),
+          Percentage.fromFraction(1, 100),
+          ORCA_WHIRLPOOL_PROGRAM_ID,
+          orcaContext.fetcher,
+          IGNORE_CACHE
+        ),
+      WORLD_FAIR_ORCA_READ_RETRY_PROFILE
     );
   }
 
