@@ -8,6 +8,20 @@ export function isBlockhashExpiryError(error) {
   );
 }
 
+export function isTransientSolanaRpcError(error) {
+  const message = String(error?.message ?? error ?? '');
+  return (
+    message.includes('429 Too Many Requests') ||
+    message.includes('fetch failed') ||
+    message.includes('ECONNRESET') ||
+    message.includes('ETIMEDOUT') ||
+    message.includes('UND_ERR_CONNECT_TIMEOUT') ||
+    message.includes('socket hang up') ||
+    message.includes('Service Unavailable') ||
+    message.includes('Gateway Timeout')
+  );
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -20,6 +34,83 @@ function isConfirmed(status) {
   );
 }
 
+async function getStatusesWithTransientRetry(
+  rpc,
+  signature,
+  options = undefined,
+  { attempts = 4, delayMs = 750 } = {}
+) {
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await rpc.getSignatureStatuses(
+        [signature],
+        options
+      );
+    } catch (error) {
+      lastError = error;
+      if (!isTransientSolanaRpcError(error) || attempt === attempts) {
+        throw error;
+      }
+      await sleep(delayMs * attempt);
+    }
+  }
+
+  throw lastError;
+}
+
+async function reconcileHistoricalSignature({
+  rpc,
+  signature,
+  attempts = 4,
+  delayMs = 900
+}) {
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const historical = await getStatusesWithTransientRetry(
+      rpc,
+      signature,
+      { searchTransactionHistory: true },
+      { attempts: 3, delayMs }
+    );
+    const status = historical?.value?.[0] ?? null;
+
+    if (status?.err) {
+      throw new Error(
+        `SOLANA_CONFIRMATION_FAILED:${JSON.stringify(status.err)}`
+      );
+    }
+    if (isConfirmed(status)) return status;
+
+    if (attempt < attempts) {
+      await sleep(delayMs * attempt);
+    }
+  }
+
+  return null;
+}
+
+async function getBlockHeightWithTransientRetry(
+  rpc,
+  { attempts = 4, delayMs = 750 } = {}
+) {
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await rpc.getBlockHeight('confirmed');
+    } catch (error) {
+      lastError = error;
+      if (!isTransientSolanaRpcError(error) || attempt === attempts) {
+        throw error;
+      }
+      await sleep(delayMs * attempt);
+    }
+  }
+
+  throw lastError;
+}
+
 export async function confirmSignatureOverRpc({
   rpc,
   signature,
@@ -30,7 +121,15 @@ export async function confirmSignatureOverRpc({
   const deadline = Date.now() + timeoutMs;
 
   while (Date.now() < deadline) {
-    const statuses = await rpc.getSignatureStatuses([signature]);
+    let statuses;
+    try {
+      statuses = await rpc.getSignatureStatuses([signature]);
+    } catch (error) {
+      if (!isTransientSolanaRpcError(error)) throw error;
+      await sleep(pollMs);
+      continue;
+    }
+
     const status = statuses?.value?.[0] ?? null;
 
     if (status?.err) {
@@ -42,26 +141,29 @@ export async function confirmSignatureOverRpc({
     await sleep(pollMs);
   }
 
-  const historical = await rpc
-    .getSignatureStatuses(
-      [signature],
-      { searchTransactionHistory: true }
-    )
-    .catch(() => null);
-  const historicalStatus = historical?.value?.[0] ?? null;
+  // A transaction can be confirmed on-chain while the public RPC index lags.
+  // Reconcile the exact signature from history before declaring UNKNOWN.
+  const reconciled = await reconcileHistoricalSignature({
+    rpc,
+    signature
+  });
+  if (reconciled) return reconciled;
 
-  if (historicalStatus?.err) {
-    throw new Error(
-      `SOLANA_CONFIRMATION_FAILED:${JSON.stringify(historicalStatus.err)}`
-    );
-  }
-  if (isConfirmed(historicalStatus)) return historicalStatus;
-
-  const blockHeight = await rpc.getBlockHeight('confirmed');
+  const blockHeight = await getBlockHeightWithTransientRetry(rpc);
   if (
     Number.isFinite(lastValidBlockHeight) &&
     blockHeight > lastValidBlockHeight
   ) {
+    // One final history reconciliation after expiry avoids a false UNKNOWN
+    // when the signature landed near the validity boundary.
+    const postExpiry = await reconcileHistoricalSignature({
+      rpc,
+      signature,
+      attempts: 2,
+      delayMs: 500
+    });
+    if (postExpiry) return postExpiry;
+
     throw new Error(`SOLANA_BLOCKHASH_EXPIRED:${signature}`);
   }
 
