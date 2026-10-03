@@ -520,6 +520,17 @@ export async function routeCrescoHttp({
         }
       };
     } catch (error) {
+      const diagnostic =
+        error?.worldFairDiagnostic ?? {
+          phase: 'RUN_UNKNOWN',
+          phaseKind: 'WRITE',
+          failureClass: 'UNKNOWN_RUNTIME',
+          reasonCode: 'WORLD_FAIR_RUNTIME_FAILURE',
+          retryPolicy: 'REQUIRES_STATE_RECONCILIATION',
+          message:
+            'The live sequence stopped before CRESCO could prove a complete outcome.'
+        };
+
       return {
         status: 503,
         headers: JSON_HEADERS,
@@ -528,7 +539,9 @@ export async function routeCrescoHttp({
           type: 'WORLD_FAIR_OPERATOR_LAB_RUN',
           status: 'UNKNOWN',
           error: 'WORLD_FAIR_LIVE_RUN_UNCONFIRMED',
-          message: error?.message ?? 'World’s Fair live run unavailable',
+          diagnostic,
+          message: diagnostic.message,
+          partialReceipt: error?.worldFairPartialReceipt ?? null,
           receipt: null
         }
       };
