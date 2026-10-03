@@ -13,12 +13,20 @@ export default function StartPage() {
   const { state, dispatch } = useStore();
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState<"email" | "demo" | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const go = async (kind: "email" | "demo") => {
     setBusy(kind);
-    const session = await auth.signInDemo("child", state.profile.childName);
-    dispatch({ type: "signIn", session });
-    router.push(kind === "demo" ? "/home" : "/onboarding/about");
+    setError(null);
+    try {
+      const session = await auth.signInDemo("child", state.profile.childName);
+      dispatch({ type: "signIn", session });
+      router.push(kind === "demo" ? "/home" : "/onboarding/about");
+    } catch {
+      setError("CRESCO could not start the demo session. Please try again.");
+    } finally {
+      setBusy(null);
+    }
   };
 
   return (
@@ -55,6 +63,14 @@ export default function StartPage() {
       <p className="mt-3 rounded-[14px] bg-surface-soft px-3.5 py-3 text-[12.5px] font-semibold text-ink-2">
         Demo sign-in: no email is sent and no production account is created. When the CRESCO backend is available, family progress and requests sync through the demo backend.
       </p>
+      {error ? (
+        <p
+          role="alert"
+          className="mt-3 rounded-[14px] border border-loss/25 bg-loss-soft px-3.5 py-3 text-[12.5px] font-bold text-loss-text"
+        >
+          {error}
+        </p>
+      ) : null}
     </OnboardingFrame>
   );
 }
