@@ -92,6 +92,11 @@ export async function withTransientRpcReadRetry(
   throw lastError;
 }
 
+export const WORLD_FAIR_STATE_READ_RETRY_PROFILE = Object.freeze({
+  attempts: 6,
+  baseDelayMs: 2_000
+});
+
 export const WORLD_FAIR_ORCA_READ_RETRY_PROFILE = Object.freeze({
   attempts: 6,
   baseDelayMs: 2_000
@@ -597,17 +602,19 @@ export function createWorldFairOrcaProvider({
       ruleInfo,
       inputVaultInfo,
       outputVaultInfo
-    ] = await withTransientRpcReadRetry(() =>
-      rpc.getMultipleAccountsInfo(
-        [
-          charter,
-          mandate,
-          assetRule,
-          inputTradeVault,
-          outputTradeVault
-        ],
-        'confirmed'
-      )
+    ] = await withTransientRpcReadRetry(
+      () =>
+        rpc.getMultipleAccountsInfo(
+          [
+            charter,
+            mandate,
+            assetRule,
+            inputTradeVault,
+            outputTradeVault
+          ],
+          'confirmed'
+        ),
+      WORLD_FAIR_STATE_READ_RETRY_PROFILE
     );
 
     return {
@@ -705,7 +712,10 @@ export function createWorldFairOrcaProvider({
       WORLD_FAIR_PROGRAM_ID
     );
 
-    const reviewInfo = await rpc.getAccountInfo(reviewReceipt, 'confirmed');
+    const reviewInfo = await withTransientRpcReadRetry(
+      () => rpc.getAccountInfo(reviewReceipt, 'confirmed'),
+      WORLD_FAIR_STATE_READ_RETRY_PROFILE
+    );
     let reviewSignature = null;
     if (!reviewInfo) {
       reviewSignature = await sendInstructions({
@@ -827,7 +837,10 @@ export function createWorldFairOrcaProvider({
   }
 
   async function ensureDelegateFunding() {
-    const balance = await rpc.getBalance(delegate.publicKey, 'confirmed');
+    const balance = await withTransientRpcReadRetry(
+      () => rpc.getBalance(delegate.publicKey, 'confirmed'),
+      WORLD_FAIR_STATE_READ_RETRY_PROFILE
+    );
     if (balance >= DELEGATE_MIN_LAMPORTS) return null;
 
     return sendInstructions({
@@ -844,13 +857,15 @@ export function createWorldFairOrcaProvider({
     });
   }
 
-  async function ensureInputVaultFunding() {
-    const vault = await getAccount(
-      rpc,
-      inputTradeVault,
-      'confirmed',
-      TOKEN_PROGRAM_ID
+  async function readTokenAccount(address) {
+    return withTransientRpcReadRetry(
+      () => getAccount(rpc, address, 'confirmed', TOKEN_PROGRAM_ID),
+      WORLD_FAIR_STATE_READ_RETRY_PROFILE
     );
+  }
+
+  async function ensureInputVaultFunding() {
+    const vault = await readTokenAccount(inputTradeVault);
     if (Number(vault.amount) >= VAULT_TARGET_BASE_UNITS) return null;
 
     const guardianUsdc = await getOrCreateAssociatedTokenAccount(
@@ -859,12 +874,7 @@ export function createWorldFairOrcaProvider({
       WORLD_FAIR_DEV_USDC,
       guardian.publicKey
     );
-    let guardianUsdcState = await getAccount(
-      rpc,
-      guardianUsdc.address,
-      'confirmed',
-      TOKEN_PROGRAM_ID
-    );
+    let guardianUsdcState = await readTokenAccount(guardianUsdc.address);
 
     const required =
       VAULT_TARGET_BASE_UNITS - Number(vault.amount);
@@ -896,23 +906,13 @@ export function createWorldFairOrcaProvider({
           timeoutMs: 60_000
         });
       } catch (error) {
-        guardianUsdcState = await getAccount(
-          rpc,
-          guardianUsdc.address,
-          'confirmed',
-          TOKEN_PROGRAM_ID
-        );
+        guardianUsdcState = await readTokenAccount(guardianUsdc.address);
 
         if (Number(guardianUsdcState.amount) >= required) break;
         if (!isBlockhashExpiryError(error) || attempt === 2) throw error;
       }
 
-      guardianUsdcState = await getAccount(
-        rpc,
-        guardianUsdc.address,
-        'confirmed',
-        TOKEN_PROGRAM_ID
-      );
+      guardianUsdcState = await readTokenAccount(guardianUsdc.address);
     }
 
     if (Number(guardianUsdcState.amount) < required) {
@@ -1289,7 +1289,10 @@ export function createWorldFairOrcaProvider({
   }
 
   async function loadAllowance(address) {
-    const info = await rpc.getAccountInfo(address, 'confirmed');
+    const info = await withTransientRpcReadRetry(
+      () => rpc.getAccountInfo(address, 'confirmed'),
+      WORLD_FAIR_STATE_READ_RETRY_PROFILE
+    );
     if (!info) throw new Error('WORLD_FAIR_ALLOWANCE_NOT_FOUND');
     return parseAllowance(Buffer.from(info.data));
   }
@@ -1305,10 +1308,10 @@ export function createWorldFairOrcaProvider({
     validateExistingState(state);
 
     const inputVault = state.inputVaultExists
-      ? await getAccount(rpc, inputTradeVault, 'confirmed', TOKEN_PROGRAM_ID)
+      ? await readTokenAccount(inputTradeVault)
       : null;
     const outputVault = state.outputVaultExists
-      ? await getAccount(rpc, outputTradeVault, 'confirmed', TOKEN_PROGRAM_ID)
+      ? await readTokenAccount(outputTradeVault)
       : null;
 
     return {
