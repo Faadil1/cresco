@@ -32,7 +32,8 @@ import { fetchPythProSolanaPayload } from './pyth-adapter.mjs';
 import {
   confirmSignatureOverRpc,
   executeTransactionBuilderOverRpc,
-  isBlockhashExpiryError
+  isBlockhashExpiryError,
+  isTransientSolanaRpcError
 } from './solana-transaction-reliability.mjs';
 
 export const WORLD_FAIR_PROGRAM_ID = new PublicKey(
@@ -63,12 +64,8 @@ export const PYTH_LAZER_STORAGE_ID = new PublicKey(
 function isTransientRpcReadError(error) {
   const message = String(error?.message ?? error ?? '');
   return (
-    message.includes('429 Too Many Requests') ||
-    message.includes('Unable to fetch TokenAccountInfo for vault') ||
-    message.includes('fetch failed') ||
-    message.includes('ECONNRESET') ||
-    message.includes('ETIMEDOUT') ||
-    message.includes('UND_ERR_CONNECT_TIMEOUT')
+    isTransientSolanaRpcError(error) ||
+    message.includes('Unable to fetch TokenAccountInfo for vault')
   );
 }
 
@@ -290,6 +287,124 @@ function reasonFromError(error) {
     'TradeActionExpired'
   ];
   return markers.find((marker) => text.includes(marker)) ?? 'WORLD_FAIR_EXECUTION_REFUSED';
+}
+
+export function classifyWorldFairRunFailure(
+  error,
+  { phase = 'RUN_UNKNOWN', phaseKind = 'READ' } = {}
+) {
+  const text = errorText(error);
+
+  let failureClass = 'UNKNOWN_RUNTIME';
+  let reasonCode = 'WORLD_FAIR_RUNTIME_FAILURE';
+  let message =
+    'The live sequence stopped before CRESCO could prove a complete outcome.';
+
+  if (
+    isTransientSolanaRpcError(error) ||
+    text.includes('Unable to fetch TokenAccountInfo for vault')
+  ) {
+    failureClass = 'TRANSIENT_RPC';
+    reasonCode = 'SOLANA_RPC_TRANSIENT';
+    message =
+      'Solana Devnet RPC was temporarily rate-limited or unavailable.';
+  } else if (
+    isBlockhashExpiryError(error) ||
+    text.includes('SOLANA_CONFIRMATION_TIMEOUT')
+  ) {
+    failureClass = 'UNKNOWN_CONFIRMATION';
+    reasonCode = 'SOLANA_CONFIRMATION_UNCERTAIN';
+    message =
+      'A submitted Solana transaction did not reach a confirmed state before CRESCO could prove its outcome.';
+  } else if (
+    text.includes('WORLD_FAIR_PYTH_UNAVAILABLE') ||
+    text.includes('WORLD_FAIR_PYTH_PAYLOAD_INVALID') ||
+    text.includes('WORLD_FAIR_PYTH_PRICE_INVALID') ||
+    text.includes('WORLD_FAIR_PYTH_STORAGE_UNAVAILABLE')
+  ) {
+    failureClass = 'DEPENDENCY_FAILURE';
+    reasonCode = 'PYTH_EVIDENCE_UNAVAILABLE';
+    message =
+      'Required Pyth market evidence was unavailable or invalid.';
+  } else if (
+    text.includes('WORLD_FAIR_ROLLBACK_INVARIANT_FAILED') ||
+    text.includes('WORLD_FAIR_LAB_') ||
+    text.includes('WORLD_FAIR_ORCA_POOL_PAIR_MISMATCH')
+  ) {
+    failureClass = 'INVARIANT_FAILURE';
+    reasonCode = 'WORLD_FAIR_INVARIANT_FAILURE';
+    message =
+      'CRESCO detected a runtime invariant mismatch and stopped fail-closed.';
+  } else if (
+    text.includes('WORLD_FAIR_UNEXPECTED_REFUSAL') ||
+    [
+      'PythNotionalExceeded',
+      'AllowanceActionMismatch',
+      'AllowanceAlreadyUsed',
+      'InvalidOrcaProgram',
+      'PythMessageInvalid',
+      'AmountOutBelowMinimum',
+      'OrcaSwapFailed',
+      'StaleNonce',
+      'MandateNotActive',
+      'TradeActionExpired'
+    ].some((marker) => text.includes(marker))
+  ) {
+    failureClass = 'SEMANTIC_REFUSAL';
+    reasonCode = 'WORLD_FAIR_UNEXPECTED_SEMANTIC_REFUSAL';
+    message =
+      'An on-chain policy refusal occurred outside the expected canonical branch.';
+  }
+
+  const retryPolicy =
+    failureClass === 'TRANSIENT_RPC' && phaseKind === 'READ'
+      ? 'SAFE_RETRY_READ'
+      : failureClass === 'TRANSIENT_RPC' ||
+          failureClass === 'UNKNOWN_CONFIRMATION'
+        ? 'REQUIRES_STATE_RECONCILIATION'
+        : 'NOT_AUTOMATICALLY_RETRYABLE';
+
+  return {
+    phase,
+    phaseKind,
+    failureClass,
+    reasonCode,
+    retryPolicy,
+    message
+  };
+}
+
+function createWorldFairRunFailure({
+  error,
+  phase,
+  phaseKind,
+  receipt
+}) {
+  const diagnostic = classifyWorldFairRunFailure(error, {
+    phase,
+    phaseKind
+  });
+
+  const partialReceipt = receipt
+    ? {
+        ...receipt,
+        status: 'UNKNOWN',
+        productState: 'WORLD_FAIR_OPERATOR_LAB_PARTIAL',
+        progress: {
+          ...receipt.progress,
+          currentPhase: phase,
+          failure: diagnostic
+        }
+      }
+    : null;
+
+  const wrapped = new Error(diagnostic.message);
+  wrapped.name = 'WorldFairRunError';
+  wrapped.code = 'WORLD_FAIR_LIVE_RUN_UNCONFIRMED';
+  wrapped.worldFairDiagnostic = diagnostic;
+  wrapped.worldFairPartialReceipt = partialReceipt;
+  wrapped.cause = error;
+  return wrapped;
 }
 
 async function expectRefusal(fn, markers) {
@@ -1239,289 +1354,534 @@ export function createWorldFairOrcaProvider({
       return runtimePromises.get(lockKey);
     }
 
-    const promise = (async () => {
-      const ready = await ensureReady();
-      const starting = await loadState();
-      const executionNonce = starting.mandate.nonce;
-      const { pool, data: poolData, pythTreasury } =
-        await orcaContextState();
+    let receipt = null;
+    let activePhase = {
+      code: 'RUN_START',
+      kind: 'READ'
+    };
 
-      const receipt = {
-        schemaVersion: 1,
-        type: 'CRESCO_WORLD_FAIR_OPERATOR_LAB_RECEIPT',
-        status: 'IN_PROGRESS',
-        observedAt: now(),
-        network: 'solana-devnet',
-        programId: WORLD_FAIR_PROGRAM_ID.toBase58(),
-        programSha256: WORLD_FAIR_PROGRAM_SHA256,
-        principal: guardian.publicKey.toBase58(),
-        delegate: delegate.publicKey.toBase58(),
-        mandate: mandate.toBase58(),
-        startingNonce: executionNonce,
-        bootstrap: ready.bootstrap,
-        orca: {
-          programId: ORCA_WHIRLPOOL_PROGRAM_ID.toBase58(),
-          pool: WORLD_FAIR_ORCA_POOL.toBase58(),
-          inputMint: WORLD_FAIR_DEV_USDC.toBase58(),
-          outputMint: WORLD_FAIR_DEV_USDT.toBase58()
-        },
-        pyth: {
-          symbol: WORLD_FAIR_PYTH_FEED.symbol,
-          feedId: WORLD_FAIR_PYTH_FEED.feedId,
-          authorityEffect: 'NONE'
-        },
-        scenarios: {}
-      };
-
-      const standingPyth = await livePyth();
-      const standingQuote1 = await quoteFor(pool, STANDING_INPUT);
-      const standingSig1 = await executeStanding({
-        inputAmount: STANDING_INPUT,
-        pyth: standingPyth,
-        quote: standingQuote1,
-        executionNonce,
-        poolData,
-        pythTreasury
-      });
-
-      const standingPyth2 = await livePyth();
-      const standingQuote2 = await quoteFor(pool, STANDING_INPUT);
-      const standingSig2 = await executeStanding({
-        inputAmount: STANDING_INPUT,
-        pyth: standingPyth2,
-        quote: standingQuote2,
-        executionNonce,
-        poolData,
-        pythTreasury
-      });
-
-      receipt.scenarios.standingAutonomy = {
-        status: 'PASS',
-        signatures: [standingSig1, standingSig2],
-        guardianApprovalRequired: false
-      };
-
-      const boundaryPyth = await livePyth();
-      const boundaryQuote = await quoteFor(pool, EXCEPTION_INPUT);
-      const boundary = await expectRefusal(
-        () =>
-          executeStanding({
-            inputAmount: EXCEPTION_INPUT,
-            pyth: boundaryPyth,
-            quote: boundaryQuote,
-            executionNonce,
-            poolData,
-            pythTreasury
-          }),
-        ['PythNotionalExceeded']
-      );
-      const boundaryNotional =
-        (BigInt(EXCEPTION_INPUT) *
-          BigInt(boundaryPyth.unitPriceMicroUsd)) /
-        1_000_000n;
-
-      receipt.scenarios.softBoundary = {
-        status: 'PASS',
-        decision: 'REFUSE',
-        reason: boundary.reason,
-        requestedNotionalMicroUsd: Number(boundaryNotional),
-        standingMaxNotionalMicroUsd: STANDING_MAX_NOTIONAL_MICRO_USD,
-        policyDiff: worldFairPolicyDiff({
-          requestedNotionalMicroUsd: Number(boundaryNotional)
-        })
-      };
-
-      const exactPyth = await livePyth();
-      const exactQuote = await quoteFor(pool, EXCEPTION_INPUT);
-      const exact = await grantSwapException({
-        inputAmount: EXCEPTION_INPUT,
-        quote: exactQuote,
-        pyth: exactPyth,
-        deadline: Math.floor(Date.now() / 1000) + 300,
-        expectedNonce: executionNonce
-      });
-
-      const mutatedQuote = {
-        ...exactQuote,
-        otherAmountThreshold: exactQuote.otherAmountThreshold.sub(
-          new BN(1)
-        )
-      };
-      const mutation = await expectRefusal(
-        () =>
-          executeException({
-            exception: exact,
-            poolData,
-            pythTreasury,
-            quote: mutatedQuote
-          }),
-        ['AllowanceActionMismatch']
-      );
-
-      const beforeExact = (await loadState()).mandate;
-      const exactSignature = await executeException({
-        exception: exact,
-        poolData,
-        pythTreasury
-      });
-      const exactAllowance = await loadAllowance(exact.allowance);
-      const afterExact = (await loadState()).mandate;
-
-      const replay = await expectRefusal(
-        () =>
-          executeException({
-            exception: exact,
-            poolData,
-            pythTreasury
-          }),
-        ['AllowanceAlreadyUsed']
-      );
-
-      receipt.scenarios.exactException = {
-        status: 'PASS',
-        allowance: exact.allowance.toBase58(),
-        requestHash: exact.requestHash.toString('hex'),
-        grantSignature: exact.signature,
-        mutationDecision: 'REFUSE',
-        mutationReason: mutation.reason,
-        executionSignature: exactSignature,
-        consumed: exactAllowance.used,
-        replayDecision: 'REFUSE',
-        replayReason: replay.reason,
-        standingMandateVersionBefore: beforeExact.version,
-        standingMandateVersionAfter: afterExact.version,
-        standingAuthorityChanged: beforeExact.version !== afterExact.version
-      };
-
-      const hardPyth = await livePyth();
-      const hardQuote = await quoteFor(pool, STANDING_INPUT);
-      const hardBoundary = await expectRefusal(
-        () =>
-          executeStanding({
-            inputAmount: STANDING_INPUT,
-            pyth: hardPyth,
-            quote: hardQuote,
-            executionNonce,
-            poolData,
-            pythTreasury,
-            orcaProgram: SystemProgram.programId
-          }),
-        ['InvalidOrcaProgram']
-      );
-      receipt.scenarios.hardBoundary = {
-        status: 'PASS',
-        decision: 'REFUSE',
-        reason: hardBoundary.reason,
-        exceptionPath: false
-      };
-
-      const evidenceQuote = await quoteFor(pool, STANDING_INPUT);
-      const evidenceFailure = await expectRefusal(
-        () =>
-          executeStanding({
-            inputAmount: STANDING_INPUT,
-            pyth: { message: Buffer.alloc(0) },
-            quote: evidenceQuote,
-            executionNonce,
-            poolData,
-            pythTreasury,
-            includePythVerification: false
-          }),
-        ['PythMessageInvalid']
-      );
-      receipt.scenarios.evidenceFailure = {
-        status: 'PASS',
-        decision: 'REFUSE',
-        reason: evidenceFailure.reason,
-        dependency: 'PYTH_LAZER',
-        evidenceStatus: 'MISSING'
-      };
-
-      const rollbackPyth = await livePyth();
-      const rollbackQuoteBase = await quoteFor(pool, ROLLBACK_INPUT);
-      const impossibleQuote = {
-        ...rollbackQuoteBase,
-        otherAmountThreshold: rollbackQuoteBase.estimatedAmountOut.mul(
-          new BN(100)
-        )
-      };
-      const rollback = await grantSwapException({
-        inputAmount: ROLLBACK_INPUT,
-        quote: impossibleQuote,
-        pyth: rollbackPyth,
-        deadline: Math.floor(Date.now() / 1000) + 300,
-        expectedNonce: executionNonce
-      });
-      const ruleBeforeRollback = (await loadState()).assetRule;
-      const rollbackRefusal = await expectRefusal(
-        () =>
-          executeException({
-            exception: rollback,
-            poolData,
-            pythTreasury
-          }),
-        [
-          'AmountOutBelowMinimum',
-          'OrcaSwapFailed',
-          'Amount out below minimum threshold'
-        ]
-      );
-      const rollbackAllowance = await loadAllowance(rollback.allowance);
-      const ruleAfterRollback = (await loadState()).assetRule;
-
-      const countersChanged =
-        ruleAfterRollback.spentThisPeriod !==
-          ruleBeforeRollback.spentThisPeriod ||
-        ruleAfterRollback.spentThisPeriodNotionalMicroUsd !==
-          ruleBeforeRollback.spentThisPeriodNotionalMicroUsd;
-
-      if (rollbackAllowance.used || countersChanged) {
-        throw new Error('WORLD_FAIR_ROLLBACK_INVARIANT_FAILED');
+    const step = async (code, kind, operation) => {
+      activePhase = { code, kind };
+      if (receipt) {
+        receipt.progress.currentPhase = code;
       }
 
-      receipt.scenarios.rollback = {
-        status: 'PASS',
-        decision: 'REFUSE',
-        reason: rollbackRefusal.reason,
-        allowance: rollback.allowance.toBase58(),
-        allowanceConsumed: rollbackAllowance.used,
-        countersChanged
-      };
+      const value = await operation();
 
-      const beforeStale = (await loadState()).mandate;
-      const policyTransitionSignature = await configurePolicy(
-        beforeStale.nonce
-      );
-      const afterStale = (await loadState()).mandate;
+      if (
+        receipt &&
+        !receipt.progress.completedPhases.includes(code)
+      ) {
+        receipt.progress.completedPhases.push(code);
+      }
 
-      const stale = await expectRefusal(
-        () =>
-          executeException({
-            exception: rollback,
-            poolData,
-            pythTreasury,
-            expectedNonce: beforeStale.nonce
-          }),
-        ['StaleNonce']
-      );
+      return value;
+    };
 
-      receipt.scenarios.staleAuthority = {
-        status: 'PASS',
-        policyTransitionSignature,
-        sourceNonce: beforeStale.nonce,
-        currentNonce: afterStale.nonce,
-        decision: 'REFUSE',
-        reason: stale.reason
-      };
+    const recordEffect = (label, signature) => {
+      if (!receipt || !signature) return;
+      receipt.progress.confirmedEffects.push({
+        label,
+        signature
+      });
+    };
 
-      receipt.status = 'PASS';
-      receipt.productState = 'WORLD_FAIR_OPERATOR_LAB_LIVE';
-      receipt.observedAtCompleted = now();
-      receipt.explorer = {
-        program: `https://explorer.solana.com/address/${WORLD_FAIR_PROGRAM_ID.toBase58()}?cluster=devnet`
-      };
+    const promise = (async () => {
+      try {
+        const ready = await step(
+          'BOOTSTRAP_READY',
+          'WRITE',
+          () => ensureReady()
+        );
+        const starting = await step(
+          'STATE_LOAD',
+          'READ',
+          () => loadState()
+        );
+        const executionNonce = starting.mandate.nonce;
+        const {
+          pool,
+          data: poolData,
+          pythTreasury
+        } = await step(
+          'ORCA_CONTEXT',
+          'READ',
+          () => orcaContextState()
+        );
 
-      return receipt;
+        receipt = {
+          schemaVersion: 2,
+          type: 'CRESCO_WORLD_FAIR_OPERATOR_LAB_RECEIPT',
+          status: 'IN_PROGRESS',
+          observedAt: now(),
+          network: 'solana-devnet',
+          programId: WORLD_FAIR_PROGRAM_ID.toBase58(),
+          programSha256: WORLD_FAIR_PROGRAM_SHA256,
+          principal: guardian.publicKey.toBase58(),
+          delegate: delegate.publicKey.toBase58(),
+          mandate: mandate.toBase58(),
+          startingNonce: executionNonce,
+          bootstrap: ready.bootstrap,
+          orca: {
+            programId: ORCA_WHIRLPOOL_PROGRAM_ID.toBase58(),
+            pool: WORLD_FAIR_ORCA_POOL.toBase58(),
+            inputMint: WORLD_FAIR_DEV_USDC.toBase58(),
+            outputMint: WORLD_FAIR_DEV_USDT.toBase58()
+          },
+          pyth: {
+            symbol: WORLD_FAIR_PYTH_FEED.symbol,
+            feedId: WORLD_FAIR_PYTH_FEED.feedId,
+            authorityEffect: 'NONE'
+          },
+          scenarios: {},
+          progress: {
+            currentPhase: 'ORCA_CONTEXT',
+            completedPhases: [
+              'BOOTSTRAP_READY',
+              'STATE_LOAD',
+              'ORCA_CONTEXT'
+            ],
+            confirmedEffects: []
+          }
+        };
+
+        const standingPyth = await step(
+          'STANDING_1_MARKET_EVIDENCE',
+          'READ',
+          () => livePyth()
+        );
+        const standingQuote1 = await step(
+          'STANDING_1_QUOTE',
+          'READ',
+          () => quoteFor(pool, STANDING_INPUT)
+        );
+        const standingSig1 = await step(
+          'STANDING_1_EXECUTE',
+          'WRITE',
+          () =>
+            executeStanding({
+              inputAmount: STANDING_INPUT,
+              pyth: standingPyth,
+              quote: standingQuote1,
+              executionNonce,
+              poolData,
+              pythTreasury
+            })
+        );
+        recordEffect('standingAutonomy.1', standingSig1);
+
+        const standingPyth2 = await step(
+          'STANDING_2_MARKET_EVIDENCE',
+          'READ',
+          () => livePyth()
+        );
+        const standingQuote2 = await step(
+          'STANDING_2_QUOTE',
+          'READ',
+          () => quoteFor(pool, STANDING_INPUT)
+        );
+        const standingSig2 = await step(
+          'STANDING_2_EXECUTE',
+          'WRITE',
+          () =>
+            executeStanding({
+              inputAmount: STANDING_INPUT,
+              pyth: standingPyth2,
+              quote: standingQuote2,
+              executionNonce,
+              poolData,
+              pythTreasury
+            })
+        );
+        recordEffect('standingAutonomy.2', standingSig2);
+
+        receipt.scenarios.standingAutonomy = {
+          status: 'PASS',
+          signatures: [standingSig1, standingSig2],
+          guardianApprovalRequired: false
+        };
+
+        const boundaryPyth = await step(
+          'SOFT_BOUNDARY_MARKET_EVIDENCE',
+          'READ',
+          () => livePyth()
+        );
+        const boundaryQuote = await step(
+          'SOFT_BOUNDARY_QUOTE',
+          'READ',
+          () => quoteFor(pool, EXCEPTION_INPUT)
+        );
+        const boundary = await step(
+          'SOFT_BOUNDARY_REFUSAL',
+          'WRITE',
+          () =>
+            expectRefusal(
+              () =>
+                executeStanding({
+                  inputAmount: EXCEPTION_INPUT,
+                  pyth: boundaryPyth,
+                  quote: boundaryQuote,
+                  executionNonce,
+                  poolData,
+                  pythTreasury
+                }),
+              ['PythNotionalExceeded']
+            )
+        );
+        const boundaryNotional =
+          (BigInt(EXCEPTION_INPUT) *
+            BigInt(boundaryPyth.unitPriceMicroUsd)) /
+          1_000_000n;
+
+        receipt.scenarios.softBoundary = {
+          status: 'PASS',
+          decision: 'REFUSE',
+          reason: boundary.reason,
+          requestedNotionalMicroUsd: Number(boundaryNotional),
+          standingMaxNotionalMicroUsd: STANDING_MAX_NOTIONAL_MICRO_USD,
+          policyDiff: worldFairPolicyDiff({
+            requestedNotionalMicroUsd: Number(boundaryNotional)
+          })
+        };
+
+        const exactPyth = await step(
+          'EXACT_EXCEPTION_MARKET_EVIDENCE',
+          'READ',
+          () => livePyth()
+        );
+        const exactQuote = await step(
+          'EXACT_EXCEPTION_QUOTE',
+          'READ',
+          () => quoteFor(pool, EXCEPTION_INPUT)
+        );
+        const exact = await step(
+          'EXACT_EXCEPTION_GRANT',
+          'WRITE',
+          () =>
+            grantSwapException({
+              inputAmount: EXCEPTION_INPUT,
+              quote: exactQuote,
+              pyth: exactPyth,
+              deadline: Math.floor(Date.now() / 1000) + 300,
+              expectedNonce: executionNonce
+            })
+        );
+        recordEffect('exactException.grant', exact.signature);
+
+        const mutatedQuote = {
+          ...exactQuote,
+          otherAmountThreshold: exactQuote.otherAmountThreshold.sub(
+            new BN(1)
+          )
+        };
+        const mutation = await step(
+          'EXACT_EXCEPTION_MUTATION_REFUSAL',
+          'WRITE',
+          () =>
+            expectRefusal(
+              () =>
+                executeException({
+                  exception: exact,
+                  poolData,
+                  pythTreasury,
+                  quote: mutatedQuote
+                }),
+              ['AllowanceActionMismatch']
+            )
+        );
+
+        const beforeExact = (
+          await step(
+            'EXACT_EXCEPTION_PRE_STATE',
+            'READ',
+            () => loadState()
+          )
+        ).mandate;
+        const exactSignature = await step(
+          'EXACT_EXCEPTION_EXECUTE',
+          'WRITE',
+          () =>
+            executeException({
+              exception: exact,
+              poolData,
+              pythTreasury
+            })
+        );
+        recordEffect('exactException.execute', exactSignature);
+
+        const exactAllowance = await step(
+          'EXACT_EXCEPTION_ALLOWANCE_VERIFY',
+          'READ',
+          () => loadAllowance(exact.allowance)
+        );
+        const afterExact = (
+          await step(
+            'EXACT_EXCEPTION_POST_STATE',
+            'READ',
+            () => loadState()
+          )
+        ).mandate;
+
+        const replay = await step(
+          'EXACT_EXCEPTION_REPLAY_REFUSAL',
+          'WRITE',
+          () =>
+            expectRefusal(
+              () =>
+                executeException({
+                  exception: exact,
+                  poolData,
+                  pythTreasury
+                }),
+              ['AllowanceAlreadyUsed']
+            )
+        );
+
+        receipt.scenarios.exactException = {
+          status: 'PASS',
+          allowance: exact.allowance.toBase58(),
+          requestHash: exact.requestHash.toString('hex'),
+          grantSignature: exact.signature,
+          mutationDecision: 'REFUSE',
+          mutationReason: mutation.reason,
+          executionSignature: exactSignature,
+          consumed: exactAllowance.used,
+          replayDecision: 'REFUSE',
+          replayReason: replay.reason,
+          standingMandateVersionBefore: beforeExact.version,
+          standingMandateVersionAfter: afterExact.version,
+          standingAuthorityChanged: beforeExact.version !== afterExact.version
+        };
+
+        const hardPyth = await step(
+          'HARD_BOUNDARY_MARKET_EVIDENCE',
+          'READ',
+          () => livePyth()
+        );
+        const hardQuote = await step(
+          'HARD_BOUNDARY_QUOTE',
+          'READ',
+          () => quoteFor(pool, STANDING_INPUT)
+        );
+        const hardBoundary = await step(
+          'HARD_BOUNDARY_REFUSAL',
+          'WRITE',
+          () =>
+            expectRefusal(
+              () =>
+                executeStanding({
+                  inputAmount: STANDING_INPUT,
+                  pyth: hardPyth,
+                  quote: hardQuote,
+                  executionNonce,
+                  poolData,
+                  pythTreasury,
+                  orcaProgram: SystemProgram.programId
+                }),
+              ['InvalidOrcaProgram']
+            )
+        );
+        receipt.scenarios.hardBoundary = {
+          status: 'PASS',
+          decision: 'REFUSE',
+          reason: hardBoundary.reason,
+          exceptionPath: false
+        };
+
+        const evidenceQuote = await step(
+          'EVIDENCE_FAILURE_QUOTE',
+          'READ',
+          () => quoteFor(pool, STANDING_INPUT)
+        );
+        const evidenceFailure = await step(
+          'EVIDENCE_FAILURE_REFUSAL',
+          'WRITE',
+          () =>
+            expectRefusal(
+              () =>
+                executeStanding({
+                  inputAmount: STANDING_INPUT,
+                  pyth: { message: Buffer.alloc(0) },
+                  quote: evidenceQuote,
+                  executionNonce,
+                  poolData,
+                  pythTreasury,
+                  includePythVerification: false
+                }),
+              ['PythMessageInvalid']
+            )
+        );
+        receipt.scenarios.evidenceFailure = {
+          status: 'PASS',
+          decision: 'REFUSE',
+          reason: evidenceFailure.reason,
+          dependency: 'PYTH_LAZER',
+          evidenceStatus: 'MISSING'
+        };
+
+        const rollbackPyth = await step(
+          'ROLLBACK_MARKET_EVIDENCE',
+          'READ',
+          () => livePyth()
+        );
+        const rollbackQuoteBase = await step(
+          'ROLLBACK_QUOTE',
+          'READ',
+          () => quoteFor(pool, ROLLBACK_INPUT)
+        );
+        const impossibleQuote = {
+          ...rollbackQuoteBase,
+          otherAmountThreshold: rollbackQuoteBase.estimatedAmountOut.mul(
+            new BN(100)
+          )
+        };
+        const rollback = await step(
+          'ROLLBACK_EXCEPTION_GRANT',
+          'WRITE',
+          () =>
+            grantSwapException({
+              inputAmount: ROLLBACK_INPUT,
+              quote: impossibleQuote,
+              pyth: rollbackPyth,
+              deadline: Math.floor(Date.now() / 1000) + 300,
+              expectedNonce: executionNonce
+            })
+        );
+        recordEffect('rollback.grant', rollback.signature);
+
+        const ruleBeforeRollback = (
+          await step(
+            'ROLLBACK_PRE_STATE',
+            'READ',
+            () => loadState()
+          )
+        ).assetRule;
+        const rollbackRefusal = await step(
+          'ROLLBACK_EXPECTED_REFUSAL',
+          'WRITE',
+          () =>
+            expectRefusal(
+              () =>
+                executeException({
+                  exception: rollback,
+                  poolData,
+                  pythTreasury
+                }),
+              [
+                'AmountOutBelowMinimum',
+                'OrcaSwapFailed',
+                'Amount out below minimum threshold'
+              ]
+            )
+        );
+        const rollbackAllowance = await step(
+          'ROLLBACK_ALLOWANCE_VERIFY',
+          'READ',
+          () => loadAllowance(rollback.allowance)
+        );
+        const ruleAfterRollback = (
+          await step(
+            'ROLLBACK_POST_STATE',
+            'READ',
+            () => loadState()
+          )
+        ).assetRule;
+
+        const countersChanged =
+          ruleAfterRollback.spentThisPeriod !==
+            ruleBeforeRollback.spentThisPeriod ||
+          ruleAfterRollback.spentThisPeriodNotionalMicroUsd !==
+            ruleBeforeRollback.spentThisPeriodNotionalMicroUsd;
+
+        if (rollbackAllowance.used || countersChanged) {
+          activePhase = {
+            code: 'ROLLBACK_INVARIANT_VERIFY',
+            kind: 'ASSERT'
+          };
+          receipt.progress.currentPhase = activePhase.code;
+          throw new Error('WORLD_FAIR_ROLLBACK_INVARIANT_FAILED');
+        }
+
+        receipt.progress.completedPhases.push(
+          'ROLLBACK_INVARIANT_VERIFY'
+        );
+        receipt.scenarios.rollback = {
+          status: 'PASS',
+          decision: 'REFUSE',
+          reason: rollbackRefusal.reason,
+          allowance: rollback.allowance.toBase58(),
+          allowanceConsumed: rollbackAllowance.used,
+          countersChanged
+        };
+
+        const beforeStale = (
+          await step(
+            'STALE_AUTHORITY_PRE_STATE',
+            'READ',
+            () => loadState()
+          )
+        ).mandate;
+        const policyTransitionSignature = await step(
+          'STALE_AUTHORITY_POLICY_TRANSITION',
+          'WRITE',
+          () => configurePolicy(beforeStale.nonce)
+        );
+        recordEffect(
+          'staleAuthority.policyTransition',
+          policyTransitionSignature
+        );
+        const afterStale = (
+          await step(
+            'STALE_AUTHORITY_POST_STATE',
+            'READ',
+            () => loadState()
+          )
+        ).mandate;
+
+        const stale = await step(
+          'STALE_AUTHORITY_REFUSAL',
+          'WRITE',
+          () =>
+            expectRefusal(
+              () =>
+                executeException({
+                  exception: rollback,
+                  poolData,
+                  pythTreasury,
+                  expectedNonce: beforeStale.nonce
+                }),
+              ['StaleNonce']
+            )
+        );
+
+        receipt.scenarios.staleAuthority = {
+          status: 'PASS',
+          policyTransitionSignature,
+          sourceNonce: beforeStale.nonce,
+          currentNonce: afterStale.nonce,
+          decision: 'REFUSE',
+          reason: stale.reason
+        };
+
+        receipt.status = 'PASS';
+        receipt.productState = 'WORLD_FAIR_OPERATOR_LAB_LIVE';
+        receipt.observedAtCompleted = now();
+        receipt.progress.currentPhase = 'COMPLETE';
+        receipt.progress.completedPhases.push('COMPLETE');
+        receipt.explorer = {
+          program: `https://explorer.solana.com/address/${WORLD_FAIR_PROGRAM_ID.toBase58()}?cluster=devnet`
+        };
+
+        return receipt;
+      } catch (error) {
+        if (error?.name === 'WorldFairRunError') throw error;
+        throw createWorldFairRunFailure({
+          error,
+          phase: activePhase.code,
+          phaseKind: activePhase.kind,
+          receipt
+        });
+      }
     })();
 
     runtimePromises.set(lockKey, promise);

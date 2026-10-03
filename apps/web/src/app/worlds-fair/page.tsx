@@ -22,7 +22,10 @@ import { Wordmark } from "@/components/shell";
 import {
   fetchWorldFairRuntime,
   runWorldFairCanonicalLiveSequence,
+  WorldFairLiveRunError,
   type WorldFairLiveReceipt,
+  type WorldFairPartialReceipt,
+  type WorldFairRunDiagnostic,
   type WorldFairRuntime,
 } from "@/services/cresco-backend";
 
@@ -36,6 +39,30 @@ function short(value: string, head = 7, tail = 6) {
 
 function explorerSignature(signature: string) {
   return `https://explorer.solana.com/tx/${signature}?cluster=devnet`;
+}
+
+type RunFailureView = {
+  code: string;
+  diagnostic: WorldFairRunDiagnostic;
+  partialReceipt: WorldFairPartialReceipt | null;
+};
+
+function phaseLabel(phase: string) {
+  return phase
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function recoveryText(retryPolicy: string) {
+  if (retryPolicy === "SAFE_RETRY_READ") {
+    return "No write was confirmed in this phase. Refresh runtime state, then retry.";
+  }
+  if (retryPolicy === "REQUIRES_STATE_RECONCILIATION") {
+    return "Do not auto-replay this step. Refresh runtime state first because an on-chain effect may be uncertain.";
+  }
+  return "Do not retry automatically. Inspect the runtime state or receipt before another live run.";
 }
 
 type StepTone = "allow" | "boundary" | "exact" | "hard" | "rollback" | "stale";
@@ -172,7 +199,7 @@ export default function WorldsFairPage() {
   const [runtimeError, setRuntimeError] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<WorldFairLiveReceipt | null>(null);
   const [running, setRunning] = useState(false);
-  const [runError, setRunError] = useState<string | null>(null);
+  const [runFailure, setRunFailure] = useState<RunFailureView | null>(null);
 
   const refreshRuntime = useCallback(async () => {
     setRuntimeError(null);
@@ -212,13 +239,33 @@ export default function WorldsFairPage() {
 
   const runLive = useCallback(async () => {
     setRunning(true);
-    setRunError(null);
+    setRunFailure(null);
     try {
       const result = await runWorldFairCanonicalLiveSequence();
       setReceipt(result.receipt);
       await refreshRuntime();
     } catch (error) {
-      setRunError(error instanceof Error ? error.message : "Live run unavailable");
+      if (error instanceof WorldFairLiveRunError) {
+        setRunFailure({
+          code: error.code,
+          diagnostic: error.diagnostic,
+          partialReceipt: error.partialReceipt,
+        });
+      } else {
+        setRunFailure({
+          code: "WORLD_FAIR_RUN_UNKNOWN",
+          diagnostic: {
+            phase: "CLIENT_UNKNOWN",
+            phaseKind: "ASSERT",
+            failureClass: "UNKNOWN_RUNTIME",
+            reasonCode: "CLIENT_UNKNOWN_FAILURE",
+            retryPolicy: "REQUIRES_STATE_RECONCILIATION",
+            message: "The browser could not prove the live outcome.",
+          },
+          partialReceipt: null,
+        });
+      }
+      await refreshRuntime();
     } finally {
       setRunning(false);
     }
@@ -402,13 +449,52 @@ export default function WorldsFairPage() {
                 about a minute.
               </p>
 
-              {runError ? (
+              {runFailure ? (
                 <div
                   role="alert"
-                  className="mt-5 rounded-[16px] border border-loss/25 bg-loss-soft p-4 text-[13px] font-bold text-loss-text"
+                  className="mt-5 rounded-[16px] border border-loss/25 bg-loss-soft p-4 text-[13px] text-loss-text"
                 >
-                  Live outcome is UNKNOWN: {runError}. CRESCO does not display
-                  success when confirmation is uncertain.
+                  <p className="font-black">Live outcome is UNKNOWN</p>
+                  <p className="mt-2 font-bold">
+                    Stopped at {phaseLabel(runFailure.diagnostic.phase)}.
+                  </p>
+                  <p className="mt-1 leading-relaxed">
+                    {runFailure.diagnostic.message}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-extrabold">
+                    <span className="rounded-full border border-loss/20 bg-white/70 px-2.5 py-1">
+                      {runFailure.diagnostic.reasonCode}
+                    </span>
+                    <span className="rounded-full border border-loss/20 bg-white/70 px-2.5 py-1">
+                      {runFailure.diagnostic.failureClass}
+                    </span>
+                  </div>
+                  <p className="mt-3 font-semibold leading-relaxed">
+                    {recoveryText(runFailure.diagnostic.retryPolicy)}
+                  </p>
+                  {runFailure.partialReceipt?.progress ? (
+                    <div className="mt-3 rounded-[12px] border border-loss/15 bg-white/60 p-3">
+                      <p className="font-extrabold">
+                        Partial receipt · {runFailure.partialReceipt.progress.completedPhases.length} phases verified · {runFailure.partialReceipt.progress.confirmedEffects.length} confirmed effects
+                      </p>
+                      {runFailure.partialReceipt.progress.confirmedEffects.at(-1) ? (
+                        <a
+                          href={explorerSignature(
+                            runFailure.partialReceipt.progress.confirmedEffects.at(-1)!.signature,
+                          )}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-2 inline-flex items-center gap-1.5 font-extrabold text-blue"
+                        >
+                          Last confirmed effect on Explorer
+                          <ExternalLink className="size-3" />
+                        </a>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  <p className="mt-3 text-[11px] font-bold">
+                    CRESCO does not display success when confirmation is uncertain.
+                  </p>
                 </div>
               ) : null}
             </div>

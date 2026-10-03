@@ -886,5 +886,81 @@ test('World’s Fair live execution errors remain UNKNOWN rather than false succ
   assert.equal(result.status, 503);
   assert.equal(result.body.status, 'UNKNOWN');
   assert.equal(result.body.error, 'WORLD_FAIR_LIVE_RUN_UNCONFIRMED');
+  assert.equal(result.body.diagnostic.phase, 'RUN_UNKNOWN');
+  assert.equal(result.body.diagnostic.reasonCode, 'WORLD_FAIR_RUNTIME_FAILURE');
+  assert.equal(
+    result.body.message,
+    'The live sequence stopped before CRESCO could prove a complete outcome.'
+  );
+  assert.equal(result.body.partialReceipt, null);
+  assert.equal(result.body.receipt, null);
+});
+
+test('World’s Fair run route exposes sanitized phase diagnostics and a partial receipt', async () => {
+  const failure = new Error('private raw provider details must not leak');
+  failure.worldFairDiagnostic = {
+    phase: 'STANDING_2_EXECUTE',
+    phaseKind: 'WRITE',
+    failureClass: 'UNKNOWN_CONFIRMATION',
+    reasonCode: 'SOLANA_CONFIRMATION_UNCERTAIN',
+    retryPolicy: 'REQUIRES_STATE_RECONCILIATION',
+    message:
+      'A submitted Solana transaction did not reach a confirmed state before CRESCO could prove its outcome.'
+  };
+  failure.worldFairPartialReceipt = {
+    schemaVersion: 2,
+    type: 'CRESCO_WORLD_FAIR_OPERATOR_LAB_RECEIPT',
+    status: 'UNKNOWN',
+    productState: 'WORLD_FAIR_OPERATOR_LAB_PARTIAL',
+    observedAt: '2026-10-03T00:00:00Z',
+    network: 'solana-devnet',
+    programId: 'program',
+    programSha256: 'sha',
+    principal: 'principal',
+    delegate: 'delegate',
+    mandate: 'mandate',
+    startingNonce: 7,
+    scenarios: {},
+    progress: {
+      currentPhase: 'STANDING_2_EXECUTE',
+      completedPhases: ['STANDING_1_EXECUTE'],
+      confirmedEffects: [
+        {
+          label: 'standingAutonomy.1',
+          signature: 'confirmed-signature'
+        }
+      ],
+      failure: failure.worldFairDiagnostic
+    }
+  };
+
+  const result = await routeCrescoHttp({
+    method: 'POST',
+    path: '/api/v0.3/worlds-fair/run',
+    body: { scenario: 'CANONICAL_LIVE' },
+    services: {
+      worldFairExecutionProvider: {
+        runCanonicalSequence: async () => {
+          throw failure;
+        }
+      }
+    }
+  });
+
+  assert.equal(result.status, 503);
+  assert.equal(result.body.status, 'UNKNOWN');
+  assert.equal(
+    result.body.diagnostic.reasonCode,
+    'SOLANA_CONFIRMATION_UNCERTAIN'
+  );
+  assert.equal(result.body.diagnostic.phase, 'STANDING_2_EXECUTE');
+  assert.equal(
+    result.body.partialReceipt.progress.confirmedEffects[0].signature,
+    'confirmed-signature'
+  );
+  assert.equal(
+    JSON.stringify(result.body).includes('private raw provider details'),
+    false
+  );
   assert.equal(result.body.receipt, null);
 });

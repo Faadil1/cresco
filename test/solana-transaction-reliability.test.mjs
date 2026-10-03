@@ -4,7 +4,8 @@ import assert from 'node:assert/strict';
 import {
   confirmSignatureOverRpc,
   executeTransactionBuilderOverRpc,
-  isBlockhashExpiryError
+  isBlockhashExpiryError,
+  isTransientSolanaRpcError
 } from '../src/solana-transaction-reliability.mjs';
 
 test('blockhash expiry classifier recognizes Solana SDK expiry wording', () => {
@@ -123,4 +124,90 @@ test('transaction builder path signs, sends and confirms without SDK confirmTran
 
   assert.equal(signature, 'sig-ok');
   assert.equal(signed.length, 2);
+});
+
+
+test('transient RPC classifier recognizes rate limiting and transport failures', () => {
+  assert.equal(
+    isTransientSolanaRpcError(new Error('429 Too Many Requests')),
+    true
+  );
+  assert.equal(
+    isTransientSolanaRpcError(new Error('ECONNRESET')),
+    true
+  );
+  assert.equal(
+    isTransientSolanaRpcError(new Error('semantic policy refusal')),
+    false
+  );
+});
+
+test('confirmation tolerates a transient RPC poll failure before success', async () => {
+  let calls = 0;
+  const rpc = {
+    async getSignatureStatuses() {
+      calls += 1;
+      if (calls === 1) {
+        throw new Error('429 Too Many Requests');
+      }
+      return {
+        value: [
+          {
+            err: null,
+            confirmationStatus: 'confirmed'
+          }
+        ]
+      };
+    }
+  };
+
+  const result = await confirmSignatureOverRpc({
+    rpc,
+    signature: 'sig-after-429',
+    lastValidBlockHeight: 100,
+    timeoutMs: 5_000,
+    pollMs: 0
+  });
+
+  assert.equal(result.confirmationStatus, 'confirmed');
+  assert.equal(calls, 2);
+});
+
+test('confirmation reconciles a late historical signature before declaring expiry', async () => {
+  let historicalCalls = 0;
+  const rpc = {
+    async getSignatureStatuses(_signatures, options) {
+      if (!options?.searchTransactionHistory) {
+        return { value: [null] };
+      }
+
+      historicalCalls += 1;
+      if (historicalCalls < 2) {
+        return { value: [null] };
+      }
+
+      return {
+        value: [
+          {
+            err: null,
+            confirmationStatus: 'finalized'
+          }
+        ]
+      };
+    },
+    async getBlockHeight() {
+      return 101;
+    }
+  };
+
+  const result = await confirmSignatureOverRpc({
+    rpc,
+    signature: 'sig-late-history',
+    lastValidBlockHeight: 100,
+    timeoutMs: 0,
+    pollMs: 0
+  });
+
+  assert.equal(result.confirmationStatus, 'finalized');
+  assert.equal(historicalCalls, 2);
 });
