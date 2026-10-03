@@ -9,6 +9,7 @@
   },
   "vars": {
     "CRESCO_CORS_ORIGIN": "https://cresco-lac.vercel.app",
+    "CRESCO_CORS_ORIGINS": "https://cresco-lac.vercel.app,https://cresco.faadil-casecraft.workers.dev",
     "CRESCO_DEMO_LIVE_EQUITY": "AAPL"
   },
   "compatibility_flags": [
