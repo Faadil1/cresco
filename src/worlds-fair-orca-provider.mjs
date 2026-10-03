@@ -733,14 +733,16 @@ export function createWorldFairOrcaProvider({
       const solUsdcPool = await withTransientRpcReadRetry(
         () => orcaClient.getPool(ORCA_SOL_USDC_POOL, IGNORE_CACHE)
       );
-      const quote = await swapQuoteByInputToken(
-        solUsdcPool,
-        NATIVE_MINT,
-        new BN(100_000_000),
-        Percentage.fromFraction(1, 100),
-        ORCA_WHIRLPOOL_PROGRAM_ID,
-        orcaContext.fetcher,
-        IGNORE_CACHE
+      const quote = await withTransientRpcReadRetry(() =>
+        swapQuoteByInputToken(
+          solUsdcPool,
+          NATIVE_MINT,
+          new BN(100_000_000),
+          Percentage.fromFraction(1, 100),
+          ORCA_WHIRLPOOL_PROGRAM_ID,
+          orcaContext.fetcher,
+          IGNORE_CACHE
+        )
       );
       const fundingTx = await solUsdcPool.swap(quote);
 
@@ -932,7 +934,8 @@ export function createWorldFairOrcaProvider({
         new BN(inputAmount),
         Percentage.fromFraction(1, 100),
         ORCA_WHIRLPOOL_PROGRAM_ID,
-        orcaContext.fetcher
+        orcaContext.fetcher,
+        IGNORE_CACHE
       )
     );
   }
