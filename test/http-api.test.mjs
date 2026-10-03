@@ -775,3 +775,116 @@ test('v0.2 Tessera asset route fails explicitly for an unknown representation', 
   assert.equal(result.status, 404);
   assert.equal(result.body.error, 'TESSERA_ASSET_NOT_FOUND');
 });
+
+
+test('World’s Fair runtime route exposes only public live state from injected provider', async () => {
+  const result = await routeCrescoHttp({
+    method: 'GET',
+    path: '/api/v0.3/worlds-fair/runtime',
+    services: {
+      worldFairExecutionProvider: {
+        getPublicState: async () => ({
+          status: 'READY',
+          mode: 'WORLD_FAIR_OPERATOR_LAB',
+          network: 'solana-devnet',
+          programId: '7pgPuPZSUUtFcvFtVGmS3piCE1bHY35kjb14vct9v45Z',
+          programSha256: '084a3f7aad8a5772d773816579f5d2b98542c4b966dbb0dd7c60cb397db21f61',
+          guardian: 'guardian-public-key',
+          delegate: 'delegate-public-key',
+          truthBoundary: { mainnet: false, serverHeldDevnetActors: true }
+        })
+      }
+    }
+  });
+
+  assert.equal(result.status, 200);
+  assert.equal(result.body.contractVersion, '0.3');
+  assert.equal(result.body.type, 'WORLD_FAIR_OPERATOR_LAB_RUNTIME');
+  assert.equal(result.body.status, 'READY');
+  assert.equal(result.body.network, 'solana-devnet');
+  assert.equal(
+    result.body.programId,
+    '7pgPuPZSUUtFcvFtVGmS3piCE1bHY35kjb14vct9v45Z'
+  );
+  assert.equal(result.body.truthBoundary.mainnet, false);
+});
+
+test('World’s Fair run route executes only the canonical bounded live scenario', async () => {
+  let calls = 0;
+  const result = await routeCrescoHttp({
+    method: 'POST',
+    path: '/api/v0.3/worlds-fair/run',
+    body: { scenario: 'CANONICAL_LIVE' },
+    services: {
+      worldFairExecutionProvider: {
+        runCanonicalSequence: async () => {
+          calls += 1;
+          return {
+            status: 'PASS',
+            productState: 'WORLD_FAIR_OPERATOR_LAB_LIVE',
+            scenarios: {
+              standingAutonomy: { status: 'PASS' },
+              softBoundary: { status: 'PASS' },
+              exactException: { status: 'PASS' },
+              hardBoundary: { status: 'PASS' },
+              evidenceFailure: { status: 'PASS' },
+              rollback: { status: 'PASS' },
+              staleAuthority: { status: 'PASS' }
+            }
+          };
+        }
+      }
+    }
+  });
+
+  assert.equal(calls, 1);
+  assert.equal(result.status, 200);
+  assert.equal(result.body.status, 'PASS');
+  assert.equal(result.body.receipt.scenarios.rollback.status, 'PASS');
+});
+
+test('World’s Fair run route refuses arbitrary execution scope', async () => {
+  let calls = 0;
+  const result = await routeCrescoHttp({
+    method: 'POST',
+    path: '/api/v0.3/worlds-fair/run',
+    body: {
+      scenario: 'CANONICAL_LIVE',
+      programId: 'arbitrary-program'
+    },
+    services: {
+      worldFairExecutionProvider: {
+        runCanonicalSequence: async () => {
+          calls += 1;
+          return { status: 'PASS' };
+        }
+      }
+    }
+  });
+
+  assert.equal(calls, 0);
+  assert.equal(result.status, 400);
+  assert.equal(result.body.status, 'REFUSED');
+  assert.equal(result.body.error, 'WORLD_FAIR_SCOPE_FIXED');
+  assert.equal(result.body.arbitraryProgramIdAccepted, false);
+});
+
+test('World’s Fair live execution errors remain UNKNOWN rather than false success', async () => {
+  const result = await routeCrescoHttp({
+    method: 'POST',
+    path: '/api/v0.3/worlds-fair/run',
+    body: { scenario: 'CANONICAL_LIVE' },
+    services: {
+      worldFairExecutionProvider: {
+        runCanonicalSequence: async () => {
+          throw new Error('SOLANA_CONFIRMATION_TIMEOUT');
+        }
+      }
+    }
+  });
+
+  assert.equal(result.status, 503);
+  assert.equal(result.body.status, 'UNKNOWN');
+  assert.equal(result.body.error, 'WORLD_FAIR_LIVE_RUN_UNCONFIRMED');
+  assert.equal(result.body.receipt, null);
+});

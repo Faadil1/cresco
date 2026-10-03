@@ -1,0 +1,59 @@
+name: worlds-fair-operator-lab-live
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/worlds-fair-orca-provider.mjs"
+      - "src/http-api.mjs"
+      - "scripts/worlds-fair-operator-lab-smoke.mjs"
+      - ".github/workflows/worlds-fair-operator-lab-live.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: worlds-fair-operator-lab-live
+  cancel-in-progress: true
+
+jobs:
+  live-provider:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      SOLANA_DEVNET_RPC_URL: ${{ secrets.SOLANA_DEVNET_RPC_URL || 'https://api.devnet.solana.com' }}
+      PYTH_PRO_API_KEY: ${{ secrets.PYTH_PRO_API_KEY }}
+      DEVNET_KEYPAIR_JSON: ${{ secrets.DEVNET_KEYPAIR_JSON }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install backend dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Run shared World’s Fair provider on Devnet
+        run: node scripts/worlds-fair-operator-lab-smoke.mjs
+
+      - name: Verify provider receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s evidence/worlds-fair/operator-lab-runtime-receipt.json
+          node -e '
+            const r=require("./evidence/worlds-fair/operator-lab-runtime-receipt.json");
+            if(r.status!=="PASS") process.exit(1);
+            for(const k of ["standingAutonomy","softBoundary","exactException","hardBoundary","evidenceFailure","rollback","staleAuthority"]) {
+              if(r.scenarios?.[k]?.status!=="PASS") throw new Error("missing scenario "+k);
+            }
+            console.log("WORLD_FAIR_OPERATOR_LAB_RECEIPT_VALID=PASS");
+          '
+
+      - name: Upload provider live receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: worlds-fair-operator-lab-runtime-receipt
+          path: evidence/worlds-fair/operator-lab-runtime-receipt.json
+          if-no-files-found: warn

@@ -54,6 +54,13 @@ export default function WelcomePage() {
             <ActionButton href="/start" arrow>Start with your Key</ActionButton>
             <ActionButton href="/parent/sign-in" variant="secondary">I&apos;m a Parent</ActionButton>
           </div>
+          <a
+            href="/worlds-fair"
+            className="mt-5 inline-flex items-center gap-2 rounded-full px-3 py-2 text-[12px] font-extrabold text-blue hover:bg-blue-soft"
+          >
+            Crypto World&apos;s Fair · Live Operator Lab
+            <span aria-hidden>→</span>
+          </a>
         </section>
       </div>
     </main>

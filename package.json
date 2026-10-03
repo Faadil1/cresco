@@ -4,7 +4,7 @@
   "version": "0.2.0",
   "description": "CRESCO: bounded autonomy for family capital on Solana.",
   "scripts": {
-    "test": "npm run quality:gate && node --test test/*.test.mjs && node --check scripts/dev-api.mjs",
+    "test": "npm run quality:gate && node --test test/*.test.mjs && node --check scripts/dev-api.mjs && node --check scripts/worlds-fair-orca-v1-proof.cjs",
     "test:anchor": "mocha --timeout 120000 tests/anchor-authority-proof.cjs",
     "demo": "node scripts/demo-run.mjs",
     "api": "node scripts/dev-api.mjs",
@@ -13,12 +13,19 @@
     "proof:devnet-execution-bridge": "node scripts/devnet-execution-smoke.mjs",
     "proof:tessera": "node scripts/tessera-live-proof.mjs",
     "proof:pyth-markets": "node scripts/pyth-market-discovery-proof.mjs",
-    "quality:gate": "node scripts/validate-build-quality.mjs"
+    "quality:gate": "node scripts/validate-build-quality.mjs",
+    "proof:worlds-fair-orca": "node scripts/worlds-fair-orca-v1-proof.cjs",
+    "inspect:orca-devnet": "node scripts/orca-devnet-inspect.mjs"
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.32.1",
     "@solana/spl-token": "0.4.14",
-    "@pythnetwork/pyth-lazer-solana-sdk": "0.1.2"
+    "@pythnetwork/pyth-lazer-solana-sdk": "0.1.2",
+    "@orca-so/common-sdk": "0.7.1",
+    "@orca-so/whirlpools-sdk": "0.22.0",
+    "@solana/web3.js": "1.98.4",
+    "decimal.js": "10.5.0",
+    "bn.js": "5.2.2"
   },
   "devDependencies": {
     "mocha": "11.7.2"

@@ -13,6 +13,9 @@ function memoryState() {
       },
       async put(key, value) {
         values.set(key, structuredClone(value));
+      },
+      async delete(key) {
+        values.delete(key);
       }
     }
   };
@@ -320,4 +323,64 @@ test("allow-once becomes executable only after chain proof and is consumed once"
   const reuse = await body(reuseResponse);
   assert.equal(reuse.allowed, false);
   assert.equal(reuse.reasonCode, "MANDATE_LIMIT_EXCEEDED");
+});
+
+
+test("World’s Fair durable lease serializes one live run at a time", async () => {
+  const state = new FamilyState(memoryState());
+
+  const acquireA = await state.fetch(
+    new Request("https://family.internal/worlds-fair-lock/acquire", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ requestId: "run-a" })
+    })
+  );
+  const a = await body(acquireA);
+  assert.equal(acquireA.status, 200);
+  assert.equal(a.acquired, true);
+
+  const acquireBWhileBusy = await state.fetch(
+    new Request("https://family.internal/worlds-fair-lock/acquire", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ requestId: "run-b" })
+    })
+  );
+  const busy = await body(acquireBWhileBusy);
+  assert.equal(acquireBWhileBusy.status, 409);
+  assert.equal(busy.acquired, false);
+  assert.equal(busy.status, "BUSY");
+  assert.equal(busy.retryAfterMs > 0, true);
+
+  const wrongRelease = await state.fetch(
+    new Request("https://family.internal/worlds-fair-lock/release", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ requestId: "run-b" })
+    })
+  );
+  assert.equal(wrongRelease.status, 409);
+
+  const releaseA = await state.fetch(
+    new Request("https://family.internal/worlds-fair-lock/release", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ requestId: "run-a" })
+    })
+  );
+  const released = await body(releaseA);
+  assert.equal(releaseA.status, 200);
+  assert.equal(released.released, true);
+
+  const acquireBAfterRelease = await state.fetch(
+    new Request("https://family.internal/worlds-fair-lock/acquire", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ requestId: "run-b" })
+    })
+  );
+  const b = await body(acquireBAfterRelease);
+  assert.equal(acquireBAfterRelease.status, 200);
+  assert.equal(b.acquired, true);
 });

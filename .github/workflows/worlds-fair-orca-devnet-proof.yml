@@ -1,0 +1,322 @@
+name: worlds-fair-orca-devnet-proof
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "programs/keys/**"
+      - "scripts/worlds-fair-orca-v1-proof.cjs"
+      - "package.json"
+      - "Anchor.toml"
+      - "Cargo.toml"
+      - ".github/workflows/worlds-fair-orca-devnet-proof.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: worlds-fair-orca-devnet-proof
+  cancel-in-progress: true
+
+jobs:
+  devnet-live-slice:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      ANCHOR_PROVIDER_URL: ${{ secrets.SOLANA_DEVNET_RPC_URL || 'https://api.devnet.solana.com' }}
+      PYTH_PRO_API_KEY: ${{ secrets.PYTH_PRO_API_KEY }}
+      DEVNET_KEYPAIR_JSON: ${{ secrets.DEVNET_KEYPAIR_JSON }}
+      WORLD_FAIR_REUSE_PROGRAM_ID: "7pgPuPZSUUtFcvFtVGmS3piCE1bHY35kjb14vct9v45Z"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Resolve SBF-compatible dependency lock
+        shell: bash
+        run: |
+          cargo generate-lockfile --manifest-path Cargo.toml
+          cargo update --manifest-path Cargo.toml -p anchor-attribute-access-control --precise 0.32.1
+          cargo update --manifest-path Cargo.toml -p anchor-attribute-account --precise 0.32.1
+          cargo update --manifest-path Cargo.toml -p anchor-attribute-constant --precise 0.32.1
+          cargo update --manifest-path Cargo.toml -p anchor-attribute-error --precise 0.32.1
+          cargo update --manifest-path Cargo.toml -p anchor-attribute-event --precise 0.32.1
+          cargo update --manifest-path Cargo.toml -p anchor-attribute-program --precise 0.32.1
+          cargo update --manifest-path Cargo.toml -p anchor-derive-accounts --precise 0.32.1
+          cargo update --manifest-path Cargo.toml -p anchor-derive-serde --precise 0.32.1
+          cargo update --manifest-path Cargo.toml -p anchor-derive-space --precise 0.32.1
+          cargo update --manifest-path Cargo.toml -p anchor-syn --precise 0.32.1
+          cargo update --manifest-path Cargo.toml -p borsh@1.8.1 --precise 1.5.7
+          cargo update --manifest-path Cargo.toml -p proc-macro-crate@3.5.0 --precise 3.4.0
+          if grep -q 'name = "blake3"' Cargo.lock; then cargo update --manifest-path Cargo.toml -p blake3 --precise 1.8.2; fi
+          if grep -q 'name = "constant_time_eq"' Cargo.lock; then cargo update --manifest-path Cargo.toml -p constant_time_eq --precise 0.3.1; fi
+          if grep -q 'name = "base64ct"' Cargo.lock; then cargo update --manifest-path Cargo.toml -p base64ct --precise 1.7.3; fi
+          INDEXMAP_V2=$(awk '/name = "indexmap"/ {getline; gsub(/[" ]/, "", $3); if ($3 ~ /^2\./) {print $3; exit}}' Cargo.lock)
+          if [ -n "$INDEXMAP_V2" ] && [ "$INDEXMAP_V2" != "2.11.4" ]; then
+            cargo update --manifest-path Cargo.toml -p "indexmap@$INDEXMAP_V2" --precise 2.11.4
+          fi
+          if grep -q 'name = "zeroize"' Cargo.lock; then cargo update --manifest-path Cargo.toml -p zeroize --precise 1.8.1; fi
+          if grep -q 'name = "zeroize_derive"' Cargo.lock; then cargo update --manifest-path Cargo.toml -p zeroize_derive --precise 1.4.2; fi
+          if grep -q 'version = "0.23.10+spec-1.0.0"' Cargo.lock; then cargo update --manifest-path Cargo.toml -p 'toml_edit@0.23.10+spec-1.0.0' --precise 0.23.7; fi
+          if grep -q 'name = "toml_parser"' Cargo.lock; then cargo update --manifest-path Cargo.toml -p toml_parser --precise 1.0.4; fi
+          if grep -q 'name = "unicode-segmentation"' Cargo.lock; then cargo update --manifest-path Cargo.toml -p unicode-segmentation --precise 1.12.0; fi
+          if grep -q 'name = "serde_with"' Cargo.lock; then cargo update --manifest-path Cargo.toml -p serde_with --precise 3.12.0; fi
+          if grep -q 'name = "time"' Cargo.lock; then cargo update --manifest-path Cargo.toml -p time --precise 0.3.45; fi
+          sed -i 's/^version = 4$/version = 3/' Cargo.lock
+
+      - name: Install Solana CLI 2.3.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          for ATTEMPT in 1 2 3; do
+            rm -rf "$HOME/.local/share/solana/install/releases/2.3.0"
+            if INSTALLER="$(curl --retry 5 --retry-all-errors --connect-timeout 20 -sSfL https://release.anza.xyz/v2.3.0/install)" && sh -c "$INSTALLER"; then
+              break
+            fi
+            if [ "$ATTEMPT" -eq 3 ]; then exit 1; fi
+            sleep 5
+          done
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+
+      - name: Install Anchor CLI 0.32.1
+        shell: bash
+        run: |
+          cargo install --git https://github.com/otter-sec/anchor avm --force
+          avm install 0.32.1
+          avm use 0.32.1
+          echo "$HOME/.avm/bin" >> "$GITHUB_PATH"
+
+      - name: Install JS dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Configure devnet principal
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$DEVNET_KEYPAIR_JSON"
+          test -n "$PYTH_PRO_API_KEY"
+          mkdir -p "$HOME/.config/solana"
+          printf '%s' "$DEVNET_KEYPAIR_JSON" > "$HOME/.config/solana/id.json"
+          chmod 600 "$HOME/.config/solana/id.json"
+          echo "ANCHOR_WALLET=$HOME/.config/solana/id.json" >> "$GITHUB_ENV"
+          export PATH="$HOME/.local/share/solana/install/active_release/bin:$HOME/.avm/bin:$PATH"
+          solana config set --url "$ANCHOR_PROVIDER_URL" --keypair "$HOME/.config/solana/id.json"
+          echo "PROOF principal=$(solana address)"
+          echo "PROOF balance_before=$(solana balance --url "$ANCHOR_PROVIDER_URL")"
+
+      - name: Build World’s Fair client artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.local/share/solana/install/active_release/bin:$HOME/.avm/bin:$PATH"
+          mkdir -p target/deploy
+
+          if [ -n "${WORLD_FAIR_REUSE_PROGRAM_ID:-}" ]; then
+            echo "WORLD_FAIR_PROGRAM_ID=$WORLD_FAIR_REUSE_PROGRAM_ID" >> "$GITHUB_ENV"
+            python3 -c 'from pathlib import Path; import os; p=Path("programs/keys/src/lib.rs"); s=p.read_text(); old="declare_id!(\"ABjE6V5q9VbD3CAHDXxvztY5kXQmDXHRcEP1kZ4KSSfk\");"; pid=os.environ["WORLD_FAIR_REUSE_PROGRAM_ID"]; old in s or (_ for _ in ()).throw(SystemExit("baseline declare_id not found")); p.write_text(s.replace(old, f"declare_id!(\"{pid}\");", 1))'
+            anchor build 2>&1 | tee /tmp/worlds-fair-anchor-build.log
+            node -e '
+              const fs=require("fs");
+              const p="target/idl/keys.json";
+              const idl=JSON.parse(fs.readFileSync(p,"utf8"));
+              idl.address=process.env.WORLD_FAIR_REUSE_PROGRAM_ID;
+              fs.writeFileSync(p, JSON.stringify(idl,null,2));
+            '
+            echo "PROOF reused_program_id=$WORLD_FAIR_REUSE_PROGRAM_ID"
+          else
+            solana-keygen new --no-bip39-passphrase --silent --force -o target/deploy/keys-keypair.json
+            EPHEMERAL_PROGRAM_ID=$(solana address -k target/deploy/keys-keypair.json)
+            echo "WORLD_FAIR_PROGRAM_ID=$EPHEMERAL_PROGRAM_ID" >> "$GITHUB_ENV"
+            anchor keys sync
+            anchor build 2>&1 | tee /tmp/worlds-fair-anchor-build.log
+            grep -Fq "declare_id!(\"$EPHEMERAL_PROGRAM_ID\")" programs/keys/src/lib.rs
+            echo "PROOF ephemeral_program_id=$EPHEMERAL_PROGRAM_ID"
+          fi
+
+          if grep -Eq "Stack offset .* exceeded max offset|overwrites values in the frame" /tmp/worlds-fair-anchor-build.log; then
+            echo "WORLD_FAIR_SBF_STACK_SAFETY=FAIL"
+            exit 1
+          fi
+          echo "WORLD_FAIR_SBF_STACK_SAFETY=PASS"
+          echo "PROOF program_binary_bytes=$(stat -c%s target/deploy/keys.so)"
+          echo "WORLD_FAIR_CLIENT_BUILD=PASS"
+
+      - name: Deploy or reuse World’s Fair program on devnet
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.local/share/solana/install/active_release/bin:$HOME/.avm/bin:$PATH"
+
+          if [ -n "${WORLD_FAIR_REUSE_PROGRAM_ID:-}" ]; then
+            PROGRAM_SHOW=$(solana program show "$WORLD_FAIR_REUSE_PROGRAM_ID" --url "$ANCHOR_PROVIDER_URL")
+            echo "$PROGRAM_SHOW"
+            echo "PROOF explorer=https://explorer.solana.com/address/$WORLD_FAIR_REUSE_PROGRAM_ID?cluster=devnet"
+            echo "WORLD_FAIR_EPHEMERAL_DEPLOY=REUSED"
+            exit 0
+          fi
+
+          attempt_deploy() {
+            set +e
+            PROGRAM_MAX_LEN=$(stat -c%s target/deploy/keys.so)
+            echo "PROOF ephemeral_program_max_len_bytes=$PROGRAM_MAX_LEN"
+            DEPLOY_OUT=$(solana program deploy target/deploy/keys.so \
+              --program-id target/deploy/keys-keypair.json \
+              --max-len "$PROGRAM_MAX_LEN" \
+              --url "$ANCHOR_PROVIDER_URL" \
+              --keypair "$HOME/.config/solana/id.json" 2>&1)
+            DEPLOY_RC=$?
+            set -e
+            printf '%s\n' "$DEPLOY_OUT" | sed -E 's/^([a-z]+[[:space:]]+){11}[a-z]+$/[REDACTED_EPHEMERAL_BUFFER_MNEMONIC]/'
+          }
+
+          close_failed_buffer() {
+            FAILED_BUFFER=$(printf '%s\n' "$DEPLOY_OUT" | awk '/^solana program close / {print $4; exit}')
+            if [ -n "$FAILED_BUFFER" ]; then
+              set +e
+              solana program close "$FAILED_BUFFER" --url "$ANCHOR_PROVIDER_URL"
+              set -e
+            fi
+          }
+
+          attempt_deploy
+          if [ $DEPLOY_RC -ne 0 ]; then
+            close_failed_buffer
+
+            if ! echo "$DEPLOY_OUT" | grep -Eqi "insufficient|faucet|airdrop|funds|balance"; then
+              echo "WORLD_FAIR_DEVNET_DEPLOY=FAILED_NON_FUNDING"
+              exit $DEPLOY_RC
+            fi
+
+            BALANCE=$(solana balance --lamports --url "$ANCHOR_PROVIDER_URL" 2>/dev/null | tr -dc '0-9' || true)
+            BALANCE=${BALANCE:-0}
+            REQUIRED_SOL=$(printf '%s\n' "$DEPLOY_OUT" | sed -nE 's/.*insufficient funds for spend \(([0-9.]+) SOL\) \+ fee \(([0-9.]+) SOL\).*/\1 \2/p' | tail -1)
+
+            if [ -n "$REQUIRED_SOL" ]; then
+              TARGET_BALANCE_LAMPORTS=$(python3 -c 'import math,sys; s,f=map(float,sys.argv[1].split()); print(math.ceil((s+f+0.10)*1_000_000_000))' "$REQUIRED_SOL")
+            else
+              TARGET_BALANCE_LAMPORTS=$((BALANCE + 1500000000))
+            fi
+
+            echo "PROOF funding_target_lamports=$TARGET_BALANCE_LAMPORTS current=$BALANCE"
+
+            for ATTEMPT in 1 2 3; do
+              BALANCE=$(solana balance --lamports --url "$ANCHOR_PROVIDER_URL" 2>/dev/null | tr -dc '0-9' || true)
+              BALANCE=${BALANCE:-0}
+              if [ "$BALANCE" -ge "$TARGET_BALANCE_LAMPORTS" ]; then break; fi
+              SHORTFALL=$((TARGET_BALANCE_LAMPORTS - BALANCE))
+              AIRDROP_SOL=$(python3 -c 'import sys; x=int(sys.argv[1]); print(f"{min(x/1_000_000_000+0.02,1.0):.9f}")' "$SHORTFALL")
+              set +e
+              solana airdrop "$AIRDROP_SOL" --url "$ANCHOR_PROVIDER_URL"
+              set -e
+              sleep 12
+            done
+
+            BALANCE=$(solana balance --lamports --url "$ANCHOR_PROVIDER_URL" 2>/dev/null | tr -dc '0-9' || true)
+            BALANCE=${BALANCE:-0}
+
+            if [ "$BALANCE" -lt "$TARGET_BALANCE_LAMPORTS" ]; then
+              echo "PROOF devnet_pow_faucet=START"
+              cargo install devnet-pow
+              set +e
+              devnet-pow -k "$HOME/.config/solana/id.json" -u "$ANCHOR_PROVIDER_URL" \
+                -c confirmed mine -d 3 --reward 0.02 --no-infer -t "$TARGET_BALANCE_LAMPORTS"
+              POW_RC=$?
+              set -e
+              echo "PROOF devnet_pow_faucet_rc=$POW_RC"
+            fi
+
+            BALANCE=$(solana balance --lamports --url "$ANCHOR_PROVIDER_URL" 2>/dev/null | tr -dc '0-9' || true)
+            BALANCE=${BALANCE:-0}
+            if [ "$BALANCE" -lt "$TARGET_BALANCE_LAMPORTS" ]; then
+              echo "WORLD_FAIR_DEVNET_DEPLOY=BLOCKED_EXTERNAL_FUNDING target=$TARGET_BALANCE_LAMPORTS actual=$BALANCE"
+              exit 1
+            fi
+
+            attempt_deploy
+            if [ $DEPLOY_RC -ne 0 ]; then
+              close_failed_buffer
+              echo "WORLD_FAIR_DEVNET_DEPLOY=FAILED_AFTER_FUNDING"
+              exit $DEPLOY_RC
+            fi
+          fi
+
+          PROGRAM_SHOW=$(solana program show "$WORLD_FAIR_PROGRAM_ID" --url "$ANCHOR_PROVIDER_URL")
+          echo "$PROGRAM_SHOW"
+          echo "PROOF explorer=https://explorer.solana.com/address/$WORLD_FAIR_PROGRAM_ID?cluster=devnet"
+          echo "WORLD_FAIR_EPHEMERAL_DEPLOY=PASS"
+
+      - name: Verify runtime binary binding
+        if: ${{ env.WORLD_FAIR_REUSE_PROGRAM_ID != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.local/share/solana/install/active_release/bin:$HOME/.avm/bin:$PATH"
+          solana program dump "$WORLD_FAIR_REUSE_PROGRAM_ID" /tmp/worlds-fair-onchain.so --url "$ANCHOR_PROVIDER_URL"
+          LOCAL_SHA=$(sha256sum target/deploy/keys.so | awk '{print $1}')
+          ONCHAIN_SHA=$(sha256sum /tmp/worlds-fair-onchain.so | awk '{print $1}')
+          echo "PROOF local_program_sha256=$LOCAL_SHA"
+          echo "PROOF onchain_program_sha256=$ONCHAIN_SHA"
+          if [ "$LOCAL_SHA" != "$ONCHAIN_SHA" ]; then
+            echo "WORLD_FAIR_RUNTIME_COMMIT_BINDING=FAIL"
+            exit 1
+          fi
+          echo "WORLD_FAIR_RUNTIME_COMMIT_BINDING=PASS"
+
+      - name: Cool down devnet RPC after program deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Program deployment is RPC-intensive. Reuse runs skip the deployment
+          # quiet window because no new program bytes were written.
+          if [ -z "${WORLD_FAIR_REUSE_PROGRAM_ID:-}" ]; then
+            sleep 25
+          fi
+          for ATTEMPT in 1 2 3 4 5 6; do
+            BODY=$(curl -sS --max-time 15 \
+              -H 'Content-Type: application/json' \
+              -d '{"jsonrpc":"2.0","id":1,"method":"getHealth"}' \
+              "$ANCHOR_PROVIDER_URL" || true)
+            if printf '%s' "$BODY" | grep -q '"result":"ok"'; then
+              echo "WORLD_FAIR_DEVNET_RPC_PREFLIGHT=PASS"
+              break
+            fi
+            if [ "$ATTEMPT" -eq 6 ]; then
+              echo "WORLD_FAIR_DEVNET_RPC_PREFLIGHT=BLOCKED"
+              printf '%s\n' "$BODY"
+              exit 1
+            fi
+            sleep 10
+          done
+          # Keep a small quiet window before the account-heavy live slice.
+          sleep 8
+
+      - name: Run first live Orca vertical slice
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.local/share/solana/install/active_release/bin:$HOME/.avm/bin:$PATH"
+          npm run proof:worlds-fair-orca
+
+      - name: Verify receipt
+        shell: bash
+        run: |
+          test -s evidence/worlds-fair/orca-v1-runtime-receipt.json
+          node -e '
+            const r=require("./evidence/worlds-fair/orca-v1-runtime-receipt.json");
+            if(r.status!=="PASS") process.exit(1);
+            for(const k of ["standingAutonomy","softBoundary","exactException","hardBoundary","evidenceFailure","rollback","staleAuthority"]) {
+              if(r.scenarios?.[k]?.status!=="PASS") throw new Error("missing scenario "+k);
+            }
+            console.log("WORLD_FAIR_ORCA_RECEIPT_VALID=PASS");
+          '
+
+      - name: Upload live-slice receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: worlds-fair-orca-v1-runtime-receipt
+          path: evidence/worlds-fair/orca-v1-runtime-receipt.json
+          if-no-files-found: warn

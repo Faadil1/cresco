@@ -58,6 +58,73 @@ export class FamilyState {
     const body = ["POST", "PUT", "PATCH"].includes(method)
       ? await request.json().catch(() => ({}))
       : {};
+
+    if (method === "POST" && path === "/worlds-fair-lock/acquire") {
+      const requestId = String(body.requestId || "");
+      if (!requestId) return json({ error: "REQUEST_ID_REQUIRED" }, 400);
+
+      const nowMs = Date.now();
+      const leaseMs = 5 * 60 * 1000;
+      const current = await this.state.storage.get("worlds-fair-run-lock");
+
+      if (
+        current &&
+        current.requestId !== requestId &&
+        Number(current.expiresAtMs || 0) > nowMs
+      ) {
+        return json(
+          {
+            acquired: false,
+            status: "BUSY",
+            retryAfterMs: Math.max(1000, Number(current.expiresAtMs) - nowMs),
+            activeSince: current.acquiredAt || null
+          },
+          409
+        );
+      }
+
+      const lease = {
+        requestId,
+        acquiredAt: now(),
+        expiresAtMs: nowMs + leaseMs
+      };
+      await this.state.storage.put("worlds-fair-run-lock", lease);
+      return json({
+        acquired: true,
+        status: "ACQUIRED",
+        requestId,
+        expiresAtMs: lease.expiresAtMs
+      });
+    }
+
+    if (method === "POST" && path === "/worlds-fair-lock/release") {
+      const requestId = String(body.requestId || "");
+      if (!requestId) return json({ error: "REQUEST_ID_REQUIRED" }, 400);
+
+      const current = await this.state.storage.get("worlds-fair-run-lock");
+      if (!current) {
+        return json({ released: true, status: "ALREADY_FREE" });
+      }
+      if (current.requestId !== requestId) {
+        return json({ released: false, status: "NOT_OWNER" }, 409);
+      }
+
+      await this.state.storage.delete("worlds-fair-run-lock");
+      return json({ released: true, status: "RELEASED" });
+    }
+
+    if (method === "GET" && path === "/worlds-fair-lock") {
+      const current = await this.state.storage.get("worlds-fair-run-lock");
+      const active =
+        Boolean(current) && Number(current.expiresAtMs || 0) > Date.now();
+      return json({
+        active,
+        status: active ? "BUSY" : "AVAILABLE",
+        acquiredAt: active ? current.acquiredAt : null,
+        expiresAtMs: active ? current.expiresAtMs : null
+      });
+    }
+
     const state = await this.load();
 
     if (method === "GET" && path === "/state") return json(state);

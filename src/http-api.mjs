@@ -38,6 +38,10 @@ import {
   configuredDevnetExecutionProviderFromEnv
 } from './devnet-execution-provider.mjs';
 
+import {
+  configuredWorldFairOrcaProviderFromEnv
+} from './worlds-fair-orca-provider.mjs';
+
 const JSON_HEADERS = Object.freeze({
   'content-type': 'application/json; charset=utf-8'
 });
@@ -405,6 +409,130 @@ export async function routeCrescoHttp({
         runtimeProofStatus: 'CANONICAL_DEVNET_RUNTIME_PROVEN'
       }
     };
+  }
+
+  if (method === 'GET' && path === '/api/v0.3/worlds-fair/runtime') {
+    const worldFairProvider =
+      services?.worldFairExecutionProvider ??
+      configuredWorldFairOrcaProviderFromEnv();
+
+    if (!worldFairProvider) {
+      return {
+        status: 503,
+        headers: JSON_HEADERS,
+        body: {
+          contractVersion: '0.3',
+          type: 'WORLD_FAIR_RUNTIME_UNAVAILABLE',
+          error: 'WORLD_FAIR_SERVER_RUNTIME_UNAVAILABLE',
+          requiredServerSecrets: [
+            'DEVNET_KEYPAIR_JSON',
+            'PYTH_PRO_API_KEY',
+            'SOLANA_DEVNET_RPC_URL'
+          ],
+          truthBoundary: {
+            secretsRemainServerSide: true,
+            mainnet: false
+          }
+        }
+      };
+    }
+
+    try {
+      return {
+        status: 200,
+        headers: JSON_HEADERS,
+        body: {
+          contractVersion: '0.3',
+          type: 'WORLD_FAIR_OPERATOR_LAB_RUNTIME',
+          ...(await worldFairProvider.getPublicState())
+        }
+      };
+    } catch (error) {
+      return {
+        status: 503,
+        headers: JSON_HEADERS,
+        body: {
+          contractVersion: '0.3',
+          type: 'WORLD_FAIR_OPERATOR_LAB_RUNTIME',
+          status: 'UNKNOWN',
+          error: 'WORLD_FAIR_RUNTIME_STATE_UNAVAILABLE',
+          message: error?.message ?? 'World’s Fair runtime unavailable'
+        }
+      };
+    }
+  }
+
+  if (method === 'POST' && path === '/api/v0.3/worlds-fair/run') {
+    const worldFairProvider =
+      services?.worldFairExecutionProvider ??
+      configuredWorldFairOrcaProviderFromEnv();
+
+    if (!worldFairProvider) {
+      return {
+        status: 503,
+        headers: JSON_HEADERS,
+        body: {
+          contractVersion: '0.3',
+          type: 'WORLD_FAIR_OPERATOR_LAB_RUN',
+          status: 'UNKNOWN',
+          error: 'WORLD_FAIR_SERVER_RUNTIME_UNAVAILABLE',
+          receipt: null
+        }
+      };
+    }
+
+    const requestedScenario = body?.scenario ?? 'CANONICAL_LIVE';
+    const unexpectedKeys =
+      body && typeof body === 'object'
+        ? Object.keys(body).filter((key) => key !== 'scenario')
+        : [];
+
+    if (
+      requestedScenario !== 'CANONICAL_LIVE' ||
+      unexpectedKeys.length > 0
+    ) {
+      return {
+        status: 400,
+        headers: JSON_HEADERS,
+        body: {
+          contractVersion: '0.3',
+          type: 'WORLD_FAIR_OPERATOR_LAB_RUN',
+          status: 'REFUSED',
+          error: 'WORLD_FAIR_SCOPE_FIXED',
+          allowedScenario: 'CANONICAL_LIVE',
+          arbitraryProgramIdAccepted: false,
+          arbitraryPoolAccepted: false,
+          arbitraryInstructionAccepted: false
+        }
+      };
+    }
+
+    try {
+      const receipt = await worldFairProvider.runCanonicalSequence();
+      return {
+        status: 200,
+        headers: JSON_HEADERS,
+        body: {
+          contractVersion: '0.3',
+          type: 'WORLD_FAIR_OPERATOR_LAB_RUN',
+          status: receipt?.status === 'PASS' ? 'PASS' : 'UNKNOWN',
+          receipt
+        }
+      };
+    } catch (error) {
+      return {
+        status: 503,
+        headers: JSON_HEADERS,
+        body: {
+          contractVersion: '0.3',
+          type: 'WORLD_FAIR_OPERATOR_LAB_RUN',
+          status: 'UNKNOWN',
+          error: 'WORLD_FAIR_LIVE_RUN_UNCONFIRMED',
+          message: error?.message ?? 'World’s Fair live run unavailable',
+          receipt: null
+        }
+      };
+    }
   }
 
   if (method === 'GET' && path === '/api/v0.2/demo/runtime') {

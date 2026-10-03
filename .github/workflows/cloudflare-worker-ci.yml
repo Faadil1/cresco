@@ -7,6 +7,7 @@ on:
       - "src/cloudflare-worker.mjs"
       - "src/http-api.mjs"
       - "src/devnet-execution-provider.mjs"
+      - "src/worlds-fair-orca-provider.mjs"
       - "src/pyth-adapter.mjs"
       - "scripts/pyth-market-discovery-proof.mjs"
       - "src/prestocks-adapter.mjs"
@@ -15,6 +16,24 @@ on:
       - "wrangler.jsonc"
       - "package.json"
       - "test/cloudflare-worker.test.mjs"
+      - "test/http-api.test.mjs"
+      - ".github/workflows/cloudflare-worker-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/cloudflare-worker.mjs"
+      - "src/http-api.mjs"
+      - "src/devnet-execution-provider.mjs"
+      - "src/worlds-fair-orca-provider.mjs"
+      - "src/pyth-adapter.mjs"
+      - "scripts/pyth-market-discovery-proof.mjs"
+      - "src/prestocks-adapter.mjs"
+      - "src/tessera-adapter.mjs"
+      - "fixtures/**"
+      - "wrangler.jsonc"
+      - "package.json"
+      - "test/cloudflare-worker.test.mjs"
+      - "test/http-api.test.mjs"
       - ".github/workflows/cloudflare-worker-ci.yml"
   workflow_dispatch:
 

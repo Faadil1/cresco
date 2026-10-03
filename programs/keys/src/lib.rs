@@ -1,13 +1,14 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::{
     instruction::{AccountMeta, Instruction},
-    program::invoke,
+    program::{invoke, invoke_signed},
     pubkey,
     sysvar,
 };
 use anchor_spl::token_interface::{
     self, Mint, TokenAccount, TokenInterface, TransferChecked,
 };
+use solana_sha256_hasher::hashv;
 declare_id!("ABjE6V5q9VbD3CAHDXxvztY5kXQmDXHRcEP1kZ4KSSfk");
 
 pub const STAGE_LEARN: u8 = 0;
@@ -21,6 +22,18 @@ pub const MANDATE_PAUSED: u8 = 1;
 pub const MANDATE_REVOKED: u8 = 2;
 
 pub const ACTION_TRANSFER: u8 = 1 << 0;
+pub const ACTION_SWAP_EXACT_IN: u8 = 1 << 1;
+
+pub const ORCA_WHIRLPOOL_PROGRAM_ID: Pubkey =
+    pubkey!("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc");
+pub const ORCA_DEVNET_USDC_USDT_POOL_ID: Pubkey =
+    pubkey!("63cMwvN8eoaD39os9bKP8brmA7Xtov9VxahnPufWCSdg");
+pub const ORCA_DEVNET_USDC_MINT: Pubkey =
+    pubkey!("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k");
+pub const ORCA_DEVNET_USDT_MINT: Pubkey =
+    pubkey!("H8UekPGwePSmQ3ttuYGPU1szyFfjZR4N53rymSFwpLPm");
+pub const ORCA_SWAP_DISCRIMINATOR: [u8; 8] =
+    [248, 198, 158, 145, 225, 117, 135, 200];
 
 pub const PYTH_LAZER_PROGRAM_ID: Pubkey =
     pubkey!("pytd2yyk641x7ak7mkaasSJVXh6YYZnC7wTmtgAyxPt");
@@ -230,6 +243,12 @@ pub mod keys {
         rule.bump = ctx.bumps.asset_rule;
 
         advance_mandate(mandate)?;
+        Ok(())
+    }
+
+    pub fn initialize_trade_vault(
+        _ctx: Context<InitializeTradeVault>,
+    ) -> Result<()> {
         Ok(())
     }
 
@@ -644,11 +663,343 @@ pub mod keys {
 
         Ok(())
     }
+
+    /// Real devnet swap path for the locked World’s Fair vertical.
+    ///
+    /// V1 is deliberately narrow:
+    /// - Orca Whirlpools only;
+    /// - one devnet pool (devUSDC/devUSDT);
+    /// - exact-input A→B swaps only;
+    /// - no arbitrary CPI target/accounts/instruction bytes.
+    pub fn execute_swap_within_mandate_with_pyth(
+        ctx: Context<ExecuteSwapWithinMandateWithPyth>,
+        pyth_message: Vec<u8>,
+        input_amount: u64,
+        min_output_amount: u64,
+        sqrt_price_limit: u128,
+        deadline: i64,
+        expected_nonce: u64,
+    ) -> Result<()> {
+        require!(input_amount > 0, KeysError::InvalidAmount);
+        require!(min_output_amount > 0, KeysError::InvalidAmount);
+        require!(!pyth_message.is_empty(), KeysError::PythMessageInvalid);
+
+        let now = Clock::get()?.unix_timestamp;
+        require!(deadline > now, KeysError::TradeActionExpired);
+
+        validate_orca_v1_accounts(
+            &ctx.accounts.orca_program,
+            &ctx.accounts.whirlpool,
+            &ctx.accounts.input_mint,
+            &ctx.accounts.output_mint,
+            &ctx.accounts.token_program,
+        )?;
+
+        validate_execution_authority_for_action(
+            &ctx.accounts.mandate,
+            &ctx.accounts.asset_rule,
+            ACTION_SWAP_EXACT_IN,
+            expected_nonce,
+            now,
+        )?;
+        require!(
+            input_amount <= ctx.accounts.asset_rule.max_action_amount,
+            KeysError::ActionAmountExceeded
+        );
+
+        verify_pyth_message_via_lazer(
+            &ctx.accounts.beneficiary.to_account_info(),
+            &ctx.accounts.pyth_program,
+            &ctx.accounts.pyth_storage,
+            &ctx.accounts.pyth_treasury,
+            &ctx.accounts.system_program.to_account_info(),
+            &ctx.accounts.instructions_sysvar,
+            &pyth_message,
+        )?;
+
+        let market = parse_verified_market_evidence(
+            &pyth_message,
+            ctx.accounts.asset_rule.pyth_feed_id,
+            now,
+            ctx.accounts.mandate.max_market_age_seconds,
+            ctx.accounts.mandate.max_confidence_bps,
+        )?;
+        require!(
+            ctx.accounts.asset_rule.max_unit_price_micro_usd == 0
+                || market.unit_price_micro_usd
+                    <= ctx.accounts.asset_rule.max_unit_price_micro_usd,
+            KeysError::MarketConditionInvalidated
+        );
+
+        reset_period_if_needed(&mut ctx.accounts.asset_rule, now);
+
+        let requested_notional_micro_usd = compute_notional_micro_usd(
+            input_amount,
+            ctx.accounts.input_mint.decimals,
+            market.unit_price_micro_usd,
+        )?;
+        require!(
+            ctx.accounts.mandate.max_action_notional == 0
+                || requested_notional_micro_usd
+                    <= ctx.accounts.mandate.max_action_notional,
+            KeysError::PythNotionalExceeded
+        );
+
+        let next_spent_amount = ctx
+            .accounts
+            .asset_rule
+            .spent_this_period
+            .checked_add(input_amount)
+            .ok_or(KeysError::Overflow)?;
+        require!(
+            next_spent_amount <= ctx.accounts.asset_rule.max_period_amount,
+            KeysError::PeriodAmountExceeded
+        );
+
+        let next_spent_notional = ctx
+            .accounts
+            .asset_rule
+            .spent_this_period_notional
+            .checked_add(requested_notional_micro_usd)
+            .ok_or(KeysError::Overflow)?;
+        require!(
+            ctx.accounts.mandate.max_period_notional == 0
+                || next_spent_notional <= ctx.accounts.mandate.max_period_notional,
+            KeysError::PythPeriodNotionalExceeded
+        );
+
+        let charter_key = ctx.accounts.charter.key();
+        let mandate_bump = [ctx.accounts.mandate.bump];
+        let mandate_seeds: &[&[u8]] = &[
+            b"mandate",
+            charter_key.as_ref(),
+            &mandate_bump,
+        ];
+        let signer_seeds: &[&[&[u8]]] = &[mandate_seeds];
+
+        invoke_orca_exact_in_swap(
+            &ctx.accounts.token_program.to_account_info(),
+            &ctx.accounts.mandate.to_account_info(),
+            &ctx.accounts.whirlpool,
+            &ctx.accounts.input_trade_vault.to_account_info(),
+            &ctx.accounts.orca_token_vault_a,
+            &ctx.accounts.output_trade_vault.to_account_info(),
+            &ctx.accounts.orca_token_vault_b,
+            &ctx.accounts.tick_array_0,
+            &ctx.accounts.tick_array_1,
+            &ctx.accounts.tick_array_2,
+            &ctx.accounts.orca_oracle,
+            &ctx.accounts.orca_program,
+            signer_seeds,
+            input_amount,
+            min_output_amount,
+            sqrt_price_limit,
+        )?;
+
+        ctx.accounts.asset_rule.spent_this_period = next_spent_amount;
+        ctx.accounts.asset_rule.spent_this_period_notional = next_spent_notional;
+
+        msg!(
+            "CRESCO_ORCA_STANDING_SWAP pool={} input_amount={} min_output={} notional_micro_usd={} nonce={}",
+            ctx.accounts.whirlpool.key(),
+            input_amount,
+            min_output_amount,
+            requested_notional_micro_usd,
+            expected_nonce
+        );
+
+        Ok(())
+    }
+
+    pub fn execute_swap_once_with_pyth(
+        ctx: Context<ExecuteSwapOnceWithPyth>,
+        pyth_message: Vec<u8>,
+        input_amount: u64,
+        min_output_amount: u64,
+        sqrt_price_limit: u128,
+        deadline: i64,
+        expected_nonce: u64,
+        request_hash: [u8; 32],
+    ) -> Result<()> {
+        require!(input_amount > 0, KeysError::InvalidAmount);
+        require!(min_output_amount > 0, KeysError::InvalidAmount);
+        require!(!pyth_message.is_empty(), KeysError::PythMessageInvalid);
+
+        let now = Clock::get()?.unix_timestamp;
+        require!(deadline > now, KeysError::TradeActionExpired);
+
+        validate_orca_v1_accounts(
+            &ctx.accounts.orca_program,
+            &ctx.accounts.whirlpool,
+            &ctx.accounts.input_mint,
+            &ctx.accounts.output_mint,
+            &ctx.accounts.token_program,
+        )?;
+
+        validate_execution_authority_for_action(
+            &ctx.accounts.mandate,
+            &ctx.accounts.asset_rule,
+            ACTION_SWAP_EXACT_IN,
+            expected_nonce,
+            now,
+        )?;
+        // V1 exceptional authority only overrides the standing USD-notional
+        // action boundary. Unit-amount and period boundaries remain enforced.
+        require!(
+            input_amount <= ctx.accounts.asset_rule.max_action_amount,
+            KeysError::ActionAmountExceeded
+        );
+
+        let allowance = &ctx.accounts.allowance;
+        require!(!allowance.used, KeysError::AllowanceAlreadyUsed);
+        require_eq!(
+            allowance.mandate_nonce,
+            expected_nonce,
+            KeysError::StaleAllowance
+        );
+        require!(
+            allowance.expires_at == 0 || now <= allowance.expires_at,
+            KeysError::AllowanceExpired
+        );
+        require!(
+            allowance.request_hash == request_hash,
+            KeysError::AllowanceRequestMismatch
+        );
+
+        let computed_request_hash = canonical_swap_request_hash(
+            &ctx.accounts.mandate.key(),
+            &ctx.accounts.whirlpool.key(),
+            &ctx.accounts.input_mint.key(),
+            &ctx.accounts.output_mint.key(),
+            input_amount,
+            min_output_amount,
+            sqrt_price_limit,
+            deadline,
+            expected_nonce,
+        );
+        require!(
+            computed_request_hash == request_hash,
+            KeysError::AllowanceActionMismatch
+        );
+
+        verify_pyth_message_via_lazer(
+            &ctx.accounts.beneficiary.to_account_info(),
+            &ctx.accounts.pyth_program,
+            &ctx.accounts.pyth_storage,
+            &ctx.accounts.pyth_treasury,
+            &ctx.accounts.system_program.to_account_info(),
+            &ctx.accounts.instructions_sysvar,
+            &pyth_message,
+        )?;
+
+        let market = parse_verified_market_evidence(
+            &pyth_message,
+            ctx.accounts.asset_rule.pyth_feed_id,
+            now,
+            ctx.accounts.mandate.max_market_age_seconds,
+            ctx.accounts.mandate.max_confidence_bps,
+        )?;
+        require!(
+            ctx.accounts.asset_rule.max_unit_price_micro_usd == 0
+                || market.unit_price_micro_usd
+                    <= ctx.accounts.asset_rule.max_unit_price_micro_usd,
+            KeysError::MarketConditionInvalidated
+        );
+
+        reset_period_if_needed(&mut ctx.accounts.asset_rule, now);
+
+        let requested_notional_micro_usd = compute_notional_micro_usd(
+            input_amount,
+            ctx.accounts.input_mint.decimals,
+            market.unit_price_micro_usd,
+        )?;
+        require_allowance_exact_notional(
+            ctx.accounts.allowance.max_notional_micro_usd,
+            requested_notional_micro_usd,
+            ctx.accounts.input_mint.decimals,
+            market.unit_price_micro_usd,
+        )?;
+        require!(
+            ctx.accounts.mandate.max_action_notional > 0
+                && requested_notional_micro_usd
+                    > ctx.accounts.mandate.max_action_notional,
+            KeysError::ExceptionNotRequired
+        );
+
+        let next_spent_amount = ctx
+            .accounts
+            .asset_rule
+            .spent_this_period
+            .checked_add(input_amount)
+            .ok_or(KeysError::Overflow)?;
+        require!(
+            next_spent_amount <= ctx.accounts.asset_rule.max_period_amount,
+            KeysError::PeriodAmountExceeded
+        );
+
+        let next_spent_notional = ctx
+            .accounts
+            .asset_rule
+            .spent_this_period_notional
+            .checked_add(requested_notional_micro_usd)
+            .ok_or(KeysError::Overflow)?;
+        require!(
+            ctx.accounts.mandate.max_period_notional == 0
+                || next_spent_notional <= ctx.accounts.mandate.max_period_notional,
+            KeysError::PythPeriodNotionalExceeded
+        );
+
+        let charter_key = ctx.accounts.charter.key();
+        let mandate_bump = [ctx.accounts.mandate.bump];
+        let mandate_seeds: &[&[u8]] = &[
+            b"mandate",
+            charter_key.as_ref(),
+            &mandate_bump,
+        ];
+        let signer_seeds: &[&[&[u8]]] = &[mandate_seeds];
+
+        invoke_orca_exact_in_swap(
+            &ctx.accounts.token_program.to_account_info(),
+            &ctx.accounts.mandate.to_account_info(),
+            &ctx.accounts.whirlpool,
+            &ctx.accounts.input_trade_vault.to_account_info(),
+            &ctx.accounts.orca_token_vault_a,
+            &ctx.accounts.output_trade_vault.to_account_info(),
+            &ctx.accounts.orca_token_vault_b,
+            &ctx.accounts.tick_array_0,
+            &ctx.accounts.tick_array_1,
+            &ctx.accounts.tick_array_2,
+            &ctx.accounts.orca_oracle,
+            &ctx.accounts.orca_program,
+            signer_seeds,
+            input_amount,
+            min_output_amount,
+            sqrt_price_limit,
+        )?;
+
+        ctx.accounts.asset_rule.spent_this_period = next_spent_amount;
+        ctx.accounts.asset_rule.spent_this_period_notional = next_spent_notional;
+        ctx.accounts.allowance.used = true;
+        ctx.accounts.allowance.used_at = now;
+
+        msg!(
+            "CRESCO_ORCA_EXCEPTION_SWAP pool={} action_hash={:?} input_amount={} min_output={} notional_micro_usd={} nonce={} consumed=true",
+            ctx.accounts.whirlpool.key(),
+            request_hash,
+            input_amount,
+            min_output_amount,
+            requested_notional_micro_usd,
+            expected_nonce
+        );
+
+        Ok(())
+    }
 }
 
-fn validate_execution_authority(
+fn validate_execution_authority_for_action(
     mandate: &Mandate,
     rule: &AssetRule,
+    action_bit: u8,
     expected_nonce: u64,
     now: i64,
 ) -> Result<()> {
@@ -668,10 +1019,25 @@ fn validate_execution_authority(
     );
     require!(rule.enabled, KeysError::AssetRuleDisabled);
     require!(
-        rule.action_mask & ACTION_TRANSFER != 0,
+        rule.action_mask & action_bit != 0,
         KeysError::ActionNotAllowed
     );
     Ok(())
+}
+
+fn validate_execution_authority(
+    mandate: &Mandate,
+    rule: &AssetRule,
+    expected_nonce: u64,
+    now: i64,
+) -> Result<()> {
+    validate_execution_authority_for_action(
+        mandate,
+        rule,
+        ACTION_TRANSFER,
+        expected_nonce,
+        now,
+    )
 }
 
 fn validate_execution_common(
@@ -686,6 +1052,147 @@ fn validate_execution_common(
         amount <= rule.max_action_amount,
         KeysError::ActionAmountExceeded
     );
+    Ok(())
+}
+
+fn validate_orca_v1_accounts<'info>(
+    orca_program: &AccountInfo<'info>,
+    whirlpool: &AccountInfo<'info>,
+    input_mint: &InterfaceAccount<'info, Mint>,
+    output_mint: &InterfaceAccount<'info, Mint>,
+    token_program: &Interface<'info, TokenInterface>,
+) -> Result<()> {
+    require_keys_eq!(
+        orca_program.key(),
+        ORCA_WHIRLPOOL_PROGRAM_ID,
+        KeysError::InvalidOrcaProgram
+    );
+    require_keys_eq!(
+        whirlpool.key(),
+        ORCA_DEVNET_USDC_USDT_POOL_ID,
+        KeysError::InvalidOrcaPool
+    );
+    require_keys_eq!(
+        input_mint.key(),
+        ORCA_DEVNET_USDC_MINT,
+        KeysError::InvalidTradeInputMint
+    );
+    require_keys_eq!(
+        output_mint.key(),
+        ORCA_DEVNET_USDT_MINT,
+        KeysError::InvalidTradeOutputMint
+    );
+    require_keys_eq!(
+        token_program.key(),
+        anchor_spl::token::ID,
+        KeysError::InvalidOrcaTokenProgram
+    );
+    Ok(())
+}
+
+fn canonical_swap_request_hash(
+    mandate: &Pubkey,
+    whirlpool: &Pubkey,
+    input_mint: &Pubkey,
+    output_mint: &Pubkey,
+    input_amount: u64,
+    min_output_amount: u64,
+    sqrt_price_limit: u128,
+    deadline: i64,
+    mandate_nonce: u64,
+) -> [u8; 32] {
+    let input_amount_bytes = input_amount.to_le_bytes();
+    let min_output_bytes = min_output_amount.to_le_bytes();
+    let sqrt_price_limit_bytes = sqrt_price_limit.to_le_bytes();
+    let deadline_bytes = deadline.to_le_bytes();
+    let nonce_bytes = mandate_nonce.to_le_bytes();
+
+    hashv(&[
+        b"CRESCO_SWAP_V0",
+        mandate.as_ref(),
+        ORCA_WHIRLPOOL_PROGRAM_ID.as_ref(),
+        whirlpool.as_ref(),
+        input_mint.as_ref(),
+        output_mint.as_ref(),
+        &input_amount_bytes,
+        &min_output_bytes,
+        &sqrt_price_limit_bytes,
+        &deadline_bytes,
+        &nonce_bytes,
+        &[1u8], // amount_specified_is_input
+        &[1u8], // a_to_b: devUSDC -> devUSDT
+    ])
+    .to_bytes()
+}
+
+#[allow(clippy::too_many_arguments)]
+fn invoke_orca_exact_in_swap<'info>(
+    token_program: &AccountInfo<'info>,
+    mandate: &AccountInfo<'info>,
+    whirlpool: &AccountInfo<'info>,
+    token_owner_account_a: &AccountInfo<'info>,
+    token_vault_a: &AccountInfo<'info>,
+    token_owner_account_b: &AccountInfo<'info>,
+    token_vault_b: &AccountInfo<'info>,
+    tick_array_0: &AccountInfo<'info>,
+    tick_array_1: &AccountInfo<'info>,
+    tick_array_2: &AccountInfo<'info>,
+    oracle: &AccountInfo<'info>,
+    orca_program: &AccountInfo<'info>,
+    signer_seeds: &[&[&[u8]]],
+    amount: u64,
+    other_amount_threshold: u64,
+    sqrt_price_limit: u128,
+) -> Result<()> {
+    let mut data = Vec::with_capacity(8 + 8 + 8 + 16 + 1 + 1);
+    data.extend_from_slice(&ORCA_SWAP_DISCRIMINATOR);
+    data.extend_from_slice(&amount.to_le_bytes());
+    data.extend_from_slice(&other_amount_threshold.to_le_bytes());
+    data.extend_from_slice(&sqrt_price_limit.to_le_bytes());
+    data.push(1u8); // amount_specified_is_input
+    data.push(1u8); // a_to_b
+
+    let ix = Instruction {
+        program_id: ORCA_WHIRLPOOL_PROGRAM_ID,
+        accounts: vec![
+            AccountMeta::new_readonly(*token_program.key, false),
+            AccountMeta::new_readonly(*mandate.key, true),
+            AccountMeta::new(*whirlpool.key, false),
+            AccountMeta::new(*token_owner_account_a.key, false),
+            AccountMeta::new(*token_vault_a.key, false),
+            AccountMeta::new(*token_owner_account_b.key, false),
+            AccountMeta::new(*token_vault_b.key, false),
+            AccountMeta::new(*tick_array_0.key, false),
+            AccountMeta::new(*tick_array_1.key, false),
+            AccountMeta::new(*tick_array_2.key, false),
+            AccountMeta::new_readonly(*oracle.key, false),
+        ],
+        data,
+    };
+
+    invoke_signed(
+        &ix,
+        &[
+            token_program.clone(),
+            mandate.clone(),
+            whirlpool.clone(),
+            token_owner_account_a.clone(),
+            token_vault_a.clone(),
+            token_owner_account_b.clone(),
+            token_vault_b.clone(),
+            tick_array_0.clone(),
+            tick_array_1.clone(),
+            tick_array_2.clone(),
+            oracle.clone(),
+            orca_program.clone(),
+        ],
+        signer_seeds,
+    )
+    .map_err(|err| {
+        msg!("Orca swap CPI failed: {:?}", err);
+        error!(KeysError::OrcaSwapFailed)
+    })?;
+
     Ok(())
 }
 
@@ -826,11 +1333,10 @@ fn parse_verified_market_evidence(
     );
     let payload_timestamp_us = reader.read_u64_le()?;
     let channel_id = reader.read_u8()?;
-    // Accept Pyth fixed-rate channels (50ms, 200ms, 1000ms). Freshness is
-    // enforced independently by the Mandate, so faster fixed-rate channels are
-    // not weaker evidence.
+    // Pyth Lazer channel ids: 1 = real_time, 2/3/4 = fixed-rate
+    // 50ms/200ms/1000ms. Freshness is enforced independently by the Mandate.
     require!(
-        matches!(channel_id, 2 | 3 | 4),
+        matches!(channel_id, 1 | 2 | 3 | 4),
         KeysError::PythChannelMismatch
     );
 
@@ -1278,6 +1784,37 @@ pub struct InitializeAssetRule<'info> {
 }
 
 #[derive(Accounts)]
+pub struct InitializeTradeVault<'info> {
+    #[account(
+        seeds = [b"charter", charter.beneficiary.as_ref()],
+        bump = charter.bump,
+        has_one = guardian
+    )]
+    pub charter: Account<'info, Charter>,
+    #[account(
+        seeds = [b"mandate", charter.key().as_ref()],
+        bump = mandate.bump,
+        has_one = charter
+    )]
+    pub mandate: Account<'info, Mandate>,
+    #[account(
+        init,
+        payer = guardian,
+        seeds = [b"trade-vault", mandate.key().as_ref(), mint.key().as_ref()],
+        bump,
+        token::mint = mint,
+        token::authority = mandate,
+        token::token_program = token_program
+    )]
+    pub trade_vault_token_account: InterfaceAccount<'info, TokenAccount>,
+    pub mint: InterfaceAccount<'info, Mint>,
+    #[account(mut)]
+    pub guardian: Signer<'info>,
+    pub token_program: Interface<'info, TokenInterface>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
 pub struct UpdateAssetRule<'info> {
     #[account(
         seeds = [b"charter", charter.beneficiary.as_ref()],
@@ -1515,6 +2052,203 @@ pub struct ExecuteWithinMandateWithPyth<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[derive(Accounts)]
+#[instruction(
+    pyth_message: Vec<u8>,
+    input_amount: u64,
+    min_output_amount: u64,
+    sqrt_price_limit: u128,
+    deadline: i64,
+    expected_nonce: u64
+)]
+pub struct ExecuteSwapWithinMandateWithPyth<'info> {
+    #[account(
+        seeds = [b"charter", charter.beneficiary.as_ref()],
+        bump = charter.bump,
+        has_one = beneficiary
+    )]
+    pub charter: Box<Account<'info, Charter>>,
+    #[account(
+        mut,
+        seeds = [b"mandate", charter.key().as_ref()],
+        bump = mandate.bump,
+        has_one = charter
+    )]
+    pub mandate: Box<Account<'info, Mandate>>,
+    #[account(
+        mut,
+        seeds = [b"asset-rule", mandate.key().as_ref(), input_mint.key().as_ref()],
+        bump = asset_rule.bump,
+        constraint = asset_rule.mandate == mandate.key() @ KeysError::AssetRuleMandateMismatch,
+        constraint = asset_rule.mint == input_mint.key() @ KeysError::AssetRuleMintMismatch
+    )]
+    pub asset_rule: Box<Account<'info, AssetRule>>,
+    #[account(
+        mut,
+        seeds = [b"trade-vault", mandate.key().as_ref(), input_mint.key().as_ref()],
+        bump,
+        token::mint = input_mint,
+        token::authority = mandate,
+        token::token_program = token_program
+    )]
+    pub input_trade_vault: Box<InterfaceAccount<'info, TokenAccount>>,
+    #[account(
+        mut,
+        seeds = [b"trade-vault", mandate.key().as_ref(), output_mint.key().as_ref()],
+        bump,
+        token::mint = output_mint,
+        token::authority = mandate,
+        token::token_program = token_program
+    )]
+    pub output_trade_vault: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub input_mint: Box<InterfaceAccount<'info, Mint>>,
+    pub output_mint: Box<InterfaceAccount<'info, Mint>>,
+    #[account(mut)]
+    pub beneficiary: Signer<'info>,
+
+    /// CHECK: hard-bound to the Orca Whirlpools program in the instruction.
+    pub orca_program: AccountInfo<'info>,
+    /// CHECK: hard-bound to the selected Orca devnet pool in the instruction.
+    #[account(mut)]
+    pub whirlpool: AccountInfo<'info>,
+    /// CHECK: Orca validates this against the Whirlpool state.
+    #[account(mut)]
+    pub orca_token_vault_a: AccountInfo<'info>,
+    /// CHECK: Orca validates this against the Whirlpool state.
+    #[account(mut)]
+    pub orca_token_vault_b: AccountInfo<'info>,
+    /// CHECK: Orca validates tick arrays against the Whirlpool and swap direction.
+    #[account(mut)]
+    pub tick_array_0: AccountInfo<'info>,
+    /// CHECK: Orca validates tick arrays against the Whirlpool and swap direction.
+    #[account(mut)]
+    pub tick_array_1: AccountInfo<'info>,
+    /// CHECK: Orca validates tick arrays against the Whirlpool and swap direction.
+    #[account(mut)]
+    pub tick_array_2: AccountInfo<'info>,
+    /// CHECK: Orca validates the oracle PDA.
+    pub orca_oracle: AccountInfo<'info>,
+
+    /// CHECK: address is validated in the instruction.
+    pub pyth_program: AccountInfo<'info>,
+    /// CHECK: address is validated in the instruction; Pyth validates its data.
+    pub pyth_storage: AccountInfo<'info>,
+    /// CHECK: Pyth storage has_one treasury is enforced by Pyth during CPI.
+    #[account(mut)]
+    pub pyth_treasury: AccountInfo<'info>,
+    /// CHECK: address is validated against the instructions sysvar id.
+    pub instructions_sysvar: AccountInfo<'info>,
+
+    pub token_program: Interface<'info, TokenInterface>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(
+    pyth_message: Vec<u8>,
+    input_amount: u64,
+    min_output_amount: u64,
+    sqrt_price_limit: u128,
+    deadline: i64,
+    expected_nonce: u64,
+    request_hash: [u8; 32]
+)]
+pub struct ExecuteSwapOnceWithPyth<'info> {
+    #[account(
+        seeds = [b"charter", charter.beneficiary.as_ref()],
+        bump = charter.bump,
+        has_one = beneficiary
+    )]
+    pub charter: Box<Account<'info, Charter>>,
+    #[account(
+        mut,
+        seeds = [b"mandate", charter.key().as_ref()],
+        bump = mandate.bump,
+        has_one = charter
+    )]
+    pub mandate: Box<Account<'info, Mandate>>,
+    #[account(
+        mut,
+        seeds = [b"asset-rule", mandate.key().as_ref(), input_mint.key().as_ref()],
+        bump = asset_rule.bump,
+        constraint = asset_rule.mandate == mandate.key() @ KeysError::AssetRuleMandateMismatch,
+        constraint = asset_rule.mint == input_mint.key() @ KeysError::AssetRuleMintMismatch
+    )]
+    pub asset_rule: Box<Account<'info, AssetRule>>,
+    #[account(
+        mut,
+        seeds = [
+            b"allowance",
+            mandate.key().as_ref(),
+            input_mint.key().as_ref(),
+            request_hash.as_ref()
+        ],
+        bump = allowance.bump,
+        constraint = allowance.mandate == mandate.key() @ KeysError::AllowanceMandateMismatch,
+        constraint = allowance.beneficiary == beneficiary.key() @ KeysError::AllowanceBeneficiaryMismatch,
+        constraint = allowance.mint == input_mint.key() @ KeysError::AllowanceMintMismatch
+    )]
+    pub allowance: Box<Account<'info, AllowanceReceipt>>,
+    #[account(
+        mut,
+        seeds = [b"trade-vault", mandate.key().as_ref(), input_mint.key().as_ref()],
+        bump,
+        token::mint = input_mint,
+        token::authority = mandate,
+        token::token_program = token_program
+    )]
+    pub input_trade_vault: Box<InterfaceAccount<'info, TokenAccount>>,
+    #[account(
+        mut,
+        seeds = [b"trade-vault", mandate.key().as_ref(), output_mint.key().as_ref()],
+        bump,
+        token::mint = output_mint,
+        token::authority = mandate,
+        token::token_program = token_program
+    )]
+    pub output_trade_vault: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub input_mint: Box<InterfaceAccount<'info, Mint>>,
+    pub output_mint: Box<InterfaceAccount<'info, Mint>>,
+    #[account(mut)]
+    pub beneficiary: Signer<'info>,
+
+    /// CHECK: hard-bound to the Orca Whirlpools program in the instruction.
+    pub orca_program: AccountInfo<'info>,
+    /// CHECK: hard-bound to the selected Orca devnet pool in the instruction.
+    #[account(mut)]
+    pub whirlpool: AccountInfo<'info>,
+    /// CHECK: Orca validates this against the Whirlpool state.
+    #[account(mut)]
+    pub orca_token_vault_a: AccountInfo<'info>,
+    /// CHECK: Orca validates this against the Whirlpool state.
+    #[account(mut)]
+    pub orca_token_vault_b: AccountInfo<'info>,
+    /// CHECK: Orca validates tick arrays against the Whirlpool and swap direction.
+    #[account(mut)]
+    pub tick_array_0: AccountInfo<'info>,
+    /// CHECK: Orca validates tick arrays against the Whirlpool and swap direction.
+    #[account(mut)]
+    pub tick_array_1: AccountInfo<'info>,
+    /// CHECK: Orca validates tick arrays against the Whirlpool and swap direction.
+    #[account(mut)]
+    pub tick_array_2: AccountInfo<'info>,
+    /// CHECK: Orca validates the oracle PDA.
+    pub orca_oracle: AccountInfo<'info>,
+
+    /// CHECK: address is validated in the instruction.
+    pub pyth_program: AccountInfo<'info>,
+    /// CHECK: address is validated in the instruction; Pyth validates its data.
+    pub pyth_storage: AccountInfo<'info>,
+    /// CHECK: Pyth storage has_one treasury is enforced by Pyth during CPI.
+    #[account(mut)]
+    pub pyth_treasury: AccountInfo<'info>,
+    /// CHECK: address is validated against the instructions sysvar id.
+    pub instructions_sysvar: AccountInfo<'info>,
+
+    pub token_program: Interface<'info, TokenInterface>,
+    pub system_program: Program<'info, System>,
+}
+
 #[account]
 pub struct Charter {
     pub guardian: Pubkey,
@@ -1734,6 +2468,24 @@ pub enum KeysError {
     PythPeriodNotionalExceeded,
     #[msg("The user's precommitted market condition is no longer true.")]
     MarketConditionInvalidated,
+    #[msg("Unexpected Orca Whirlpools program id.")]
+    InvalidOrcaProgram,
+    #[msg("The requested Orca pool is not supported by this CRESCO vertical.")]
+    InvalidOrcaPool,
+    #[msg("The trade input mint is not supported by this CRESCO vertical.")]
+    InvalidTradeInputMint,
+    #[msg("The trade output mint is not supported by this CRESCO vertical.")]
+    InvalidTradeOutputMint,
+    #[msg("The selected Orca swap path requires the classic SPL Token program.")]
+    InvalidOrcaTokenProgram,
+    #[msg("The trade action deadline has expired.")]
+    TradeActionExpired,
+    #[msg("The Orca sqrt-price limit is invalid.")]
+    InvalidOrcaPriceLimit,
+    #[msg("Exceptional authority was supplied for an action that is still within standing authority.")]
+    ExceptionNotRequired,
+    #[msg("The constrained Orca swap CPI failed.")]
+    OrcaSwapFailed,
 }
 
 #[cfg(test)]
@@ -1887,5 +2639,71 @@ mod tests {
             compute_notional_micro_usd(1_000_000, 6, 379_696_000).unwrap(),
             379_696_000
         );
+    }
+
+    #[test]
+    fn swap_request_hash_binds_material_semantics() {
+        let mandate = Pubkey::new_unique();
+        let base = canonical_swap_request_hash(
+            &mandate,
+            &ORCA_DEVNET_USDC_USDT_POOL_ID,
+            &ORCA_DEVNET_USDC_MINT,
+            &ORCA_DEVNET_USDT_MINT,
+            10_000_000,
+            9_900_000,
+            4_295_048_016,
+            2_000_000_000,
+            7,
+        );
+
+        let changed_amount = canonical_swap_request_hash(
+            &mandate,
+            &ORCA_DEVNET_USDC_USDT_POOL_ID,
+            &ORCA_DEVNET_USDC_MINT,
+            &ORCA_DEVNET_USDT_MINT,
+            11_000_000,
+            9_900_000,
+            4_295_048_016,
+            2_000_000_000,
+            7,
+        );
+        let changed_min_output = canonical_swap_request_hash(
+            &mandate,
+            &ORCA_DEVNET_USDC_USDT_POOL_ID,
+            &ORCA_DEVNET_USDC_MINT,
+            &ORCA_DEVNET_USDT_MINT,
+            10_000_000,
+            9_800_000,
+            4_295_048_016,
+            2_000_000_000,
+            7,
+        );
+        let changed_deadline = canonical_swap_request_hash(
+            &mandate,
+            &ORCA_DEVNET_USDC_USDT_POOL_ID,
+            &ORCA_DEVNET_USDC_MINT,
+            &ORCA_DEVNET_USDT_MINT,
+            10_000_000,
+            9_900_000,
+            4_295_048_016,
+            2_000_000_001,
+            7,
+        );
+        let changed_nonce = canonical_swap_request_hash(
+            &mandate,
+            &ORCA_DEVNET_USDC_USDT_POOL_ID,
+            &ORCA_DEVNET_USDC_MINT,
+            &ORCA_DEVNET_USDT_MINT,
+            10_000_000,
+            9_900_000,
+            4_295_048_016,
+            2_000_000_000,
+            8,
+        );
+
+        assert_ne!(base, changed_amount);
+        assert_ne!(base, changed_min_output);
+        assert_ne!(base, changed_deadline);
+        assert_ne!(base, changed_nonce);
     }
 }

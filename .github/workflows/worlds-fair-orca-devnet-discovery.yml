@@ -1,0 +1,44 @@
+name: worlds-fair-orca-devnet-discovery
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/orca-devnet.mjs"
+      - "scripts/orca-devnet-inspect.mjs"
+      - "package.json"
+      - ".github/workflows/worlds-fair-orca-devnet-discovery.yml"
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      ANCHOR_PROVIDER_URL: https://api.devnet.solana.com
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Create ephemeral Anchor wallet
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require("fs");
+          const anchor = require("@coral-xyz/anchor");
+          const kp = anchor.web3.Keypair.generate();
+          fs.writeFileSync(
+            "/tmp/orca-readonly-wallet.json",
+            JSON.stringify(Array.from(kp.secretKey)),
+          );
+          NODE
+          echo "ANCHOR_WALLET=/tmp/orca-readonly-wallet.json" >> "$GITHUB_ENV"
+
+      - name: Inspect Orca devnet pool and quote
+        run: npm run inspect:orca-devnet

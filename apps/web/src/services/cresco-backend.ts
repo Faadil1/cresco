@@ -734,3 +734,188 @@ export function newIdempotencyKey() {
     ? crypto.randomUUID()
     : `k_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`;
 }
+
+
+/* ------------------------------------------------------------------ */
+/* World’s Fair Operator Lab — live Solana Devnet / Orca              */
+/* ------------------------------------------------------------------ */
+
+export type WorldFairRuntime = {
+  contractVersion: "0.3";
+  type: "WORLD_FAIR_OPERATOR_LAB_RUNTIME";
+  status: "READY" | "NOT_BOOTSTRAPPED" | "UNKNOWN";
+  mode: "WORLD_FAIR_OPERATOR_LAB";
+  network: "solana-devnet";
+  programId: string;
+  programSha256: string;
+  guardian: string;
+  delegate: string;
+  accounts: {
+    charter: string;
+    mandate: string;
+    assetRule: string;
+    inputTradeVault: string;
+    outputTradeVault: string;
+  };
+  mandate: null | {
+    stage: number;
+    status: "ACTIVE" | "NOT_ACTIVE";
+    version: number;
+    nonce: number;
+    maxActionNotionalMicroUsd: number;
+    maxPeriodNotionalMicroUsd: number;
+  };
+  assetRule: null | {
+    enabled: boolean;
+    actionMask: number;
+    maxActionAmount: number;
+    maxPeriodAmount: number;
+    spentThisPeriod: number;
+    spentThisPeriodNotionalMicroUsd: number;
+    pythFeedId: number;
+  };
+  vaults: {
+    inputAmountBaseUnits: number | null;
+    outputAmountBaseUnits: number | null;
+  };
+  orca: {
+    programId: string;
+    pool: string;
+    inputMint: string;
+    outputMint: string;
+  };
+  pyth: {
+    symbol: string;
+    feedId: number;
+    authorityEffect: "NONE";
+  };
+  truthBoundary: {
+    mainnet: false;
+    serverHeldDevnetActors: true;
+    delegateDerivedServerSide: true;
+    productionCustody: false;
+    auditedProductionSecurity: false;
+    institutionalTrading: false;
+    customerValidation: false;
+  };
+};
+
+type WorldFairScenario = {
+  status: "PASS";
+  decision?: "REFUSE";
+  reason?: string;
+  signatures?: string[];
+  executionSignature?: string;
+  grantSignature?: string;
+  policyTransitionSignature?: string;
+  allowance?: string;
+  consumed?: boolean;
+  allowanceConsumed?: boolean;
+  countersChanged?: boolean;
+  replayDecision?: "REFUSE";
+  replayReason?: string;
+  mutationDecision?: "REFUSE";
+  mutationReason?: string;
+  standingAuthorityChanged?: boolean;
+  policyDiff?: {
+    supportedProgram: "PASS";
+    supportedPool: "PASS";
+    supportedPair: "PASS";
+    marketEvidence: "PASS";
+    perActionNotional: "PASS" | "VIOLATED";
+    violatedDimensions: string[];
+  };
+  [key: string]: unknown;
+};
+
+export type WorldFairLiveReceipt = {
+  schemaVersion: number;
+  type: "CRESCO_WORLD_FAIR_OPERATOR_LAB_RECEIPT";
+  status: "PASS";
+  productState: "WORLD_FAIR_OPERATOR_LAB_LIVE";
+  observedAt: string;
+  observedAtCompleted: string;
+  network: "solana-devnet";
+  programId: string;
+  programSha256: string;
+  principal: string;
+  delegate: string;
+  mandate: string;
+  startingNonce: number;
+  orca: {
+    programId: string;
+    pool: string;
+    inputMint: string;
+    outputMint: string;
+  };
+  pyth: {
+    symbol: string;
+    feedId: number;
+    authorityEffect: "NONE";
+  };
+  scenarios: {
+    standingAutonomy: WorldFairScenario;
+    softBoundary: WorldFairScenario;
+    exactException: WorldFairScenario;
+    hardBoundary: WorldFairScenario;
+    evidenceFailure: WorldFairScenario;
+    rollback: WorldFairScenario;
+    staleAuthority: WorldFairScenario;
+  };
+  explorer: { program: string };
+};
+
+export async function fetchWorldFairRuntime(): Promise<WorldFairRuntime> {
+  return request<WorldFairRuntime>("/api/v0.3/worlds-fair/runtime");
+}
+
+export async function runWorldFairCanonicalLiveSequence(): Promise<{
+  status: "PASS";
+  receipt: WorldFairLiveReceipt;
+}> {
+  let res: Response;
+  try {
+    res = await fetch(`${crescoConfig().url}/api/v0.3/worlds-fair/run`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ scenario: "CANONICAL_LIVE" }),
+      signal: AbortSignal.timeout(120_000),
+    });
+  } catch {
+    throw new Error("WORLD_FAIR_RUN_NETWORK_OR_TIMEOUT");
+  }
+
+  let raw: unknown;
+  try {
+    raw = await res.json();
+  } catch {
+    throw new Error("WORLD_FAIR_RUN_MALFORMED_JSON");
+  }
+
+  if (!res.ok) {
+    const detail =
+      typeof raw === "object" && raw !== null && "error" in raw
+        ? String((raw as { error?: unknown }).error ?? "UNKNOWN")
+        : `HTTP_${res.status}`;
+    throw new Error(detail);
+  }
+
+  if (
+    typeof raw !== "object" ||
+    raw === null ||
+    (raw as { status?: unknown }).status !== "PASS"
+  ) {
+    throw new Error("WORLD_FAIR_RUN_UNCONFIRMED");
+  }
+
+  const receipt = (raw as { receipt?: WorldFairLiveReceipt }).receipt;
+  if (
+    !receipt ||
+    receipt.status !== "PASS" ||
+    receipt.productState !== "WORLD_FAIR_OPERATOR_LAB_LIVE"
+  ) {
+    throw new Error("WORLD_FAIR_RECEIPT_INVALID");
+  }
+
+  return { status: "PASS", receipt };
+}
