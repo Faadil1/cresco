@@ -102,12 +102,71 @@ export const WORLD_FAIR_ORCA_READ_RETRY_PROFILE = Object.freeze({
   baseDelayMs: 2_000
 });
 
+export const WORLD_FAIR_PYTH_READ_RETRY_PROFILE = Object.freeze({
+  attempts: 4,
+  baseDelayMs: 1_000
+});
+
+export const WORLD_FAIR_READ_CONNECTION_CONFIG = Object.freeze({
+  commitment: 'confirmed',
+  disableRetryOnRateLimit: true
+});
+
 export const WORLD_FAIR_PYTH_FEED = Object.freeze({
   symbol: 'Crypto.USDC/USD',
   feedId: 7,
   exponent: -8,
   minChannel: 'fixed_rate@200ms'
 });
+
+const RETRYABLE_PYTH_EVIDENCE_REASON_CODES = new Set([
+  'PYTH_UPSTREAM_UNREACHABLE',
+  'PYTH_UPSTREAM_ERROR',
+  'PYTH_FEED_MISSING_FROM_RESPONSE',
+  'PYTH_SOLANA_PAYLOAD_MISSING',
+  'PYTH_PRICE_UNAVAILABLE'
+]);
+
+function pythEvidenceReady(snapshot) {
+  return (
+    snapshot?.status === 'FRESH' &&
+    snapshot?.solanaPayload?.status === 'AVAILABLE'
+  );
+}
+
+export function isRetryablePythEvidenceSnapshot(snapshot) {
+  if (snapshot?.status === 'STALE') return true;
+  const reasonCode =
+    snapshot?.solanaPayload?.reasonCode ??
+    snapshot?.reasonCode ??
+    null;
+  return RETRYABLE_PYTH_EVIDENCE_REASON_CODES.has(reasonCode);
+}
+
+export async function withTransientPythEvidenceRetry(
+  operation,
+  { attempts = 4, baseDelayMs = 1_000 } = {}
+) {
+  let lastSnapshot = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    lastSnapshot = await operation();
+    if (pythEvidenceReady(lastSnapshot)) return lastSnapshot;
+
+    if (
+      !isRetryablePythEvidenceSnapshot(lastSnapshot) ||
+      attempt === attempts
+    ) {
+      return lastSnapshot;
+    }
+
+    await new Promise((resolve) =>
+      setTimeout(resolve, baseDelayMs * attempt)
+    );
+  }
+
+  return lastSnapshot;
+}
 
 const STANDING_MAX_NOTIONAL_MICRO_USD = 500_000;
 const PERIOD_MAX_NOTIONAL_MICRO_USD = 10_000_000;
@@ -540,6 +599,12 @@ export function createWorldFairOrcaProvider({
   if (!pythApiKey) throw new Error('PYTH_API_KEY_REQUIRED');
 
   const rpc = connection ?? new Connection(rpcUrl, 'confirmed');
+  // Safe reads own their retry policy explicitly. Avoid stacking web3.js's
+  // built-in HTTP 429 retry delays underneath CRESCO's bounded read backoff.
+  // Injected test connections remain shared so existing deterministic fakes
+  // continue to exercise both paths.
+  const readRpc =
+    connection ?? new Connection(rpcUrl, WORLD_FAIR_READ_CONNECTION_CONFIG);
   const delegate = deriveWorldFairDelegate(guardian);
   const wallet = {
     publicKey: guardian.publicKey,
@@ -555,7 +620,7 @@ export function createWorldFairOrcaProvider({
       return Promise.all(transactions.map((transaction) => this.signTransaction(transaction)));
     }
   };
-  const orcaContext = WhirlpoolContext.from(rpc, wallet);
+  const orcaContext = WhirlpoolContext.from(readRpc, wallet);
   const orcaClient = buildWhirlpoolClient(orcaContext);
 
   const [charter] = PublicKey.findProgramAddressSync(
@@ -604,7 +669,7 @@ export function createWorldFairOrcaProvider({
       outputVaultInfo
     ] = await withTransientRpcReadRetry(
       () =>
-        rpc.getMultipleAccountsInfo(
+        readRpc.getMultipleAccountsInfo(
           [
             charter,
             mandate,
@@ -713,7 +778,7 @@ export function createWorldFairOrcaProvider({
     );
 
     const reviewInfo = await withTransientRpcReadRetry(
-      () => rpc.getAccountInfo(reviewReceipt, 'confirmed'),
+      () => readRpc.getAccountInfo(reviewReceipt, 'confirmed'),
       WORLD_FAIR_STATE_READ_RETRY_PROFILE
     );
     let reviewSignature = null;
@@ -838,7 +903,7 @@ export function createWorldFairOrcaProvider({
 
   async function ensureDelegateFunding() {
     const balance = await withTransientRpcReadRetry(
-      () => rpc.getBalance(delegate.publicKey, 'confirmed'),
+      () => readRpc.getBalance(delegate.publicKey, 'confirmed'),
       WORLD_FAIR_STATE_READ_RETRY_PROFILE
     );
     if (balance >= DELEGATE_MIN_LAMPORTS) return null;
@@ -859,7 +924,7 @@ export function createWorldFairOrcaProvider({
 
   async function readTokenAccount(address) {
     return withTransientRpcReadRetry(
-      () => getAccount(rpc, address, 'confirmed', TOKEN_PROGRAM_ID),
+      () => getAccount(readRpc, address, 'confirmed', TOKEN_PROGRAM_ID),
       WORLD_FAIR_STATE_READ_RETRY_PROFILE
     );
   }
@@ -1007,13 +1072,17 @@ export function createWorldFairOrcaProvider({
   }
 
   async function livePyth() {
-    const snapshot = await fetchPythProSolanaPayload({
-      apiKey: pythApiKey,
-      feed: WORLD_FAIR_PYTH_FEED,
-      channel: WORLD_FAIR_PYTH_FEED.minChannel,
-      maxAgeSeconds: 120,
-      maxConfidenceBps: 100
-    });
+    const snapshot = await withTransientPythEvidenceRetry(
+      () =>
+        fetchPythProSolanaPayload({
+          apiKey: pythApiKey,
+          feed: WORLD_FAIR_PYTH_FEED,
+          channel: WORLD_FAIR_PYTH_FEED.minChannel,
+          maxAgeSeconds: 120,
+          maxConfidenceBps: 100
+        }),
+      WORLD_FAIR_PYTH_READ_RETRY_PROFILE
+    );
 
     if (
       snapshot.status !== 'FRESH' ||
@@ -1058,7 +1127,7 @@ export function createWorldFairOrcaProvider({
 
     const storageInfo = await withTransientRpcReadRetry(
       () =>
-        rpc.getAccountInfo(
+        readRpc.getAccountInfo(
           PYTH_LAZER_STORAGE_ID,
           'confirmed'
         ),
@@ -1290,7 +1359,7 @@ export function createWorldFairOrcaProvider({
 
   async function loadAllowance(address) {
     const info = await withTransientRpcReadRetry(
-      () => rpc.getAccountInfo(address, 'confirmed'),
+      () => readRpc.getAccountInfo(address, 'confirmed'),
       WORLD_FAIR_STATE_READ_RETRY_PROFILE
     );
     if (!info) throw new Error('WORLD_FAIR_ALLOWANCE_NOT_FOUND');
