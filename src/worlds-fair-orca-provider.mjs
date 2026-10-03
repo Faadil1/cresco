@@ -69,7 +69,7 @@ function isTransientRpcReadError(error) {
   );
 }
 
-async function withTransientRpcReadRetry(
+export async function withTransientRpcReadRetry(
   operation,
   { attempts = 4, baseDelayMs = 1_500 } = {}
 ) {
@@ -356,11 +356,23 @@ export function classifyWorldFairRunFailure(
       'An on-chain policy refusal occurred outside the expected canonical branch.';
   }
 
+  if (
+    failureClass === 'UNKNOWN_RUNTIME' &&
+    phase === 'ORCA_CONTEXT' &&
+    phaseKind === 'READ'
+  ) {
+    failureClass = 'DEPENDENCY_FAILURE';
+    reasonCode = 'ORCA_CONTEXT_READ_UNAVAILABLE';
+    message =
+      'CRESCO could not reliably read the required Orca/Pyth context from Solana Devnet.';
+  }
+
   const retryPolicy =
     failureClass === 'TRANSIENT_RPC' && phaseKind === 'READ'
       ? 'SAFE_RETRY_READ'
       : failureClass === 'TRANSIENT_RPC' ||
-          failureClass === 'UNKNOWN_CONFIRMATION'
+          failureClass === 'UNKNOWN_CONFIRMATION' ||
+          reasonCode === 'ORCA_CONTEXT_READ_UNAVAILABLE'
         ? 'REQUIRES_STATE_RECONCILIATION'
         : 'NOT_AUTOMATICALLY_RETRYABLE';
 
@@ -1035,9 +1047,11 @@ export function createWorldFairOrcaProvider({
       throw new Error('WORLD_FAIR_ORCA_POOL_PAIR_MISMATCH');
     }
 
-    const storageInfo = await rpc.getAccountInfo(
-      PYTH_LAZER_STORAGE_ID,
-      'confirmed'
+    const storageInfo = await withTransientRpcReadRetry(() =>
+      rpc.getAccountInfo(
+        PYTH_LAZER_STORAGE_ID,
+        'confirmed'
+      )
     );
     if (!storageInfo || storageInfo.data.length < 72) {
       throw new Error('WORLD_FAIR_PYTH_STORAGE_UNAVAILABLE');
