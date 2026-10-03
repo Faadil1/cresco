@@ -59,6 +59,41 @@ export const PYTH_LAZER_STORAGE_ID = new PublicKey(
   '3rdJbqfnagQ4yx9HXJViD4zc4xpiSqmFsKpPuSCQVyQL'
 );
 
+function isTransientRpcReadError(error) {
+  const message = String(error?.message ?? error ?? '');
+  return (
+    message.includes('429 Too Many Requests') ||
+    message.includes('Unable to fetch TokenAccountInfo for vault') ||
+    message.includes('fetch failed') ||
+    message.includes('ECONNRESET') ||
+    message.includes('ETIMEDOUT') ||
+    message.includes('UND_ERR_CONNECT_TIMEOUT')
+  );
+}
+
+async function withTransientRpcReadRetry(
+  operation,
+  { attempts = 4, baseDelayMs = 1_500 } = {}
+) {
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      if (!isTransientRpcReadError(error) || attempt === attempts) {
+        throw error;
+      }
+      await new Promise((resolve) =>
+        setTimeout(resolve, baseDelayMs * attempt)
+      );
+    }
+  }
+
+  throw lastError;
+}
+
 export const WORLD_FAIR_PYTH_FEED = Object.freeze({
   symbol: 'Crypto.USDC/USD',
   feedId: 7,
@@ -694,7 +729,9 @@ export function createWorldFairOrcaProvider({
     for (let attempt = 1; attempt <= 2; attempt += 1) {
       if (Number(guardianUsdcState.amount) >= required) break;
 
-      const solUsdcPool = await orcaClient.getPool(ORCA_SOL_USDC_POOL);
+      const solUsdcPool = await withTransientRpcReadRetry(
+        () => orcaClient.getPool(ORCA_SOL_USDC_POOL)
+      );
       const quote = await swapQuoteByInputToken(
         solUsdcPool,
         NATIVE_MINT,
@@ -856,8 +893,10 @@ export function createWorldFairOrcaProvider({
   }
 
   async function orcaContextState() {
-    const pool = await orcaClient.getPool(WORLD_FAIR_ORCA_POOL);
-    await pool.refreshData();
+    const pool = await withTransientRpcReadRetry(
+      () => orcaClient.getPool(WORLD_FAIR_ORCA_POOL)
+    );
+    await withTransientRpcReadRetry(() => pool.refreshData());
     const data = pool.getData();
 
     if (
@@ -883,14 +922,16 @@ export function createWorldFairOrcaProvider({
   }
 
   async function quoteFor(pool, inputAmount) {
-    await pool.refreshData();
-    return swapQuoteByInputToken(
-      pool,
-      WORLD_FAIR_DEV_USDC,
-      new BN(inputAmount),
-      Percentage.fromFraction(1, 100),
-      ORCA_WHIRLPOOL_PROGRAM_ID,
-      orcaContext.fetcher
+    await withTransientRpcReadRetry(() => pool.refreshData());
+    return withTransientRpcReadRetry(() =>
+      swapQuoteByInputToken(
+        pool,
+        WORLD_FAIR_DEV_USDC,
+        new BN(inputAmount),
+        Percentage.fromFraction(1, 100),
+        ORCA_WHIRLPOOL_PROGRAM_ID,
+        orcaContext.fetcher
+      )
     );
   }
 
