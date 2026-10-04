@@ -1,15 +1,6 @@
 name: worlds-fair-orca-devnet-proof
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - "programs/keys/**"
-      - "scripts/worlds-fair-orca-v1-proof.cjs"
-      - "package.json"
-      - "Anchor.toml"
-      - "Cargo.toml"
-      - ".github/workflows/worlds-fair-orca-devnet-proof.yml"
   workflow_dispatch:
 
 concurrency:
