@@ -1,0 +1,205 @@
+name: worlds-fair-public-promotion-one-shot
+
+on:
+  push:
+    branches:
+      - ops/worlds-fair-public-promotion-2026-10-04
+    paths:
+      - ".github/workflows/worlds-fair-public-promotion-one-shot.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: worlds-fair-public-promotion-one-shot
+  cancel-in-progress: false
+
+jobs:
+  deploy-and-validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      SOURCE_COMMIT: b81133c6e3c57c36f6baedcfcce3cf9b8d46d3e3
+      TARGET_WORKER: keys-api-stocklana
+      PUBLIC_API: https://keys-api-stocklana.faadil-casecraft.workers.dev
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+    steps:
+      - name: Verify Cloudflare credentials are available
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
+            echo "CLOUDFLARE_API_TOKEN is not configured; stopping before deployment." >&2
+            exit 20
+          fi
+          if [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+            echo "CLOUDFLARE_ACCOUNT_ID is not configured; stopping before deployment." >&2
+            exit 21
+          fi
+          echo "Required Cloudflare credentials are present."
+
+      - name: Checkout exact promoted main commit
+        uses: actions/checkout@v4
+        with:
+          ref: b81133c6e3c57c36f6baedcfcce3cf9b8d46d3e3
+          persist-credentials: false
+
+      - name: Verify exact source binding
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
+          test "$(git status --porcelain)" = ""
+          echo "SOURCE_COMMIT=$SOURCE_COMMIT"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install backend dependencies
+        run: npm ci
+
+      - name: Deploy exact source to existing public backend Worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/public-promotion
+          echo "$SOURCE_COMMIT" > evidence/public-promotion/source-commit.txt
+          echo "$TARGET_WORKER" > evidence/public-promotion/target-worker.txt
+          npx --yes wrangler@4 deploy \
+            --name "$TARGET_WORKER" \
+            --keep-vars \
+            2>&1 | tee evidence/public-promotion/deploy.log
+
+      - name: Verify public runtime read-only
+        shell: bash
+        run: |
+          set -euo pipefail
+          status="$(
+            curl -sS --max-time 90 \
+              -o evidence/public-promotion/runtime-before.json \
+              -w '%{http_code}' \
+              "$PUBLIC_API/api/v0.3/worlds-fair/runtime"
+          )"
+          echo "$status" > evidence/public-promotion/runtime-before-http-status.txt
+          test "$status" = "200"
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const body = JSON.parse(
+            fs.readFileSync('evidence/public-promotion/runtime-before.json', 'utf8')
+          );
+          if (body.type !== 'WORLD_FAIR_OPERATOR_LAB_RUNTIME') {
+            throw new Error(`unexpected runtime type: ${body.type}`);
+          }
+          if (body.status !== 'READY') {
+            throw new Error(`runtime not READY: ${body.status}`);
+          }
+          if (body.network !== 'solana-devnet') {
+            throw new Error(`unexpected network: ${body.network}`);
+          }
+          console.log(
+            JSON.stringify({
+              type: body.type,
+              status: body.status,
+              network: body.network,
+              programId: body.programId ?? body.program ?? null,
+              mandateNonce: body.mandateNonce ?? body.nonce ?? null
+            })
+          );
+          NODE
+
+      - name: Run exactly one public World Fair 7-of-7 validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          status="$(
+            curl -sS --max-time 600 \
+              -o evidence/public-promotion/live-response.json \
+              -w '%{http_code}' \
+              -X POST \
+              -H 'content-type: application/json' \
+              --data '{"scenario":"CANONICAL_LIVE"}' \
+              "$PUBLIC_API/api/v0.3/worlds-fair/run"
+          )"
+          echo "$status" > evidence/public-promotion/live-http-status.txt
+          test "$status" = "200"
+
+      - name: Verify 7-of-7 public receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const body = JSON.parse(
+            fs.readFileSync('evidence/public-promotion/live-response.json', 'utf8')
+          );
+          if (body.status !== 'PASS') {
+            throw new Error(`public live status is not PASS: ${body.status}`);
+          }
+          const receipt = body.receipt;
+          if (!receipt || receipt.status !== 'PASS') {
+            throw new Error('public receipt missing or not PASS');
+          }
+          const expected = [
+            'standingAutonomy',
+            'softBoundary',
+            'exactException',
+            'hardBoundary',
+            'evidenceFailure',
+            'rollback',
+            'staleAuthority'
+          ];
+          for (const key of expected) {
+            if (receipt.scenarios?.[key]?.status !== 'PASS') {
+              throw new Error(`scenario ${key} is not PASS`);
+            }
+          }
+          fs.writeFileSync(
+            'evidence/public-promotion/receipt.json',
+            JSON.stringify(receipt, null, 2) + '\n'
+          );
+          fs.writeFileSync(
+            'evidence/public-promotion/validation-summary.json',
+            JSON.stringify({
+              sourceCommit: process.env.SOURCE_COMMIT,
+              targetWorker: process.env.TARGET_WORKER,
+              publicApi: process.env.PUBLIC_API,
+              status: body.status,
+              receiptStatus: receipt.status,
+              scenarios: Object.fromEntries(
+                expected.map((key) => [key, receipt.scenarios[key].status])
+              ),
+              startingNonce: receipt.startingNonce ?? null,
+              completedNonce: receipt.completedNonce ?? null,
+              confirmedEffects: receipt.confirmedEffects ?? []
+            }, null, 2) + '\n'
+          );
+          console.log('PUBLIC_WORLD_FAIR_7_OF_7=PASS');
+          NODE
+
+      - name: Read public runtime after validation
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          status="$(
+            curl -sS --max-time 90 \
+              -o evidence/public-promotion/runtime-after.json \
+              -w '%{http_code}' \
+              "$PUBLIC_API/api/v0.3/worlds-fair/runtime"
+          )"
+          echo "$status" > evidence/public-promotion/runtime-after-http-status.txt
+          test "$status" = "200"
+
+      - name: Upload public promotion evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: worlds-fair-public-promotion-evidence
+          path: evidence/public-promotion
+          if-no-files-found: warn
+          retention-days: 90
