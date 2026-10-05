@@ -1,0 +1,62 @@
+version: 0.1.0
+project_id: cresco
+date: 2026-10-04
+status: ACTIVE
+current_stage: POST_SLICE_LIVE_PRODUCT
+current_owner: PBPD_OR_EXISTING_IMPLEMENTATION_OWNER
+
+read_order:
+  - state/CURRENT.yaml
+  - state/HANDOVER.yaml
+  - product/PRD.md
+  - evidence/solana/DEVNET-AUTHORITY-RUNTIME-PROOF-2026-09-23.md
+  - README.md
+
+canonical_baseline:
+  status: ALIGNED
+  version: 0.1.56-canonical-baseline-drift-tripwire-promoted
+  commit: 8a7e8a4ff5461641c595e2cf052a95fdc32a6340
+  project_state_commit_at_reconciliation_start: b81133c6e3c57c36f6baedcfcce3cf9b8d46d3e3
+  delta_status: NON_MATERIAL_DELTA
+  first_live_slice_proven: true
+  material_user_capability_delta_since_previous_milestone: WORLD_FAIR_OPERATOR_LAB_7_OF_7_DEVNET_PROVEN
+  rule: >-
+    Re-resolve the central version and exact merged-main commit at every material touch. A newer central canon does
+    not force a full rewrite; classify materiality first. Demo, video, receipts and judge packaging cannot upgrade
+    public runtime truth.
+
+current_truth:
+  main_commit: b81133c6e3c57c36f6baedcfcce3cf9b8d46d3e3
+  product_live: true
+  solana_devnet_program_live: true
+  world_fair_7_of_7_live_proof: true
+  latest_world_fair_live_proof_head: b77b5378c6088c50c2912a4b4254c43b28f549fd
+  latest_world_fair_live_proof_run: 37214175230
+  latest_world_fair_nonce_transition: "13 -> 14"
+  latest_repair_merged_to_main: true
+  public_hosted_runtime_bound_to_latest_main: UNKNOWN
+  public_redeploy_after_PR29_authorized: false
+  mainnet_authorized: false
+  real_securities_execution_claimed: false
+
+workstream_priority:
+  first_live_slice_proven: true
+  current_primary_workstream: STOPPED_BY_VALID_CONDITION
+  remaining_material_depth_gap: current_main_public_runtime_binding_after_PR29_reliability_fix
+  next_highest_value_depth_delta: PUBLIC_RUNTIME_BINDING_AND_POST_DEPLOY_CRITICAL_PATH_REVERIFY
+  valid_stop_condition: PROTECTED_HUMAN_DEPLOYMENT_AUTHORITY_NOT_GRANTED
+  demo_packaging_allowed: false
+  workstream_drift_status: NO_DRIFT_OBSERVED
+
+do_not_claim:
+  - latest_main_is_current_public_runtime
+  - public_redeploy_completed
+  - mainnet_execution
+  - real_securities_execution
+  - proof_receipt_equals_public_runtime_binding
+
+exact_next_gate: PUBLIC_RUNTIME_BINDING_RECONCILIATION
+exact_next_action: >-
+  No protected action is implied by this reconciliation. If the human explicitly authorizes a public redeploy, bind
+  the deployment to main commit b81133c6e3c57c36f6baedcfcce3cf9b8d46d3e3 and rerun the critical public path.
+  Otherwise preserve the current truthful state: Devnet 7/7 PROVEN, public latest-main binding UNKNOWN/PARTIAL.

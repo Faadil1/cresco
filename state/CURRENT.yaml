@@ -1,0 +1,107 @@
+version: 0.1.0
+project_id: cresco
+date: 2026-10-04
+status: ACTIVE
+lifecycle_state: POST_SLICE_LIVE_PRODUCT__WORLD_FAIR_DEVNET_PROVEN__PUBLIC_RUNTIME_BINDING_PENDING_PROTECTED_ACTION
+
+source_of_truth:
+  repository: Faadil1/cresco
+  branch: main
+  current_main_commit: b81133c6e3c57c36f6baedcfcce3cf9b8d46d3e3
+  living_prd: product/PRD.md
+  public_product: https://cresco-lac.vercel.app
+  public_api: https://keys-api-stocklana.faadil-casecraft.workers.dev
+
+canonical_baseline_reconciliation:
+  status: ALIGNED
+  canonical_baseline_version: 0.1.56-canonical-baseline-drift-tripwire-promoted
+  canonical_baseline_commit: 8a7e8a4ff5461641c595e2cf052a95fdc32a6340
+  project_state_commit_at_reconciliation_start: b81133c6e3c57c36f6baedcfcce3cf9b8d46d3e3
+  last_canonical_reconciliation_at: 2026-10-04
+  baseline_delta_status: NON_MATERIAL_DELTA
+  delta_reason: >-
+    Product Reality v1.5 and the baseline drift tripwire formalize controls that are compatible with the already
+    observed CRESCO product direction. They do not reopen the product mechanism or invalidate existing live evidence.
+    The material state issue is runtime binding: the latest World’s Fair reliability repair is merged to main, while
+    the PR explicitly did not authorize a public redeploy.
+  first_live_slice_proven: true
+  material_user_capability_delta_since_previous_milestone: WORLD_FAIR_OPERATOR_LAB_7_OF_7_DEVNET_PROVEN
+  affected_transition_blocked: false
+  terminal_transition_blocked_by_runtime_binding: true
+  next_reconciliation_trigger: NEXT_MATERIAL_PRODUCT_TOUCH_OR_CENTRAL_CANONICAL_BASELINE_ADVANCE
+
+product_reality:
+  policy_version: "1.5.0"
+  live_core_loop: PROVEN
+  real_consequence: PROVEN_ON_SOLANA_DEVNET
+  highest_safe_action_tier: APPROVAL_GATED_WRITE
+  user_surface: PUBLIC_WEB_PLUS_LIVE_OPERATOR_LAB
+  evidence_role: RECEIPTS_ARE_OUTPUTS_OF_REAL_EXECUTION_NOT_PRODUCT_SUBSTITUTES
+  truth_boundary:
+    - demo_SPL_token_not_real_securities
+    - Solana_Devnet_not_mainnet
+    - live_Devnet_Action_run_not_same_as_current_public_hosted_runtime_binding
+    - market_evidence_may_restrict_or_stop_but_never_grants_human_authority
+    - PENDING_or_UNKNOWN_execution_is_never_rendered_as_confirmed_success
+
+worlds_fair_live_proof:
+  status: PROVEN
+  exact_code_head: b77b5378c6088c50c2912a4b4254c43b28f549fd
+  merged_main_commit: b81133c6e3c57c36f6baedcfcce3cf9b8d46d3e3
+  workflow: worlds-fair-operator-lab-live
+  workflow_run_id: 37214175230
+  job_id: 111471209923
+  artifact_id: 11307628144
+  artifact_digest: sha256:e2f93357e79d89a40ae864df76b7f7dce81ea837de1b12fab06a689cfb5a65ce
+  nonce_before: 13
+  nonce_after: 14
+  receipt_valid: true
+  scenarios:
+    standingAutonomy: PASS
+    softBoundary: PASS
+    exactException: PASS
+    hardBoundary: PASS
+    evidenceFailure: PASS
+    rollback: PASS
+    staleAuthority: PASS
+  interpretation: >-
+    The exact PR head that became the reliability repair passed the complete bounded World’s Fair live operator
+    sequence on Solana Devnet. This proves the live capability at that exact code head. It does not by itself prove
+    that the current public hosted product has been redeployed to the merged main commit.
+
+product_workstream_priority:
+  first_live_slice_proven: true
+  remaining_material_depth_gaps:
+    - current_main_public_runtime_binding_after_PR29_reliability_fix
+  current_primary_workstream: STOPPED_BY_VALID_CONDITION
+  next_highest_value_depth_delta: PUBLIC_RUNTIME_BINDING_AND_POST_DEPLOY_CRITICAL_PATH_REVERIFY
+  valid_stop_condition: PROTECTED_HUMAN_DEPLOYMENT_AUTHORITY_NOT_GRANTED
+  demo_packaging_allowed: false
+  workstream_drift_status: NO_DRIFT_OBSERVED
+  last_priority_reconciliation_at: 2026-10-04
+  material_user_capability_delta_since_previous_milestone: WORLD_FAIR_OPERATOR_LAB_7_OF_7_DEVNET_PROVEN
+  rule: >-
+    Do not claim the latest merged main is the current public runtime until a human-authorized deployment is bound
+    to the exact commit and the critical path is reverified. Do not substitute demo/video/receipts for that binding.
+
+conditional_gateway_registry:
+  PRODUCT_REALITY_V1_5: PROVEN
+  LIVE_CORE_LOOP: PROVEN
+  SOLANA_DEVNET_AUTHORITY_RUNTIME: PROVEN
+  WORLD_FAIR_7_OF_7_DEVNET: PROVEN
+  NEGATIVE_PATHS: PROVEN
+  FAILURE_RECOVERY: PROVEN
+  RUNTIME_COMMIT_BINDING: PARTIAL_PUBLIC_RUNTIME_BINDING_UNKNOWN_AFTER_PR29
+  PUBLIC_RUNTIME_REDEPLOY: BLOCKED_BY_PROTECTED_HUMAN_ACTION
+  POST_DEPLOY_CRITICAL_PATH: BLOCKED_BY_PUBLIC_RUNTIME_REDEPLOY
+  MAINNET: N_A_NOT_AUTHORIZED
+  REAL_SECURITIES_EXECUTION: N_A_NOT_CLAIMED
+  SUBMISSION_OR_RELEASE_READINESS: BLOCKED_BY_CURRENT_RUNTIME_BINDING_IF_CLAIMED
+
+exact_next_gate: PUBLIC_RUNTIME_BINDING_RECONCILIATION
+exact_next_owner: HUMAN_FOR_DEPLOY_THEN_PBPD_OR_EXISTING_IMPLEMENTATION_OWNER_FOR_VERIFICATION
+exact_next_action: >-
+  Preserve the proven Devnet 7/7 receipt. Do not redeploy automatically. If the human explicitly authorizes a public
+  deployment, deploy the current main commit, bind the deployment identity to that exact commit, then rerun the
+  public critical path and update this state. Until then, keep the public-runtime binding UNKNOWN/PARTIAL and do not
+  claim the PR #29 reliability repair is present on the hosted product.
