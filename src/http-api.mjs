@@ -42,6 +42,11 @@ import {
   configuredWorldFairOrcaProviderFromEnv
 } from './worlds-fair-orca-provider.mjs';
 
+import {
+  createWorldFairWorkflowService,
+  WorldFairWorkflowError
+} from './worlds-fair-workflow.mjs';
+
 const JSON_HEADERS = Object.freeze({
   'content-type': 'application/json; charset=utf-8'
 });
@@ -409,6 +414,163 @@ export async function routeCrescoHttp({
         runtimeProofStatus: 'CANONICAL_DEVNET_RUNTIME_PROVEN'
       }
     };
+  }
+
+
+  // This is a real multi-role API candidate, not a simulated judge sequence.
+  // Actor role must have been authenticated by the hosting adapter.
+  const workflowRoot = '/api/v0.3/worlds-fair/workflow';
+  if (path === workflowRoot || path.startsWith(workflowRoot + '/')) {
+    const actor = services.worldFairActor;
+    if (!actor || !['operator', 'principal'].includes(actor.role)) {
+      return {
+        status: 401,
+        headers: JSON_HEADERS,
+        body: {
+          contractVersion: '0.3',
+          type: 'WORLD_FAIR_WORKFLOW',
+          status: 'REFUSED',
+          error: 'WORLD_FAIR_ROLE_REQUIRED'
+        }
+      };
+    }
+
+    const provider =
+      services.worldFairExecutionProvider ??
+      configuredWorldFairOrcaProviderFromEnv();
+    const store = services.worldFairWorkflowStore;
+    if (!provider || !store) {
+      return {
+        status: 503,
+        headers: JSON_HEADERS,
+        body: {
+          contractVersion: '0.3',
+          type: 'WORLD_FAIR_WORKFLOW',
+          status: 'BLOCKED',
+          error: 'WORLD_FAIR_WORKFLOW_RUNTIME_UNAVAILABLE'
+        }
+      };
+    }
+
+    const workflow = createWorldFairWorkflowService({
+      provider,
+      store
+    });
+    const suffix = path.slice(workflowRoot.length);
+    const listPath = suffix === '/intents';
+    const match = suffix.match(
+      /^\/intents\/(wf_[a-zA-Z0-9_-]+)(?:\/(execute-standing|prepare-exception|decision|execute-exception|reconcile))?$/
+    );
+    const input = body ?? {};
+    const plainInput =
+      input !== null && typeof input === 'object' && !Array.isArray(input);
+    const keys = plainInput ? Object.keys(input) : [];
+
+    try {
+      let value = null;
+      let httpStatus = 200;
+      if (method === 'GET' && listPath) {
+        value = { intents: await workflow.listIntents({ actor }) };
+      } else if (method === 'POST' && listPath) {
+        if (
+          !plainInput ||
+          keys.length !== 1 ||
+          keys[0] !== 'inputAmountBaseUnits'
+        ) {
+          throw new WorldFairWorkflowError(
+            'WORLD_FAIR_INTENT_INPUT_INVALID',
+            'An exact inputAmountBaseUnits field is required.',
+            400
+          );
+        }
+        value = {
+          intent: await workflow.submitIntent({
+            actor,
+            inputAmountBaseUnits: input.inputAmountBaseUnits
+          })
+        };
+        httpStatus = 201;
+      } else if (match && method === 'GET' && !match[2]) {
+        value = {
+          intent: await workflow.getIntent({
+            actor,
+            id: match[1]
+          })
+        };
+      } else if (
+        match &&
+        method === 'POST' &&
+        match[2] &&
+        (match[2] === 'decision' ||
+          (plainInput && keys.length === 0))
+      ) {
+        const id = match[1];
+        const operation = match[2];
+        if (operation === 'decision') {
+          if (
+            !plainInput ||
+            keys.some((key) => !['decision', 'note'].includes(key)) ||
+            !['REFUSE', 'ALLOW_ONCE'].includes(input.decision) ||
+            (input.note !== undefined && typeof input.note !== 'string')
+          ) {
+            throw new WorldFairWorkflowError(
+              'WORLD_FAIR_DECISION_INPUT_INVALID',
+              'Only REFUSE or ALLOW_ONCE with an optional note is accepted.',
+              400
+            );
+          }
+          value = {
+            intent: await workflow.decideException({
+              actor,
+              id,
+              decision: input.decision,
+              note: input.note ?? ''
+            })
+          };
+        } else {
+          const fn = {
+            'execute-standing': 'executeStanding',
+            'prepare-exception': 'prepareException',
+            'execute-exception': 'executeException',
+            reconcile: 'reconcile'
+          }[operation];
+          value = { intent: await workflow[fn]({ actor, id }) };
+        }
+      } else {
+        throw new WorldFairWorkflowError(
+          'WORLD_FAIR_WORKFLOW_ROUTE_NOT_FOUND',
+          'This World Fair workflow operation is not supported.',
+          404
+        );
+      }
+
+      return {
+        status: httpStatus,
+        headers: JSON_HEADERS,
+        body: {
+          contractVersion: '0.3',
+          type: 'WORLD_FAIR_WORKFLOW',
+          status: 'OK',
+          ...value
+        }
+      };
+    } catch (error) {
+      const domainError = error instanceof WorldFairWorkflowError;
+      return {
+        status: domainError ? error.httpStatus : 503,
+        headers: JSON_HEADERS,
+        body: {
+          contractVersion: '0.3',
+          type: 'WORLD_FAIR_WORKFLOW',
+          status: domainError && error.httpStatus < 500 ? 'REFUSED' : 'UNKNOWN',
+          error: domainError ? error.code : 'WORLD_FAIR_WORKFLOW_UNCONFIRMED',
+          message: domainError ? error.message : 'The workflow outcome could not be proven safely.',
+          ...(domainError && error.details?.intent
+            ? { intent: error.details.intent }
+            : {})
+        }
+      };
+    }
   }
 
   if (method === 'GET' && path === '/api/v0.3/worlds-fair/runtime') {

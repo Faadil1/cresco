@@ -219,13 +219,24 @@ export function createWorldFairWorkflowService({
     const current = requireIntent(await store.get(id));
     statusAllowed(current, ['READY_STANDING_EXECUTION']);
 
+    // Persist intent reservation BEFORE any load-bearing Devnet write. This
+    // optimistic-CAS transition makes competing requests fail closed.
+    const reserved = await persist(current, event({
+      ...current,
+      status: 'EXECUTING_STANDING',
+      recovery: {
+        policy: 'RECONCILE_BEFORE_RETRY',
+        automaticReplayAllowed: false
+      }
+    }, 'STANDING_EXECUTION_STARTED', actor, now()));
+
     try {
       const execution = await provider.executeStandingIntent({
         inputAmountBaseUnits: current.action.inputAmountBaseUnits,
         expectedNonce: current.mandate.nonce
       });
       let next = {
-        ...current,
+        ...reserved,
         status: 'EXECUTED',
         execution: copy(execution),
         recovery: null
@@ -233,10 +244,10 @@ export function createWorldFairWorkflowService({
       next = event(next, 'STANDING_EXECUTED', actor, now(), {
         signature: execution.signature ?? null
       });
-      return persist(current, next);
+      return persist(reserved, next);
     } catch (error) {
       let next = {
-        ...current,
+        ...reserved,
         status: 'UNKNOWN',
         execution: {
           status: 'UNKNOWN',
@@ -250,7 +261,7 @@ export function createWorldFairWorkflowService({
       next = event(next, 'STANDING_EXECUTION_UNKNOWN', actor, now(), {
         failure: errorSummary(error)
       });
-      const updated = await persist(current, next);
+      const updated = await persist(reserved, next);
       throw new WorldFairWorkflowError(
         'WORLD_FAIR_EXECUTION_UNCONFIRMED',
         'Standing execution did not reach a safely proven outcome.',
@@ -348,12 +359,22 @@ export function createWorldFairWorkflowService({
 
     statusAllowed(current, ['PREPARED_FOR_ALLOW_ONCE']);
 
+    // An uncertain grant must not be sent twice. Reserve before issuance.
+    const reserved = await persist(current, event({
+      ...current,
+      status: 'GRANTING_ALLOW_ONCE',
+      recovery: {
+        policy: 'RECONCILE_GRANT_BEFORE_RETRY',
+        automaticReplayAllowed: false
+      }
+    }, 'ALLOW_ONCE_GRANT_STARTED', actor, now()));
+
     try {
       const grant = await provider.grantPreparedException({
         prepared: current.exception.prepared
       });
       let next = {
-        ...current,
+        ...reserved,
         status: 'ALLOW_ONCE_GRANTED',
         principalDecision: {
           decision: 'ALLOW_ONCE',
@@ -361,7 +382,7 @@ export function createWorldFairWorkflowService({
           decidedAt: now()
         },
         exception: {
-          ...current.exception,
+          ...reserved.exception,
           grant: copy(grant)
         },
         recovery: null
@@ -371,10 +392,10 @@ export function createWorldFairWorkflowService({
         grantSignature: grant.grantSignature,
         requestHash: grant.requestHash
       });
-      return persist(current, next);
+      return persist(reserved, next);
     } catch (error) {
       let next = {
-        ...current,
+        ...reserved,
         status: 'UNKNOWN_GRANT',
         principalDecision: {
           decision: 'ALLOW_ONCE',
@@ -389,7 +410,7 @@ export function createWorldFairWorkflowService({
       next = event(next, 'ALLOW_ONCE_GRANT_UNKNOWN', actor, now(), {
         failure: errorSummary(error)
       });
-      const updated = await persist(current, next);
+      const updated = await persist(reserved, next);
       throw new WorldFairWorkflowError(
         'WORLD_FAIR_GRANT_UNCONFIRMED',
         'The one-use grant outcome is not safely confirmed.',
@@ -404,12 +425,22 @@ export function createWorldFairWorkflowService({
     const current = requireIntent(await store.get(id));
     statusAllowed(current, ['ALLOW_ONCE_GRANTED']);
 
+    // Fail-closed reservation precedes the irrevocable exact-action attempt.
+    const reserved = await persist(current, event({
+      ...current,
+      status: 'EXECUTING_EXCEPTION',
+      recovery: {
+        policy: 'RECONCILE_ALLOWANCE_BEFORE_RETRY',
+        automaticReplayAllowed: false
+      }
+    }, 'EXCEPTION_EXECUTION_STARTED', actor, now()));
+
     try {
       const execution = await provider.executeGrantedException({
         grant: current.exception.grant
       });
       let next = {
-        ...current,
+        ...reserved,
         status: 'EXECUTED',
         execution: copy(execution),
         recovery: null
@@ -418,10 +449,10 @@ export function createWorldFairWorkflowService({
         signature: execution.signature ?? null,
         allowanceConsumed: execution.allowanceConsumed === true
       });
-      return persist(current, next);
+      return persist(reserved, next);
     } catch (error) {
       let next = {
-        ...current,
+        ...reserved,
         status: 'UNKNOWN_EXECUTION',
         execution: {
           status: 'UNKNOWN',
@@ -435,7 +466,7 @@ export function createWorldFairWorkflowService({
       next = event(next, 'EXCEPTION_EXECUTION_UNKNOWN', actor, now(), {
         failure: errorSummary(error)
       });
-      const updated = await persist(current, next);
+      const updated = await persist(reserved, next);
       throw new WorldFairWorkflowError(
         'WORLD_FAIR_EXCEPTION_EXECUTION_UNCONFIRMED',
         'Exceptional execution did not reach a safely proven outcome.',
@@ -448,7 +479,12 @@ export function createWorldFairWorkflowService({
   async function reconcile({ actor, id }) {
     requireRole(actor, ['operator', 'principal']);
     const current = requireIntent(await store.get(id));
-    statusAllowed(current, ['UNKNOWN_GRANT', 'UNKNOWN_EXECUTION']);
+    statusAllowed(current, [
+      'UNKNOWN_GRANT',
+      'UNKNOWN_EXECUTION',
+      'GRANTING_ALLOW_ONCE',
+      'EXECUTING_EXCEPTION'
+    ]);
 
     const prepared = current.exception?.prepared ?? null;
     const grant = current.exception?.grant ?? null;
@@ -490,11 +526,21 @@ export function createWorldFairWorkflowService({
       !inspection.used &&
       inspection.deadlineStillValid
     ) {
-      status = 'ALLOW_ONCE_GRANTED';
-      recovery = {
-        policy: 'EXACT_RETRY_AVAILABLE_AFTER_HUMAN_REVIEW',
-        automaticReplayAllowed: false
-      };
+      if (current.status === 'EXECUTING_EXCEPTION') {
+        // An in-flight write can still commit after an early read sees
+        // an unused allowance; do not reopen execution on that evidence.
+        status = 'UNKNOWN_EXECUTION';
+        recovery = {
+          policy: 'MANUAL_REVIEW_REQUIRED',
+          automaticReplayAllowed: false
+        };
+      } else {
+        status = 'ALLOW_ONCE_GRANTED';
+        recovery = {
+          policy: 'EXACT_RETRY_AVAILABLE_AFTER_HUMAN_REVIEW',
+          automaticReplayAllowed: false
+        };
+      }
     } else if (
       inspection.allowanceFound &&
       !inspection.deadlineStillValid
@@ -502,6 +548,21 @@ export function createWorldFairWorkflowService({
       status = 'EXPIRED';
       recovery = {
         policy: 'CREATE_NEW_INTENT',
+        automaticReplayAllowed: false
+      };
+    }
+
+    if (current.status === 'GRANTING_ALLOW_ONCE' && !inspection.allowanceFound) {
+      status = 'UNKNOWN_GRANT';
+      recovery = {
+        policy: 'MANUAL_REVIEW_REQUIRED',
+        automaticReplayAllowed: false
+      };
+    }
+    if (current.status === 'EXECUTING_EXCEPTION' && !inspection.allowanceFound) {
+      status = 'UNKNOWN_EXECUTION';
+      recovery = {
+        policy: 'MANUAL_REVIEW_REQUIRED',
         automaticReplayAllowed: false
       };
     }
