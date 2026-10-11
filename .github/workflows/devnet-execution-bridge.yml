@@ -1,10 +1,12 @@
 name: devnet-execution-bridge
 # Protected Devnet mutation path: manual-only. Source changes must use non-live CI before any authorized dispatch.
 
-concurrency:
-  group: keys-devnet-execution-bridge
-  cancel-in-progress: true
 
+
+# Cross-workflow mutual exclusion: never cancel an in-flight chain write.
+concurrency:
+  group: cresco-protected-devnet-mutations
+  cancel-in-progress: false
 
 on:
   workflow_dispatch:

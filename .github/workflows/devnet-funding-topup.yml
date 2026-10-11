@@ -2,6 +2,11 @@ name: devnet-funding-topup
 # Protected external funding mutation: manual-only. Faucet/top-up actions require explicit authorization.
 
 
+# Cross-workflow mutual exclusion: never cancel an in-flight chain write.
+concurrency:
+  group: cresco-protected-devnet-mutations
+  cancel-in-progress: false
+
 on:
   workflow_dispatch:
 

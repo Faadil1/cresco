@@ -2,6 +2,11 @@ name: worlds-fair-operator-lab-live
 # Protected live Devnet write path: manual-only. Explicit human authorization is required before dispatch.
 
 
+# Cross-workflow mutual exclusion: never cancel an in-flight chain write.
+concurrency:
+  group: cresco-protected-devnet-mutations
+  cancel-in-progress: false
+
 on:
   workflow_dispatch:
 

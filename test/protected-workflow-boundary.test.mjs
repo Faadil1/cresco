@@ -16,5 +16,7 @@ for (const workflow of protectedWorkflows) {
     assert.match(yaml, /\non:\n\s+workflow_dispatch:\s*(?:\n|$)/);
     assert.doesNotMatch(yaml, /\n\s{2}push:\s*(?:\n|$)/);
     assert.doesNotMatch(yaml, /\n\s{2}pull_request:\s*(?:\n|$)/);
+    assert.match(yaml, /\nconcurrency:\n  group: cresco-protected-devnet-mutations\n  cancel-in-progress: false\n/);
+    assert.doesNotMatch(yaml, /\ncancel-in-progress: true\s*(?:\n|$)/);
   });
 }
