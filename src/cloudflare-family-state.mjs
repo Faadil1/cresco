@@ -156,15 +156,24 @@ export class FamilyState {
 
     if (method === "GET" && path === "/worlds-fair-lock") {
       const current = await this.state.storage.get("worlds-fair-run-lock");
+      const quarantine = await this.state.storage.get("worlds-fair-run-quarantine");
       const active =
         Boolean(current) && Number(current.expiresAtMs || 0) > Date.now();
+      const expired = Boolean(current) && !active;
+      const recoveryRequired = Boolean(quarantine) || expired;
       return json({
         active,
-        status: active ? "BUSY" : "AVAILABLE",
+        status: recoveryRequired ? "RECONCILIATION_REQUIRED" :
+          active ? "BUSY" : "AVAILABLE",
+        recoveryRequired,
+        reasonCode: quarantine?.reasonCode ||
+          (expired ? "LEASE_EXPIRED_OUTCOME_UNKNOWN" : null),
         acquiredAt: active ? current.acquiredAt : null,
         expiresAtMs: active ? current.expiresAtMs : null
       });
     }
+
+    const state = await this.load();
 
     if (
       method === "GET" &&
