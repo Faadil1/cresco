@@ -9,6 +9,8 @@ const DEFAULT_CRESCO_ORIGINS = Object.freeze([
   'https://cresco.faadil-casecraft.workers.dev'
 ]);
 const WORLD_FAIR_LOCK_NAME = 'cresco-worlds-fair-operator-lab-live-lock';
+const WORLD_FAIR_WORKFLOW_NAME =
+  'cresco-worlds-fair-operator-principal-workflow-v1';
 
 function worldFairLockStub(env = {}) {
   if (!env.FAMILY_STATE) return null;
@@ -37,6 +39,123 @@ async function worldFairLockCall(env, path, requestId) {
     body = null;
   }
   return { status: response.status, body };
+}
+
+function worldFairWorkflowStub(env = {}) {
+  if (!env.FAMILY_STATE) return null;
+  const id = env.FAMILY_STATE.idFromName(WORLD_FAIR_WORKFLOW_NAME);
+  return env.FAMILY_STATE.get(id);
+}
+
+async function worldFairWorkflowStoreCall(
+  env,
+  path,
+  method = 'GET',
+  body = null
+) {
+  const stub = worldFairWorkflowStub(env);
+  if (!stub) {
+    const error = new Error('WORLD_FAIR_WORKFLOW_STORE_UNAVAILABLE');
+    error.code = 'WORLD_FAIR_WORKFLOW_STORE_UNAVAILABLE';
+    error.httpStatus = 503;
+    throw error;
+  }
+
+  const response = await stub.fetch(
+    'https://worlds-fair-workflow.internal' + path,
+    {
+      method,
+      headers: { 'content-type': 'application/json' },
+      body: body == null ? undefined : JSON.stringify(body)
+    }
+  );
+
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok) {
+    const error = new Error(
+      payload?.error ?? 'WORLD_FAIR_WORKFLOW_STORE_FAILURE'
+    );
+    error.code =
+      payload?.error ?? 'WORLD_FAIR_WORKFLOW_STORE_FAILURE';
+    error.httpStatus = response.status;
+    error.details = payload;
+    throw error;
+  }
+
+  return payload;
+}
+
+function configuredWorldFairWorkflowStore(env = {}) {
+  if (!env.FAMILY_STATE) return null;
+
+  return {
+    list() {
+      return worldFairWorkflowStoreCall(
+        env,
+        '/worlds-fair-workflow/intents'
+      ).then((body) => body?.intents ?? []);
+    },
+    get(id) {
+      return worldFairWorkflowStoreCall(
+        env,
+        `/worlds-fair-workflow/intents/${encodeURIComponent(id)}`
+      ).catch((error) => {
+        if (error?.httpStatus === 404) return null;
+        throw error;
+      });
+    },
+    create(record) {
+      return worldFairWorkflowStoreCall(
+        env,
+        '/worlds-fair-workflow/intents',
+        'POST',
+        { record }
+      );
+    },
+    update(id, record, expectedRevision) {
+      return worldFairWorkflowStoreCall(
+        env,
+        `/worlds-fair-workflow/intents/${encodeURIComponent(id)}`,
+        'PUT',
+        { record, expectedRevision }
+      );
+    }
+  };
+}
+
+function resolveWorldFairActor(request, env = {}) {
+  const operatorToken = String(
+    env.WORLD_FAIR_OPERATOR_ACCESS_TOKEN ?? ''
+  );
+  const principalToken = String(
+    env.WORLD_FAIR_PRINCIPAL_ACCESS_TOKEN ?? ''
+  );
+  const configured =
+    operatorToken.length >= 16 && principalToken.length >= 16;
+
+  if (!configured) {
+    return { configured: false, role: null };
+  }
+
+  const header = request.headers.get('authorization') ?? '';
+  const token = header.startsWith('Bearer ')
+    ? header.slice('Bearer '.length).trim()
+    : '';
+
+  if (token && token === operatorToken) {
+    return { configured: true, role: 'operator' };
+  }
+  if (token && token === principalToken) {
+    return { configured: true, role: 'principal' };
+  }
+
+  return { configured: true, role: null };
 }
 
 function configuredCorsOrigins(env = {}) {
@@ -109,12 +228,65 @@ export async function handleCrescoCloudflareRequest(request, env = {}, services 
     }
 
     const body = await readJsonBody(request);
+    const isWorldFairWorkflow =
+      path.startsWith('/api/v0.3/worlds-fair/workflow');
+    const worldFairActorAuth = isWorldFairWorkflow
+      ? resolveWorldFairActor(request, env)
+      : null;
+
+    if (isWorldFairWorkflow && !worldFairActorAuth?.configured) {
+      return new Response(
+        JSON.stringify({
+          contractVersion: '0.3',
+          type: 'WORLD_FAIR_WORKFLOW_AUTH',
+          status: 'BLOCKED',
+          error: 'WORLD_FAIR_ROLE_AUTH_UNAVAILABLE',
+          requiredServerSecrets: [
+            'WORLD_FAIR_OPERATOR_ACCESS_TOKEN',
+            'WORLD_FAIR_PRINCIPAL_ACCESS_TOKEN'
+          ]
+        }),
+        {
+          status: 503,
+          headers: withCors(
+            { 'content-type': 'application/json; charset=utf-8' },
+            request,
+            env
+          )
+        }
+      );
+    }
+
+    if (isWorldFairWorkflow && !worldFairActorAuth?.role) {
+      return new Response(
+        JSON.stringify({
+          contractVersion: '0.3',
+          type: 'WORLD_FAIR_WORKFLOW_AUTH',
+          status: 'REFUSED',
+          error: 'WORLD_FAIR_ROLE_UNAUTHORIZED'
+        }),
+        {
+          status: 401,
+          headers: withCors(
+            { 'content-type': 'application/json; charset=utf-8' },
+            request,
+            env
+          )
+        }
+      );
+    }
+
     const isWorldFairRun =
       request.method === 'POST' &&
       path === '/api/v0.3/worlds-fair/run';
+    const isWorldFairWorkflowMutation =
+      isWorldFairWorkflow &&
+      ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method);
+    const requiresWorldFairLease =
+      isWorldFairRun || isWorldFairWorkflowMutation;
 
     let worldFairLeaseId = null;
-    if (isWorldFairRun) {
+    if (requiresWorldFairLease) {
       if (!env.FAMILY_STATE) {
         return new Response(
           JSON.stringify({
@@ -177,6 +349,16 @@ export async function handleCrescoCloudflareRequest(request, env = {}, services 
       ) {
         routeServices.worldFairExecutionProvider =
           configuredWorldFairOrcaProviderFromEnv(env);
+      }
+
+      if (isWorldFairWorkflow) {
+        routeServices.worldFairWorkflowStore ??=
+          configuredWorldFairWorkflowStore(env);
+        routeServices.worldFairActor = {
+          role: worldFairActorAuth.role
+        };
+        routeServices.worldFairActorAuthConfigured =
+          worldFairActorAuth.configured;
       }
 
       const result = await routeCrescoHttp({
