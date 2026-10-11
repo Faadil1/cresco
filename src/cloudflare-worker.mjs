@@ -18,7 +18,7 @@ function worldFairLockStub(env = {}) {
   return env.FAMILY_STATE.get(id);
 }
 
-async function worldFairLockCall(env, path, requestId) {
+async function worldFairLockCall(env, path, requestId, outcomeStatus = null) {
   const stub = worldFairLockStub(env);
   if (!stub) return null;
   const response = await stub.fetch(
@@ -29,7 +29,7 @@ async function worldFairLockCall(env, path, requestId) {
       body:
         path === '/worlds-fair-lock'
           ? undefined
-          : JSON.stringify({ requestId })
+          : JSON.stringify({ requestId, outcomeStatus })
     }
   );
   let body = null;
@@ -276,6 +276,26 @@ export async function handleCrescoCloudflareRequest(request, env = {}, services 
       );
     }
 
+    if (request.method === 'GET' &&
+        path === '/api/v0.3/worlds-fair/run-status') {
+      const snapshot = await worldFairLockCall(
+        env, '/worlds-fair-lock', null
+      ).catch(() => null);
+      const ok = snapshot?.status === 200;
+      return new Response(JSON.stringify({
+        contractVersion: '0.3',
+        type: 'WORLD_FAIR_RUN_STATUS',
+        ...(ok ? snapshot.body : {
+          status: 'UNKNOWN', recoveryRequired: true
+        })
+      }), {
+        status: ok ? 200 : 503,
+        headers: withCors({
+          'content-type': 'application/json; charset=utf-8'
+        }, request, env)
+      });
+    }
+
     const isWorldFairRun =
       request.method === 'POST' &&
       path === '/api/v0.3/worlds-fair/run';
@@ -316,6 +336,23 @@ export async function handleCrescoCloudflareRequest(request, env = {}, services 
 
       if (!lease || lease.status !== 200 || lease.body?.acquired !== true) {
         worldFairLeaseId = null;
+        if (!lease || lease.body?.recoveryRequired === true ||
+            lease.status !== 409) {
+          return new Response(JSON.stringify({
+            contractVersion: '0.3',
+            type: 'WORLD_FAIR_OPERATOR_LAB_RUN',
+            status: 'UNKNOWN',
+            error: 'WORLD_FAIR_STATE_RECONCILIATION_REQUIRED',
+            reasonCode: lease?.body?.reasonCode || 'LOCK_STATE_UNKNOWN',
+            recoveryRequired: true,
+            receipt: null
+          }), {
+            status: 503,
+            headers: withCors({
+              'content-type': 'application/json; charset=utf-8'
+            }, request, env)
+          });
+        }
         const retryAfterMs = Number(lease?.body?.retryAfterMs || 5000);
         return new Response(
           JSON.stringify({
@@ -341,6 +378,7 @@ export async function handleCrescoCloudflareRequest(request, env = {}, services 
       }
     }
 
+    let worldFairOutcomeStatus = 'UNKNOWN';
     try {
       const routeServices = { ...services };
       if (
@@ -368,6 +406,18 @@ export async function handleCrescoCloudflareRequest(request, env = {}, services 
         services: routeServices
       });
 
+      // A successful workflow API mutation has a confirmed durable-store response;
+      // it does not submit an on-chain World Fair run.
+      if (isWorldFairWorkflowMutation && result.status >= 200 && result.status < 300) {
+        worldFairOutcomeStatus = 'WORKFLOW_CONFIRMED';
+      }
+      if (isWorldFairRun) {
+        if (result.status === 200 && result.body?.status === 'PASS') {
+          worldFairOutcomeStatus = 'PASS';
+        } else if (result.status === 400 && result.body?.status === 'REFUSED') {
+          worldFairOutcomeStatus = 'REFUSED';
+        }
+      }
       return new Response(
         result.body == null ? null : JSON.stringify(result.body),
         {
@@ -380,7 +430,8 @@ export async function handleCrescoCloudflareRequest(request, env = {}, services 
         await worldFairLockCall(
           env,
           '/worlds-fair-lock/release',
-          worldFairLeaseId
+          worldFairLeaseId,
+          worldFairOutcomeStatus
         ).catch(() => null);
       }
     }

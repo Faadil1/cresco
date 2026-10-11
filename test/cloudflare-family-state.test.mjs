@@ -366,7 +366,7 @@ test("World’s Fair durable lease serializes one live run at a time", async () 
     new Request("https://family.internal/worlds-fair-lock/release", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ requestId: "run-a" })
+      body: JSON.stringify({ requestId: "run-a", outcomeStatus: "PASS" })
     })
   );
   const released = await body(releaseA);
@@ -383,4 +383,89 @@ test("World’s Fair durable lease serializes one live run at a time", async () 
   const b = await body(acquireBAfterRelease);
   assert.equal(acquireBAfterRelease.status, 200);
   assert.equal(b.acquired, true);
+});
+
+test("World’s Fair uncertain outcome quarantines subsequent acquisitions", async () => {
+  const state = new FamilyState(memoryState());
+  const call = (path, payload) => state.fetch(new Request(
+    "https://family.internal" + path, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload)
+    }
+  ));
+  assert.equal((await call("/worlds-fair-lock/acquire", { requestId: "uncertain-a" })).status, 200);
+  const release = await call("/worlds-fair-lock/release", {
+    requestId: "uncertain-a", outcomeStatus: "UNKNOWN"
+  });
+  assert.equal(release.status, 200);
+  assert.equal((await body(release)).recoveryRequired, true);
+  const next = await call("/worlds-fair-lock/acquire", { requestId: "uncertain-b" });
+  assert.equal(next.status, 409);
+  assert.equal((await body(next)).status, "RECONCILIATION_REQUIRED");
+});
+
+test("World’s Fair confirmed workflow outcome releases without quarantine", async () => {
+  const state = new FamilyState(memoryState());
+  const call = (path, payload) => state.fetch(new Request(
+    "https://family.internal" + path, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload)
+    }
+  ));
+  assert.equal((await call("/worlds-fair-lock/acquire", { requestId: "workflow-a" })).status, 200);
+  const release = await call("/worlds-fair-lock/release", {
+    requestId: "workflow-a", outcomeStatus: "WORKFLOW_CONFIRMED"
+  });
+  assert.equal((await body(release)).recoveryRequired, false);
+  assert.equal((await call("/worlds-fair-lock/acquire", { requestId: "workflow-b" })).status, 200);
+});
+
+test("World’s Fair refuses a release from a different lease owner", async () => {
+  const state = new FamilyState(memoryState());
+  const call = (path, payload) => state.fetch(new Request(
+    "https://family.internal" + path, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload)
+    }
+  ));
+  assert.equal((await call("/worlds-fair-lock/acquire", { requestId: "owner-a" })).status, 200);
+  const wrong = await call("/worlds-fair-lock/release", {
+    requestId: "owner-b", outcomeStatus: "PASS"
+  });
+  assert.equal(wrong.status, 409);
+  const competing = await call("/worlds-fair-lock/acquire", { requestId: "owner-b" });
+  assert.equal(competing.status, 409);
+  assert.equal((await body(competing)).status, "BUSY");
+});
+
+test("World’s Fair storage failure during uncertain release never becomes a confirmed release", async () => {
+  const state = new FamilyState({
+    storage: {
+      values: new Map(),
+      async get(key) { return this.values.get(key); },
+      async put(key, value) {
+        if (key === "worlds-fair-run-quarantine") throw new Error("STORAGE_UNAVAILABLE");
+        this.values.set(key, structuredClone(value));
+      },
+      async delete(key) { this.values.delete(key); }
+    }
+  });
+  const call = (path, payload) => state.fetch(new Request(
+    "https://family.internal" + path, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload)
+    }
+  ));
+  assert.equal((await call("/worlds-fair-lock/acquire", { requestId: "storage-a" })).status, 200);
+  await assert.rejects(
+    () => call("/worlds-fair-lock/release", {
+      requestId: "storage-a", outcomeStatus: "UNKNOWN"
+    }),
+    /STORAGE_UNAVAILABLE/
+  );
+  const next = await call("/worlds-fair-lock/acquire", { requestId: "storage-b" });
+  assert.equal(next.status, 409);
+  assert.equal((await body(next)).status, "BUSY");
 });
