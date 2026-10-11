@@ -50,7 +50,7 @@ function fixture(kind = 'STANDING', overrides = {}) {
     },
     async inspectPreparedException() {
       calls.push('inspect');
-      return { status: 'OBSERVED', allowanceFound: true, used: true, deadlineStillValid: true, stale: false };
+      return { status: 'OBSERVED', allowanceFound: true, used: true, requestHashMatches: true, nonceMatches: true, deadlineStillValid: true, stale: false };
     },
     ...overrides
   };
@@ -266,3 +266,37 @@ test('parallel allow-once grants must reserve intent before calling the provider
   assert.equal(outcomes.filter((x) => x.status === 'fulfilled').length, 1);
   assert.equal((await f.store.get(id)).status, 'ALLOW_ONCE_GRANTED');
 });
+
+for (const [caseName, override] of [
+  ['wrong request hash', { requestHashMatches: false, nonceMatches: true }],
+  ['wrong nonce', { requestHashMatches: true, nonceMatches: false }],
+  ['missing hash proof', { requestHashMatches: undefined, nonceMatches: true }],
+  ['missing nonce proof', { requestHashMatches: true, nonceMatches: undefined }]
+]) {
+  test(`reconciliation refuses recovered execution for ${caseName}`, async () => {
+    const f = fixture('SOFT', {
+      async grantPreparedException() { throw new Error('grant outcome unknown'); },
+      async inspectPreparedException() {
+        f.calls.push('inspect');
+        return { allowanceFound: true, used: true, deadlineStillValid: true,
+          stale: false, ...override };
+      }
+    });
+    const id = (await f.route('POST', '/intents', {
+      inputAmountBaseUnits: 600_000
+    })).body.intent.id;
+    await f.route('POST', `/intents/${id}/prepare-exception`, {}, f.principal);
+    const uncertain = await f.route('POST', `/intents/${id}/decision`, {
+      decision: 'ALLOW_ONCE'
+    }, f.principal);
+    assert.equal(uncertain.status, 503);
+    const result = await f.route('POST', `/intents/${id}/reconcile`, {});
+    assert.equal(result.body.intent.status, 'UNKNOWN_GRANT');
+    assert.equal(result.body.intent.recovery.policy, 'MANUAL_REVIEW_REQUIRED');
+    assert.equal(result.body.intent.recovery.automaticReplayAllowed, false);
+    assert.notEqual(result.body.intent.status, 'EXECUTED_RECOVERED');
+    assert.equal((await f.route('POST', `/intents/${id}/decision`, {
+      decision: 'ALLOW_ONCE'
+    }, f.principal)).status, 409);
+  });
+}
