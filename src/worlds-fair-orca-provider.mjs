@@ -1708,6 +1708,543 @@ export function createWorldFairOrcaProvider({
     };
   }
 
+
+  function worldFairNowSeconds() {
+    const parsed = Date.parse(now());
+    return Math.floor(
+      (Number.isFinite(parsed) ? parsed : Date.now()) / 1000
+    );
+  }
+
+  function normalizedWorkflowInputAmount(value) {
+    const inputAmount = Number(value);
+    if (
+      !Number.isSafeInteger(inputAmount) ||
+      inputAmount <= 0
+    ) {
+      throw new Error('WORLD_FAIR_INPUT_AMOUNT_INVALID');
+    }
+    return inputAmount;
+  }
+
+  function serializeWorkflowQuote(quote) {
+    return {
+      estimatedAmountIn:
+        quote.estimatedAmountIn?.toString?.() ?? null,
+      estimatedAmountOut:
+        quote.estimatedAmountOut?.toString?.() ?? null,
+      otherAmountThreshold: quote.otherAmountThreshold.toString(),
+      sqrtPriceLimit: quote.sqrtPriceLimit.toString(),
+      tickArray0: quote.tickArray0.toBase58(),
+      tickArray1: quote.tickArray1.toBase58(),
+      tickArray2: quote.tickArray2.toBase58()
+    };
+  }
+
+  function hydrateWorkflowQuote(snapshot) {
+    if (
+      !snapshot?.otherAmountThreshold ||
+      !snapshot?.sqrtPriceLimit ||
+      !snapshot?.tickArray0 ||
+      !snapshot?.tickArray1 ||
+      !snapshot?.tickArray2
+    ) {
+      throw new Error('WORLD_FAIR_QUOTE_SNAPSHOT_INVALID');
+    }
+
+    return {
+      otherAmountThreshold: new BN(snapshot.otherAmountThreshold),
+      sqrtPriceLimit: new BN(snapshot.sqrtPriceLimit),
+      tickArray0: new PublicKey(snapshot.tickArray0),
+      tickArray1: new PublicKey(snapshot.tickArray1),
+      tickArray2: new PublicKey(snapshot.tickArray2)
+    };
+  }
+
+  async function workflowTradeContext(inputAmountValue) {
+    const inputAmount = normalizedWorkflowInputAmount(inputAmountValue);
+    const state = await loadState();
+    validateExistingState(state);
+
+    if (
+      !state.mandate ||
+      !state.assetRule ||
+      !state.inputVaultExists ||
+      !state.outputVaultExists
+    ) {
+      throw new Error('WORLD_FAIR_RUNTIME_NOT_READY');
+    }
+
+    const inputVault = await readTokenAccount(inputTradeVault);
+    const pyth = await livePyth();
+    const { pool, data: poolData } = await freshOrcaPoolSnapshot();
+    const quote = await quoteFor(pool, inputAmount);
+    const requestedNotionalMicroUsd = Number(
+      (BigInt(inputAmount) * BigInt(pyth.unitPriceMicroUsd)) /
+        1_000_000n
+    );
+
+    const baseDiff = worldFairPolicyDiff({
+      requestedNotionalMicroUsd,
+      standingMaxNotionalMicroUsd:
+        state.mandate.maxActionNotionalMicroUsd
+    });
+
+    const hardViolations = [];
+    if (inputAmount > Number(state.assetRule.maxActionAmount)) {
+      hardViolations.push('MAX_ACTION_AMOUNT');
+    }
+    if (
+      Number(state.assetRule.spentThisPeriod) + inputAmount >
+      Number(state.assetRule.maxPeriodAmount)
+    ) {
+      hardViolations.push('MAX_PERIOD_AMOUNT');
+    }
+    if (
+      Number(state.assetRule.spentThisPeriodNotionalMicroUsd) +
+        requestedNotionalMicroUsd >
+      Number(state.mandate.maxPeriodNotionalMicroUsd)
+    ) {
+      hardViolations.push('MAX_PERIOD_NOTIONAL');
+    }
+    if (Number(inputVault.amount) < inputAmount) {
+      hardViolations.push('INPUT_VAULT_LIQUIDITY');
+    }
+
+    const violatedDimensions = [
+      ...new Set([
+        ...(baseDiff.violatedDimensions ?? []),
+        ...hardViolations
+      ])
+    ];
+
+    const boundaryClass =
+      hardViolations.length > 0
+        ? 'HARD'
+        : baseDiff.perActionNotional === 'VIOLATED'
+          ? 'SOFT_EXACT'
+          : 'STANDING';
+
+    const reasonCode =
+      boundaryClass === 'HARD'
+        ? hardViolations[0]
+        : boundaryClass === 'SOFT_EXACT'
+          ? 'MAX_ACTION_NOTIONAL'
+          : 'WITHIN_STANDING_MANDATE';
+
+    return {
+      state,
+      inputVault,
+      pyth,
+      poolData,
+      quote,
+      publicPreview: {
+        action: {
+          type: 'SWAP_EXACT_IN',
+          inputAmountBaseUnits: inputAmount,
+          programId: ORCA_WHIRLPOOL_PROGRAM_ID.toBase58(),
+          pool: WORLD_FAIR_ORCA_POOL.toBase58(),
+          inputMint: WORLD_FAIR_DEV_USDC.toBase58(),
+          outputMint: WORLD_FAIR_DEV_USDT.toBase58(),
+          maxSlippageBps: 100
+        },
+        mandate: {
+          version: state.mandate.version,
+          nonce: state.mandate.nonce,
+          status: state.mandate.status === 0 ? 'ACTIVE' : 'NOT_ACTIVE',
+          maxActionNotionalMicroUsd:
+            state.mandate.maxActionNotionalMicroUsd,
+          maxPeriodNotionalMicroUsd:
+            state.mandate.maxPeriodNotionalMicroUsd
+        },
+        market: {
+          source: 'PYTH_LAZER',
+          symbol: WORLD_FAIR_PYTH_FEED.symbol,
+          feedId: WORLD_FAIR_PYTH_FEED.feedId,
+          unitPriceMicroUsd: pyth.unitPriceMicroUsd,
+          authorityEffect: 'NONE'
+        },
+        quote: serializeWorkflowQuote(quote),
+        requestedNotionalMicroUsd,
+        policyDiff: {
+          ...baseDiff,
+          maxActionAmount:
+            inputAmount > Number(state.assetRule.maxActionAmount)
+              ? 'VIOLATED'
+              : 'PASS',
+          periodAmount:
+            Number(state.assetRule.spentThisPeriod) + inputAmount >
+            Number(state.assetRule.maxPeriodAmount)
+              ? 'VIOLATED'
+              : 'PASS',
+          periodNotional:
+            Number(state.assetRule.spentThisPeriodNotionalMicroUsd) +
+              requestedNotionalMicroUsd >
+            Number(state.mandate.maxPeriodNotionalMicroUsd)
+              ? 'VIOLATED'
+              : 'PASS',
+          inputVaultLiquidity:
+            Number(inputVault.amount) < inputAmount
+              ? 'VIOLATED'
+              : 'PASS',
+          violatedDimensions
+        },
+        evaluation: {
+          decision: boundaryClass === 'STANDING' ? 'ALLOW' : 'REFUSE',
+          reasonCode,
+          boundaryClass,
+          exceptionEligible: boundaryClass === 'SOFT_EXACT'
+        }
+      }
+    };
+  }
+
+  async function previewTradeIntent({ inputAmountBaseUnits }) {
+    const context = await workflowTradeContext(inputAmountBaseUnits);
+    return context.publicPreview;
+  }
+
+  async function executeStandingIntent({
+    inputAmountBaseUnits,
+    expectedNonce
+  }) {
+    const context = await workflowTradeContext(inputAmountBaseUnits);
+    const currentNonce = Number(context.state.mandate.nonce);
+
+    if (Number(expectedNonce) !== currentNonce) {
+      throw new Error('StaleNonce');
+    }
+    if (context.publicPreview.evaluation.decision !== 'ALLOW') {
+      throw new Error(
+        context.publicPreview.evaluation.reasonCode ===
+          'MAX_ACTION_NOTIONAL'
+          ? 'PythNotionalExceeded'
+          : `WORLD_FAIR_HARD_BOUNDARY:${context.publicPreview.evaluation.reasonCode}`
+      );
+    }
+
+    const beforeSpent = Number(
+      context.state.assetRule.spentThisPeriod
+    );
+    const { pythTreasury } = await orcaContextState();
+    const signature = await executeStanding({
+      inputAmount: context.publicPreview.action.inputAmountBaseUnits,
+      pyth: context.pyth,
+      quote: context.quote,
+      executionNonce: currentNonce,
+      poolData: context.poolData,
+      pythTreasury
+    });
+
+    const observed = await waitForAssetRuleSpentAtLeast(
+      beforeSpent +
+        context.publicPreview.action.inputAmountBaseUnits
+    );
+
+    return {
+      status: 'CONFIRMED',
+      mode: 'STANDING_AUTHORITY',
+      signature,
+      network: 'solana-devnet',
+      explorer:
+        `https://explorer.solana.com/tx/${signature}?cluster=devnet`,
+      mandateNonce: observed.mandate?.nonce ?? currentNonce,
+      spentThisPeriod:
+        observed.assetRule?.spentThisPeriod ?? null,
+      standingAuthorityChanged: false
+    };
+  }
+
+  async function prepareExceptionIntent({
+    inputAmountBaseUnits,
+    expectedNonce
+  }) {
+    const context = await workflowTradeContext(inputAmountBaseUnits);
+    const currentNonce = Number(context.state.mandate.nonce);
+
+    if (Number(expectedNonce) !== currentNonce) {
+      throw new Error('StaleNonce');
+    }
+    if (
+      context.publicPreview.evaluation.boundaryClass !== 'SOFT_EXACT'
+    ) {
+      throw new Error('WORLD_FAIR_EXCEPTION_NOT_ELIGIBLE');
+    }
+
+    const deadline = worldFairNowSeconds() + 300;
+    const minOutputAmount = BigInt(
+      context.quote.otherAmountThreshold.toString()
+    );
+    const sqrtPriceLimit = BigInt(
+      context.quote.sqrtPriceLimit.toString()
+    );
+    const requestHash = semanticSwapHash({
+      mandate,
+      inputAmount:
+        context.publicPreview.action.inputAmountBaseUnits,
+      minOutputAmount,
+      sqrtPriceLimit,
+      deadline,
+      mandateNonce: currentNonce
+    });
+    const [allowance] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from('allowance'),
+        mandate.toBuffer(),
+        WORLD_FAIR_DEV_USDC.toBuffer(),
+        requestHash
+      ],
+      WORLD_FAIR_PROGRAM_ID
+    );
+
+    return {
+      status: 'PREPARED',
+      preparedAt: now(),
+      deadline,
+      expectedNonce: currentNonce,
+      requestHash: requestHash.toString('hex'),
+      allowance: allowance.toBase58(),
+      action: context.publicPreview.action,
+      requestedNotionalMicroUsd:
+        context.publicPreview.requestedNotionalMicroUsd,
+      policyDiff: context.publicPreview.policyDiff,
+      market: context.publicPreview.market,
+      quote: context.publicPreview.quote,
+      truthBoundary: {
+        authorityGranted: false,
+        quoteMayExpire: true,
+        standingMandateChanged: false
+      }
+    };
+  }
+
+  function validatePreparedException(prepared) {
+    if (
+      prepared?.status !== 'PREPARED' ||
+      prepared?.action?.type !== 'SWAP_EXACT_IN' ||
+      prepared?.action?.programId !==
+        ORCA_WHIRLPOOL_PROGRAM_ID.toBase58() ||
+      prepared?.action?.pool !== WORLD_FAIR_ORCA_POOL.toBase58() ||
+      prepared?.action?.inputMint !== WORLD_FAIR_DEV_USDC.toBase58() ||
+      prepared?.action?.outputMint !== WORLD_FAIR_DEV_USDT.toBase58()
+    ) {
+      throw new Error('WORLD_FAIR_PREPARED_EXCEPTION_INVALID');
+    }
+
+    const quote = hydrateWorkflowQuote(prepared.quote);
+    const requestHash = semanticSwapHash({
+      mandate,
+      inputAmount: normalizedWorkflowInputAmount(
+        prepared.action.inputAmountBaseUnits
+      ),
+      minOutputAmount: BigInt(
+        quote.otherAmountThreshold.toString()
+      ),
+      sqrtPriceLimit: BigInt(quote.sqrtPriceLimit.toString()),
+      deadline: Number(prepared.deadline),
+      mandateNonce: Number(prepared.expectedNonce)
+    });
+
+    if (
+      requestHash.toString('hex') !==
+      String(prepared.requestHash)
+    ) {
+      throw new Error('AllowanceActionMismatch');
+    }
+
+    const [allowance] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from('allowance'),
+        mandate.toBuffer(),
+        WORLD_FAIR_DEV_USDC.toBuffer(),
+        requestHash
+      ],
+      WORLD_FAIR_PROGRAM_ID
+    );
+
+    if (allowance.toBase58() !== prepared.allowance) {
+      throw new Error('AllowanceActionMismatch');
+    }
+
+    return { quote, requestHash, allowance };
+  }
+
+  async function grantPreparedException({ prepared }) {
+    const state = await loadState();
+    validateExistingState(state);
+    if (!state.mandate) throw new Error('WORLD_FAIR_RUNTIME_NOT_READY');
+
+    if (
+      Number(state.mandate.nonce) !==
+      Number(prepared?.expectedNonce)
+    ) {
+      throw new Error('StaleNonce');
+    }
+    if (Number(prepared?.deadline) <= worldFairNowSeconds() + 5) {
+      throw new Error('TradeActionExpired');
+    }
+
+    const validated = validatePreparedException(prepared);
+    const result = await grantSwapException({
+      inputAmount: prepared.action.inputAmountBaseUnits,
+      quote: validated.quote,
+      pyth: {
+        unitPriceMicroUsd: Number(
+          prepared.market.unitPriceMicroUsd
+        )
+      },
+      deadline: Number(prepared.deadline),
+      expectedNonce: Number(prepared.expectedNonce)
+    });
+
+    if (
+      result.requestHash.toString('hex') !==
+      prepared.requestHash
+    ) {
+      throw new Error('AllowanceActionMismatch');
+    }
+
+    return {
+      status: 'GRANTED',
+      grantSignature: result.signature,
+      allowance: result.allowance.toBase58(),
+      requestHash: prepared.requestHash,
+      exactNotionalMicroUsd: Number(result.exactNotional),
+      expectedNonce: Number(prepared.expectedNonce),
+      deadline: Number(prepared.deadline),
+      prepared,
+      standingAuthorityChanged: false,
+      explorer:
+        `https://explorer.solana.com/tx/${result.signature}?cluster=devnet`
+    };
+  }
+
+  async function inspectPreparedException({ prepared }) {
+    const state = await loadState();
+    validateExistingState(state);
+    if (!state.mandate) throw new Error('WORLD_FAIR_RUNTIME_NOT_READY');
+
+    const validated = validatePreparedException(prepared);
+    const info = await withTransientRpcReadRetry(
+      () =>
+        readRpc.getAccountInfo(
+          validated.allowance,
+          'confirmed'
+        ),
+      WORLD_FAIR_STATE_READ_RETRY_PROFILE
+    );
+
+    const stale =
+      Number(state.mandate.nonce) !==
+      Number(prepared.expectedNonce);
+    const deadlineStillValid =
+      Number(prepared.deadline) > worldFairNowSeconds();
+
+    if (!info) {
+      return {
+        status: 'OBSERVED',
+        allowance: prepared.allowance,
+        allowanceFound: false,
+        used: false,
+        stale,
+        deadlineStillValid,
+        currentNonce: state.mandate.nonce
+      };
+    }
+
+    const allowanceState = parseAllowance(
+      Buffer.from(info.data)
+    );
+
+    return {
+      status: 'OBSERVED',
+      allowance: prepared.allowance,
+      allowanceFound: true,
+      used: allowanceState.used,
+      usedAt: allowanceState.usedAt,
+      requestHashMatches:
+        allowanceState.requestHash.toString('hex') ===
+        prepared.requestHash,
+      nonceMatches:
+        Number(allowanceState.mandateNonce) ===
+        Number(prepared.expectedNonce),
+      stale,
+      deadlineStillValid,
+      currentNonce: state.mandate.nonce
+    };
+  }
+
+  async function executeGrantedException({ grant }) {
+    const prepared = grant?.prepared;
+    const state = await loadState();
+    validateExistingState(state);
+    if (!state.mandate || !state.assetRule) {
+      throw new Error('WORLD_FAIR_RUNTIME_NOT_READY');
+    }
+    if (
+      Number(state.mandate.nonce) !==
+      Number(prepared?.expectedNonce)
+    ) {
+      throw new Error('StaleNonce');
+    }
+    if (Number(prepared?.deadline) <= worldFairNowSeconds()) {
+      throw new Error('TradeActionExpired');
+    }
+
+    const validated = validatePreparedException(prepared);
+    const allowanceState = await loadAllowance(
+      validated.allowance
+    );
+    if (allowanceState.used) {
+      throw new Error('AllowanceAlreadyUsed');
+    }
+
+    const pyth = await livePyth();
+    const { data: poolData, pythTreasury } =
+      await orcaContextState();
+    const beforeSpent = Number(
+      state.assetRule.spentThisPeriod
+    );
+
+    const signature = await executeException({
+      exception: {
+        allowance: validated.allowance,
+        requestHash: validated.requestHash,
+        pyth,
+        quote: validated.quote,
+        inputAmount:
+          prepared.action.inputAmountBaseUnits,
+        deadline: Number(prepared.deadline),
+        expectedNonce: Number(prepared.expectedNonce)
+      },
+      poolData,
+      pythTreasury
+    });
+
+    const observed = await waitForAssetRuleSpentAtLeast(
+      beforeSpent + prepared.action.inputAmountBaseUnits
+    );
+    const afterAllowance = await loadAllowance(
+      validated.allowance
+    );
+
+    return {
+      status: 'CONFIRMED',
+      mode: 'EXCEPTIONAL_AUTHORITY',
+      signature,
+      network: 'solana-devnet',
+      explorer:
+        `https://explorer.solana.com/tx/${signature}?cluster=devnet`,
+      allowance: prepared.allowance,
+      allowanceConsumed: afterAllowance.used,
+      mandateNonce:
+        observed.mandate?.nonce ?? prepared.expectedNonce,
+      spentThisPeriod:
+        observed.assetRule?.spentThisPeriod ?? null,
+      standingAuthorityChanged: false
+    };
+  }
+
   async function runCanonicalSequence() {
     const lockKey = guardian.publicKey.toBase58();
     if (runtimePromises.has(lockKey)) {
@@ -2281,6 +2818,12 @@ export function createWorldFairOrcaProvider({
   return {
     getPublicState,
     ensureReady,
+    previewTradeIntent,
+    executeStandingIntent,
+    prepareExceptionIntent,
+    grantPreparedException,
+    inspectPreparedException,
+    executeGrantedException,
     runCanonicalSequence,
     ids: {
       programId: WORLD_FAIR_PROGRAM_ID.toBase58(),
