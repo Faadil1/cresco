@@ -406,6 +406,11 @@ export async function handleCrescoCloudflareRequest(request, env = {}, services 
         services: routeServices
       });
 
+      // A successful workflow API mutation has a confirmed durable-store response;
+      // it does not submit an on-chain World Fair run.
+      if (isWorldFairWorkflowMutation && result.status >= 200 && result.status < 300) {
+        worldFairOutcomeStatus = 'WORKFLOW_CONFIRMED';
+      }
       if (isWorldFairRun) {
         if (result.status === 200 && result.body?.status === 'PASS') {
           worldFairOutcomeStatus = 'PASS';
