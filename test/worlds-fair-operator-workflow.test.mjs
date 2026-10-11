@@ -204,3 +204,65 @@ test('in-memory store enforces optimistic concurrency for durable states', async
     (error) => error.code === 'WORLD_FAIR_WORKFLOW_CONFLICT'
   );
 });
+
+test('parallel standing requests must not produce duplicate on-chain writes', async () => {
+  let started;
+  let unblock;
+  const began = new Promise((resolve) => { started = resolve; });
+  const gate = new Promise((resolve) => { unblock = resolve; });
+  let submitted = 0;
+  const f = fixture('STANDING', {
+    async executeStandingIntent() {
+      submitted += 1;
+      started();
+      await gate;
+      return { status: 'CONFIRMED', signature: 'exactly_once' };
+    }
+  });
+  const id = (await f.service.submitIntent({
+    actor: f.operator, inputAmountBaseUnits: 150_000
+  })).id;
+  const first = f.service.executeStanding({ actor: f.operator, id });
+  await began;
+  const second = f.service.executeStanding({ actor: f.operator, id });
+  unblock();
+  const outcomes = await Promise.allSettled([first, second]);
+  assert.equal(submitted, 1, 'a concurrent duplicate may not reach the real provider');
+  assert.equal(outcomes.filter((x) => x.status === 'fulfilled').length, 1);
+  assert.equal((await f.store.get(id)).status, 'EXECUTED');
+});
+
+test('parallel allow-once grants must reserve intent before calling the provider', async () => {
+  let started;
+  let unblock;
+  const began = new Promise((resolve) => { started = resolve; });
+  const gate = new Promise((resolve) => { unblock = resolve; });
+  let grants = 0;
+  const f = fixture('SOFT', {
+    async grantPreparedException({ prepared }) {
+      grants += 1;
+      started();
+      await gate;
+      return {
+        status: 'GRANTED', grantSignature: 'grant_once', allowance: 'allowance',
+        requestHash: prepared.requestHash, prepared
+      };
+    }
+  });
+  const id = (await f.service.submitIntent({
+    actor: f.operator, inputAmountBaseUnits: 700_000
+  })).id;
+  await f.service.prepareException({ actor: f.principal, id });
+  const first = f.service.decideException({
+    actor: f.principal, id, decision: 'ALLOW_ONCE'
+  });
+  await began;
+  const second = f.service.decideException({
+    actor: f.principal, id, decision: 'ALLOW_ONCE'
+  });
+  unblock();
+  const outcomes = await Promise.allSettled([first, second]);
+  assert.equal(grants, 1, 'duplicate exception grants may not reach provider');
+  assert.equal(outcomes.filter((x) => x.status === 'fulfilled').length, 1);
+  assert.equal((await f.store.get(id)).status, 'ALLOW_ONCE_GRANTED');
+});
