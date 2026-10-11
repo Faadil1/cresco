@@ -173,8 +173,6 @@ export class FamilyState {
       });
     }
 
-    const state = await this.load();
-
     if (
       method === "GET" &&
       path === "/worlds-fair-workflow/intents"
