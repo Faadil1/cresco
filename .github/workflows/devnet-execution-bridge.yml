@@ -1,21 +1,14 @@
 name: devnet-execution-bridge
-# Current-main verification reuses the already-deployed canonical program.
-# Revalidate after ALLOW_ONCE Devnet upgrade (slot 503748084).
+# Protected Devnet mutation path: manual-only. Source changes must use non-live CI before any authorized dispatch.
 
+
+
+# Cross-workflow mutual exclusion: never cancel an in-flight chain write.
 concurrency:
-  group: keys-devnet-execution-bridge
-  cancel-in-progress: true
+  group: cresco-protected-devnet-mutations
+  cancel-in-progress: false
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "src/devnet-execution-provider.mjs"
-      - "src/http-api.mjs"
-      - "scripts/bootstrap-devnet-demo-runtime.cjs"
-      - "scripts/devnet-execution-smoke.mjs"
-      - "package.json"
-      - ".github/workflows/devnet-execution-bridge.yml"
   workflow_dispatch:
 
 jobs:

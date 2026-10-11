@@ -1,10 +1,13 @@
 name: cloudflare-hosted-execution-smoke
+# Protected hosted write smoke: manual-only because it creates sessions and executes a real Devnet-backed action.
+
+
+# Cross-workflow mutual exclusion: never cancel an in-flight chain write.
+concurrency:
+  group: cresco-protected-devnet-mutations
+  cancel-in-progress: false
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/cloudflare-hosted-execution-smoke.yml"
   workflow_dispatch:
 
 jobs:

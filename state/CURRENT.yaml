@@ -1,29 +1,32 @@
 version: 0.1.0
 project_id: cresco
-date: 2026-10-04
+date: 2026-10-11
 status: ACTIVE
 lifecycle_state: POST_SLICE_LIVE_PRODUCT__WORLD_FAIR_DEVNET_PROVEN__PUBLIC_RUNTIME_BINDING_PENDING_PROTECTED_ACTION
 
 source_of_truth:
   repository: Faadil1/cresco
   branch: main
-  current_main_commit: b81133c6e3c57c36f6baedcfcce3cf9b8d46d3e3
-  living_prd: product/PRD.md
+  current_main_commit: 4c7b82ff22ae7d4fb2756e68c640548bf1f7965d
+  baseline_family_prd: product/PRD.md
+  worlds_fair_living_prd: "Faadil1/cresco-worlds-fair@ffcc8ea64604990a4014cfb1c8a7a01809fdbe67:product/PRD.md"
   public_product: https://cresco-lac.vercel.app
   public_api: https://keys-api-stocklana.faadil-casecraft.workers.dev
 
 canonical_baseline_reconciliation:
   status: ALIGNED
-  canonical_baseline_version: 0.1.56-canonical-baseline-drift-tripwire-promoted
-  canonical_baseline_commit: 8a7e8a4ff5461641c595e2cf052a95fdc32a6340
-  project_state_commit_at_reconciliation_start: b81133c6e3c57c36f6baedcfcce3cf9b8d46d3e3
-  last_canonical_reconciliation_at: 2026-10-04
-  baseline_delta_status: NON_MATERIAL_DELTA
+  canonical_baseline_version: 0.1.59-adaptive-best-of-system-execution-v1-promoted
+  canonical_baseline_commit: cdb55dbfe41fdfcb2f5e9232517fbb058c8b4c9b
+  project_state_commit_at_reconciliation_start: 4c7b82ff22ae7d4fb2756e68c640548bf1f7965d
+  last_canonical_reconciliation_at: 2026-10-11
+  baseline_delta_status: NON_MATERIAL_TO_PRODUCT_SEMANTICS__MATERIAL_EXECUTION_GOVERNANCE_RECONCILED
   delta_reason: >-
-    Product Reality v1.5 and the baseline drift tripwire formalize controls that are compatible with the already
-    observed CRESCO product direction. They do not reopen the product mechanism or invalidate existing live evidence.
-    The material state issue is runtime binding: the latest World’s Fair reliability repair is merged to main, while
-    the PR explicitly did not authorize a public redeploy.
+    Central canon advanced from 0.1.56 to 0.1.59. Product Reality remains v1.5 and does not invalidate
+    historical live evidence. Eval-Driven Reliability is NOT_APPLICABLE to the deterministic non-agent
+    World Fair core unless stochastic/model-mediated behavior becomes load-bearing. Adaptive Best-of-System
+    Execution applies to material workstream allocation and independent review, without changing product
+    authority. The material audit finding is operational: multiple live/write workflows still had automatic
+    triggers, and product depth was incorrectly treated as stopped solely because public deployment was blocked.
   first_live_slice_proven: true
   material_user_capability_delta_since_previous_milestone: WORLD_FAIR_OPERATOR_LAB_7_OF_7_DEVNET_PROVEN
   affected_transition_blocked: false
@@ -73,12 +76,17 @@ product_workstream_priority:
   first_live_slice_proven: true
   remaining_material_depth_gaps:
     - current_main_public_runtime_binding_after_PR29_reliability_fix
-  current_primary_workstream: STOPPED_BY_VALID_CONDITION
-  next_highest_value_depth_delta: PUBLIC_RUNTIME_BINDING_AND_POST_DEPLOY_CRITICAL_PATH_REVERIFY
-  valid_stop_condition: PROTECTED_HUMAN_DEPLOYMENT_AUTHORITY_NOT_GRANTED
+    - real_operator_to_principal_exception_workflow_not_productized
+    - public_runtime_auth_and_role_boundary_not_productized_for_real_operators
+    - post_deploy_repeatability_threshold_not_proven
+    - external_target_operator_value_and_wtp_not_proven
+    - time_to_first_value_and_operational_economics_not_measured
+  current_primary_workstream: PRODUCT_EXPLOITATION
+  next_highest_value_depth_delta: REAL_OPERATOR_PRINCIPAL_WORKFLOW_WITH_PROTECTED_LIVE_TRIGGER_SAFETY
+  valid_stop_condition: NONE_FOR_SOURCE_SIDE_PRODUCT_DEPTH__PUBLIC_DEPLOY_REMAINS_EXTERNALLY_BLOCKED
   demo_packaging_allowed: false
-  workstream_drift_status: NO_DRIFT_OBSERVED
-  last_priority_reconciliation_at: 2026-10-04
+  workstream_drift_status: DRIFT_FOUND_AND_REPAIRED_IN_AUDIT_CHANGESET
+  last_priority_reconciliation_at: 2026-10-11
   material_user_capability_delta_since_previous_milestone: WORLD_FAIR_OPERATOR_LAB_7_OF_7_DEVNET_PROVEN
   rule: >-
     Do not claim the latest merged main is the current public runtime until a human-authorized deployment is bound
@@ -86,22 +94,30 @@ product_workstream_priority:
 
 conditional_gateway_registry:
   PRODUCT_REALITY_V1_5: PROVEN
+  ADAPTIVE_BEST_OF_SYSTEM_EXECUTION_V1: ACTIVE_BOUNDED_SINGLE_EXECUTOR
+  EVAL_DRIVEN_RELIABILITY_V1: N_A_DETERMINISTIC_NON_AGENT_CORE
   LIVE_CORE_LOOP: PROVEN
   SOLANA_DEVNET_AUTHORITY_RUNTIME: PROVEN
   WORLD_FAIR_7_OF_7_DEVNET: PROVEN
   NEGATIVE_PATHS: PROVEN
   FAILURE_RECOVERY: PROVEN
+  PROTECTED_LIVE_WORKFLOW_TRIGGER_SAFETY: PROVEN_IN_THIS_CHANGESET_PENDING_MERGE
+  REAL_OPERATOR_PRINCIPAL_WORKFLOW: BLOCKED_NOT_IMPLEMENTED
+  EXTERNAL_TARGET_OPERATOR_EVIDENCE: BLOCKED_VALIDATION_GAP
   RUNTIME_COMMIT_BINDING: PARTIAL_PUBLIC_RUNTIME_BINDING_UNKNOWN_AFTER_PR29
-  PUBLIC_RUNTIME_REDEPLOY: BLOCKED_BY_PROTECTED_HUMAN_ACTION
+  PUBLIC_RUNTIME_REDEPLOY: BLOCKED_MISSING_CLOUDFLARE_GITHUB_SECRETS
   POST_DEPLOY_CRITICAL_PATH: BLOCKED_BY_PUBLIC_RUNTIME_REDEPLOY
+  POST_DEPLOY_REPEATABILITY: BLOCKED_BY_PUBLIC_RUNTIME_REDEPLOY
   MAINNET: N_A_NOT_AUTHORIZED
   REAL_SECURITIES_EXECUTION: N_A_NOT_CLAIMED
-  SUBMISSION_OR_RELEASE_READINESS: BLOCKED_BY_CURRENT_RUNTIME_BINDING_IF_CLAIMED
+  SUBMISSION_OR_RELEASE_READINESS: BLOCKED_BY_PRODUCT_DEPTH_AND_RUNTIME_BINDING
 
-exact_next_gate: PUBLIC_RUNTIME_BINDING_RECONCILIATION
-exact_next_owner: HUMAN_FOR_DEPLOY_THEN_PBPD_OR_EXISTING_IMPLEMENTATION_OWNER_FOR_VERIFICATION
+exact_next_gate: PRODUCT_EXPLOITATION__REAL_OPERATOR_PRINCIPAL_WORKFLOW
+exact_next_owner: PBPD_OR_EXISTING_IMPLEMENTATION_OWNER__HUMAN_ONLY_FOR_PROTECTED_LIVE_ACTIONS
 exact_next_action: >-
-  Preserve the proven Devnet 7/7 receipt. Do not redeploy automatically. If the human explicitly authorizes a public
-  deployment, deploy the current main commit, bind the deployment identity to that exact commit, then rerun the
-  public critical path and update this state. Until then, keep the public-runtime binding UNKNOWN/PARTIAL and do not
-  claim the PR #29 reliability repair is present on the hosted product.
+  Merge nothing automatically. Validate this P0 audit change through non-live CI first. After the protected-workflow
+  trigger repair is proven, continue Product Exploitation by implementing a real multi-role World Fair workflow:
+  operator/strategy action -> standing evaluation -> Policy Diff -> exception request -> principal/risk-owner decision
+  -> exact one-use execution/refusal -> receipt/history/recovery. Preserve the fixed CANONICAL_LIVE lab as a regression
+  and judge view, not as the product definition. Public deployment remains separately blocked on Cloudflare credentials
+  and requires explicit human authorization. No live Devnet run, deploy, mainnet action, or PR merge is implied.
