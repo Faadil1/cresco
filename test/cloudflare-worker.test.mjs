@@ -286,12 +286,17 @@ test('World Fair expired lease never silently permits another live run', async (
 
 test('World Fair safe refusal releases lease; no durable reconciliation lock', async () => {
   const env = workerEnv();
+  const services = { worldFairExecutionProvider: {
+    async runCanonicalSequence() {
+      throw new Error('Must never execute an invalid scope');
+    }
+  }};
   const bad = await handleCrescoCloudflareRequest(
     new Request('https://cresco-api-stocklana.example/api/v0.3/worlds-fair/run', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ scenario: 'INVALID' })
-    }), env
+    }), env, services
   );
   assert.equal(bad.status, 400);
   const status = await handleCrescoCloudflareRequest(
