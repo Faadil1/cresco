@@ -333,7 +333,7 @@ test("World’s Fair durable lease serializes one live run at a time", async () 
     new Request("https://family.internal/worlds-fair-lock/acquire", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ requestId: "run-a" })
+      body: JSON.stringify({ requestId: "run-a", outcomeStatus: "PASS" })
     })
   );
   const a = await body(acquireA);
