@@ -384,3 +384,40 @@ test("World’s Fair durable lease serializes one live run at a time", async () 
   assert.equal(acquireBAfterRelease.status, 200);
   assert.equal(b.acquired, true);
 });
+
+test("World’s Fair uncertain outcome quarantines subsequent acquisitions", async () => {
+  const state = new FamilyState(memoryState());
+  const call = (path, payload) => state.fetch(new Request(
+    "https://family.internal" + path, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload)
+    }
+  ));
+  assert.equal((await call("/worlds-fair-lock/acquire", { requestId: "uncertain-a" })).status, 200);
+  const release = await call("/worlds-fair-lock/release", {
+    requestId: "uncertain-a", outcomeStatus: "UNKNOWN"
+  });
+  assert.equal(release.status, 200);
+  assert.equal((await body(release)).recoveryRequired, true);
+  const next = await call("/worlds-fair-lock/acquire", { requestId: "uncertain-b" });
+  assert.equal(next.status, 409);
+  assert.equal((await body(next)).status, "RECONCILIATION_REQUIRED");
+});
+
+test("World’s Fair confirmed workflow outcome releases without quarantine", async () => {
+  const state = new FamilyState(memoryState());
+  const call = (path, payload) => state.fetch(new Request(
+    "https://family.internal" + path, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload)
+    }
+  ));
+  assert.equal((await call("/worlds-fair-lock/acquire", { requestId: "workflow-a" })).status, 200);
+  const release = await call("/worlds-fair-lock/release", {
+    requestId: "workflow-a", outcomeStatus: "WORKFLOW_CONFIRMED"
+  });
+  assert.equal((await body(release)).recoveryRequired, false);
+  assert.equal((await call("/worlds-fair-lock/acquire", { requestId: "workflow-b" })).status, 200);
+});
