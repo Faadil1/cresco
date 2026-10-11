@@ -140,7 +140,7 @@ export class FamilyState {
       }
 
       const outcomeStatus = String(body.outcomeStatus || "UNKNOWN");
-      if (!["PASS", "REFUSED"].includes(outcomeStatus)) {
+      if (!["PASS", "REFUSED", "WORKFLOW_CONFIRMED"].includes(outcomeStatus)) {
         await this.state.storage.put("worlds-fair-run-quarantine", {
           reasonCode: "RUN_OUTCOME_UNCONFIRMED", observedAt: now()
         });
@@ -148,9 +148,9 @@ export class FamilyState {
       await this.state.storage.delete("worlds-fair-run-lock");
       return json({
         released: true,
-        status: ["PASS", "REFUSED"].includes(outcomeStatus)
+        status: ["PASS", "REFUSED", "WORKFLOW_CONFIRMED"].includes(outcomeStatus)
           ? "RELEASED" : "RECONCILIATION_REQUIRED",
-        recoveryRequired: !["PASS", "REFUSED"].includes(outcomeStatus)
+        recoveryRequired: !["PASS", "REFUSED", "WORKFLOW_CONFIRMED"].includes(outcomeStatus)
       });
     }
 
