@@ -508,7 +508,22 @@ export function createWorldFairWorkflowService({
       automaticReplayAllowed: false
     };
 
-    if (inspection.allowanceFound && inspection.used) {
+    // A consumed allowance is only evidence for THIS intent when both
+    // on-chain bindings match the prepared exception exactly. Missing proof
+    // is treated as a mismatch; never promote it to recovered execution.
+    const exactAllowance = inspection.allowanceFound === true &&
+      inspection.requestHashMatches === true &&
+      inspection.nonceMatches === true;
+    if (inspection.allowanceFound && !exactAllowance) {
+      status = current.status === 'EXECUTING_EXCEPTION' ||
+        current.status === 'UNKNOWN_EXECUTION'
+        ? 'UNKNOWN_EXECUTION' : 'UNKNOWN_GRANT';
+      recovery = {
+        policy: 'MANUAL_REVIEW_REQUIRED',
+        automaticReplayAllowed: false,
+        reason: 'ALLOWANCE_BINDING_UNVERIFIED'
+      };
+    } else if (exactAllowance && inspection.used) {
       status = 'EXECUTED_RECOVERED';
       recovery = {
         policy: 'NO_RETRY',
@@ -522,7 +537,7 @@ export function createWorldFairWorkflowService({
         automaticReplayAllowed: false
       };
     } else if (
-      inspection.allowanceFound &&
+      exactAllowance &&
       !inspection.used &&
       inspection.deadlineStillValid
     ) {
@@ -542,7 +557,7 @@ export function createWorldFairWorkflowService({
         };
       }
     } else if (
-      inspection.allowanceFound &&
+      exactAllowance &&
       !inspection.deadlineStillValid
     ) {
       status = 'EXPIRED';
