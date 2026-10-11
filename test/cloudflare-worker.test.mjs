@@ -209,3 +209,108 @@ test('Cloudflare World’s Fair live route refuses overlap while the durable lea
   );
   assert.equal(afterRelease.status, 200);
 });
+
+
+test('World Fair UNKNOWN live outcome blocks a second request before any further write', async () => {
+  const env = workerEnv();
+  let calls = 0;
+  const request = () => new Request(
+    'https://cresco-api-stocklana.example/api/v0.3/worlds-fair/run', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ scenario: 'CANONICAL_LIVE' })
+    }
+  );
+  const provider = {
+    async runCanonicalSequence() {
+      calls += 1;
+      throw new Error('rpc confirmation unknown');
+    }
+  };
+  const first = await handleCrescoCloudflareRequest(request(), env, {
+    worldFairExecutionProvider: provider
+  });
+  assert.equal(first.status, 503);
+  assert.equal((await first.json()).status, 'UNKNOWN');
+
+  const status = await handleCrescoCloudflareRequest(
+    new Request('https://cresco-api-stocklana.example/api/v0.3/worlds-fair/run-status'),
+    env
+  );
+  assert.equal(status.status, 200);
+  const state = await status.json();
+  assert.equal(state.status, 'RECONCILIATION_REQUIRED');
+  assert.equal(state.reasonCode, 'RUN_OUTCOME_UNCONFIRMED');
+
+  const replay = await handleCrescoCloudflareRequest(request(), env, {
+    worldFairExecutionProvider: provider
+  });
+  assert.equal(replay.status, 503);
+  const body = await replay.json();
+  assert.equal(body.error, 'WORLD_FAIR_STATE_RECONCILIATION_REQUIRED');
+  assert.equal(body.recoveryRequired, true);
+  assert.equal(calls, 1);
+});
+
+test('World Fair expired lease never silently permits another live run', async () => {
+  const state = memoryState();
+  await state.storage.put('worlds-fair-run-lock', {
+    requestId: 'first-run',
+    acquiredAt: '2026-10-01T00:00:00.000Z',
+    expiresAtMs: Date.now() - 1000
+  });
+  const durable = new FamilyState(state);
+  const req = (path, method = 'GET', body) =>
+    new Request('https://lock.internal' + path, {
+      method,
+      ...(body ? {
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body)
+      } : {})
+    });
+
+  const before = await durable.fetch(req('/worlds-fair-lock'));
+  assert.equal((await before.json()).status, 'RECONCILIATION_REQUIRED');
+  const next = await durable.fetch(
+    req('/worlds-fair-lock/acquire', 'POST', { requestId: 'second-run' })
+  );
+  assert.equal(next.status, 409);
+  const result = await next.json();
+  assert.equal(result.recoveryRequired, true);
+  assert.equal(result.reasonCode, 'LEASE_EXPIRED_OUTCOME_UNKNOWN');
+  const third = await durable.fetch(
+    req('/worlds-fair-lock/acquire', 'POST', { requestId: 'third-run' })
+  );
+  assert.equal(third.status, 409);
+});
+
+test('World Fair safe refusal releases lease; no durable reconciliation lock', async () => {
+  const env = workerEnv();
+  const services = { worldFairExecutionProvider: {
+    async runCanonicalSequence() {
+      throw new Error('Must never execute an invalid scope');
+    }
+  }};
+  const bad = await handleCrescoCloudflareRequest(
+    new Request('https://cresco-api-stocklana.example/api/v0.3/worlds-fair/run', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ scenario: 'INVALID' })
+    }), env, services
+  );
+  assert.equal(bad.status, 400);
+  const status = await handleCrescoCloudflareRequest(
+    new Request('https://cresco-api-stocklana.example/api/v0.3/worlds-fair/run-status'),
+    env
+  );
+  assert.equal((await status.json()).status, 'AVAILABLE');
+});
+
+test('World Fair run-status fails closed without durable storage', async () => {
+  const status = await handleCrescoCloudflareRequest(
+    new Request('https://cresco-api-stocklana.example/api/v0.3/worlds-fair/run-status'),
+    {}
+  );
+  assert.equal(status.status, 503);
+  assert.equal((await status.json()).recoveryRequired, true);
+});
