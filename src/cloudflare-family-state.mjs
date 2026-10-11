@@ -64,8 +64,24 @@ export class FamilyState {
       if (!requestId) return json({ error: "REQUEST_ID_REQUIRED" }, 400);
 
       const nowMs = Date.now();
-      const leaseMs = 5 * 60 * 1000;
+      // Lease expiry is not proof that a submitted on-chain write did not occur.
+      const leaseMs = 30 * 60 * 1000;
+      const uncertain = await this.state.storage.get("worlds-fair-run-quarantine");
+      if (uncertain) return json({
+        acquired: false, status: "RECONCILIATION_REQUIRED",
+        recoveryRequired: true, reasonCode: uncertain.reasonCode
+      }, 409);
       const current = await this.state.storage.get("worlds-fair-run-lock");
+      if (current && Number(current.expiresAtMs || 0) <= nowMs) {
+        await this.state.storage.put("worlds-fair-run-quarantine", {
+          reasonCode: "LEASE_EXPIRED_OUTCOME_UNKNOWN", observedAt: now()
+        });
+        await this.state.storage.delete("worlds-fair-run-lock");
+        return json({
+          acquired: false, status: "RECONCILIATION_REQUIRED",
+          recoveryRequired: true, reasonCode: "LEASE_EXPIRED_OUTCOME_UNKNOWN"
+        }, 409);
+      }
 
       if (
         current &&
@@ -109,17 +125,35 @@ export class FamilyState {
         return json({ released: false, status: "NOT_OWNER" }, 409);
       }
 
+      const outcomeStatus = String(body.outcomeStatus || "UNKNOWN");
+      if (!["PASS", "REFUSED"].includes(outcomeStatus)) {
+        await this.state.storage.put("worlds-fair-run-quarantine", {
+          reasonCode: "RUN_OUTCOME_UNCONFIRMED", observedAt: now()
+        });
+      }
       await this.state.storage.delete("worlds-fair-run-lock");
-      return json({ released: true, status: "RELEASED" });
+      return json({
+        released: true,
+        status: ["PASS", "REFUSED"].includes(outcomeStatus)
+          ? "RELEASED" : "RECONCILIATION_REQUIRED",
+        recoveryRequired: !["PASS", "REFUSED"].includes(outcomeStatus)
+      });
     }
 
     if (method === "GET" && path === "/worlds-fair-lock") {
       const current = await this.state.storage.get("worlds-fair-run-lock");
+      const quarantine = await this.state.storage.get("worlds-fair-run-quarantine");
       const active =
         Boolean(current) && Number(current.expiresAtMs || 0) > Date.now();
+      const expired = Boolean(current) && !active;
+      const recoveryRequired = Boolean(quarantine) || expired;
       return json({
         active,
-        status: active ? "BUSY" : "AVAILABLE",
+        status: recoveryRequired ? "RECONCILIATION_REQUIRED" :
+          active ? "BUSY" : "AVAILABLE",
+        recoveryRequired,
+        reasonCode: quarantine?.reasonCode ||
+          (expired ? "LEASE_EXPIRED_OUTCOME_UNKNOWN" : null),
         acquiredAt: active ? current.acquiredAt : null,
         expiresAtMs: active ? current.expiresAtMs : null
       });
