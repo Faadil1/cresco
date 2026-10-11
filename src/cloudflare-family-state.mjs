@@ -51,6 +51,20 @@ export class FamilyState {
     return value;
   }
 
+  async loadWorldFairWorkflow() {
+    return (
+      (await this.state.storage.get("worlds-fair-workflow-v1")) || {
+        schemaVersion: 1,
+        intents: []
+      }
+    );
+  }
+
+  async saveWorldFairWorkflow(value) {
+    await this.state.storage.put("worlds-fair-workflow-v1", value);
+    return value;
+  }
+
   async fetch(request) {
     const url = new URL(request.url);
     const path = url.pathname;
@@ -123,6 +137,94 @@ export class FamilyState {
         acquiredAt: active ? current.acquiredAt : null,
         expiresAtMs: active ? current.expiresAtMs : null
       });
+    }
+
+    if (
+      method === "GET" &&
+      path === "/worlds-fair-workflow/intents"
+    ) {
+      const workflow = await this.loadWorldFairWorkflow();
+      return json({
+        schemaVersion: workflow.schemaVersion,
+        intents: [...workflow.intents].sort((a, b) =>
+          String(b.createdAt || "").localeCompare(
+            String(a.createdAt || "")
+          )
+        )
+      });
+    }
+
+    if (
+      method === "POST" &&
+      path === "/worlds-fair-workflow/intents"
+    ) {
+      const workflow = await this.loadWorldFairWorkflow();
+      const record = body.record;
+      if (!record?.id) {
+        return json({ error: "WORLD_FAIR_INTENT_ID_REQUIRED" }, 400);
+      }
+      if (workflow.intents.some((item) => item.id === record.id)) {
+        return json(
+          { error: "WORLD_FAIR_INTENT_ALREADY_EXISTS" },
+          409
+        );
+      }
+      const stored = {
+        ...copy(record),
+        revision: 1
+      };
+      workflow.intents.unshift(stored);
+      await this.saveWorldFairWorkflow(workflow);
+      return json(stored, 201);
+    }
+
+    const worldFairIntentMatch = path.match(
+      /^\/worlds-fair-workflow\/intents\/([^/]+)$/
+    );
+
+    if (method === "GET" && worldFairIntentMatch) {
+      const workflow = await this.loadWorldFairWorkflow();
+      const record =
+        workflow.intents.find(
+          (item) => item.id === worldFairIntentMatch[1]
+        ) || null;
+      return record
+        ? json(record)
+        : json({ error: "WORLD_FAIR_INTENT_NOT_FOUND" }, 404);
+    }
+
+    if (method === "PUT" && worldFairIntentMatch) {
+      const workflow = await this.loadWorldFairWorkflow();
+      const index = workflow.intents.findIndex(
+        (item) => item.id === worldFairIntentMatch[1]
+      );
+      if (index < 0) {
+        return json({ error: "WORLD_FAIR_INTENT_NOT_FOUND" }, 404);
+      }
+
+      const current = workflow.intents[index];
+      if (
+        Number(current.revision) !==
+        Number(body.expectedRevision)
+      ) {
+        return json(
+          {
+            error: "WORLD_FAIR_WORKFLOW_CONFLICT",
+            current
+          },
+          409
+        );
+      }
+
+      const stored = {
+        ...copy(body.record),
+        id: current.id,
+        createdAt: current.createdAt,
+        revision: Number(current.revision) + 1
+      };
+      workflow.intents[index] = stored;
+      await this.saveWorldFairWorkflow(workflow);
+      return json(stored);
     }
 
     const state = await this.load();
