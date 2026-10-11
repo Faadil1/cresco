@@ -1,16 +1,8 @@
 name: solana-devnet-authority-proof
+# Protected Devnet program/write path: manual-only. Never deploy or mutate Devnet from an automatic push trigger.
+
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "programs/keys/**"
-      - "Anchor.toml"
-      - "Cargo.toml"
-      - "package.json"
-      - "tests/anchor-authority-proof.cjs"
-      - "src/pyth-adapter.mjs"
-      - ".github/workflows/solana-devnet-authority-proof.yml"
   workflow_dispatch:
 
 jobs:

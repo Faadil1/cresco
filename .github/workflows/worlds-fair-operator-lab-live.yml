@@ -1,18 +1,9 @@
 name: worlds-fair-operator-lab-live
+# Protected live Devnet write path: manual-only. Explicit human authorization is required before dispatch.
+
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - "src/worlds-fair-orca-provider.mjs"
-      - "src/http-api.mjs"
-      - "scripts/worlds-fair-operator-lab-smoke.mjs"
-      - ".github/workflows/worlds-fair-operator-lab-live.yml"
   workflow_dispatch:
-
-concurrency:
-  group: worlds-fair-operator-lab-live
-  cancel-in-progress: true
 
 jobs:
   live-provider:
