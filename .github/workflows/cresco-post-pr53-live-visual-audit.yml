@@ -104,6 +104,37 @@ jobs:
           console.log("CRESCO_AUDIT_REPORT:"+JSON.stringify(result));
           if(failures)process.exitCode=1;
           NODE
+      - name: Observe historical consumer CRESCO art for visual comparison
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from "@playwright/test";
+          import { writeFileSync,appendFileSync } from "node:fs";
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:1440,height:900}});
+          try{
+            const url="https://cresco-lac.vercel.app/home";
+            const response=await page.goto(url,{waitUntil:"domcontentloaded",timeout:25000});
+            await page.evaluate(()=>document.fonts.ready);
+            await page.waitForTimeout(600);
+            const sources=await page.evaluate(()=>({
+              title:document.title,
+              head:document.querySelector("h1")?.innerText,
+              images:[...document.querySelectorAll("img")].slice(0,20).map(x=>({alt:x.alt,src:x.currentSrc.slice(0,280)})),
+              inlineSvgCount:document.querySelectorAll("svg").length,
+              externalStylesheets:[...document.querySelectorAll("link[rel='stylesheet']")].map(x=>x.href.slice(0,140)).slice(0,10)
+            }));
+            const jpeg=await page.screenshot({type:"jpeg",quality:48,fullPage:false,animations:"disabled"});
+            writeFileSync("ui-audit-output/historical-vercel-home.jpg",jpeg);
+            const b64=jpeg.toString("base64");
+            console.log("CRESCO_HISTORIC_BEGIN:"+b64.length);
+            for(let k=0;k<b64.length;k+=1800)console.log("CRESCO_HISTORIC_CHUNK:"+b64.slice(k,k+1800));
+            console.log("CRESCO_HISTORIC_END");
+            console.log("CRESCO_HISTORIC_META:"+JSON.stringify({status:response?.status(),url:page.url(),...sources}));
+            appendFileSync(process.env.GITHUB_STEP_SUMMARY, "\nOld Vercel /home comparison response: "+response?.status()+"; screenshots in artifact.\n");
+          }catch(e){console.log("CRESCO_HISTORIC_UNAVAILABLE:"+String(e).slice(0,250))}
+          await browser.close();
+          NODE
       - name: Publish audit screenshots and structured results
         if: always()
         uses: actions/upload-artifact@v4
