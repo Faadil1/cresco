@@ -1,0 +1,54 @@
+name: devnet-fund-wallet
+# Protected Devnet mutation: manual-only. Sends a small amount of Devnet SOL
+# from the lab guardian to a wallet the owner names (for example the Phantom
+# wallet used to validate the principal-wallet guardian). Devnet only, capped.
+
+concurrency:
+  group: cresco-protected-devnet-mutations
+  cancel-in-progress: false
+
+on:
+  workflow_dispatch:
+    inputs:
+      recipient:
+        description: "Devnet wallet address to fund (base58)"
+        required: true
+        type: string
+      amount_sol:
+        description: "Amount of Devnet SOL (max 0.5)"
+        required: true
+        default: "0.2"
+        type: string
+
+jobs:
+  fund:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      DEVNET_KEYPAIR_JSON: ${{ secrets.DEVNET_KEYPAIR_JSON }}
+      SOLANA_DEVNET_RPC_URL: ${{ secrets.SOLANA_DEVNET_RPC_URL }}
+      RECIPIENT: ${{ inputs.recipient }}
+      AMOUNT_SOL: ${{ inputs.amount_sol }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+      - name: Transfer Devnet SOL from the lab guardian
+        run: |
+          node --input-type=module -e '
+          import { Connection, Keypair, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction, LAMPORTS_PER_SOL } from "@solana/web3.js";
+          const amount = Number(process.env.AMOUNT_SOL);
+          if (!Number.isFinite(amount) || amount <= 0 || amount > 0.5) throw new Error("amount_sol must be in (0, 0.5]");
+          const to = new PublicKey(process.env.RECIPIENT.trim());
+          if (!process.env.DEVNET_KEYPAIR_JSON) throw new Error("DEVNET_KEYPAIR_JSON secret missing");
+          const from = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(process.env.DEVNET_KEYPAIR_JSON)));
+          const rpc = new Connection(process.env.SOLANA_DEVNET_RPC_URL || "https://api.devnet.solana.com", "confirmed");
+          console.log("PROOF from=" + from.publicKey.toBase58() + " to=" + to.toBase58() + " amount_sol=" + amount);
+          const tx = new Transaction().add(SystemProgram.transfer({ fromPubkey: from.publicKey, toPubkey: to, lamports: Math.round(amount * LAMPORTS_PER_SOL) }));
+          const sig = await sendAndConfirmTransaction(rpc, tx, [from]);
+          console.log("PROOF signature=" + sig);
+          console.log("PROOF explorer=https://explorer.solana.com/tx/" + sig + "?cluster=devnet");
+          console.log("PROOF recipient_balance_sol=" + (await rpc.getBalance(to)) / LAMPORTS_PER_SOL);
+          '
