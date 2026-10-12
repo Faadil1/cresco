@@ -314,16 +314,16 @@ export default function WorldsFairPage() {
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-green opacity-50" />
                 <span className="relative inline-flex size-2 rounded-full bg-green" />
               </span>
-              LIVE · SOLANA DEVNET
+              LIVE · SOLANA DEVNET · JUDGE LAB
             </div>
             <h1 className="mt-6 max-w-[13ch] text-[48px] font-black leading-[0.98] tracking-[-0.045em] text-navy-strong sm:text-[64px] lg:text-[76px]">
               Authority that ends with the action.
             </h1>
             <p className="mt-6 max-w-[64ch] text-[17px] font-semibold leading-relaxed text-ink-2 md:text-[19px]">
-              CRESCO lets a strategy act inside standing capital authority, ask for
-              one exact exception at the boundary, then return to the same standing
-              mandate. This lab executes the full path against Orca and Pyth on
-              Solana Devnet.
+              A teenager or an AI strategy acts alone inside a standing limit, asks
+              once for one exact exception, and the limit never widens. This lab runs
+              the full path of the CRESCO program against Orca and Pyth on Solana
+              Devnet. To try it with your own people, open the desk.
             </p>
           </div>
 

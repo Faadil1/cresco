@@ -21,9 +21,11 @@ import {
   SlidersHorizontal,
   Wallet,
   X,
+  Zap,
 } from "lucide-react";
 
 import { Wordmark } from "@/components/shell";
+import { Avatar, EventRow, ExternalChip, GuardianBadge, HowItWorks, MandateRail, ProofStrip, railPoints } from "./desk-ui";
 import {
   devUsdc,
   loadKeychain,
@@ -97,7 +99,8 @@ function caseOfWorkspace(ws: Workspace | null | undefined): UseCase {
 const STATUS_TONE: Record<string, string> = {
   PENDING: "border-yellow/40 bg-yellow-soft text-orange-text",
   EXECUTING: "border-blue/25 bg-blue-soft text-blue",
-  EXECUTED: "border-green/25 bg-green-soft text-green-strong",
+  EXECUTED: "border-blue/25 bg-blue-soft text-blue",
+  ACTIVE: "border-green/25 bg-green-soft text-green-strong",
   REFUSED_BY_PRINCIPAL: "border-loss/20 bg-loss-soft text-loss-text",
   REFUSED_BY_PROGRAM: "border-loss/20 bg-loss-soft text-loss-text",
   STALE: "border-line bg-surface-soft text-ink-2",
@@ -217,40 +220,51 @@ function Signatures({ event }: { event: Pick<WorkflowEvent, "signatures"> }) {
   );
 }
 
-function RequestCard({ req, children }: { req: ExceptionRequest; children?: React.ReactNode }) {
+const REQUEST_HEADLINE: Record<string, (n: { operator: string; principal: string }) => string> = {
+  PENDING: (n) => `Waiting for ${n.principal}`,
+  EXECUTING: () => "Executing on Solana",
+  EXECUTED: (n) => `Approved by ${n.principal} · executed once`,
+  REFUSED_BY_PRINCIPAL: (n) => `${n.principal} said no`,
+  REFUSED_BY_PROGRAM: () => "Refused by the CRESCO program",
+  STALE: () => "Stale: the mandate changed",
+  EXPIRED: () => "Expired without a decision",
+  NOT_REQUIRED: () => "Now fits the limit: resubmit as a normal trade",
+  ROLLED_BACK: () => "Venue failed: rolled back, nothing consumed",
+  NOT_EXECUTED: () => "Granted but not executed: allowance expires unused",
+  UNKNOWN: () => "Outcome not confirmed: reconcile first",
+};
+
+function RequestCard({ req, names, children }: { req: ExceptionRequest; names?: { operator: string; principal: string }; children?: React.ReactNode }) {
+  const who = names ?? { operator: "The operator", principal: "the principal" };
+  const headline = REQUEST_HEADLINE[req.status]?.(who) ?? req.status.replaceAll("_", " ");
   return (
-    <article className="rounded-[20px] border border-line p-4" data-testid={`request-${req.id}`}>
+    <article className={`rounded-[22px] border bg-white p-4 md:p-5 ${req.status === "PENDING" ? "border-yellow/50 shadow-soft" : "border-line"}`} data-testid={`request-${req.id}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="font-mono text-[12px] font-bold text-navy">{req.id}</p>
-        <Pill tone={STATUS_TONE[req.status] ?? STATUS_TONE.STALE}>{req.status.replaceAll("_", " ")}</Pill>
-      </div>
-      <p className="mt-2 text-[15px] font-black text-navy-strong">
-        Swap {devUsdc(req.intent.inputAmount)} → devUSDT · max slippage {req.intent.maxSlippageBps} bps
-      </p>
-      <div className="mt-3 grid grid-cols-2 gap-2 text-[12px] font-bold">
-        <div className="rounded-[14px] bg-loss-soft p-3 text-loss-text">
-          Requested {usd(req.requestedNotionalMicroUsd)}
+        <div className="flex items-center gap-2">
+          <Avatar name={who.operator} tone="bg-yellow-soft text-orange-text" />
+          <p className="text-[15px] font-black text-navy-strong">{who.operator} asks for {usd(req.requestedNotionalMicroUsd)}</p>
         </div>
-        <div className="rounded-[14px] bg-surface-soft p-3 text-ink-2">
-          Standing limit {usd(req.standingMaxNotionalMicroUsd)}
-        </div>
+        <Pill tone={STATUS_TONE[req.status] ?? STATUS_TONE.STALE}>{headline}</Pill>
       </div>
-      <p className="mt-2 text-[12px] font-semibold text-ink-2">
-        Policy Diff: {(req.policyDiff?.violatedDimensions ?? []).join(", ") || "n/a"} · refusal proven by {req.refusal?.evidence === "PROGRAM_PREFLIGHT_SIMULATION" ? "the CRESCO program (preflight)" : req.refusal?.evidence ?? "n/a"} · mandate nonce {req.mandateNonce}
+      <div className="mt-3 grid grid-cols-2 gap-2 text-[13px] font-black">
+        <div className="rounded-[14px] bg-yellow-soft p-3 text-orange-text">Requested {usd(req.requestedNotionalMicroUsd)}</div>
+        <div className="rounded-[14px] bg-surface-soft p-3 text-navy">Standing limit {usd(req.standingMaxNotionalMicroUsd)}</div>
+      </div>
+      <p className="mt-3 text-[13px] font-semibold leading-relaxed text-ink-2">
+        {req.status === "PENDING"
+          ? `Approving covers this exact trade, once. The standing limit stays ${usd(req.standingMaxNotionalMicroUsd)}.`
+          : req.execution
+            ? `Executed once. Standing authority changed: ${req.execution.standingAuthorityChanged === false ? "no" : String(req.execution.standingAuthorityChanged)}.`
+            : null}
       </p>
       {req.status === "PENDING" ? (
-        <p className="mt-1 flex items-center gap-1 text-[11px] font-bold text-orange-text">
-          <Clock className="size-3" /> Expires at {new Date(req.expiresAt).toLocaleTimeString()}
-        </p>
-      ) : null}
-      {req.execution ? (
-        <p className="mt-2 text-[12px] font-bold text-green-strong">
-          Executed once · allowance consumed: {String(req.execution.allowanceConsumed)} · standing authority changed: {String(req.execution.standingAuthorityChanged)}
+        <p className="mt-1 flex items-center gap-1 text-[12px] font-bold text-orange-text">
+          <Clock className="size-3.5" /> Expires at {new Date(req.expiresAt).toLocaleTimeString()}
         </p>
       ) : null}
       {req.grant?.principalApprovalVerifiedOnChain ? (
-        <p className="mt-1 text-[12px] font-bold text-green-strong">
-          Principal wallet signature verified on-chain in the grant transaction (Solana Ed25519 program)
+        <p className="mt-2 flex items-center gap-1.5 text-[12px] font-bold text-green-strong">
+          <Wallet className="size-3.5" /> {who.principal}&apos;s wallet signature verified on-chain in the grant transaction
         </p>
       ) : null}
       {req.grant?.signature || req.execution?.signature ? (
@@ -263,18 +277,27 @@ function RequestCard({ req, children }: { req: ExceptionRequest; children?: Reac
           }}
         />
       ) : null}
-      {req.staleReason ? <p className="mt-2 text-[12px] font-semibold text-ink-2">Stale: {req.staleReason}</p> : null}
+      <details className="mt-3 rounded-[14px] bg-surface-soft px-3 py-2">
+        <summary className="cursor-pointer text-[12px] font-black text-navy">On-chain details</summary>
+        <dl className="mt-2 grid gap-1 text-[12px] font-semibold text-ink-2">
+          <div>Trade: swap {devUsdc(req.intent.inputAmount)} to devUSDT, max slippage {req.intent.maxSlippageBps} bps</div>
+          <div>Policy Diff: {(req.policyDiff?.violatedDimensions ?? []).join(", ") || "n/a"}</div>
+          <div>Refusal proven by: {req.refusal?.evidence === "PROGRAM_PREFLIGHT_SIMULATION" ? "the CRESCO program (preflight)" : req.refusal?.evidence ?? "n/a"}</div>
+          <div>Mandate nonce: {req.mandateNonce} · request {req.id}</div>
+          {req.staleReason ? <div>Stale: {req.staleReason}</div> : null}
+        </dl>
+      </details>
       {children}
     </article>
   );
 }
 
-function IntentOutcome({ result, requests = [] }: { result: IntentResult; requests?: ExceptionRequest[] }) {
+function IntentOutcome({ result, requests = [], principal = "the principal" }: { result: IntentResult; requests?: ExceptionRequest[]; principal?: string }) {
   if (result.decision === "ALLOW") {
     return (
       <div role="status" className="mt-4 rounded-[18px] border border-green/25 bg-green-soft p-4 text-green-strong">
-        <p className="flex items-center gap-2 font-black"><CheckCircle2 className="size-4" /> ALLOW · executed inside standing authority</p>
-        <p className="mt-1 text-[13px] font-semibold">Notional {usd(result.receipt.quote.notionalMicroUsd)} · no principal approval needed{result.idempotentReplay ? " · replayed from idempotency key" : ""}</p>
+        <p className="flex items-center gap-2 font-black"><CheckCircle2 className="size-4" /> Done alone · inside the standing limit</p>
+        <p className="mt-1 text-[13px] font-semibold">Executed on Solana for {usd(result.receipt.quote.notionalMicroUsd)}. Nobody had to approve it.{result.idempotentReplay ? " Replayed from the idempotency key." : ""}</p>
         <a href={result.receipt.explorer} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-[12px] font-extrabold text-blue">Transaction on Explorer <ExternalLink className="size-3" /></a>
       </div>
     );
@@ -284,26 +307,26 @@ function IntentOutcome({ result, requests = [] }: { result: IntentResult; reques
     if (live && live.status !== "PENDING") {
       const done = live.status === "EXECUTED";
       return (
-        <div role="status" className={`mt-4 rounded-[18px] border p-4 ${done ? "border-green/25 bg-green-soft text-green-strong" : "border-line bg-surface-soft text-navy"}`}>
-          <p className="font-black">Exception request {live.id} · {live.status.replaceAll("_", " ")}</p>
+        <div role="status" className={`mt-4 rounded-[18px] border p-4 ${done ? "border-blue/25 bg-blue-soft text-navy-strong" : "border-line bg-surface-soft text-navy"}`}>
+          <p className="flex items-center gap-2 font-black">{done ? <CheckCircle2 className="size-4 text-blue" /> : null}{done ? `${principal} approved it · executed once` : `Request ${live.status.replaceAll("_", " ").toLowerCase()}`}</p>
           <p className="mt-1 text-[13px] font-semibold">
-            {done ? "Approved once and executed; the standing limit did not change." : "Decided. Details and receipts are under the request."}
+            {done ? "The standing limit did not change." : "Details and receipts are under the request."}
           </p>
         </div>
       );
     }
     return (
-      <div role="status" className="mt-4 rounded-[18px] border border-yellow/40 bg-yellow-soft p-4 text-orange-text">
-        <p className="font-black">Outside standing authority · exact exception requested</p>
-        <p className="mt-1 text-[13px] font-semibold">The CRESCO program refused it ({result.refusal.code}). Request {result.request.id} went to the principal or risk owner; its live status is under My exception requests.</p>
+      <div role="status" className="mt-4 rounded-[18px] border border-yellow/50 bg-yellow-soft p-4 text-orange-text">
+        <p className="flex items-center gap-2 font-black"><Clock className="size-4" /> Above the limit · asked {principal} once</p>
+        <p className="mt-1 text-[13px] font-semibold">The CRESCO program refused it ({result.refusal.code}) and filed one exact request. Its live status is on the right.</p>
       </div>
     );
   }
   if (result.decision === "REFUSE") {
     return (
       <div role="status" className="mt-4 rounded-[18px] border border-loss/20 bg-loss-soft p-4 text-loss-text">
-        <p className="font-black">REFUSE · {result.boundary} boundary ({result.code})</p>
-        <p className="mt-1 text-[13px] font-semibold">No exception path exists for this refusal.</p>
+        <p className="font-black">Refused · {result.boundary} boundary ({result.code})</p>
+        <p className="mt-1 text-[13px] font-semibold">This one cannot be approved: there is no exception path for a hard boundary.</p>
       </div>
     );
   }
@@ -316,17 +339,36 @@ function IntentOutcome({ result, requests = [] }: { result: IntentResult; reques
   );
 }
 
-function CreateWorkspace({ onCreated }: { onCreated: (ws: CreatedWorkspace) => void }) {
-  const [useCase, setUseCase] = useState<UseCase>("family");
+function UseCaseToggle({ value, onChange }: { value: UseCase; onChange: (next: UseCase) => void }) {
+  return (
+    <div role="radiogroup" aria-label="Use case" className="inline-flex rounded-full border border-line bg-white p-1 shadow-soft">
+      {(["family", "capital"] as UseCase[]).map((u) => (
+        <button
+          key={u}
+          type="button"
+          role="radio"
+          aria-checked={value === u}
+          onClick={() => onChange(u)}
+          className={`rounded-full px-4 py-1.5 text-[13px] font-black transition-colors ${value === u ? "bg-navy-strong text-white" : "text-navy hover:text-blue"}`}
+        >
+          {USE_CASES[u].label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function CreateWorkspace({ useCase, onCreated }: { useCase: UseCase; onCreated: (ws: CreatedWorkspace) => void }) {
   const copy = USE_CASES[useCase];
   const [name, setName] = useState(USE_CASES.family.defaults.name);
   const [principalLabel, setPrincipalLabel] = useState(USE_CASES.family.defaults.principal);
   const [operatorLabel, setOperatorLabel] = useState(USE_CASES.family.defaults.operator);
   const [riskLabel, setRiskLabel] = useState(USE_CASES.family.defaults.risk);
   const [limit, setLimit] = useState(USE_CASES.family.defaults.limit);
-  function pick(next: UseCase) {
-    const d = USE_CASES[next].defaults;
-    setUseCase(next);
+  const [shownCase, setShownCase] = useState<UseCase>("family");
+  if (shownCase !== useCase) {
+    const d = USE_CASES[useCase].defaults;
+    setShownCase(useCase);
     setName(d.name);
     setPrincipalLabel(d.principal);
     setOperatorLabel(d.operator);
@@ -361,51 +403,48 @@ function CreateWorkspace({ onCreated }: { onCreated: (ws: CreatedWorkspace) => v
     }
   }
 
-  const input = "mt-1 w-full rounded-[14px] border border-line bg-white px-3 py-2.5 text-[14px] font-semibold text-navy-strong focus:border-blue focus:outline-none";
+  const input = "mt-1.5 w-full rounded-[14px] border border-line bg-white px-3.5 py-3 text-[15px] font-bold text-navy-strong transition-colors focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/10";
+  const label = "text-[12px] font-black text-ink-2";
   return (
-    <Card>
-      <Eyebrow>New workspace</Eyebrow>
-      <div role="radiogroup" aria-label="Use case" className="mt-3 inline-flex rounded-full border border-line bg-surface-soft p-1">
-        {(["family", "capital"] as UseCase[]).map((u) => (
-          <button
-            key={u}
-            type="button"
-            role="radio"
-            aria-checked={useCase === u}
-            onClick={() => pick(u)}
-            className={`rounded-full px-4 py-1.5 text-[13px] font-black ${useCase === u ? "bg-blue text-white" : "text-navy"}`}
-          >
-            {USE_CASES[u].label}
-          </button>
-        ))}
-      </div>
-      <h2 className="mt-3 text-[26px] font-black tracking-[-0.02em] text-navy-strong">{copy.formTitle}</h2>
-      <p className="mt-2 max-w-[60ch] text-[14px] font-semibold text-ink-2">
-        {copy.pitch} Same CRESCO program either way. Creates its own Devnet mandate (not the judge lab); you receive one token per role, shown once.
+    <Card className="md:p-8">
+      <Eyebrow>Try it on Solana Devnet</Eyebrow>
+      <h2 className="mt-2 text-[28px] font-black tracking-[-0.02em] text-navy-strong">{copy.formTitle}</h2>
+      <p className="mt-2 max-w-[62ch] text-[14px] font-semibold leading-relaxed text-ink-2">
+        {copy.pitch} You get one private link per person, shown once.
       </p>
-      <form onSubmit={submit} className="mt-5 grid gap-4 md:grid-cols-2">
-        <label className="text-[12px] font-black text-ink-2">Desk name<input className={input} value={name} onChange={(e) => setName(e.target.value)} /></label>
-        <label className="text-[12px] font-black text-ink-2">Standing limit per action (USD)
-          <input className={input} inputMode="decimal" value={limit} onChange={(e) => setLimit(e.target.value)} aria-describedby="limit-help" />
-          <span id="limit-help" className="mt-1 block text-[11px] font-semibold text-ink-3">Devnet bounds: 0.05 to 5.00</span>
-        </label>
-        <label className="text-[12px] font-black text-ink-2">{copy.roles.principal.title}<input className={input} value={principalLabel} onChange={(e) => setPrincipalLabel(e.target.value)} /></label>
-        <label className="text-[12px] font-black text-ink-2">{copy.operatorField}<input className={input} value={operatorLabel} onChange={(e) => setOperatorLabel(e.target.value)} /></label>
-        <label className="text-[12px] font-black text-ink-2">{copy.roles.risk.title}<input className={input} value={riskLabel} onChange={(e) => setRiskLabel(e.target.value)} /></label>
-        <label className="text-[12px] font-black text-ink-2">Webhook for exception requests (optional, https)<input className={input} value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)} placeholder="https://hooks.example.com/cresco" /></label>
-        <label className="flex items-start gap-3 rounded-[16px] border border-line bg-surface-soft p-3 text-[13px] font-semibold text-ink-2 md:col-span-2">
-          <input type="checkbox" className="mt-1 size-4" checked={walletGuardian} onChange={(e) => setWalletGuardian(e.target.checked)} />
-          <span>
-            <span className="block font-black text-navy-strong">My wallet is the on-chain guardian (non-custodial)</span>
-            The {copy.roles.principal.title.toLowerCase()}&apos;s wallet signs the mandate, every exact exception and every pause, resume or revoke. The server prepares transactions but holds no authority over the mandate. Needs a Solana wallet set to Devnet with a little Devnet SOL for account rent.
-          </span>
-        </label>
-        <div className="md:col-span-2">
-          <button type="submit" disabled={busy} className="flex min-h-12 items-center gap-2 rounded-[16px] bg-blue px-5 text-[14px] font-black text-white shadow-button hover:bg-blue-strong disabled:opacity-60">
+      <form onSubmit={submit} className="mt-6 grid gap-5">
+        <div className="grid gap-4 md:grid-cols-3">
+          <label className={label}>{copy.roles.operator.title}<input className={input} value={operatorLabel} onChange={(e) => setOperatorLabel(e.target.value)} /></label>
+          <label className={label}>{copy.roles.principal.title}<input className={input} value={principalLabel} onChange={(e) => setPrincipalLabel(e.target.value)} /></label>
+          <label className={label}>{copy.roles.risk.title}<input className={input} value={riskLabel} onChange={(e) => setRiskLabel(e.target.value)} /></label>
+        </div>
+        <div className="grid gap-4 md:grid-cols-[1fr_1.4fr]">
+          <label className={label}>Standing limit per trade (USD)
+            <input className={`${input} text-[22px] tabular`} inputMode="decimal" value={limit} onChange={(e) => setLimit(e.target.value)} aria-describedby="limit-help" />
+            <span id="limit-help" className="mt-1 block text-[11px] font-semibold text-ink-3">Below it: acts alone. Above it: asks once. Devnet bounds 0.05 to 5.00.</span>
+          </label>
+          <label className={`flex cursor-pointer items-start gap-3 rounded-[18px] border p-4 text-[13px] font-semibold text-ink-2 transition-colors ${walletGuardian ? "border-green/40 bg-green-soft" : "border-line bg-surface-soft hover:border-blue/30"}`}>
+            <input type="checkbox" className="mt-1 size-4 accent-green" checked={walletGuardian} onChange={(e) => setWalletGuardian(e.target.checked)} />
+            <span>
+              <span className="flex items-center gap-1.5 font-black text-navy-strong"><Wallet className="size-4" /> My wallet is the on-chain guardian (non-custodial)</span>
+              The {copy.roles.principal.title.toLowerCase()}&apos;s wallet signs the mandate, every exact exception and every pause, resume or revoke. The server holds no authority over the mandate. Needs a Solana wallet on Devnet with a little Devnet SOL.
+            </span>
+          </label>
+        </div>
+        <details className="rounded-[16px] border border-line px-4 py-3">
+          <summary className="cursor-pointer text-[13px] font-black text-navy">More options</summary>
+          <div className="mt-3 grid gap-4 md:grid-cols-2">
+            <label className={label}>Desk name<input className={input} value={name} onChange={(e) => setName(e.target.value)} /></label>
+            <label className={label}>Webhook for exception requests (optional, https)<input className={input} value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)} placeholder="https://hooks.example.com/cresco" /></label>
+          </div>
+        </details>
+        <div className="flex flex-wrap items-center gap-4">
+          <button type="submit" disabled={busy} className="flex min-h-12 items-center gap-2 rounded-[16px] bg-blue px-6 text-[15px] font-black text-white shadow-button transition-colors hover:bg-blue-strong disabled:opacity-60">
             {busy ? <LoaderCircle className="size-4 animate-spin" /> : <KeyRound className="size-4" />} Create workspace
           </button>
-          {error ? <p role="alert" className="mt-3 text-[13px] font-bold text-loss-text">{error}</p> : null}
+          <p className="text-[12px] font-semibold text-ink-3">Creates its own Devnet mandate, separate from the judge lab.</p>
         </div>
+        {error ? <p role="alert" className="text-[13px] font-bold text-loss-text">{error}</p> : null}
       </form>
     </Card>
   );
@@ -487,6 +526,7 @@ export default function WorldFairDeskPage() {
   const [ruleAction, setRuleAction] = useState("");
   const [rulePeriod, setRulePeriod] = useState("");
   const idemRef = useRef<string>(newIdempotencyKey());
+  const [landingCase, setLandingCase] = useState<UseCase>("family");
 
   useEffect(() => {
     void Promise.resolve().then(() => {
@@ -623,6 +663,18 @@ export default function WorldFairDeskPage() {
   const notReady = Boolean(ws && ws.chain.status !== "READY");
   const walletGuardianWs = ws?.guardianMode === "principal-wallet";
 
+  const caseCopy = USE_CASES[ws ? caseOfWorkspace(ws) : landingCase];
+  const names = ws
+    ? { operator: ws.roles.operator.label, principal: ws.roles.principal.label, risk: ws.roles.risk.label }
+    : { operator: caseCopy.defaults.operator, principal: caseCopy.defaults.principal, risk: caseCopy.defaults.risk };
+  const limitMicro = mandate?.mandate?.maxActionNotionalMicroUsd ?? ws?.policy.maxActionNotionalMicroUsd ?? 500_000;
+  const points = railPoints(events, requests);
+  const aloneCount = events.filter((e) => e.type === "INTENT_ALLOWED").length;
+  const approvedCount = requests.filter((r) => r.status === "EXECUTED").length;
+  const amountMicro = toBase(amount);
+  const insideLimit = Number.isFinite(amountMicro) && amountMicro > 0 && amountMicro <= limitMicro;
+  const quickAmounts = [Math.max(50_000, Math.round(limitMicro * 0.6 / 10_000) * 10_000), Math.round(limitMicro * 1.5 / 10_000) * 10_000];
+
   return (
     <main className="relative min-h-screen bg-bg">
       <div className="relative mx-auto max-w-[1240px] px-5 pb-20 pt-6 md:px-10 md:pt-8">
@@ -638,56 +690,113 @@ export default function WorldFairDeskPage() {
           </nav>
         </header>
 
-        <section className="mt-10">
-          <p className="text-[12px] font-black uppercase tracking-[0.13em] text-blue">World’s Fair · CRESCO desk · {ws ? USE_CASES[caseOfWorkspace(ws)].label : "Family or delegated capital"}</p>
-          <h1 className="mt-3 max-w-[22ch] text-[40px] font-black leading-[1.02] tracking-[-0.04em] text-navy-strong md:text-[54px]">
-            Act alone inside the rules. Ask once for the exception.
-          </h1>
-          <p className="mt-4 max-w-[70ch] text-[16px] font-semibold leading-relaxed text-ink-2">
-            {ws ? USE_CASES[caseOfWorkspace(ws)].pitch : "A teenager with a parent, or a strategy with its allocator: the same CRESCO program on Solana Devnet enforces the limit, refuses what goes beyond it, and lets the responsible person grant one exact exception without widening the rules."}
-          </p>
-        </section>
+        {!id ? (
+          <>
+            <section className="mt-10 grid items-center gap-10 lg:mt-14 lg:grid-cols-[1.05fr_0.95fr]">
+              <div>
+                <p className="inline-flex items-center gap-2 rounded-full border border-green/30 bg-green-soft px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-green-strong">
+                  <span className="size-1.5 rounded-full bg-green" /> Live on Solana Devnet · Colosseum World’s Fair
+                </p>
+                <h1 className="mt-5 max-w-[16ch] text-[42px] font-black leading-[1.0] tracking-[-0.045em] text-navy-strong md:text-[60px]">
+                  Act alone inside the rules. Ask once for the exception.
+                </h1>
+                <p className="mt-5 max-w-[56ch] text-[17px] font-semibold leading-relaxed text-ink-2">{caseCopy.pitch}</p>
+                <div className="mt-6 flex flex-wrap items-center gap-3">
+                  <UseCaseToggle value={landingCase} onChange={setLandingCase} />
+                  <span className="text-[13px] font-semibold text-ink-3">Same CRESCO program, two kinds of people.</span>
+                </div>
+              </div>
+              <Card className="md:p-7">
+                <div className="flex items-center justify-between gap-3">
+                  <Eyebrow>How the line works</Eyebrow>
+                  <Pill tone="border-line bg-surface-soft text-navy">Example</Pill>
+                </div>
+                <div className="mt-6">
+                  <MandateRail limitMicroUsd={500_000} operator={names.operator} principal={names.principal} points={[{ id: "a", amountMicroUsd: 300_000, kind: "alone" }, { id: "b", amountMicroUsd: 750_000, kind: "pending" }]} />
+                </div>
+                <ul className="mt-6 grid gap-2 text-[14px] font-bold">
+                  <li className="flex items-center justify-between rounded-[14px] bg-green-soft px-4 py-3 text-green-strong"><span>$0.30 · executed alone</span><Zap className="size-4" /></li>
+                  <li className="flex items-center justify-between rounded-[14px] bg-yellow-soft px-4 py-3 text-orange-text"><span>$0.75 · one exact request to {names.principal}</span><Bell className="size-4" /></li>
+                  <li className="flex items-center justify-between rounded-[14px] bg-blue-soft px-4 py-3 text-blue"><span>Approved once · limit still $0.50</span><ShieldCheck className="size-4" /></li>
+                </ul>
+                <p className="mt-4 text-[12px] font-semibold text-ink-3">The line is enforced by the CRESCO program on Solana, not by this page.</p>
+              </Card>
+            </section>
+
+            <section className="mt-12">
+              <HowItWorks useCase={landingCase} />
+            </section>
+
+            <section className="mt-6">
+              <ProofStrip />
+            </section>
+
+            <section className="mt-12">
+              <CreateWorkspace useCase={landingCase} onCreated={onCreated} />
+            </section>
+          </>
+        ) : null}
 
         <div className="mt-8 grid gap-6">
-          {!id ? <CreateWorkspace onCreated={onCreated} /> : null}
           {handoff ? <TokenHandoff ws={handoff} onDone={() => setHandoff(null)} /> : null}
           {loadError ? <p role="alert" className="rounded-[16px] border border-loss/25 bg-loss-soft p-4 text-[13px] font-bold text-loss-text">{loadError}</p> : null}
+          {id && !ws && !loadError ? (
+            <p className="flex items-center gap-2 text-[14px] font-bold text-ink-2"><LoaderCircle className="size-4 animate-spin" /> Loading the workspace…</p>
+          ) : null}
 
           {ws ? (
             <>
-              <Card>
+              <Card className="md:p-7">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
-                    <Eyebrow>Workspace {ws.id}</Eyebrow>
-                    <h2 className="mt-1 text-[26px] font-black text-navy-strong">{ws.name}</h2>
-                    <p className="mt-1 text-[13px] font-semibold text-ink-2">
-                      {ws.roles.operator.label} · {ws.roles.principal.label} · {ws.roles.risk.label}
-                      {ws.roles.principal.wallet ? ` · principal wallet ${short(ws.roles.principal.wallet)}` : ""}
-                    </p>
+                    <Eyebrow>{caseCopy.label} desk · {ws.id}</Eyebrow>
+                    <h1 className="mt-1 text-[30px] font-black tracking-[-0.03em] text-navy-strong md:text-[36px]">{ws.name}</h1>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {(["operator", "principal", "risk"] as WorkflowRole[]).map((r) => (
+                        <span key={r} className="inline-flex items-center gap-2 rounded-full border border-line bg-white py-1 pl-1 pr-3 text-[12px] font-bold text-navy">
+                          <Avatar name={names[r]} tone={r === "operator" ? "bg-green-soft text-green-strong" : r === "principal" ? "bg-blue-soft text-blue" : "bg-lavender-soft text-navy"} />
+                          {names[r]}{names[r].toLowerCase() !== caseCopy.roles[r].title.toLowerCase() ? <span className="text-ink-3">· {caseCopy.roles[r].title}</span> : null}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     {mandateStatus ? (
-                      <Pill tone={mandateStatus === "ACTIVE" ? STATUS_TONE.EXECUTED : mandateStatus === "PAUSED" ? STATUS_TONE.PENDING : STATUS_TONE.UNKNOWN}>Mandate {mandateStatus}</Pill>
+                      <Pill tone={mandateStatus === "ACTIVE" ? STATUS_TONE.ACTIVE : mandateStatus === "PAUSED" ? STATUS_TONE.PENDING : STATUS_TONE.UNKNOWN}>Mandate {mandateStatus}</Pill>
                     ) : (
                       <Pill tone={STATUS_TONE.STALE}>{ws.chain.status.replaceAll("_", " ")}</Pill>
                     )}
-                    {mandate?.mandate ? <Pill tone="border-line bg-surface-soft text-navy">nonce {mandate.mandate.nonce}</Pill> : null}
-                    {ws.chain.accounts?.mandate ? (
-                      <a href={`https://explorer.solana.com/address/${ws.chain.accounts.mandate}?cluster=devnet`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-full border border-line px-3 py-1.5 text-[12px] font-extrabold text-blue">
-                        Mandate account <ExternalLink className="size-3" />
-                      </a>
-                    ) : null}
-                    <button type="button" onClick={refresh} aria-label="Refresh" className="grid size-8 place-items-center rounded-full border border-line text-navy"><RefreshCw className="size-4" /></button>
+                    <GuardianBadge walletGuardian={walletGuardianWs} wallet={ws.roles.principal.wallet} />
+                    {ws.chain.accounts?.mandate ? <ExternalChip href={`https://explorer.solana.com/address/${ws.chain.accounts.mandate}?cluster=devnet`}>Mandate on Explorer</ExternalChip> : null}
+                    <button type="button" onClick={refresh} aria-label="Refresh" className="grid size-8 place-items-center rounded-full border border-line bg-white text-navy hover:border-blue/40"><RefreshCw className="size-4" /></button>
                   </div>
                 </div>
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-[18px] bg-surface-soft p-4"><Eyebrow>Standing limit / action</Eyebrow><p className="mt-1 text-[22px] font-black tabular text-navy-strong">{usd(mandate?.mandate?.maxActionNotionalMicroUsd ?? ws.policy.maxActionNotionalMicroUsd)}</p></div>
-                  <div className="rounded-[18px] bg-surface-soft p-4"><Eyebrow>Period notional cap</Eyebrow><p className="mt-1 text-[22px] font-black tabular text-navy-strong">{usd(mandate?.mandate?.maxPeriodNotionalMicroUsd ?? ws.policy.maxPeriodNotionalMicroUsd)}</p></div>
-                  <div className="rounded-[18px] bg-surface-soft p-4"><Eyebrow>Pending exceptions</Eyebrow><p className="mt-1 text-[22px] font-black tabular text-navy-strong">{pending.length}</p></div>
+
+                <div className="mt-7">
+                  <MandateRail limitMicroUsd={limitMicro} operator={names.operator} principal={names.principal} points={points} />
                 </div>
+
+                <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-[18px] bg-surface-soft p-4">
+                    <Eyebrow>Standing limit / trade</Eyebrow>
+                    <p className="mt-1 text-[24px] font-black tabular text-navy-strong">{usd(limitMicro)}</p>
+                    <p className="text-[12px] font-semibold text-ink-3">Period cap {usd(mandate?.mandate?.maxPeriodNotionalMicroUsd ?? ws.policy.maxPeriodNotionalMicroUsd)}</p>
+                  </div>
+                  <div className="rounded-[18px] bg-surface-soft p-4">
+                    <Eyebrow>Activity</Eyebrow>
+                    <p className="mt-1 text-[24px] font-black tabular text-navy-strong">{aloneCount} alone · {approvedCount} approved</p>
+                    <p className="text-[12px] font-semibold text-ink-3">Every one with an Explorer receipt</p>
+                  </div>
+                  <div className={`rounded-[18px] p-4 ${pending.length ? "bg-yellow-soft" : "bg-surface-soft"}`}>
+                    <Eyebrow>Waiting for {names.principal}</Eyebrow>
+                    <p className={`mt-1 text-[24px] font-black tabular ${pending.length ? "text-orange-text" : "text-navy-strong"}`}>{pending.length}</p>
+                    <p className="text-[12px] font-semibold text-ink-3">{pending.length ? "Exact requests to decide" : "Nothing to decide"}</p>
+                  </div>
+                </div>
+
                 {notReady && token("principal") && ws.chain.status === "NOT_BOOTSTRAPPED" ? (
-                  <div className="mt-4 rounded-[18px] border border-blue/25 bg-blue-soft p-4">
-                    <p className="text-[14px] font-black text-navy-strong">Create the mandate on Devnet</p>
+                  <div className="mt-5 rounded-[18px] border border-blue/25 bg-blue-soft p-5">
+                    <p className="text-[15px] font-black text-navy-strong">Create the mandate on Solana Devnet</p>
                     {walletGuardianWs ? (
                       <p className="mt-1 text-[13px] font-semibold text-ink-2">Your wallet becomes the on-chain guardian: one transaction creates the charter, mandate, asset rule and trade vaults, and you sign it. The lab then funds the Devnet vault.</p>
                     ) : (
@@ -707,47 +816,71 @@ export default function WorldFairDeskPage() {
                 {actionError ? <p role="alert" className="mt-4 rounded-[14px] border border-loss/25 bg-loss-soft p-3 text-[13px] font-bold text-loss-text">{actionError}</p> : null}
               </Card>
 
-              <div role="tablist" aria-label="Desk views" className="flex flex-wrap gap-2">
-                {([...roles, "history", "api"] as Tab[]).map((t) => (
-                  <button
-                    key={t}
-                    role="tab"
-                    aria-selected={tab === t}
-                    onClick={() => setTab(t)}
-                    className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[13px] font-black ${tab === t ? "border-blue bg-blue text-white" : "border-line bg-white text-navy"}`}
-                  >
-                    {t === "history" ? <History className="size-4" /> : t === "api" ? <SlidersHorizontal className="size-4" /> : null}
-                    {t === "history" ? "History" : t === "api" ? "API" : roleCopy[t].title}
-                    {(t === "principal" || t === "risk") && pendingCount > 0 ? (
-                      <span className="inline-flex items-center gap-0.5 rounded-full bg-orange px-1.5 text-[11px] text-white"><Bell className="size-3" />{pendingCount}</span>
-                    ) : null}
-                  </button>
-                ))}
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-[12px] font-black uppercase tracking-[0.12em] text-ink-3">View as</span>
+                <div role="tablist" aria-label="Desk views" className="flex flex-wrap gap-1.5 rounded-[22px] border border-line bg-white p-1 shadow-soft sm:rounded-full">
+                  {([...roles, "history", "api"] as Tab[]).map((t) => (
+                    <button
+                      key={t}
+                      role="tab"
+                      aria-selected={tab === t}
+                      onClick={() => setTab(t)}
+                      className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-black transition-colors ${tab === t ? "bg-navy-strong text-white" : "text-navy hover:bg-surface-soft"}`}
+                    >
+                      {t === "history" ? <History className="size-4" /> : t === "api" ? <SlidersHorizontal className="size-4" /> : null}
+                      {t === "history" ? "History" : t === "api" ? "API & agents" : roleCopy[t].title}
+                      {(t === "principal" || t === "risk") && pendingCount > 0 ? (
+                        <span className="inline-flex items-center gap-0.5 rounded-full bg-orange px-1.5 text-[11px] text-white"><Bell className="size-3" />{pendingCount}</span>
+                      ) : null}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {tab === "operator" && token("operator") ? (
-                <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-                  <Card>
-                    <Eyebrow>{roleCopy.operator.title}</Eyebrow>
-                    <p className="mt-1 text-[13px] font-semibold text-ink-2">{roleCopy.operator.blurb}</p>
-                    <form onSubmit={submitIntent} className="mt-4 grid gap-3">
+                <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+                  <Card className="md:p-7">
+                    <div className="flex items-center gap-3">
+                      <Avatar name={names.operator} tone="bg-green-soft text-green-strong" />
+                      <div>
+                        <p className="text-[16px] font-black text-navy-strong">{names.operator}</p>
+                        <p className="text-[12px] font-semibold text-ink-2">{roleCopy.operator.blurb}</p>
+                      </div>
+                    </div>
+                    <form onSubmit={submitIntent} className="mt-6 grid gap-4">
                       <label className="text-[12px] font-black text-ink-2">{USE_CASES[caseOfWorkspace(ws)].amountLabel}
-                        <input className="mt-1 w-full rounded-[14px] border border-line px-3 py-2.5 text-[15px] font-bold text-navy-strong" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                        <div className="relative mt-1.5">
+                          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[26px] font-black text-ink-3">$</span>
+                          <input className="w-full rounded-[18px] border border-line bg-white py-4 pl-10 pr-4 text-[30px] font-black tabular text-navy-strong focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/10" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                        </div>
                       </label>
-                      <label className="text-[12px] font-black text-ink-2">Max slippage (bps, 1–300)
-                        <input className="mt-1 w-full rounded-[14px] border border-line px-3 py-2.5 text-[15px] font-bold text-navy-strong" inputMode="numeric" value={slippage} onChange={(e) => setSlippage(e.target.value)} />
-                      </label>
-                      <button type="submit" disabled={actionBusy === "intent" || notReady || mandateStatus === "REVOKED"} className="flex min-h-12 items-center justify-center gap-2 rounded-[16px] bg-blue px-5 text-[14px] font-black text-white shadow-button disabled:opacity-60">
+                      <div className="flex flex-wrap gap-2">
+                        {quickAmounts.map((q) => (
+                          <button key={q} type="button" onClick={() => setAmount((q / 1e6).toFixed(2))} className={`rounded-full border px-3 py-1.5 text-[12px] font-black ${q <= limitMicro ? "border-green/30 bg-green-soft text-green-strong" : "border-yellow/50 bg-yellow-soft text-orange-text"}`}>
+                            {usd(q)} · {q <= limitMicro ? "inside the limit" : "above the limit"}
+                          </button>
+                        ))}
+                      </div>
+                      <p className={`rounded-[14px] px-4 py-3 text-[13px] font-bold ${insideLimit ? "bg-green-soft text-green-strong" : "bg-yellow-soft text-orange-text"}`}>
+                        {insideLimit ? `Under ${usd(limitMicro)}: executes now, nobody is asked.` : `Above ${usd(limitMicro)}: the program refuses it and asks ${names.principal} once for this exact trade.`}
+                      </p>
+                      <details className="text-[12px] font-black text-ink-2">
+                        <summary className="cursor-pointer text-navy">Advanced</summary>
+                        <label className="mt-2 block">Max slippage (bps, 1–300)
+                          <input className="mt-1 w-full rounded-[14px] border border-line px-3 py-2.5 text-[15px] font-bold text-navy-strong" inputMode="numeric" value={slippage} onChange={(e) => setSlippage(e.target.value)} />
+                        </label>
+                      </details>
+                      <button type="submit" disabled={actionBusy === "intent" || notReady || mandateStatus === "REVOKED"} className="flex min-h-13 items-center justify-center gap-2 rounded-[16px] bg-blue px-5 py-3.5 text-[15px] font-black text-white shadow-button transition-colors hover:bg-blue-strong disabled:opacity-60">
                         {actionBusy === "intent" ? <><LoaderCircle className="size-4 animate-spin" /> Executing on Devnet…</> : <>Submit intent <ArrowRight className="size-4" /></>}
                       </button>
                       <p className="text-[11px] font-bold text-ink-3">Each submit carries an idempotency key: a network retry cannot execute twice.</p>
                     </form>
-                    {intentResult ? <IntentOutcome result={intentResult} requests={requests} /> : null}
+                    {intentResult ? <IntentOutcome result={intentResult} requests={requests} principal={names.principal} /> : null}
                   </Card>
-                  <Card>
-                    <Eyebrow>My exception requests</Eyebrow>
-                    <div className="mt-3 grid gap-3">
-                      {requests.length ? requests.slice(0, 8).map((r) => <RequestCard key={r.id} req={r} />) : <p className="text-[13px] font-semibold text-ink-2">No requests yet. Submit an amount above the standing limit to create one.</p>}
+                  <Card className="md:p-7">
+                    <Eyebrow>My requests to {names.principal}</Eyebrow>
+                    <div className="mt-4 grid gap-3">
+                      {requests.length ? requests.slice(0, 8).map((r) => <RequestCard key={r.id} req={r} names={names} />) : <p className="rounded-[18px] border border-dashed border-line p-6 text-center text-[13px] font-semibold text-ink-2">No requests yet. Try an amount above the limit to create one.</p>}
                     </div>
                   </Card>
                 </div>
@@ -755,38 +888,44 @@ export default function WorldFairDeskPage() {
 
               {(tab === "principal" || tab === "risk") && token(tab) ? (
                 <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-                  <Card>
-                    <Eyebrow>{roleCopy[tab].title} · decisions</Eyebrow>
-                    <p className="mt-1 text-[13px] font-semibold text-ink-2">{roleCopy[tab].blurb}</p>
-                    <label className="mt-4 block text-[12px] font-black text-ink-2">Decision note (optional)
-                      <input className="mt-1 w-full rounded-[14px] border border-line px-3 py-2 text-[14px] font-semibold" value={note} onChange={(e) => setNote(e.target.value)} maxLength={280} />
-                    </label>
-                    <div className="mt-4 grid gap-3">
+                  <Card className="md:p-7">
+                    <div className="flex items-center gap-3">
+                      <Avatar name={tab === "principal" ? names.principal : names.risk} tone={tab === "principal" ? "bg-blue-soft text-blue" : "bg-lavender-soft text-navy"} />
+                      <div>
+                        <p className="text-[16px] font-black text-navy-strong">{tab === "principal" ? names.principal : names.risk} · decisions</p>
+                        <p className="text-[12px] font-semibold text-ink-2">{roleCopy[tab].blurb}</p>
+                      </div>
+                    </div>
+                    <div className="mt-5 grid gap-3">
                       {pending.length ? pending.map((r) => (
-                        <RequestCard key={r.id} req={r}>
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            <button type="button" disabled={Boolean(actionBusy)} onClick={() => decide(r, "APPROVE", tab)} className="inline-flex min-h-10 items-center gap-1.5 rounded-[13px] bg-green px-4 text-[13px] font-black text-white disabled:opacity-60">
+                        <RequestCard key={r.id} req={r} names={names}>
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            <button type="button" disabled={Boolean(actionBusy)} onClick={() => decide(r, "APPROVE", tab)} className="inline-flex min-h-11 items-center gap-1.5 rounded-[14px] bg-green px-5 text-[14px] font-black text-white shadow-soft transition-opacity hover:opacity-90 disabled:opacity-60">
                               {actionBusy === `decide-${r.id}` ? <LoaderCircle className="size-4 animate-spin" /> : tab === "principal" && ws.roles.principal.wallet ? <Wallet className="size-4" /> : <Check className="size-4" />}
                               Approve exactly once
                             </button>
-                            <button type="button" disabled={Boolean(actionBusy)} onClick={() => decide(r, "REFUSE", tab)} className="inline-flex min-h-10 items-center gap-1.5 rounded-[13px] border border-loss/30 bg-white px-4 text-[13px] font-black text-loss-text disabled:opacity-60">
+                            <button type="button" disabled={Boolean(actionBusy)} onClick={() => decide(r, "REFUSE", tab)} className="inline-flex min-h-11 items-center gap-1.5 rounded-[14px] border border-loss/30 bg-white px-4 text-[14px] font-black text-loss-text disabled:opacity-60">
                               <X className="size-4" /> Refuse
                             </button>
                           </div>
+                          {tab === "principal" && walletGuardianWs ? <p className="mt-2 text-[12px] font-semibold text-ink-3">Your wallet signs the exact grant. Sign within 90 seconds.</p> : null}
                         </RequestCard>
-                      )) : <p className="text-[13px] font-semibold text-ink-2">Nothing waiting. Exception requests appear here as soon as the operator crosses the standing limit.</p>}
+                      )) : <p className="rounded-[18px] border border-dashed border-line p-6 text-center text-[13px] font-semibold text-ink-2">Nothing waiting. Requests appear here as soon as {names.operator} crosses the limit.</p>}
                     </div>
+                    <label className="mt-4 block text-[12px] font-black text-ink-2">Note with your decision (optional)
+                      <input className="mt-1 w-full rounded-[14px] border border-line px-3 py-2.5 text-[14px] font-semibold" value={note} onChange={(e) => setNote(e.target.value)} maxLength={280} />
+                    </label>
                     {requests.some((r) => r.status !== "PENDING") ? (
-                      <details className="mt-4">
+                      <details className="mt-5">
                         <summary className="cursor-pointer text-[13px] font-black text-navy">Decided requests</summary>
-                        <div className="mt-3 grid gap-3">{requests.filter((r) => r.status !== "PENDING").slice(0, 10).map((r) => <RequestCard key={r.id} req={r} />)}</div>
+                        <div className="mt-3 grid gap-3">{requests.filter((r) => r.status !== "PENDING").slice(0, 10).map((r) => <RequestCard key={r.id} req={r} names={names} />)}</div>
                       </details>
                     ) : null}
                   </Card>
 
-                  <div className="grid gap-6">
+                  <div className="grid content-start gap-6">
                     <Card>
-                      <Eyebrow>Period consumption</Eyebrow>
+                      <Eyebrow>This period</Eyebrow>
                       {mandate?.consumption ? (
                         <div className="mt-3 grid gap-3">
                           <Bar pct={mandate.consumption.notionalUsedPct} label={`Notional ${usd(mandate.consumption.spentNotionalMicroUsd)} / ${usd(mandate.consumption.maxPeriodNotionalMicroUsd)}`} />
@@ -794,39 +933,42 @@ export default function WorldFairDeskPage() {
                           <p className="text-[11px] font-bold text-ink-3">Period ends {mandate.consumption.periodEndsAt ? new Date(mandate.consumption.periodEndsAt).toLocaleString() : "n/a"} · read from chain {new Date(mandate.observedAt).toLocaleTimeString()}</p>
                         </div>
                       ) : <p className="mt-2 text-[13px] font-semibold text-ink-2">Available once the mandate is live.</p>}
-                      <form
-                        className="mt-4 grid grid-cols-2 gap-2"
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          void run("rule", () => workflowApi.updateAssetRule(ws.id, token(tab)!, { ...(ruleAction ? { maxActionAmount: toBase(ruleAction) } : {}), ...(rulePeriod ? { maxPeriodAmount: toBase(rulePeriod) } : {}) }));
-                        }}
-                      >
-                        <label className="text-[11px] font-black text-ink-2">Max / action (devUSDC)<input className="mt-1 w-full rounded-[12px] border border-line px-2 py-2 text-[13px] font-bold" value={ruleAction} onChange={(e) => setRuleAction(e.target.value)} placeholder={String((mandate?.assetRule?.maxActionAmount ?? ws.policy.maxActionAmount) / 1e6)} /></label>
-                        <label className="text-[11px] font-black text-ink-2">Max / period (devUSDC)<input className="mt-1 w-full rounded-[12px] border border-line px-2 py-2 text-[13px] font-bold" value={rulePeriod} onChange={(e) => setRulePeriod(e.target.value)} placeholder={String((mandate?.assetRule?.maxPeriodAmount ?? ws.policy.maxPeriodAmount) / 1e6)} /></label>
-                        <button type="submit" disabled={Boolean(actionBusy) || notReady} className="col-span-2 rounded-[12px] border border-line px-3 py-2 text-[12px] font-black text-navy disabled:opacity-60">Update asset rule (resets period counters)</button>
-                      </form>
+                      <details className="mt-4">
+                        <summary className="cursor-pointer text-[12px] font-black text-navy">Edit the asset rule</summary>
+                        <form
+                          className="mt-3 grid grid-cols-2 gap-2"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            void run("rule", () => workflowApi.updateAssetRule(ws.id, token(tab)!, { ...(ruleAction ? { maxActionAmount: toBase(ruleAction) } : {}), ...(rulePeriod ? { maxPeriodAmount: toBase(rulePeriod) } : {}) }));
+                          }}
+                        >
+                          <label className="text-[11px] font-black text-ink-2">Max / action (devUSDC)<input className="mt-1 w-full rounded-[12px] border border-line px-2 py-2 text-[13px] font-bold" value={ruleAction} onChange={(e) => setRuleAction(e.target.value)} placeholder={String((mandate?.assetRule?.maxActionAmount ?? ws.policy.maxActionAmount) / 1e6)} /></label>
+                          <label className="text-[11px] font-black text-ink-2">Max / period (devUSDC)<input className="mt-1 w-full rounded-[12px] border border-line px-2 py-2 text-[13px] font-bold" value={rulePeriod} onChange={(e) => setRulePeriod(e.target.value)} placeholder={String((mandate?.assetRule?.maxPeriodAmount ?? ws.policy.maxPeriodAmount) / 1e6)} /></label>
+                          <button type="submit" disabled={Boolean(actionBusy) || notReady} className="col-span-2 rounded-[12px] border border-line px-3 py-2 text-[12px] font-black text-navy disabled:opacity-60">Update asset rule (resets period counters)</button>
+                        </form>
+                      </details>
                     </Card>
 
                     {tab === "principal" ? (
                       <Card>
-                        <Eyebrow>Mandate lifecycle</Eyebrow>
+                        <Eyebrow>Your controls</Eyebrow>
                         <div className="mt-3 flex flex-wrap gap-2">
                           {mandateStatus === "ACTIVE" ? (
-                            <button type="button" disabled={Boolean(actionBusy)} onClick={() => run("pause", () => workflowApi.setStatus(ws.id, token("principal")!, "PAUSED"))} className="inline-flex items-center gap-1.5 rounded-[12px] border border-line px-3 py-2 text-[12px] font-black text-navy"><Pause className="size-4" /> Pause</button>
+                            <button type="button" disabled={Boolean(actionBusy)} onClick={() => run("pause", () => workflowApi.setStatus(ws.id, token("principal")!, "PAUSED"))} className="inline-flex items-center gap-1.5 rounded-[12px] border border-line px-3 py-2 text-[12px] font-black text-navy hover:border-blue/40"><Pause className="size-4" /> Pause</button>
                           ) : null}
                           {mandateStatus === "PAUSED" ? (
-                            <button type="button" disabled={Boolean(actionBusy)} onClick={() => run("resume", () => workflowApi.setStatus(ws.id, token("principal")!, "ACTIVE"))} className="inline-flex items-center gap-1.5 rounded-[12px] border border-line px-3 py-2 text-[12px] font-black text-navy"><Play className="size-4" /> Resume</button>
+                            <button type="button" disabled={Boolean(actionBusy)} onClick={() => run("resume", () => workflowApi.setStatus(ws.id, token("principal")!, "ACTIVE"))} className="inline-flex items-center gap-1.5 rounded-[12px] border border-line px-3 py-2 text-[12px] font-black text-navy hover:border-blue/40"><Play className="size-4" /> Resume</button>
                           ) : null}
                           {mandateStatus && mandateStatus !== "REVOKED" ? (
                             <button type="button" disabled={Boolean(actionBusy)} onClick={() => { if (window.confirm("Revoke permanently? This mandate can never be reactivated.")) void run("revoke", () => workflowApi.setStatus(ws.id, token("principal")!, "REVOKED", "REVOKE")); }} className="inline-flex items-center gap-1.5 rounded-[12px] border border-loss/30 px-3 py-2 text-[12px] font-black text-loss-text"><AlertTriangle className="size-4" /> Revoke</button>
                           ) : null}
-                          <button type="button" disabled={Boolean(actionBusy) || notReady} onClick={() => run("topup", () => workflowApi.topUpVault(ws.id, token("principal")!))} className="inline-flex items-center gap-1.5 rounded-[12px] border border-line px-3 py-2 text-[12px] font-black text-navy">Top up Devnet vault</button>
+                          <button type="button" disabled={Boolean(actionBusy) || notReady} onClick={() => run("topup", () => workflowApi.topUpVault(ws.id, token("principal")!))} className="inline-flex items-center gap-1.5 rounded-[12px] border border-line px-3 py-2 text-[12px] font-black text-navy hover:border-blue/40">Top up Devnet vault</button>
                         </div>
                         <form className="mt-4 flex flex-wrap items-end gap-2" onSubmit={(e) => { e.preventDefault(); if (newLimit) void run("policy", () => workflowApi.revisePolicy(ws.id, token("principal")!, { maxActionNotionalMicroUsd: toBase(newLimit) })); }}>
-                          <label className="text-[11px] font-black text-ink-2">New standing limit (USD)<input className="mt-1 w-32 rounded-[12px] border border-line px-2 py-2 text-[13px] font-bold" value={newLimit} onChange={(e) => setNewLimit(e.target.value)} placeholder={String((mandate?.mandate?.maxActionNotionalMicroUsd ?? ws.policy.maxActionNotionalMicroUsd) / 1e6)} /></label>
+                          <label className="text-[11px] font-black text-ink-2">New standing limit (USD)<input className="mt-1 w-32 rounded-[12px] border border-line px-2 py-2 text-[13px] font-bold" value={newLimit} onChange={(e) => setNewLimit(e.target.value)} placeholder={String(limitMicro / 1e6)} /></label>
                           <button type="submit" disabled={Boolean(actionBusy) || notReady} className="rounded-[12px] bg-navy px-3 py-2 text-[12px] font-black text-white disabled:opacity-60">Revise policy</button>
                         </form>
-                        <p className="mt-2 text-[11px] font-bold text-ink-3">Every lifecycle change advances the mandate nonce: pending exceptions become stale automatically.</p>
+                        <p className="mt-2 text-[11px] font-bold text-ink-3">Any change to the mandate makes pending requests stale automatically.</p>
                         <div className="mt-4 border-t border-line-soft pt-4">
                           {walletGuardianWs && ws.roles.principal.wallet ? (
                             <p className="flex items-center gap-2 text-[12px] font-bold text-green-strong"><Wallet className="size-4" /> On-chain guardian: {short(ws.roles.principal.wallet)}. Every exception and lifecycle change is a transaction this wallet signs.</p>
@@ -843,36 +985,35 @@ export default function WorldFairDeskPage() {
               ) : null}
 
               {tab === "history" ? (
-                <Card>
-                  <div className="flex items-center justify-between gap-2">
-                    <Eyebrow>Durable history · newest first</Eyebrow>
+                <Card className="md:p-7">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <Eyebrow>What happened · newest first</Eyebrow>
                     {roles[0] ? (
                       <button type="button" disabled={Boolean(actionBusy)} onClick={() => run("reconcile", () => workflowApi.reconcile(ws.id, token(roles[0])!))} className="rounded-full border border-line px-3 py-1.5 text-[12px] font-black text-navy">Reconcile unknown outcomes</button>
                     ) : null}
                   </div>
-                  <ol className="mt-4 divide-y divide-line-soft">
-                    {events.map((e) => (
-                      <li key={e.id} className="py-3">
-                        <div className="flex flex-wrap items-center gap-2 text-[11px] font-black uppercase tracking-[0.08em] text-ink-3">
-                          <span>{new Date(e.at).toLocaleString()}</span>
-                          <span>·</span>
-                          <span>{e.type.replaceAll("_", " ")}</span>
-                          <span>·</span>
-                          <span>{e.actor}</span>
-                        </div>
-                        <p className="mt-1 text-[14px] font-bold text-navy-strong">{e.summary}</p>
-                        <Signatures event={e} />
-                      </li>
-                    ))}
+                  <ol className="mt-3 divide-y divide-line-soft">
+                    {events.map((e) => <EventRow key={e.id} event={e} names={names} />)}
                   </ol>
                 </Card>
               ) : null}
 
               {tab === "api" ? (
-                <Card>
-                  <Eyebrow>Strategy integration</Eyebrow>
-                  <p className="mt-2 text-[13px] font-semibold text-ink-2">A strategy integrates with two calls: submit an intent, then read its decision or wait for the principal. Full contract: <code className="font-mono">GET /api/v0.4/worlds-fair/openapi</code>.</p>
-                  <pre className="mt-4 overflow-x-auto rounded-[16px] bg-navy-strong p-4 text-[12px] leading-relaxed text-white">{`curl -X POST $CRESCO_API/api/v0.4/worlds-fair/workspaces/${ws.id}/intents \\
+                <div className="grid gap-6 lg:grid-cols-2">
+                  <Card className="md:p-7">
+                    <Eyebrow>AI agent as operator (MCP)</Eyebrow>
+                    <p className="mt-2 text-[13px] font-semibold leading-relaxed text-ink-2">Give Claude, or any MCP client, the operator link of this desk. It can act inside the limit and ask once above it. It has no tool to approve, raise its limit, pause or revoke.</p>
+                    <pre className="mt-4 overflow-x-auto rounded-[16px] bg-navy-strong p-4 text-[12px] leading-relaxed text-white">{`claude mcp add cresco-operator \\
+  -e CRESCO_API_URL=$CRESCO_API \\
+  -e CRESCO_WORKSPACE_ID=${ws.id} \\
+  -e CRESCO_OPERATOR_TOKEN=$OPERATOR_TOKEN \\
+  -- node integrations/mcp/cresco-mcp.mjs`}</pre>
+                    <p className="mt-3 text-[12px] font-bold text-ink-3">Tools: cresco_get_mandate, cresco_submit_intent, cresco_get_request, cresco_wait_for_decision, cresco_history.</p>
+                  </Card>
+                  <Card className="md:p-7">
+                    <Eyebrow>HTTP API for strategies</Eyebrow>
+                    <p className="mt-2 text-[13px] font-semibold text-ink-2">Two calls: submit an intent, then read its decision. Full contract: <code className="font-mono">GET /api/v0.4/worlds-fair/openapi</code>.</p>
+                    <pre className="mt-4 overflow-x-auto rounded-[16px] bg-navy-strong p-4 text-[12px] leading-relaxed text-white">{`curl -X POST $CRESCO_API/api/v0.4/worlds-fair/workspaces/${ws.id}/intents \\
   -H "authorization: Bearer $OPERATOR_TOKEN" \\
   -H "idempotency-key: order-$(date +%s)" \\
   -H "content-type: application/json" \\
@@ -880,12 +1021,17 @@ export default function WorldFairDeskPage() {
 
 # 200 ALLOW (executed) · 202 PENDING_PRINCIPAL (Policy Diff + request)
 # 200 REFUSE (hard boundary) · 409 BUSY · 503 UNKNOWN (reconcile first)`}</pre>
-                  <p className="mt-3 text-[12px] font-bold text-ink-3">Example client: <code className="font-mono">examples/worlds-fair-strategy-client.mjs</code> · Truth boundary: Devnet only, server-held guardian and workspace delegate, no custody or customer claim.</p>
-                </Card>
+                    <p className="mt-3 text-[12px] font-bold text-ink-3">Example client: <code className="font-mono">examples/worlds-fair-strategy-client.mjs</code></p>
+                  </Card>
+                </div>
               ) : null}
             </>
           ) : null}
         </div>
+
+        <footer className="mt-16 border-t border-line pt-5 text-[12px] font-semibold text-ink-3">
+          Solana Devnet only · no mainnet funds, brokerage or custody · {ws && walletGuardianWs ? "guardian: the principal's own wallet" : "guardian: Devnet lab key unless the principal wallet mode is chosen"} · no customer validation claimed.
+        </footer>
       </div>
     </main>
   );
