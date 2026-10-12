@@ -401,6 +401,23 @@ export function deriveWorldFairWorkspaceDelegate(guardian, workspaceId) {
   return Keypair.fromSeed(seed);
 }
 
+// Mirrors programs/keys price_to_micro_usd: integer mantissa, truncating division.
+export function worldFairPythUnitPriceMicroUsd(snapshot) {
+  const exponent = Number.isInteger(Number(snapshot?.priceExponent))
+    ? Number(snapshot.priceExponent)
+    : WORLD_FAIR_PYTH_FEED.exponent;
+  const mantissa = Number.isFinite(Number(snapshot?.priceMantissa))
+    ? Number(snapshot.priceMantissa)
+    : Math.round(Number(snapshot?.price) * 10 ** -exponent);
+  if (!Number.isSafeInteger(mantissa) || mantissa <= 0) return NaN;
+  const scale = exponent + 6;
+  const value =
+    scale >= 0
+      ? BigInt(mantissa) * 10n ** BigInt(scale)
+      : BigInt(mantissa) / 10n ** BigInt(-scale);
+  return Number(value);
+}
+
 const SOFT_REFUSALS = new Set(['PythNotionalExceeded']);
 const STALE_REFUSALS = new Set(['StaleNonce', 'StaleAllowance', 'StaleReviewReceipt']);
 const EVIDENCE_REFUSALS = new Set([
@@ -410,7 +427,7 @@ const EVIDENCE_REFUSALS = new Set([
   'PythConfidenceMissing', 'PythConfidenceInvalid', 'PythConfidenceTooWide',
   'PythTimestampInvalid', 'PythMarketEvidenceStale', 'MarketConditionInvalidated'
 ]);
-const VENUE_REFUSALS = new Set(['AmountOutBelowMinimum', 'OrcaSwapFailed', 'Amount out below minimum threshold']);
+const VENUE_REFUSALS = new Set(['AmountOutBelowMinimum']);
 const HARD_REFUSALS = new Set([
   'MandateNotActive', 'MandateRevoked', 'MandateExpired', 'ExecutionNotAllowedAtStage',
   'AssetRuleDisabled', 'ActionNotAllowed', 'ActionAmountExceeded', 'PeriodAmountExceeded',
@@ -418,14 +435,26 @@ const HARD_REFUSALS = new Set([
   'InvalidTradeInputMint', 'InvalidTradeOutputMint', 'TradeActionExpired',
   'AllowanceAlreadyUsed', 'AllowanceExpired', 'AllowanceActionMismatch',
   'AllowanceRequestMismatch', 'AllowanceNotionalExceeded', 'ExceptionNotRequired',
-  'InvalidAmount', 'InvalidCap', 'Unauthorized'
+  'InvalidAmount', 'InvalidCap', 'Unauthorized', 'InvalidExpiry',
+  'InvalidMarketPolicy', 'Overflow', 'InvalidOrcaPriceLimit', 'InvalidPeriod'
 ]);
 
 // Program refusals are deterministic decisions; anything else (RPC, timeout,
-// blockhash) is NOT a refusal and must surface as UNKNOWN for reconciliation.
+// blockhash, HTTP 401) is NOT a refusal and must surface as UNKNOWN for
+// reconciliation. Only exact Anchor error names count (`Error Code: X` in the
+// program logs or the parsed AnchorError), never a free-text substring.
+export function worldFairProgramErrorCodes(error) {
+  const codes = new Set();
+  const direct = error?.error?.errorCode?.code;
+  if (direct) codes.add(String(direct));
+  for (const match of errorText(error).matchAll(/Error Code: ([A-Za-z][A-Za-z0-9]*)/g)) codes.add(match[1]);
+  return [...codes];
+}
+
 export function classifyWorldFairProgramRefusal(error) {
-  const text = errorText(error);
-  const find = (set) => [...set].find((code) => text.includes(code));
+  const codes = worldFairProgramErrorCodes(error);
+  if (!codes.length) return null;
+  const find = (set) => codes.find((code) => set.has(code));
   const soft = find(SOFT_REFUSALS);
   if (soft) return { refused: true, code: soft, boundary: 'SOFT' };
   const stale = find(STALE_REFUSALS);
@@ -436,6 +465,30 @@ export function classifyWorldFairProgramRefusal(error) {
   if (venue) return { refused: true, code: 'AmountOutBelowMinimum', boundary: 'VENUE' };
   const hard = find(HARD_REFUSALS);
   if (hard) return { refused: true, code: hard, boundary: 'HARD' };
+  // A named program error we do not map is still a deterministic refusal.
+  return { refused: true, code: codes[0], boundary: 'HARD' };
+}
+
+export function worldFairSignatureFromError(error) {
+  const match = errorText(error).match(/SOLANA_CONFIRMATION_TIMEOUT:([1-9A-HJ-NP-Za-km-z]{64,90})/);
+  return match ? match[1] : null;
+}
+
+// Same order and arithmetic as the program's post-notional checks
+// (reset_period_if_needed, PeriodAmountExceeded, PythPeriodNotionalExceeded).
+export function worldFairHardPrecheck(state, q, nowSeconds) {
+  const rule = state.assetRule;
+  const mandate = state.mandate;
+  const amount = Number(q.inputAmount);
+  const notional = Number(q.notionalMicroUsd);
+  if (!rule.enabled) return 'AssetRuleDisabled';
+  if (amount > Number(rule.maxActionAmount)) return 'ActionAmountExceeded';
+  const rolled = nowSeconds >= Number(rule.periodStartedAt) + Number(rule.periodSeconds);
+  const spent = rolled ? 0 : Number(rule.spentThisPeriod);
+  const spentNotional = rolled ? 0 : Number(rule.spentThisPeriodNotionalMicroUsd);
+  if (spent + amount > Number(rule.maxPeriodAmount)) return 'PeriodAmountExceeded';
+  const periodCap = Number(mandate.maxPeriodNotionalMicroUsd);
+  if (periodCap !== 0 && spentNotional + notional > periodCap) return 'PythPeriodNotionalExceeded';
   return null;
 }
 
@@ -1430,7 +1483,10 @@ export function createWorldFairOrcaProvider({
     if (message.length <= 100) {
       throw new Error('WORLD_FAIR_PYTH_PAYLOAD_INVALID');
     }
-    const unitPriceMicroUsd = Math.round(Number(snapshot.price) * 1_000_000);
+    // Same truncation as the program's price_to_micro_usd: a rounded price can
+    // sit 1 micro-USD/unit above the on-chain value and break exact-notional
+    // exception checks on larger amounts.
+    const unitPriceMicroUsd = worldFairPythUnitPriceMicroUsd(snapshot);
     if (!Number.isFinite(unitPriceMicroUsd) || unitPriceMicroUsd <= 0) {
       throw new Error('WORLD_FAIR_PYTH_PRICE_INVALID');
     }
@@ -2534,15 +2590,22 @@ export function createWorldFairOrcaProvider({
       try {
         signature = await attempt();
       } catch (error) {
-        const refusal = classifyWorldFairProgramRefusal(error);
+        let refusal = classifyWorldFairProgramRefusal(error);
         if (!refusal) throw error;
+        if (refusal.boundary === 'SOFT') {
+          // The program checks the notional cap before the period budgets, so a
+          // soft refusal can hide a hard one. Never open a request that could
+          // only fail after a paid grant.
+          const blocked = worldFairHardPrecheck(state, q, Math.floor(Date.now() / 1000));
+          if (blocked) refusal = { refused: true, code: blocked, boundary: 'HARD', evidence: 'PROGRAM_STATE_PRECHECK' };
+        }
         return {
           decision: 'REFUSE',
           boundary: refusal.boundary,
           code: refusal.code,
           // Preflight simulation ran the CRESCO program against live state: the
           // refusal is the program's decision, and no state changed.
-          refusalEvidence: 'PROGRAM_PREFLIGHT_SIMULATION',
+          refusalEvidence: refusal.evidence ?? 'PROGRAM_PREFLIGHT_SIMULATION',
           quote: quoteSummary(q),
           standingMaxNotionalMicroUsd: standingMax,
           policyDiff:
@@ -2592,6 +2655,11 @@ export function createWorldFairOrcaProvider({
       if (q.notionalMicroUsd <= state.mandate.maxActionNotionalMicroUsd) {
         return { status: 'NOT_REQUIRED', code: 'ExceptionNotRequired', quote: quoteSummary(q) };
       }
+      const blocked = worldFairHardPrecheck(state, q, Math.floor(Date.now() / 1000));
+      if (blocked) {
+        // The program would refuse execution after the grant; do not pay for a grant.
+        return { status: 'REFUSED', boundary: 'HARD', code: blocked, evidence: 'PROGRAM_STATE_PRECHECK', quote: quoteSummary(q) };
+      }
 
       let exception;
       try {
@@ -2626,23 +2694,23 @@ export function createWorldFairOrcaProvider({
         });
       } catch (error) {
         const refusal = classifyWorldFairProgramRefusal(error);
+        if (!refusal) {
+          // Timeout / transport: the transaction may still land. Never record a
+          // final outcome here; keep both signatures for reconciliation.
+          throw Object.assign(error, {
+            worldFairGrant: grant,
+            worldFairExecutionSignature: worldFairSignatureFromError(error)
+          });
+        }
         let allowanceState = null;
         try {
           allowanceState = await loadAllowance(exception.allowance);
         } catch {
           allowanceState = null;
         }
-        if (allowanceState && !allowanceState.used) {
-          return {
-            status: refusal?.boundary === 'VENUE' ? 'ROLLED_BACK' : 'EXECUTION_REFUSED',
-            code: refusal?.code ?? 'EXECUTION_NOT_CONFIRMED',
-            boundary: refusal?.boundary ?? 'UNKNOWN',
-            grant,
-            allowanceConsumed: false,
-            quote: quoteSummary(q)
-          };
+        if (refusal.boundary === 'VENUE' && allowanceState && !allowanceState.used) {
+          return { status: 'ROLLED_BACK', code: refusal.code, boundary: refusal.boundary, grant, allowanceConsumed: false, quote: quoteSummary(q) };
         }
-        if (!refusal) throw Object.assign(error, { worldFairGrant: grant });
         return { status: 'EXECUTION_REFUSED', code: refusal.code, boundary: refusal.boundary, grant, allowanceConsumed: allowanceState?.used ?? null, quote: quoteSummary(q) };
       }
 

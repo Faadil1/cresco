@@ -114,7 +114,7 @@ test('write scope only applies to mutating workspace routes', () => {
   assert.equal(workflowWriteScope('POST', '/api/v0.4/worlds-fair/workspaces/ws-abc123/intents'), 'ws-abc123');
   assert.equal(workflowWriteScope('POST', '/api/v0.4/worlds-fair/workspaces/ws-abc123/requests/req-1/decision'), 'ws-abc123');
   assert.equal(workflowWriteScope('GET', '/api/v0.4/worlds-fair/workspaces/ws-abc123/history'), null);
-  assert.equal(workflowWriteScope('POST', '/api/v0.4/worlds-fair/workspaces'), null);
+  assert.equal(workflowWriteScope('POST', '/api/v0.4/worlds-fair/workspaces'), '__index');
 });
 
 function durableEnv() {

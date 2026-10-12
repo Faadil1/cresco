@@ -15,7 +15,9 @@
     "proof:pyth-markets": "node scripts/pyth-market-discovery-proof.mjs",
     "quality:gate": "node scripts/validate-build-quality.mjs",
     "proof:worlds-fair-orca": "node scripts/worlds-fair-orca-v1-proof.cjs",
-    "inspect:orca-devnet": "node scripts/orca-devnet-inspect.mjs"
+    "inspect:orca-devnet": "node scripts/orca-devnet-inspect.mjs",
+    "campaign:worlds-fair": "node scripts/worlds-fair-workflow-campaign.mjs",
+    "example:strategy": "node examples/worlds-fair-strategy-client.mjs"
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.32.1",

@@ -25,6 +25,13 @@ The current API URL keeps its original Cloudflare worker hostname so the already
 
 The current capital path moves a **demo SPL token**, not real securities. AAPL is the current proven Money lane with live Pyth market evidence. CRESCO does not claim brokerage, custody, mainnet execution, or real minor securities execution.
 
+## World's Fair: delegated capital desk (v0.4, Devnet)
+
+- Desk for operator, principal and risk owner: `/worlds-fair/desk` (judge lab stays at `/worlds-fair`).
+- Strategy API: `GET /api/v0.4/worlds-fair/openapi`, example client `examples/worlds-fair-strategy-client.mjs`.
+- Design, truth boundary, deploy and LIVE verification: [`docs/WORLDS-FAIR-OPERATOR-PRINCIPAL-WORKFLOW.md`](docs/WORLDS-FAIR-OPERATOR-PRINCIPAL-WORKFLOW.md).
+- Status: implemented and tested locally; LIVE Devnet verification pending.
+
 ## The product model
 
 The Key is standing authority, not a per-action approval queue.

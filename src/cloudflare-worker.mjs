@@ -274,14 +274,15 @@ async function handleWorkflowRequest({ request, env, services, path, body }) {
           store: durableWorkflowStore(stub),
           chainFactory:
             services.worldFairWorkspaceChainFactory ??
-            configuredWorldFairWorkspaceChainFactoryFromEnv(env)
+            configuredWorldFairWorkspaceChainFactoryFromEnv(env),
+          options: env.WORLD_FAIR_CREATE_TOKEN ? { createToken: env.WORLD_FAIR_CREATE_TOKEN } : {}
         })
       : null);
 
   const scope = workflowWriteScope(request.method, path);
   const leaseRequestId = scope && stub ? crypto.randomUUID() : null;
   if (leaseRequestId) {
-    const lease = await workflowDoCall(stub, '/lease/acquire', { name: 'wf:' + scope, requestId: leaseRequestId, ttlMs: 180000 });
+    const lease = await workflowDoCall(stub, '/lease/acquire', { name: 'wf:' + scope, requestId: leaseRequestId, ttlMs: 300000 });
     if (lease.status !== 200 || lease.body?.acquired !== true) {
       const retryAfterMs = Number(lease.body?.retryAfterMs || 5000);
       return new Response(

@@ -23,6 +23,8 @@ export function isWorkflowPath(path) {
 export function workflowWriteScope(method, path) {
   if (method !== 'POST' || !isWorkflowPath(path)) return null;
   const rest = path.slice(WORKFLOW_PREFIX.length);
+  // Creation updates the shared workspace index: serialize it too (cap race).
+  if (rest === '/workspaces') return '__index';
   if (!MUTATING.test(rest)) return null;
   return rest.split('/')[2];
 }
@@ -125,7 +127,7 @@ export async function routeWorldFairWorkflow({ method, path, body, headers, quer
     if (!workflow) {
       return { status: 503, headers: JSON_HEADERS, body: { contractVersion: WORKFLOW_CONTRACT_VERSION, error: 'WORKFLOW_STORE_UNAVAILABLE' } };
     }
-    if (method === 'POST' && rest === '/workspaces') return ok(await workflow.createWorkspace(body ?? {}));
+    if (method === 'POST' && rest === '/workspaces') return ok(await workflow.createWorkspace(body ?? {}, header(headers, 'x-cresco-create-token')));
 
     const m = rest.match(/^\/workspaces\/([a-z0-9-]+)(\/.*)?$/);
     if (!m) return { status: 404, headers: JSON_HEADERS, body: { error: 'NOT_FOUND' } };

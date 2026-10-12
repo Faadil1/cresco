@@ -102,6 +102,9 @@ export function normalizePythProSnapshot({
     symbol: feed.symbol,
     feedId: feed.feedId,
     price: normalizedPrice,
+    // Raw integer mantissa/exponent so on-chain-equivalent math avoids floats.
+    priceMantissa: price,
+    priceExponent: exponent,
     confidence: normalizedConfidence,
     confidenceBps,
     maxConfidenceBps,

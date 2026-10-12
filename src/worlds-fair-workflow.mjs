@@ -26,7 +26,11 @@ const DEFAULTS = Object.freeze({
   maxEvents: 500,
   maxIdempotencyKeys: 300,
   walletSignatureMaxAgeSeconds: 5 * 60,
-  webhookTimeoutMs: 3000
+  webhookTimeoutMs: 3000,
+  // Optional shared secret: when set, POST /workspaces needs it (x-cresco-create-token).
+  createToken: null,
+  // Each top-up spends shared guardian SOL; rate-limit it per workspace.
+  topUpCooldownSeconds: 10 * 60
 });
 
 // Devnet safety envelope for principal-chosen policies (protects the shared
@@ -167,6 +171,12 @@ function checkIssuedAt(issuedAt, nowMs, maxAgeSeconds) {
   }
 }
 
+function signatureFromError(error) {
+  const text = [error?.message, error?.stack].filter(Boolean).join('\n');
+  const match = text.match(/SOLANA_CONFIRMATION_TIMEOUT:([1-9A-HJ-NP-Za-km-z]{64,90})/);
+  return match ? match[1] : null;
+}
+
 function explorerList(entries) {
   return entries
     .filter((e) => e && e.signature)
@@ -263,7 +273,10 @@ export function createWorldFairWorkflow({
     await store.put(keys.requests(ws.id), requests);
   }
 
-  async function sweepExpired(ws, requests) {
+  // Read paths (GET /requests, /notifications) run outside the per-workspace
+  // write lease, so they compute the view without persisting: a concurrent
+  // approval's EXECUTING state can never be overwritten by a reader.
+  async function sweepExpired(ws, requests, { persist = true } = {}) {
     const nowMs = clock();
     let changed = false;
     for (const req of Object.values(requests)) {
@@ -273,17 +286,17 @@ export function createWorldFairWorkflow({
         req.status = 'UNKNOWN';
         req.decidedAt = nowIso();
         changed = true;
-        await appendEvent(ws, { type: 'OUTCOME_UNKNOWN', actor: 'system', requestId: req.id, summary: `Approval of ${req.id} was interrupted; reconcile before any retry`, data: { operation: 'APPROVE_INTERRUPTED' } });
+        if (persist) await appendEvent(ws, { type: 'OUTCOME_UNKNOWN', actor: 'system', requestId: req.id, summary: `Approval of ${req.id} was interrupted; reconcile before any retry`, data: { operation: 'APPROVE_INTERRUPTED' } });
         continue;
       }
       if (req.status === 'PENDING' && Date.parse(req.expiresAt) <= nowMs) {
         req.status = 'EXPIRED';
         req.decidedAt = nowIso();
         changed = true;
-        await appendEvent(ws, { type: 'EXCEPTION_EXPIRED', actor: 'system', requestId: req.id, summary: `Request ${req.id} expired without a decision` });
+        if (persist) await appendEvent(ws, { type: 'EXCEPTION_EXPIRED', actor: 'system', requestId: req.id, summary: `Request ${req.id} expired without a decision` });
       }
     }
-    if (changed) await saveRequests(ws, requests);
+    if (changed && persist) await saveRequests(ws, requests);
     return requests;
   }
 
@@ -340,7 +353,10 @@ export function createWorldFairWorkflow({
     };
   }
 
-  async function createWorkspace(body = {}) {
+  async function createWorkspace(body = {}, createToken = null) {
+    if (cfg.createToken && String(createToken ?? '') !== String(cfg.createToken)) {
+      fail(401, 'CREATE_TOKEN_REQUIRED', 'Creating a workspace requires the lab create token (x-cresco-create-token)');
+    }
     const index = (await store.get(keys.index)) ?? { ids: [] };
     if (index.ids.length >= cfg.maxWorkspaces) {
       fail(429, 'WORKSPACE_CAPACITY_REACHED', 'The Devnet lab has reached its workspace capacity', { max: cfg.maxWorkspaces });
@@ -452,7 +468,8 @@ export function createWorldFairWorkflow({
         type: 'OUTCOME_UNKNOWN',
         actor: 'operator',
         summary: 'Intent outcome not confirmed; do not resubmit blindly',
-        data: { operation: 'INTENT', intent, message: String(error?.message ?? error).slice(0, 300) }
+        data: { operation: 'INTENT', intent, message: String(error?.message ?? error).slice(0, 300) },
+        signatures: signatureFromError(error) ? [{ label: 'standing.execute', signature: signatureFromError(error) }] : []
       });
       return remember({
         status: 503,
@@ -547,7 +564,7 @@ export function createWorldFairWorkflow({
 
   async function listRequests(id, query = {}) {
     const ws = await loadWorkspace(id);
-    const requests = await sweepExpired(ws, await loadRequests(ws));
+    const requests = await sweepExpired(ws, await loadRequests(ws), { persist: false });
     let list = Object.values(requests).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
     if (query.status) list = list.filter((r) => r.status === String(query.status).toUpperCase());
     return { status: 200, body: { contractVersion: WORKFLOW_CONTRACT_VERSION, requests: list } };
@@ -575,6 +592,9 @@ export function createWorldFairWorkflow({
       return { status: 200, body: { contractVersion: WORKFLOW_CONTRACT_VERSION, request: req, eventId: event.id } };
     }
 
+    if (ws.principal.wallet && role !== 'principal') {
+      fail(403, 'PRINCIPAL_WALLET_APPROVAL_REQUIRED', 'A principal wallet is bound: only a wallet-signed principal approval can grant an exception', { role });
+    }
     let walletProof = null;
     if (role === 'principal' && ws.principal.wallet) {
       checkIssuedAt(body.issuedAt, clock(), cfg.walletSignatureMaxAgeSeconds);
@@ -607,6 +627,8 @@ export function createWorldFairWorkflow({
       req.status = 'UNKNOWN';
       req.decidedAt = nowIso();
       req.grant = error?.worldFairGrant ?? null;
+      const executionSignature = error?.worldFairExecutionSignature ?? signatureFromError(error);
+      req.execution = executionSignature ? { signature: executionSignature, allowanceConsumed: null, standingAuthorityChanged: null } : null;
       await saveRequests(ws, requests);
       const event = await appendEvent(ws, {
         type: 'OUTCOME_UNKNOWN',
@@ -614,7 +636,10 @@ export function createWorldFairWorkflow({
         requestId: rid,
         summary: 'Approval outcome not confirmed; reconcile before any retry',
         data: { operation: 'APPROVE', message: String(error?.message ?? error).slice(0, 300) },
-        signatures: req.grant ? [{ label: 'exception.grant', signature: req.grant.signature }] : []
+        signatures: [
+          ...(req.grant ? [{ label: 'exception.grant', signature: req.grant.signature }] : []),
+          ...(executionSignature ? [{ label: 'exception.execute', signature: executionSignature }] : [])
+        ]
       });
       return { status: 503, body: { contractVersion: WORKFLOW_CONTRACT_VERSION, request: req, retryPolicy: 'REQUIRES_STATE_RECONCILIATION', eventId: event.id } };
     }
@@ -754,9 +779,16 @@ export function createWorldFairWorkflow({
     const role = authorize(ws, token, ['principal', 'risk']);
     requireReady(ws);
     const next = validateWorkspacePolicy({ maxActionAmount: body.maxActionAmount, maxPeriodAmount: body.maxPeriodAmount }, ws.policy);
-    const enabled = body.enabled === undefined ? true : Boolean(body.enabled);
     const chain = chainFor(ws);
     const nonce = await currentNonce(chain);
+    let enabled;
+    if (body.enabled === undefined) {
+      // Never silently re-enable a disabled rule: keep the on-chain value.
+      const current = await chain.readMandate();
+      enabled = current?.assetRule?.enabled !== false;
+    } else {
+      enabled = Boolean(body.enabled);
+    }
     const { event, result, staled } = await lifecycleWrite(
       ws, role,
       () => chain.updateRule({ values: { maxActionAmount: next.maxActionAmount, maxPeriodAmount: next.maxPeriodAmount, enabled }, expectedNonce: nonce }),
@@ -816,10 +848,10 @@ export function createWorldFairWorkflow({
   async function notifications(id, token, query = {}) {
     const ws = await loadWorkspace(id);
     const role = authorize(ws, token, WORKFLOW_ROLES);
-    await sweepExpired(ws, await loadRequests(ws));
+    const view = await sweepExpired(ws, await loadRequests(ws), { persist: false });
     const since = Number(query.since ?? 0) || 0;
     const list = ((await store.get(keys.events(ws.id))) ?? []).filter((e) => e.seq > since && ROLE_EVENTS[role].includes(e.type));
-    const pending = role === 'operator' ? [] : Object.values(await loadRequests(ws)).filter((r) => r.status === 'PENDING');
+    const pending = role === 'operator' ? [] : Object.values(view).filter((r) => r.status === 'PENDING');
     return {
       status: 200,
       body: {
@@ -852,6 +884,13 @@ export function createWorldFairWorkflow({
     const ws = await loadWorkspace(id);
     const role = authorize(ws, token, ['principal']);
     requireReady(ws);
+    const lastTopUp = Date.parse(ws.lastTopUpAt ?? '');
+    if (Number.isFinite(lastTopUp) && clock() - lastTopUp < cfg.topUpCooldownSeconds * 1000) {
+      const retryAfterMs = cfg.topUpCooldownSeconds * 1000 - (clock() - lastTopUp);
+      fail(429, 'TOPUP_COOLDOWN', 'Vault top-up spends shared Devnet funds and is rate-limited per workspace', { retryAfterMs });
+    }
+    ws.lastTopUpAt = nowIso();
+    await saveWorkspace(ws);
     let result;
     try {
       result = await chainFor(ws).bootstrapWorkspace();

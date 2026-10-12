@@ -26,6 +26,7 @@ function fakeChain({ price = 1, behaviour = {} } = {}) {
     maxPeriodAmount: 10_000_000,
     spent: 0,
     spentNotional: 0,
+    enabled: true,
     sigs: 0,
     calls: [],
     usedAllowances: new Set()
@@ -36,7 +37,7 @@ function fakeChain({ price = 1, behaviour = {} } = {}) {
     guardian: 'Guardian',
     delegate: 'Delegate',
     mandate: { stage: 3, status: st.status, version: st.version, nonce: st.nonce, maxActionNotionalMicroUsd: st.maxAction, maxPeriodNotionalMicroUsd: st.maxPeriod },
-    assetRule: { enabled: true, maxActionAmount: st.maxActionAmount, maxPeriodAmount: st.maxPeriodAmount, periodSeconds: 86_400, periodStartedAt: Math.floor(Date.now() / 1000) - 60, spentThisPeriod: st.spent, spentThisPeriodNotionalMicroUsd: st.spentNotional }
+    assetRule: { enabled: st.enabled, maxActionAmount: st.maxActionAmount, maxPeriodAmount: st.maxPeriodAmount, periodSeconds: 86_400, periodStartedAt: Math.floor(Date.now() / 1000) - 60, spentThisPeriod: st.spent, spentThisPeriodNotionalMicroUsd: st.spentNotional }
   });
   const advance = () => { st.nonce += 1; st.version += 1; };
   const quote = (amount, bps) => ({ inputAmount: amount, slippageBps: bps, notionalMicroUsd: Math.floor(amount * price), estimatedOutput: amount, minOutput: Math.floor(amount * (1 - bps / 10_000)) });
@@ -67,7 +68,10 @@ function fakeChain({ price = 1, behaviour = {} } = {}) {
     },
     async approveAndExecuteException({ inputAmount, slippageBps, expectedNonce }) {
       st.calls.push(['approve', inputAmount, expectedNonce]);
-      if (behaviour.approveThrows) throw Object.assign(new Error('timeout'), { worldFairGrant: { signature: sig('grant') } });
+      if (behaviour.approveThrows) {
+        const grant = { signature: sig('grant') };
+        throw Object.assign(new Error(`SOLANA_CONFIRMATION_TIMEOUT:${'7'.repeat(88)}`), { worldFairGrant: grant, worldFairExecutionSignature: '7'.repeat(88) });
+      }
       if (st.nonce !== expectedNonce) return { status: 'STALE', code: 'StaleNonce', currentNonce: st.nonce, requestNonce: expectedNonce };
       if (st.status !== 'ACTIVE') return { status: 'REFUSED', boundary: 'HARD', code: 'MandateNotActive' };
       const q = quote(inputAmount, slippageBps);
@@ -99,6 +103,7 @@ function fakeChain({ price = 1, behaviour = {} } = {}) {
       if (expectedNonce !== st.nonce) return { status: 'REFUSED', code: 'StaleNonce' };
       st.maxActionAmount = values.maxActionAmount;
       st.maxPeriodAmount = values.maxPeriodAmount;
+      st.enabled = values.enabled;
       st.spent = 0;
       st.spentNotional = 0;
       advance();
@@ -111,13 +116,14 @@ function fakeChain({ price = 1, behaviour = {} } = {}) {
   return chain;
 }
 
-async function setup({ behaviour = {}, price = 1, now = () => Date.now(), webhook = null } = {}) {
+async function setup({ behaviour = {}, price = 1, now = () => Date.now(), webhook = null, options = {} } = {}) {
   const chain = fakeChain({ price, behaviour });
   const delivered = [];
   const wf = createWorldFairWorkflow({
     store: createMemoryWorkflowStore(),
     chainFactory: () => chain,
     clock: now,
+    options,
     fetchImpl: async (url, init) => {
       delivered.push({ url, body: JSON.parse(init.body) });
       return { ok: true };
@@ -424,4 +430,62 @@ test('workspace capacity protects the shared Devnet guardian', async () => {
 test('policy validation keeps period limits consistent', () => {
   assert.throws(() => validateWorkspacePolicy({ maxActionNotionalMicroUsd: 2_000_000, maxPeriodNotionalMicroUsd: 1_000_000 }), /POLICY_INCONSISTENT|must be/);
   assert.equal(validateWorkspacePolicy({}).maxActionNotionalMicroUsd, 500_000);
+});
+
+test('review fix: an unconfirmed approval keeps the execution signature and is never recorded as refused', async () => {
+  const { wf, id, bearer } = await setup({ behaviour: { approveThrows: true, signatureStatus: () => ({ status: 'PENDING' }) } });
+  const pending = await wf.submitIntent(id, bearer('operator'), { inputAmount: 700_000 });
+  const res = await wf.decide(id, pending.body.request.id, bearer('principal'), { decision: 'APPROVE' });
+  assert.equal(res.body.request.status, 'UNKNOWN');
+  assert.equal(res.body.request.execution.signature, '7'.repeat(88));
+  const unknown = (await wf.history(id)).body.events.find((e) => e.type === 'OUTCOME_UNKNOWN');
+  assert.deepEqual(unknown.signatures.map((s) => s.label), ['exception.grant', 'exception.execute']);
+  // It can never be decided a second time.
+  await rejectsWith(() => wf.decide(id, pending.body.request.id, bearer('principal'), { decision: 'APPROVE' }), 409, 'REQUEST_ALREADY_DECIDED');
+});
+
+test('review fix: read endpoints never persist, so they cannot overwrite an in-flight approval', async () => {
+  let t = Date.parse('2026-10-12T12:00:00Z');
+  const { wf, id, bearer } = await setup({ now: () => t });
+  await wf.submitIntent(id, bearer('operator'), { inputAmount: 700_000 });
+  t += 31 * 60 * 1000;
+  const before = (await wf.history(id)).body.events.length;
+  assert.equal((await wf.listRequests(id)).body.requests[0].status, 'EXPIRED'); // computed view
+  assert.equal((await wf.notifications(id, bearer('principal'))).body.pendingDecisions, 0);
+  assert.equal((await wf.history(id)).body.events.length, before); // no write from GET
+});
+
+test('review fix: with a bound wallet only a wallet-signed principal can approve', async () => {
+  const now = Date.parse('2026-10-12T12:00:00Z');
+  const { wf, id, bearer } = await setup({ now: () => now });
+  const secret = ed25519.utils.randomPrivateKey();
+  const pub = new PublicKey(ed25519.getPublicKey(secret)).toBase58();
+  const issuedAt = new Date(now).toISOString();
+  const sign = (message) => Buffer.from(ed25519.sign(new TextEncoder().encode(message), secret)).toString('base64');
+  await wf.bindWallet(id, bearer('principal'), { publicKey: pub, issuedAt, signature: sign(walletBindingMessage({ workspaceId: id, issuedAt })) });
+  const pending = await wf.submitIntent(id, bearer('operator'), { inputAmount: 700_000 });
+  await rejectsWith(() => wf.decide(id, pending.body.request.id, bearer('risk'), { decision: 'APPROVE' }), 403, 'PRINCIPAL_WALLET_APPROVAL_REQUIRED');
+  const refused = await wf.decide(id, pending.body.request.id, bearer('risk'), { decision: 'REFUSE' });
+  assert.equal(refused.body.request.status, 'REFUSED_BY_PRINCIPAL');
+});
+
+test('review fix: editing limits never silently re-enables a disabled asset rule', async () => {
+  const { wf, id, bearer, chain } = await setup();
+  await wf.updateAssetRule(id, bearer('risk'), { maxActionAmount: 4_000_000, maxPeriodAmount: 9_000_000, enabled: false });
+  assert.equal(chain.st.enabled, false);
+  await wf.updateAssetRule(id, bearer('risk'), { maxActionAmount: 3_000_000, maxPeriodAmount: 9_000_000 });
+  assert.equal(chain.st.enabled, false);
+});
+
+test('review fix: optional create token and top-up cooldown protect the shared guardian', async () => {
+  const wf = createWorldFairWorkflow({ store: createMemoryWorkflowStore(), chainFactory: () => fakeChain(), options: { createToken: 'lab-secret' } });
+  await rejectsWith(() => wf.createWorkspace({}), 401, 'CREATE_TOKEN_REQUIRED');
+  assert.equal((await wf.createWorkspace({}, 'lab-secret')).status, 201);
+
+  let t = Date.parse('2026-10-12T12:00:00Z');
+  const { wf: wf2, id, bearer } = await setup({ now: () => t });
+  assert.equal((await wf2.topUpVault(id, bearer('principal'))).status, 200);
+  await rejectsWith(() => wf2.topUpVault(id, bearer('principal')), 429, 'TOPUP_COOLDOWN');
+  t += 11 * 60 * 1000;
+  assert.equal((await wf2.topUpVault(id, bearer('principal'))).status, 200);
 });
