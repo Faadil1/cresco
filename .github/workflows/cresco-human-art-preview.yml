@@ -31,12 +31,14 @@ jobs:
           npm install --no-audit --no-fund
           npm install --no-save --no-audit --no-fund @playwright/test
           npx playwright install --with-deps chromium
+      - name: Build production Next.js for representative visual preview
+        run: npm run build
       - name: Render actual new illustration components on local frontend
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p art-preview
-          (npm run dev >art-preview/next-dev.log 2>&1 & echo $! >art-preview/next-dev.pid)
+          (npm run start -- -H 127.0.0.1 -p 3000 >art-preview/next-prod.log 2>&1 & echo $! >art-preview/next-prod.pid)
           node --input-type=module <<'NODE'
           import { chromium, expect } from "@playwright/test";
           import { mkdirSync, writeFileSync } from "node:fs";
