@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { StoryVignette } from "@/components/illustrations/family-story";
 
 import { MandateRail, STEPS, type RailPoint } from "../worlds-fair/desk/desk-ui";
 import type { UseCase } from "@/services/worlds-fair-workflow";
@@ -53,12 +54,12 @@ export function HowItWorksStepper() {
                 onClick={() => setStep(i)}
                 aria-current={i === step ? "step" : undefined}
                 aria-label={`Step ${i + 1}: ${STEPS[useCase][i].title}`}
-                className={`h-1.5 rounded-full transition-all duration-300 ${i === step ? "w-10 bg-blue" : "w-5 bg-line hover:bg-ink-3"}`}
+                className={`h-1.5 rounded-full transition-all duration-300 ${i === step ? "w-10 bg-green" : "w-5 bg-line hover:bg-ink-3"}`}
               />
             </li>
           ))}
         </ol>
-        <div role="radiogroup" aria-label="Setting" className="inline-flex rounded-full border border-line bg-surface p-1 text-[13px]">
+        <div role="radiogroup" aria-label="Setting" className="inline-flex rounded-full border border-line bg-surface p-1 text-[13px] shadow-soft">
           {(["family", "capital"] as UseCase[]).map((u) => (
             <button
               key={u}
@@ -66,7 +67,7 @@ export function HowItWorksStepper() {
               role="radio"
               aria-checked={useCase === u}
               onClick={() => setUseCase(u)}
-              className={`rounded-full px-4 py-1.5 font-medium transition-colors ${useCase === u ? "bg-navy-strong text-bg" : "text-ink-2 hover:text-navy-strong"}`}
+              className={`rounded-full px-4 py-1.5 font-medium transition-colors ${useCase === u ? "bg-green-strong text-white" : "text-ink-2 hover:text-navy-strong"}`}
             >
               {u === "family" ? "Family" : "Delegated capital"}
             </button>
@@ -80,7 +81,8 @@ export function HowItWorksStepper() {
           <h2 id="step-title" className="mt-6 font-display text-[44px] font-normal leading-[1.02] tracking-[-0.02em] text-navy-strong md:text-[56px]">{s.title}</h2>
           <p className="mt-4 max-w-[40ch] text-[18px] leading-relaxed text-ink-2">{s.body}</p>
         </div>
-        <div className="rounded-[28px] border border-line bg-surface p-6 md:p-8">
+        <div className="cresco-editorial-panel overflow-hidden p-5 md:p-7">
+          <StoryVignette role={useCase === "capital" ? "capital" : step === 2 ? "approved" : step === 1 ? "request" : "teen"} className="mb-4 block max-h-[195px] w-full rounded-[20px] object-cover" />
           <MandateRail limitMicroUsd={500_000} operator={WHO[useCase].operator} principal={WHO[useCase].principal} points={POINTS[step]} />
         </div>
       </div>
@@ -91,11 +93,11 @@ export function HowItWorksStepper() {
         </button>
         {last ? (
           <div className="flex flex-wrap gap-3">
-            <Link href="/start" className={`${btn} bg-navy-strong text-bg hover:bg-navy`}>Start with Family</Link>
+            <Link href="/start" className={`${btn} bg-green-strong text-white hover:bg-green`}>Start with Family</Link>
             <Link href="/worlds-fair/desk?case=capital" className={`${btn} border border-line text-navy-strong hover:bg-surface`}>Start with Delegated capital</Link>
           </div>
         ) : (
-          <button type="button" onClick={() => setStep((v) => Math.min(2, v + 1))} className={`${btn} bg-navy-strong text-bg hover:bg-navy`}>
+          <button type="button" onClick={() => setStep((v) => Math.min(2, v + 1))} className={`${btn} bg-green-strong text-white hover:bg-green`}>
             Next <ArrowRight aria-hidden className="size-4" />
           </button>
         )}
