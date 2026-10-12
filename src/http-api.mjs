@@ -41,6 +41,9 @@ import {
 import {
   configuredWorldFairOrcaProviderFromEnv
 } from './worlds-fair-orca-provider.mjs';
+import { configuredWorldFairWorkspaceChainFactoryFromEnv } from './worlds-fair-orca-provider.mjs';
+import { createMemoryWorkflowStore, createWorldFairWorkflow } from './worlds-fair-workflow.mjs';
+import { isWorkflowPath, routeWorldFairWorkflow } from './worlds-fair-workflow-http.mjs';
 
 const JSON_HEADERS = Object.freeze({
   'content-type': 'application/json; charset=utf-8'
@@ -208,12 +211,39 @@ async function resolveBackendEvidence({ body, services }) {
   return { now, market, eligibility };
 }
 
+let defaultWorkflow = null;
+
+// Node/dev default: in-memory store (NOT durable across restarts). The
+// Cloudflare Worker injects a Durable Object-backed workflow instead.
+function defaultWorldFairWorkflow() {
+  if (!defaultWorkflow) {
+    defaultWorkflow = createWorldFairWorkflow({
+      store: createMemoryWorkflowStore(),
+      chainFactory: configuredWorldFairWorkspaceChainFactoryFromEnv()
+    });
+  }
+  return defaultWorkflow;
+}
+
 export async function routeCrescoHttp({
   method,
   path,
   body = null,
-  services = {}
+  services = {},
+  headers = null,
+  query = {}
 }) {
+  if (isWorkflowPath(path) && method !== 'OPTIONS') {
+    return routeWorldFairWorkflow({
+      method,
+      path,
+      body,
+      headers,
+      query,
+      workflow: services?.worldFairWorkflow ?? defaultWorldFairWorkflow()
+    });
+  }
+
   if (method === 'OPTIONS') {
     return {
       status: 204,

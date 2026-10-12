@@ -347,6 +347,101 @@ function parseKeypair(json) {
   return Keypair.fromSecretKey(Uint8Array.from(values));
 }
 
+export const WORLD_FAIR_LAB_POLICY = Object.freeze({
+  maxActionNotionalMicroUsd: STANDING_MAX_NOTIONAL_MICRO_USD,
+  maxPeriodNotionalMicroUsd: PERIOD_MAX_NOTIONAL_MICRO_USD,
+  maxActionAmount: MAX_ACTION_AMOUNT,
+  maxPeriodAmount: MAX_PERIOD_AMOUNT,
+  periodSeconds: PERIOD_SECONDS,
+  maxUnitPriceMicroUsd: MAX_UNIT_PRICE_MICRO_USD,
+  maxMarketAgeSeconds: 120,
+  maxConfidenceBps: 100,
+  expiresAt: 0
+});
+
+export function normalizeWorldFairPolicy(policy = {}) {
+  const merged = { ...WORLD_FAIR_LAB_POLICY, ...(policy ?? {}) };
+  const out = {};
+  for (const key of Object.keys(WORLD_FAIR_LAB_POLICY)) {
+    const value = Number(merged[key]);
+    if (!Number.isSafeInteger(value) || value < 0) {
+      throw new Error(`WORLD_FAIR_POLICY_INVALID:${key}`);
+    }
+    out[key] = value;
+  }
+  if (out.maxActionNotionalMicroUsd <= 0) throw new Error('WORLD_FAIR_POLICY_INVALID:maxActionNotionalMicroUsd');
+  if (out.maxPeriodNotionalMicroUsd && out.maxPeriodNotionalMicroUsd < out.maxActionNotionalMicroUsd) {
+    throw new Error('WORLD_FAIR_POLICY_INVALID:maxPeriodNotionalMicroUsd');
+  }
+  if (out.maxActionAmount <= 0 || out.maxPeriodAmount < out.maxActionAmount) {
+    throw new Error('WORLD_FAIR_POLICY_INVALID:maxPeriodAmount');
+  }
+  if (out.periodSeconds <= 0) throw new Error('WORLD_FAIR_POLICY_INVALID:periodSeconds');
+  if (out.maxMarketAgeSeconds <= 0) throw new Error('WORLD_FAIR_POLICY_INVALID:maxMarketAgeSeconds');
+  if (out.maxConfidenceBps <= 0 || out.maxConfidenceBps > 10_000) {
+    throw new Error('WORLD_FAIR_POLICY_INVALID:maxConfidenceBps');
+  }
+  return Object.freeze(out);
+}
+
+// A workspace (operator/principal workflow) never shares the judge lab mandate:
+// pausing or revising it must not break the fixed CANONICAL_LIVE regression path.
+export function deriveWorldFairWorkspaceDelegate(guardian, workspaceId) {
+  if (!guardian?.secretKey || !guardian?.publicKey) {
+    throw new Error('WORLD_FAIR_GUARDIAN_KEYPAIR_REQUIRED');
+  }
+  const id = String(workspaceId ?? '');
+  if (!/^[a-z0-9-]{6,64}$/.test(id)) throw new Error('WORLD_FAIR_WORKSPACE_ID_INVALID');
+  const seed = createHash('sha256')
+    .update('CRESCO_WORLD_FAIR_WORKSPACE_DELEGATE_V1')
+    .update(Buffer.from(guardian.secretKey))
+    .update(id)
+    .digest()
+    .subarray(0, 32);
+  return Keypair.fromSeed(seed);
+}
+
+const SOFT_REFUSALS = new Set(['PythNotionalExceeded']);
+const STALE_REFUSALS = new Set(['StaleNonce', 'StaleAllowance', 'StaleReviewReceipt']);
+const EVIDENCE_REFUSALS = new Set([
+  'PythMessageInvalid', 'PythPayloadInvalid', 'PythPayloadUnsupportedProperty',
+  'PythSignatureVerificationFailed', 'PythChannelMismatch', 'PythFeedMismatch',
+  'PythPriceMissing', 'PythPriceInvalid', 'PythExponentMissing', 'PythExponentUnsupported',
+  'PythConfidenceMissing', 'PythConfidenceInvalid', 'PythConfidenceTooWide',
+  'PythTimestampInvalid', 'PythMarketEvidenceStale', 'MarketConditionInvalidated'
+]);
+const VENUE_REFUSALS = new Set(['AmountOutBelowMinimum', 'OrcaSwapFailed', 'Amount out below minimum threshold']);
+const HARD_REFUSALS = new Set([
+  'MandateNotActive', 'MandateRevoked', 'MandateExpired', 'ExecutionNotAllowedAtStage',
+  'AssetRuleDisabled', 'ActionNotAllowed', 'ActionAmountExceeded', 'PeriodAmountExceeded',
+  'PythPeriodNotionalExceeded', 'InvalidOrcaProgram', 'InvalidOrcaPool',
+  'InvalidTradeInputMint', 'InvalidTradeOutputMint', 'TradeActionExpired',
+  'AllowanceAlreadyUsed', 'AllowanceExpired', 'AllowanceActionMismatch',
+  'AllowanceRequestMismatch', 'AllowanceNotionalExceeded', 'ExceptionNotRequired',
+  'InvalidAmount', 'InvalidCap', 'Unauthorized'
+]);
+
+// Program refusals are deterministic decisions; anything else (RPC, timeout,
+// blockhash) is NOT a refusal and must surface as UNKNOWN for reconciliation.
+export function classifyWorldFairProgramRefusal(error) {
+  const text = errorText(error);
+  const find = (set) => [...set].find((code) => text.includes(code));
+  const soft = find(SOFT_REFUSALS);
+  if (soft) return { refused: true, code: soft, boundary: 'SOFT' };
+  const stale = find(STALE_REFUSALS);
+  if (stale) return { refused: true, code: stale, boundary: 'STALE' };
+  const evidence = find(EVIDENCE_REFUSALS);
+  if (evidence) return { refused: true, code: evidence, boundary: 'EVIDENCE' };
+  const venue = find(VENUE_REFUSALS);
+  if (venue) return { refused: true, code: 'AmountOutBelowMinimum', boundary: 'VENUE' };
+  const hard = find(HARD_REFUSALS);
+  if (hard) return { refused: true, code: hard, boundary: 'HARD' };
+  return null;
+}
+
+const MANDATE_STATUS_CODES = Object.freeze({ ACTIVE: 0, PAUSED: 1, REVOKED: 2 });
+const MANDATE_STATUS_NAMES = Object.freeze(['ACTIVE', 'PAUSED', 'REVOKED']);
+
 export function deriveWorldFairDelegate(guardian) {
   if (!guardian?.secretKey || !guardian?.publicKey) {
     throw new Error('WORLD_FAIR_GUARDIAN_KEYPAIR_REQUIRED');
@@ -750,9 +845,13 @@ export function createWorldFairOrcaProvider({
   guardian,
   pythApiKey,
   connection = null,
-  now = () => new Date().toISOString()
+  now = () => new Date().toISOString(),
+  delegate: delegateOverride = null,
+  policy: policyInput = null,
+  strictLabState = true
 }) {
   if (!guardian?.publicKey) throw new Error('WORLD_FAIR_GUARDIAN_REQUIRED');
+  const policy = normalizeWorldFairPolicy(policyInput ?? WORLD_FAIR_LAB_POLICY);
   if (!pythApiKey) throw new Error('PYTH_API_KEY_REQUIRED');
 
   const rpc = connection ?? new Connection(rpcUrl, 'confirmed');
@@ -762,7 +861,7 @@ export function createWorldFairOrcaProvider({
   // continue to exercise both paths.
   const readRpc =
     connection ?? new Connection(rpcUrl, WORLD_FAIR_READ_CONNECTION_CONFIG);
-  const delegate = deriveWorldFairDelegate(guardian);
+  const delegate = delegateOverride ?? deriveWorldFairDelegate(guardian);
   const wallet = {
     publicKey: guardian.publicKey,
     async signTransaction(transaction) {
@@ -870,6 +969,14 @@ export function createWorldFairOrcaProvider({
       if (!state.mandate.charter.equals(charter)) {
         throw new Error('WORLD_FAIR_LAB_MANDATE_CHARTER_MISMATCH');
       }
+      if (!strictLabState) {
+        // Workspace mandates are owned by their principal: status and policy
+        // evolve through the workflow, so on-chain values are the truth.
+        if (state.mandate.stage !== 2 && state.mandate.stage !== 3) {
+          throw new Error('WORLD_FAIR_LAB_STAGE_INCOMPATIBLE');
+        }
+        return;
+      }
       if (state.mandate.status !== 0) {
         throw new Error('WORLD_FAIR_LAB_MANDATE_NOT_ACTIVE');
       }
@@ -885,10 +992,10 @@ export function createWorldFairOrcaProvider({
         rule.mint.equals(WORLD_FAIR_DEV_USDC) &&
         (rule.actionMask & ACTION_SWAP_EXACT_IN) !== 0 &&
         rule.enabled &&
-        rule.maxActionAmount === MAX_ACTION_AMOUNT &&
-        rule.maxPeriodAmount === MAX_PERIOD_AMOUNT &&
-        rule.periodSeconds === PERIOD_SECONDS &&
-        rule.maxUnitPriceMicroUsd === MAX_UNIT_PRICE_MICRO_USD &&
+        rule.maxActionAmount === policy.maxActionAmount &&
+        rule.maxPeriodAmount === policy.maxPeriodAmount &&
+        rule.periodSeconds === policy.periodSeconds &&
+        rule.maxUnitPriceMicroUsd === policy.maxUnitPriceMicroUsd &&
         rule.pythFeedId === WORLD_FAIR_PYTH_FEED.feedId;
       if (!compatible) {
         throw new Error('WORLD_FAIR_LAB_ASSET_RULE_INCOMPATIBLE');
@@ -1010,10 +1117,10 @@ export function createWorldFairOrcaProvider({
           [
             u64le(expectedNonce),
             Buffer.from([ACTION_SWAP_EXACT_IN]),
-            u64le(MAX_ACTION_AMOUNT),
-            u64le(MAX_PERIOD_AMOUNT),
-            i64le(PERIOD_SECONDS),
-            u64le(MAX_UNIT_PRICE_MICRO_USD),
+            u64le(policy.maxActionAmount),
+            u64le(policy.maxPeriodAmount),
+            i64le(policy.periodSeconds),
+            u64le(policy.maxUnitPriceMicroUsd),
             u32le(WORLD_FAIR_PYTH_FEED.feedId)
           ]
         )
@@ -1040,7 +1147,7 @@ export function createWorldFairOrcaProvider({
     });
   }
 
-  async function configurePolicy(expectedNonce) {
+  async function configurePolicy(expectedNonce, values = policy) {
     return sendInstructions({
       rpc,
       feePayer: guardian,
@@ -1055,11 +1162,11 @@ export function createWorldFairOrcaProvider({
           ],
           [
             u64le(expectedNonce),
-            u64le(STANDING_MAX_NOTIONAL_MICRO_USD),
-            u64le(PERIOD_MAX_NOTIONAL_MICRO_USD),
-            i64le(0),
-            u32le(120),
-            u32le(100)
+            u64le(values.maxActionNotionalMicroUsd),
+            u64le(values.maxPeriodNotionalMicroUsd),
+            i64le(values.expiresAt),
+            u32le(values.maxMarketAgeSeconds),
+            u32le(values.maxConfidenceBps)
           ]
         )
       ]
@@ -1266,13 +1373,17 @@ export function createWorldFairOrcaProvider({
 
     validateExistingState(state);
 
-    const policyMatches =
-      state.mandate.maxActionNotionalMicroUsd ===
-        STANDING_MAX_NOTIONAL_MICRO_USD &&
-      state.mandate.maxPeriodNotionalMicroUsd ===
-        PERIOD_MAX_NOTIONAL_MICRO_USD &&
-      state.mandate.maxMarketAgeSeconds === 120 &&
-      state.mandate.maxConfidenceBps === 100;
+    const pristine =
+      state.mandate.maxActionNotionalMicroUsd === 0 &&
+      state.mandate.maxPeriodNotionalMicroUsd === 0;
+    const policyMatches = strictLabState
+      ? state.mandate.maxActionNotionalMicroUsd ===
+          policy.maxActionNotionalMicroUsd &&
+        state.mandate.maxPeriodNotionalMicroUsd ===
+          policy.maxPeriodNotionalMicroUsd &&
+        state.mandate.maxMarketAgeSeconds === policy.maxMarketAgeSeconds &&
+        state.mandate.maxConfidenceBps === policy.maxConfidenceBps
+      : !pristine;
 
     if (!policyMatches) {
       const pristinePolicy =
@@ -1709,7 +1820,7 @@ export function createWorldFairOrcaProvider({
   }
 
   async function runCanonicalSequence() {
-    const lockKey = guardian.publicKey.toBase58();
+    const lockKey = `${guardian.publicKey.toBase58()}:${delegate.publicKey.toBase58()}`;
     if (runtimePromises.has(lockKey)) {
       return runtimePromises.get(lockKey);
     }
@@ -1925,9 +2036,10 @@ export function createWorldFairOrcaProvider({
           decision: 'REFUSE',
           reason: boundary.reason,
           requestedNotionalMicroUsd: Number(boundaryNotional),
-          standingMaxNotionalMicroUsd: STANDING_MAX_NOTIONAL_MICRO_USD,
+          standingMaxNotionalMicroUsd: policy.maxActionNotionalMicroUsd,
           policyDiff: worldFairPolicyDiff({
-            requestedNotionalMicroUsd: Number(boundaryNotional)
+            requestedNotionalMicroUsd: Number(boundaryNotional),
+            standingMaxNotionalMicroUsd: policy.maxActionNotionalMicroUsd
           })
         };
 
@@ -2278,10 +2390,407 @@ export function createWorldFairOrcaProvider({
     }
   }
 
+
+  // ---------------------------------------------------------------------------
+  // Workflow operations (operator intents, principal decisions, mandate lifecycle).
+  // Each one reuses the instruction builders proven by the canonical sequence.
+  // Program refusals come back as decisions; transport/RPC failures throw so the
+  // caller records UNKNOWN and reconciles instead of inventing an outcome.
+  // ---------------------------------------------------------------------------
+
+  function chainLock(operation) {
+    const lockKey = `${guardian.publicKey.toBase58()}:${delegate.publicKey.toBase58()}`;
+    const previous = runtimePromises.get(lockKey);
+    if (previous) {
+      const busy = new Error('WORLD_FAIR_MANDATE_BUSY');
+      busy.worldFairBusy = true;
+      throw busy;
+    }
+    const promise = operation();
+    runtimePromises.set(lockKey, promise);
+    return promise.finally(() => runtimePromises.delete(lockKey));
+  }
+
+  function mandateView(state) {
+    const m = state.mandate;
+    const r = state.assetRule;
+    return {
+      accounts: {
+        charter: charter.toBase58(),
+        mandate: mandate.toBase58(),
+        assetRule: assetRule.toBase58(),
+        inputTradeVault: inputTradeVault.toBase58(),
+        outputTradeVault: outputTradeVault.toBase58()
+      },
+      guardian: guardian.publicKey.toBase58(),
+      delegate: delegate.publicKey.toBase58(),
+      mandate: m
+        ? {
+            stage: m.stage,
+            status: MANDATE_STATUS_NAMES[m.status] ?? 'UNKNOWN',
+            version: m.version,
+            nonce: m.nonce,
+            maxActionNotionalMicroUsd: m.maxActionNotionalMicroUsd,
+            maxPeriodNotionalMicroUsd: m.maxPeriodNotionalMicroUsd,
+            expiresAt: m.expiresAt,
+            maxMarketAgeSeconds: m.maxMarketAgeSeconds,
+            maxConfidenceBps: m.maxConfidenceBps
+          }
+        : null,
+      assetRule: r
+        ? {
+            enabled: r.enabled,
+            maxActionAmount: r.maxActionAmount,
+            maxPeriodAmount: r.maxPeriodAmount,
+            periodSeconds: r.periodSeconds,
+            periodStartedAt: r.periodStartedAt,
+            spentThisPeriod: r.spentThisPeriod,
+            spentThisPeriodNotionalMicroUsd: r.spentThisPeriodNotionalMicroUsd,
+            maxUnitPriceMicroUsd: r.maxUnitPriceMicroUsd
+          }
+        : null
+    };
+  }
+
+  async function readMandate() {
+    const state = await loadState();
+    validateExistingState(state);
+    return mandateView(state);
+  }
+
+  async function quoteIntent({ inputAmount, slippageBps }) {
+    const amount = Number(inputAmount);
+    const bps = Number(slippageBps);
+    if (!Number.isSafeInteger(amount) || amount <= 0) throw new Error('WORLD_FAIR_INTENT_AMOUNT_INVALID');
+    if (!Number.isSafeInteger(bps) || bps < 1 || bps > 300) throw new Error('WORLD_FAIR_INTENT_SLIPPAGE_INVALID');
+    const pyth = await livePyth();
+    const { pool, data: poolData, pythTreasury } = await orcaContextState();
+    const quote = await withTransientRpcReadRetry(
+      () =>
+        swapQuoteByInputToken(
+          pool,
+          WORLD_FAIR_DEV_USDC,
+          new BN(amount),
+          Percentage.fromFraction(bps, 10_000),
+          ORCA_WHIRLPOOL_PROGRAM_ID,
+          orcaContext.fetcher,
+          IGNORE_CACHE
+        ),
+      WORLD_FAIR_ORCA_READ_RETRY_PROFILE
+    );
+    const notionalMicroUsd = Number(
+      (BigInt(amount) * BigInt(pyth.unitPriceMicroUsd)) / 1_000_000n
+    );
+    return {
+      pyth,
+      quote,
+      poolData,
+      pythTreasury,
+      inputAmount: amount,
+      slippageBps: bps,
+      notionalMicroUsd,
+      unitPriceMicroUsd: pyth.unitPriceMicroUsd,
+      estimatedOutput: Number(quote.estimatedAmountOut.toString()),
+      minOutput: Number(quote.otherAmountThreshold.toString())
+    };
+  }
+
+  function quoteSummary(q) {
+    return {
+      inputAmount: q.inputAmount,
+      slippageBps: q.slippageBps,
+      notionalMicroUsd: q.notionalMicroUsd,
+      unitPriceMicroUsd: q.unitPriceMicroUsd,
+      estimatedOutput: q.estimatedOutput,
+      minOutput: q.minOutput,
+      pythPublishedAt: q.pyth?.snapshot?.publishedAt ?? q.pyth?.snapshot?.timestamp ?? null
+    };
+  }
+
+  async function executeIntent({ inputAmount, slippageBps }) {
+    return chainLock(async () => {
+      const state = await loadState();
+      validateExistingState(state);
+      if (!state.mandate || !state.assetRule) throw new Error('WORLD_FAIR_WORKSPACE_NOT_BOOTSTRAPPED');
+      const before = mandateView(state);
+      const q = await quoteIntent({ inputAmount, slippageBps });
+      const standingMax = state.mandate.maxActionNotionalMicroUsd;
+
+      if (state.mandate.status !== MANDATE_STATUS_CODES.ACTIVE) {
+        return { decision: 'REFUSE', boundary: 'HARD', code: 'MandateNotActive', quote: quoteSummary(q), mandateBefore: before.mandate };
+      }
+
+      const attempt = () =>
+        executeStanding({
+          inputAmount: q.inputAmount,
+          pyth: q.pyth,
+          quote: q.quote,
+          executionNonce: state.mandate.nonce,
+          poolData: q.poolData,
+          pythTreasury: q.pythTreasury
+        });
+
+      let signature;
+      try {
+        signature = await attempt();
+      } catch (error) {
+        const refusal = classifyWorldFairProgramRefusal(error);
+        if (!refusal) throw error;
+        return {
+          decision: 'REFUSE',
+          boundary: refusal.boundary,
+          code: refusal.code,
+          // Preflight simulation ran the CRESCO program against live state: the
+          // refusal is the program's decision, and no state changed.
+          refusalEvidence: 'PROGRAM_PREFLIGHT_SIMULATION',
+          quote: quoteSummary(q),
+          standingMaxNotionalMicroUsd: standingMax,
+          policyDiff:
+            refusal.boundary === 'SOFT'
+              ? worldFairPolicyDiff({
+                  requestedNotionalMicroUsd: q.notionalMicroUsd,
+                  standingMaxNotionalMicroUsd: standingMax
+                })
+              : null,
+          mandateBefore: before.mandate
+        };
+      }
+
+      const expectedSpent = Number(state.assetRule.spentThisPeriod) + q.inputAmount;
+      let after = null;
+      try {
+        after = mandateView(await waitForAssetRuleSpentAtLeast(expectedSpent));
+      } catch {
+        after = null; // confirmed signature, effect read lagging: caller reconciles
+      }
+      return {
+        decision: 'ALLOW',
+        boundary: 'STANDING',
+        signature,
+        quote: quoteSummary(q),
+        standingMaxNotionalMicroUsd: standingMax,
+        effectObserved: Boolean(after),
+        mandateBefore: before.mandate,
+        mandateAfter: after?.mandate ?? null,
+        assetRuleAfter: after?.assetRule ?? null
+      };
+    });
+  }
+
+  async function approveAndExecuteException({ inputAmount, slippageBps, expectedNonce }) {
+    return chainLock(async () => {
+      const state = await loadState();
+      validateExistingState(state);
+      if (!state.mandate || !state.assetRule) throw new Error('WORLD_FAIR_WORKSPACE_NOT_BOOTSTRAPPED');
+      if (Number(state.mandate.nonce) !== Number(expectedNonce)) {
+        return { status: 'STALE', code: 'StaleNonce', currentNonce: state.mandate.nonce, requestNonce: Number(expectedNonce) };
+      }
+      if (state.mandate.status !== MANDATE_STATUS_CODES.ACTIVE) {
+        return { status: 'REFUSED', boundary: 'HARD', code: 'MandateNotActive' };
+      }
+      const q = await quoteIntent({ inputAmount, slippageBps });
+      if (q.notionalMicroUsd <= state.mandate.maxActionNotionalMicroUsd) {
+        return { status: 'NOT_REQUIRED', code: 'ExceptionNotRequired', quote: quoteSummary(q) };
+      }
+
+      let exception;
+      try {
+        exception = await grantSwapException({
+          inputAmount: q.inputAmount,
+          quote: q.quote,
+          pyth: q.pyth,
+          deadline: Math.floor(Date.now() / 1000) + 300,
+          expectedNonce: state.mandate.nonce
+        });
+      } catch (error) {
+        const refusal = classifyWorldFairProgramRefusal(error);
+        if (!refusal) throw error;
+        return { status: refusal.boundary === 'STALE' ? 'STALE' : 'REFUSED', boundary: refusal.boundary, code: refusal.code, quote: quoteSummary(q) };
+      }
+
+      const grant = {
+        signature: exception.signature,
+        allowance: exception.allowance.toBase58(),
+        requestHash: exception.requestHash.toString('hex'),
+        maxNotionalMicroUsd: Number(exception.exactNotional),
+        deadline: exception.deadline,
+        mandateNonce: Number(state.mandate.nonce)
+      };
+
+      let executionSignature;
+      try {
+        executionSignature = await executeException({
+          exception,
+          poolData: q.poolData,
+          pythTreasury: q.pythTreasury
+        });
+      } catch (error) {
+        const refusal = classifyWorldFairProgramRefusal(error);
+        let allowanceState = null;
+        try {
+          allowanceState = await loadAllowance(exception.allowance);
+        } catch {
+          allowanceState = null;
+        }
+        if (allowanceState && !allowanceState.used) {
+          return {
+            status: refusal?.boundary === 'VENUE' ? 'ROLLED_BACK' : 'EXECUTION_REFUSED',
+            code: refusal?.code ?? 'EXECUTION_NOT_CONFIRMED',
+            boundary: refusal?.boundary ?? 'UNKNOWN',
+            grant,
+            allowanceConsumed: false,
+            quote: quoteSummary(q)
+          };
+        }
+        if (!refusal) throw Object.assign(error, { worldFairGrant: grant });
+        return { status: 'EXECUTION_REFUSED', code: refusal.code, boundary: refusal.boundary, grant, allowanceConsumed: allowanceState?.used ?? null, quote: quoteSummary(q) };
+      }
+
+      const expectedSpent = Number(state.assetRule.spentThisPeriod) + q.inputAmount;
+      let after = null;
+      try {
+        after = mandateView(await waitForAssetRuleSpentAtLeast(expectedSpent));
+      } catch {
+        after = null;
+      }
+      let consumed = null;
+      try {
+        consumed = (await loadAllowance(exception.allowance)).used;
+      } catch {
+        consumed = null;
+      }
+      return {
+        status: 'EXECUTED',
+        grant,
+        executionSignature,
+        allowanceConsumed: consumed,
+        quote: quoteSummary(q),
+        standingMandateVersionBefore: state.mandate.version,
+        standingMandateVersionAfter: after?.mandate?.version ?? null,
+        standingAuthorityChanged:
+          after?.mandate ? after.mandate.version !== state.mandate.version : null,
+        assetRuleAfter: after?.assetRule ?? null
+      };
+    });
+  }
+
+  async function guardianWrite(name, keys, parts) {
+    return sendInstructions({
+      rpc,
+      feePayer: guardian,
+      signers: [guardian],
+      instructions: [ix(name, keys, parts)]
+    });
+  }
+
+  async function setMandateStatus({ status, expectedNonce }) {
+    const code = MANDATE_STATUS_CODES[status];
+    if (code === undefined) throw new Error('WORLD_FAIR_MANDATE_STATUS_INVALID');
+    return chainLock(async () => {
+      try {
+        const signature = await guardianWrite(
+          'set_mandate_status',
+          [
+            publicKeyMeta(charter),
+            publicKeyMeta(mandate, false, true),
+            publicKeyMeta(guardian.publicKey, true, false)
+          ],
+          [u64le(expectedNonce), Buffer.from([code])]
+        );
+        return { status: 'CONFIRMED', signature, mandate: (await readMandate()).mandate };
+      } catch (error) {
+        const refusal = classifyWorldFairProgramRefusal(error);
+        if (!refusal) throw error;
+        return { status: 'REFUSED', code: refusal.code, boundary: refusal.boundary };
+      }
+    });
+  }
+
+  async function revisePolicy({ values, expectedNonce }) {
+    const next = normalizeWorldFairPolicy({ ...policy, ...values });
+    return chainLock(async () => {
+      try {
+        const signature = await configurePolicy(expectedNonce, next);
+        return { status: 'CONFIRMED', signature, mandate: (await readMandate()).mandate };
+      } catch (error) {
+        const refusal = classifyWorldFairProgramRefusal(error);
+        if (!refusal) throw error;
+        return { status: 'REFUSED', code: refusal.code, boundary: refusal.boundary };
+      }
+    });
+  }
+
+  async function updateRule({ values, expectedNonce }) {
+    const next = normalizeWorldFairPolicy({ ...policy, ...values });
+    const enabled = values?.enabled === undefined ? true : Boolean(values.enabled);
+    return chainLock(async () => {
+      try {
+        const signature = await guardianWrite(
+          'update_asset_rule',
+          [
+            publicKeyMeta(charter),
+            publicKeyMeta(mandate, false, true),
+            publicKeyMeta(assetRule, false, true),
+            publicKeyMeta(guardian.publicKey, true, false)
+          ],
+          [
+            u64le(expectedNonce),
+            Buffer.from([enabled ? 1 : 0]),
+            Buffer.from([ACTION_SWAP_EXACT_IN]),
+            u64le(next.maxActionAmount),
+            u64le(next.maxPeriodAmount),
+            i64le(next.periodSeconds),
+            u64le(next.maxUnitPriceMicroUsd),
+            u32le(WORLD_FAIR_PYTH_FEED.feedId)
+          ]
+        );
+        return { status: 'CONFIRMED', signature, mandate: await readMandate() };
+      } catch (error) {
+        const refusal = classifyWorldFairProgramRefusal(error);
+        if (!refusal) throw error;
+        return { status: 'REFUSED', code: refusal.code, boundary: refusal.boundary };
+      }
+    });
+  }
+
+  async function signatureStatus(signature) {
+    const result = await withTransientRpcReadRetry(
+      () => readRpc.getSignatureStatuses([signature], { searchTransactionHistory: true }),
+      WORLD_FAIR_STATE_READ_RETRY_PROFILE
+    );
+    const value = result?.value?.[0] ?? null;
+    if (!value) return { status: 'NOT_FOUND' };
+    if (value.err) return { status: 'FAILED', err: JSON.stringify(value.err).slice(0, 400) };
+    return {
+      status:
+        value.confirmationStatus === 'finalized' || value.confirmationStatus === 'confirmed'
+          ? 'CONFIRMED'
+          : 'PROCESSED',
+      slot: value.slot
+    };
+  }
+
+  async function bootstrapWorkspace() {
+    return chainLock(async () => {
+      const ready = await ensureReady();
+      return { bootstrap: ready.bootstrap, ...mandateView(ready.state) };
+    });
+  }
+
   return {
     getPublicState,
     ensureReady,
     runCanonicalSequence,
+    readMandate,
+    quoteIntent,
+    executeIntent,
+    approveAndExecuteException,
+    setMandateStatus,
+    revisePolicy,
+    updateRule,
+    signatureStatus,
+    bootstrapWorkspace,
+    policy,
     ids: {
       programId: WORLD_FAIR_PROGRAM_ID.toBase58(),
       guardian: guardian.publicKey.toBase58(),
@@ -2312,4 +2821,49 @@ export function configuredWorldFairOrcaProviderFromEnv(env = null) {
   });
 
   return configuredProvider;
+}
+
+const workspaceProviders = new Map();
+
+// Chain adapter for one operator/principal workspace: its own delegate,
+// charter, mandate, asset rule and trade vaults under the server-held Devnet
+// guardian. The judge lab mandate is never touched.
+export function createWorldFairWorkspaceChain({
+  guardian,
+  pythApiKey,
+  rpcUrl = 'https://api.devnet.solana.com',
+  workspaceId,
+  policy,
+  connection = null
+}) {
+  return createWorldFairOrcaProvider({
+    rpcUrl,
+    guardian,
+    pythApiKey,
+    connection,
+    delegate: deriveWorldFairWorkspaceDelegate(guardian, workspaceId),
+    policy,
+    strictLabState: false
+  });
+}
+
+export function configuredWorldFairWorkspaceChainFactoryFromEnv(env = null) {
+  const read = (key) =>
+    env?.[key] ??
+    (typeof process !== 'undefined' ? process.env?.[key] : null);
+  const keypairJson = read('DEVNET_KEYPAIR_JSON');
+  const pythApiKey = read('PYTH_PRO_API_KEY');
+  if (!keypairJson || !pythApiKey) return null;
+  const guardian = parseKeypair(keypairJson);
+  const rpcUrl = read('SOLANA_DEVNET_RPC_URL') ?? 'https://api.devnet.solana.com';
+  return ({ workspaceId, policy }) => {
+    const key = `${workspaceId}:${JSON.stringify(policy ?? {})}`;
+    if (!workspaceProviders.has(key)) {
+      workspaceProviders.set(
+        key,
+        createWorldFairWorkspaceChain({ guardian, pythApiKey, rpcUrl, workspaceId, policy })
+      );
+    }
+    return workspaceProviders.get(key);
+  };
 }
