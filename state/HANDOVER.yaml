@@ -1,6 +1,6 @@
 version: 0.1.0
 project_id: cresco
-date: 2026-10-11
+date: 2026-10-12
 status: ACTIVE
 current_stage: POST_SLICE_LIVE_PRODUCT
 current_owner: PBPD_OR_EXISTING_IMPLEMENTATION_OWNER
@@ -8,7 +8,11 @@ current_owner: PBPD_OR_EXISTING_IMPLEMENTATION_OWNER
 read_order:
   - state/CURRENT.yaml
   - state/HANDOVER.yaml
-  - "Faadil1/cresco-worlds-fair@ffcc8ea64604990a4014cfb1c8a7a01809fdbe67:product/PRD.md"
+  - docs/worlds-fair/RECONCILIATION-2026-10-12-PM.md  # latest reconciliation, open PRs, merge order
+  - docs/worlds-fair/product/PRD.md  # World Fair living PRD, consolidated here
+  - docs/worlds-fair/WHO-ENFORCES-WHAT.md
+  - docs/worlds-fair/PHANTOM-VALIDATION-PROTOCOL.md
+  - docs/worlds-fair/EXTERNAL-TEST-PROTOCOL.md
   - product/PRD.md  # historical family/baseline PRD, not World Fair product authority
   - evidence/solana/DEVNET-AUTHORITY-RUNTIME-PROOF-2026-09-23.md
   - README.md
@@ -27,7 +31,12 @@ canonical_baseline:
     public runtime truth.
 
 current_truth:
-  main_commit: 4c7b82ff22ae7d4fb2756e68c640548bf1f7965d
+  main_commit: 43e62dfb2f699772e2471a7456b0af67bfa61536
+  public_frontend_owner_deployed: https://cresco.faadil-casecraft.workers.dev
+  v0_4_workflow_live_devnet_campaign: 5_OF_5_OWNER_RUN_2026-10-12
+  principal_wallet_guardian: LOCAL_PR40__OWNER_PHANTOM_VALIDATION_PENDING
+  ai_operator_mcp: LOCAL
+  one_product_entry: LOCAL_BRANCH_claude/integrations-and-ui-2026-10-12__CONTAINS_PR41
   product_live: true
   solana_devnet_program_live: true
   world_fair_7_of_7_live_proof: true
@@ -35,7 +44,7 @@ current_truth:
   latest_world_fair_live_proof_run: 37214175230
   latest_world_fair_nonce_transition: "13 -> 14"
   latest_repair_merged_to_main: true
-  public_hosted_runtime_bound_to_latest_main: UNKNOWN
+  public_hosted_runtime_bound_to_latest_main: UNKNOWN  # owner redeploys manually; record the commit after each deploy
   public_redeploy_after_PR29_authorized: false
   mainnet_authorized: false
   real_securities_execution_claimed: false
@@ -45,12 +54,12 @@ workstream_priority:
   current_primary_workstream: PRODUCT_EXPLOITATION
   remaining_material_depth_gaps:
     - current_main_public_runtime_binding_after_PR29_reliability_fix
-    - real_operator_to_principal_exception_workflow_not_productized
-    - public_runtime_auth_and_role_boundary_not_productized_for_real_operators
-    - post_deploy_repeatability_threshold_not_proven
+    - legacy_family_app_sessions_not_converged_with_workspace_roles
+    - principal_wallet_guardian_live_validation_pending_owner
+    - workspace_capacity_25_and_lab_funding_for_external_tests
     - external_target_operator_value_and_wtp_not_proven
     - time_to_first_value_and_operational_economics_not_measured
-  next_highest_value_depth_delta: REAL_OPERATOR_PRINCIPAL_WORKFLOW_WITH_PROTECTED_LIVE_TRIGGER_SAFETY
+  next_highest_value_depth_delta: OWNER_PHANTOM_VALIDATION_THEN_REAL_TESTER_ROUND_ON_VERIFIED_PUBLIC_URL
   public_deploy_stop_condition: BLOCKED_MISSING_CLOUDFLARE_GITHUB_SECRETS
   source_side_product_work_stop_condition: NONE
   demo_packaging_allowed: false
@@ -60,6 +69,8 @@ do_not_claim:
   - latest_main_is_current_public_runtime
   - public_redeploy_completed
   - mainnet_execution
+  - principal_wallet_guardian_live_before_owner_phantom_record
+  - tester_feedback_as_customer_validation
   - real_securities_execution
   - proof_receipt_equals_public_runtime_binding
 
