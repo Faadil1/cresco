@@ -11,9 +11,9 @@ const nunitoSans = Nunito_Sans({
 });
 
 export const metadata: Metadata = {
-  title: { default: "Cresco | Your Key. Your decisions.", template: "%s · Cresco" },
+  title: { default: "CRESCO | Act alone inside the rules", template: "%s · CRESCO" },
   description:
-    "Cresco lets young people act within family-set limits and ask only when they reach a boundary.",
+    "CRESCO gives families, financial operators and automated strategies bounded autonomy, with one exact exception without widening standing authority.",
   applicationName: "Cresco",
   appleWebApp: { capable: true, title: "Cresco", statusBarStyle: "default" },
 };

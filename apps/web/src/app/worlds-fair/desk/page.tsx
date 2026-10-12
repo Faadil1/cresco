@@ -21,7 +21,6 @@ import {
   SlidersHorizontal,
   Wallet,
   X,
-  Zap,
 } from "lucide-react";
 
 import { Wordmark } from "@/components/shell";
@@ -530,6 +529,8 @@ export default function WorldFairDeskPage() {
 
   useEffect(() => {
     void Promise.resolve().then(() => {
+    const requested = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("case") : null;
+    if (requested === "family" || requested === "capital") setLandingCase(requested);
     const stored = loadKeychain();
     const shared = typeof window !== "undefined" ? parseShareFragment(window.location.hash) : null;
     if (shared) {
@@ -676,12 +677,13 @@ export default function WorldFairDeskPage() {
   const quickAmounts = [Math.max(50_000, Math.round(limitMicro * 0.6 / 10_000) * 10_000), Math.round(limitMicro * 1.5 / 10_000) * 10_000];
 
   return (
-    <main className="relative min-h-screen bg-bg">
+    <main id="main" className="relative min-h-screen bg-bg">
       <div className="relative mx-auto max-w-[1240px] px-5 pb-20 pt-6 md:px-10 md:pt-8">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <Wordmark size="md" />
-          <nav className="flex gap-2">
-            <Link href="/worlds-fair" className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-extrabold text-navy shadow-soft hover:border-blue/35">Judge lab (7/7)</Link>
+          <nav aria-label="CRESCO product" className="flex flex-wrap gap-2">
+            <Link href="/" className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-extrabold text-navy shadow-soft hover:border-blue/35">CRESCO home</Link>
+            <Link href="/worlds-fair" className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-extrabold text-navy shadow-soft hover:border-blue/35">Technical proof</Link>
             {id ? (
               <button type="button" onClick={() => { saveKeychain({ workspaceId: null, tokens: {} }); setKeychain({ workspaceId: null, tokens: {} }); setWs(null); setMandate(null); setRequests([]); setEvents([]); }} className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-extrabold text-navy shadow-soft">
                 Leave workspace
@@ -692,47 +694,28 @@ export default function WorldFairDeskPage() {
 
         {!id ? (
           <>
-            <section className="mt-10 grid items-center gap-10 lg:mt-14 lg:grid-cols-[1.05fr_0.95fr]">
-              <div>
-                <p className="inline-flex items-center gap-2 rounded-full border border-green/30 bg-green-soft px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-green-strong">
-                  <span className="size-1.5 rounded-full bg-green" /> Live on Solana Devnet · Colosseum World’s Fair
-                </p>
-                <h1 className="mt-5 max-w-[16ch] text-[42px] font-black leading-[1.0] tracking-[-0.045em] text-navy-strong md:text-[60px]">
-                  Act alone inside the rules. Ask once for the exception.
-                </h1>
-                <p className="mt-5 max-w-[56ch] text-[17px] font-semibold leading-relaxed text-ink-2">{caseCopy.pitch}</p>
-                <div className="mt-6 flex flex-wrap items-center gap-3">
-                  <UseCaseToggle value={landingCase} onChange={setLandingCase} />
-                  <span className="text-[13px] font-semibold text-ink-3">Same CRESCO program, two kinds of people.</span>
-                </div>
+            <section className="mt-10 lg:mt-12">
+              <p className="text-[12px] font-black uppercase tracking-[0.13em] text-blue">CRESCO workspace · Solana Devnet</p>
+              <h1 className="mt-3 max-w-[22ch] text-[36px] font-black leading-[1.04] tracking-[-0.04em] text-navy-strong md:text-[48px]">
+                Start a workspace. Set the line. Share one link per person.
+              </h1>
+              <p className="mt-4 max-w-[62ch] text-[16px] font-semibold leading-relaxed text-ink-2">{caseCopy.pitch}</p>
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                <UseCaseToggle value={landingCase} onChange={setLandingCase} />
+                <span className="text-[13px] font-semibold text-ink-3">Same CRESCO program, two kinds of people.</span>
               </div>
-              <Card className="md:p-7">
-                <div className="flex items-center justify-between gap-3">
-                  <Eyebrow>How the line works</Eyebrow>
-                  <Pill tone="border-line bg-surface-soft text-navy">Example</Pill>
-                </div>
-                <div className="mt-6">
-                  <MandateRail limitMicroUsd={500_000} operator={names.operator} principal={names.principal} points={[{ id: "a", amountMicroUsd: 300_000, kind: "alone" }, { id: "b", amountMicroUsd: 750_000, kind: "pending" }]} />
-                </div>
-                <ul className="mt-6 grid gap-2 text-[14px] font-bold">
-                  <li className="flex items-center justify-between rounded-[14px] bg-green-soft px-4 py-3 text-green-strong"><span>$0.30 · executed alone</span><Zap className="size-4" /></li>
-                  <li className="flex items-center justify-between rounded-[14px] bg-yellow-soft px-4 py-3 text-orange-text"><span>$0.75 · one exact request to {names.principal}</span><Bell className="size-4" /></li>
-                  <li className="flex items-center justify-between rounded-[14px] bg-blue-soft px-4 py-3 text-blue"><span>Approved once · limit still $0.50</span><ShieldCheck className="size-4" /></li>
-                </ul>
-                <p className="mt-4 text-[12px] font-semibold text-ink-3">The line is enforced by the CRESCO program on Solana, not by this page.</p>
-              </Card>
             </section>
 
-            <section className="mt-12">
+            <section className="mt-8">
               <HowItWorks useCase={landingCase} />
+            </section>
+
+            <section className="mt-8">
+              <CreateWorkspace useCase={landingCase} onCreated={onCreated} />
             </section>
 
             <section className="mt-6">
               <ProofStrip />
-            </section>
-
-            <section className="mt-12">
-              <CreateWorkspace useCase={landingCase} onCreated={onCreated} />
             </section>
           </>
         ) : null}
