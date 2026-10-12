@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import BN from 'bn.js';
 import {
   Connection,
+  Ed25519Program,
   Keypair,
   PublicKey,
   SystemProgram,
@@ -494,6 +495,29 @@ export function worldFairHardPrecheck(state, q, nowSeconds) {
   const periodCap = Number(mandate.maxPeriodNotionalMicroUsd);
   if (periodCap !== 0 && spentNotional + notional > periodCap) return 'PythPeriodNotionalExceeded';
   return null;
+}
+
+export const WORLD_FAIR_MEMO_PROGRAM_ID = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
+
+// Puts the principal's wallet approval on-chain, in the same transaction as
+// the exception grant: Solana's native Ed25519 program verifies the wallet's
+// signature over the exact approval message (the transaction fails if it does
+// not verify), and a memo links it to the request. The CRESCO program itself
+// does not read this proof; the runtime verifies it.
+export function worldFairApprovalProofInstructions(proof) {
+  if (!proof) return [];
+  const publicKey = new PublicKey(String(proof.publicKey)).toBytes();
+  const signature = Uint8Array.from(proof.signature);
+  if (signature.length !== 64) throw new Error('WORLD_FAIR_APPROVAL_SIGNATURE_INVALID');
+  const message = Buffer.from(String(proof.message), 'utf8');
+  return [
+    Ed25519Program.createInstructionWithPublicKey({ publicKey, message, signature }),
+    new TransactionInstruction({
+      programId: WORLD_FAIR_MEMO_PROGRAM_ID,
+      keys: [],
+      data: Buffer.from(`CRESCO principal approval verified on-chain: ${proof.requestId ?? 'request'}`, 'utf8')
+    })
+  ];
 }
 
 const MANDATE_STATUS_CODES = Object.freeze({ ACTIVE: 0, PAUSED: 1, REVOKED: 2 });
@@ -1686,7 +1710,8 @@ export function createWorldFairOrcaProvider({
     quote,
     pyth,
     deadline,
-    expectedNonce
+    expectedNonce,
+    approvalProof = null
   }) {
     const minOutputAmount = BigInt(quote.otherAmountThreshold.toString());
     const sqrtPriceLimit = BigInt(quote.sqrtPriceLimit.toString());
@@ -1715,6 +1740,7 @@ export function createWorldFairOrcaProvider({
       feePayer: guardian,
       signers: [guardian],
       instructions: [
+        ...worldFairApprovalProofInstructions(approvalProof),
         ix(
           'grant_allowance_once',
           [
@@ -2658,7 +2684,7 @@ export function createWorldFairOrcaProvider({
     });
   }
 
-  async function approveAndExecuteException({ inputAmount, slippageBps, expectedNonce }) {
+  async function approveAndExecuteException({ inputAmount, slippageBps, expectedNonce, approvalProof = null }) {
     return chainLock(async () => {
       const state = await loadState();
       validateExistingState(state);
@@ -2687,7 +2713,8 @@ export function createWorldFairOrcaProvider({
           quote: q.quote,
           pyth: q.pyth,
           deadline: Math.floor(Date.now() / 1000) + 300,
-          expectedNonce: state.mandate.nonce
+          expectedNonce: state.mandate.nonce,
+          approvalProof
         });
       } catch (error) {
         const refusal = classifyWorldFairProgramRefusal(error);
@@ -2701,7 +2728,9 @@ export function createWorldFairOrcaProvider({
         requestHash: exception.requestHash.toString('hex'),
         maxNotionalMicroUsd: Number(exception.exactNotional),
         deadline: exception.deadline,
-        mandateNonce: Number(state.mandate.nonce)
+        mandateNonce: Number(state.mandate.nonce),
+        principalApprovalVerifiedOnChain: Boolean(approvalProof),
+        principalWallet: approvalProof ? String(approvalProof.publicKey) : null
       };
 
       let executionSignature;

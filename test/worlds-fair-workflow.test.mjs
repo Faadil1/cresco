@@ -502,3 +502,33 @@ test('live fix: a confirmed grant without an execution transaction reconciles as
   assert.equal(rec.body.reconciled[0].resolution, 'GRANT_ONLY_EXECUTION_NOT_SENT');
   assert.equal((await wf.listRequests(id)).body.requests[0].status, 'NOT_EXECUTED');
 });
+
+test('wallet-bound approval forwards the exact signed message to the chain for on-chain verification', async () => {
+  const now = Date.parse('2026-10-12T12:00:00Z');
+  const { wf, id, bearer, chain } = await setup({ now: () => now });
+  const secret = ed25519.utils.randomPrivateKey();
+  const pub = new PublicKey(ed25519.getPublicKey(secret)).toBase58();
+  const issuedAt = new Date(now).toISOString();
+  const sign = (message) => Buffer.from(ed25519.sign(new TextEncoder().encode(message), secret)).toString('base64');
+  await wf.bindWallet(id, bearer('principal'), { publicKey: pub, issuedAt, signature: sign(walletBindingMessage({ workspaceId: id, issuedAt })) });
+  let seen = null;
+  const original = chain.approveAndExecuteException;
+  chain.approveAndExecuteException = async (args) => { seen = args.approvalProof; return original(args); };
+  const pending = await wf.submitIntent(id, bearer('operator'), { inputAmount: 700_000 });
+  const req = pending.body.request;
+  const message = approvalMessage({ workspaceId: id, request: req, issuedAt });
+  await wf.decide(id, req.id, bearer('principal'), { decision: 'APPROVE', issuedAt, walletSignature: sign(message) });
+  assert.equal(seen.publicKey, pub);
+  assert.equal(seen.message, message);
+  assert.equal(seen.signature.length, 64);
+  assert.ok(ed25519.verify(seen.signature, new TextEncoder().encode(seen.message), new PublicKey(pub).toBytes()));
+});
+
+test('a workspace carries its presentation (family or delegated capital); the mechanism is identical', async () => {
+  const wf = createWorldFairWorkflow({ store: createMemoryWorkflowStore(), chainFactory: () => fakeChain() });
+  const family = await wf.createWorkspace({ useCase: 'family', principalLabel: 'Parent', operatorLabel: 'Maya (16)' });
+  assert.equal(family.body.useCase, 'family');
+  assert.equal(family.body.roles.operator.label, 'Maya (16)');
+  assert.equal((await wf.createWorkspace({ useCase: 'anything-else' })).body.useCase, 'capital');
+  assert.equal((await wf.createWorkspace({})).body.useCase, 'capital');
+});

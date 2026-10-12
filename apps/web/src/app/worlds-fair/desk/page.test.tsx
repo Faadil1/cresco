@@ -77,6 +77,28 @@ afterEach(() => {
 });
 
 describe("World's Fair desk", () => {
+  it("offers the family and delegated-capital presentations of the same mechanism", async () => {
+    const calls = api();
+    render(<WorldFairDeskPage />);
+    expect(await screen.findByRole("radio", { name: /family/i })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByText(/give a teenager an allowance/i)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("radio", { name: /delegated capital/i }));
+    expect(screen.getByText(/give a strategy standing authority/i)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("radio", { name: /family/i }));
+    await userEvent.click(screen.getByRole("button", { name: /create workspace/i }));
+    await screen.findByText(/hand each role its own link/i);
+    const created = calls.find((c) => c.method === "POST" && c.path === "/workspaces");
+    expect(JSON.parse(String(created?.init?.body))).toMatchObject({ useCase: "family", principalLabel: "Parent", operatorLabel: "Maya (16)" });
+  });
+
+  it("names the roles of a family workspace as parent and teen", async () => {
+    window.localStorage.setItem("cresco-worlds-fair-desk-v1", JSON.stringify({ workspaceId: WS.id, tokens: { operator: "wf_operator_a", principal: "wf_principal_b" } }));
+    api({ [`GET /workspaces/${WS.id}`]: () => json(200, { ...WS, useCase: "family" }) });
+    render(<WorldFairDeskPage />);
+    expect(await screen.findByRole("tab", { name: /teen/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /parent/i })).toBeInTheDocument();
+  });
+
   it("creates a workspace, hands off one link per role and keeps tokens for this viewer", async () => {
     const calls = api();
     render(<WorldFairDeskPage />);

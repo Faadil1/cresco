@@ -29,6 +29,10 @@ everyone: durable history with Explorer receipts, notifications, reconciliation
 | CAP-11 notifications | `GET /notifications?since=`, optional https webhook |
 | CAP-12 strategy API | `GET /openapi`, `examples/worlds-fair-strategy-client.mjs` |
 
+## Two presentations, one mechanism
+
+A workspace is created as **Family** (parent, teen, second parent: an allowance, a request, a yes once) or **Delegated capital** (allocator, strategy or AI agent, risk owner). Only labels and wording change (`useCase` on the workspace); the CRESCO program, mandate, exception and stale semantics are identical. CRESCO's first build (Stocklana) was the family experience; World's Fair generalized its on-chain mechanism.
+
 ## Design decisions
 
 - **One mandate per workspace.** Each workspace derives its own delegate (`deriveWorldFairWorkspaceDelegate`) and therefore its own charter, mandate, asset rule and trade vaults. Pausing, revoking or revising a workspace never touches the judge lab mandate, whose fixed policy the CANONICAL_LIVE run depends on.

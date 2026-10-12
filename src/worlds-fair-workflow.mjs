@@ -331,6 +331,7 @@ export function createWorldFairWorkflow({
       contractVersion: WORKFLOW_CONTRACT_VERSION,
       id: ws.id,
       name: ws.name,
+      useCase: ws.useCase ?? 'capital',
       createdAt: ws.createdAt,
       roles: {
         principal: { label: ws.principal.label, wallet: ws.principal.wallet?.publicKey ?? null },
@@ -369,6 +370,9 @@ export function createWorldFairWorkflow({
     const ws = {
       id,
       name: cleanLabel(body.name, 'Delegated trading desk'),
+      // Same on-chain mechanism, two presentations: a family (parent / teen)
+      // or delegated capital (allocator / strategy or AI agent).
+      useCase: body.useCase === 'family' ? 'family' : 'capital',
       createdAt: nowIso(),
       policy,
       requestTtlSeconds: ttl,
@@ -596,6 +600,7 @@ export function createWorldFairWorkflow({
       fail(403, 'PRINCIPAL_WALLET_APPROVAL_REQUIRED', 'A principal wallet is bound: only a wallet-signed principal approval can grant an exception', { role });
     }
     let walletProof = null;
+    let approvalProof = null;
     if (role === 'principal' && ws.principal.wallet) {
       checkIssuedAt(body.issuedAt, clock(), cfg.walletSignatureMaxAgeSeconds);
       const message = approvalMessage({ workspaceId: ws.id, request: req, issuedAt: body.issuedAt });
@@ -603,6 +608,8 @@ export function createWorldFairWorkflow({
         fail(401, 'WALLET_SIGNATURE_INVALID', 'Approval must be signed by the bound principal wallet', { expectedMessage: message });
       }
       walletProof = { publicKey: ws.principal.wallet.publicKey, issuedAt: body.issuedAt, signature: String(body.walletSignature).slice(0, 200) };
+      // Same signature, re-verified on-chain inside the grant transaction.
+      approvalProof = { publicKey: ws.principal.wallet.publicKey, message, signature: decodeSignature(body.walletSignature), requestId: req.id };
     }
 
     const chain = chainFor(ws);
@@ -616,7 +623,8 @@ export function createWorldFairWorkflow({
       result = await chain.approveAndExecuteException({
         inputAmount: req.intent.inputAmount,
         slippageBps: req.intent.maxSlippageBps,
-        expectedNonce: req.mandateNonce
+        expectedNonce: req.mandateNonce,
+        approvalProof
       });
     } catch (error) {
       if (error?.worldFairBusy) {

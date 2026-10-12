@@ -42,16 +42,55 @@ import {
   type MandateView,
   type WorkflowEvent,
   type WorkflowRole,
+  type UseCase,
   type Workspace,
 } from "@/services/worlds-fair-workflow";
 
 type Tab = WorkflowRole | "history" | "api";
 
-const ROLE_COPY: Record<WorkflowRole, { title: string; blurb: string }> = {
-  operator: { title: "Operator", blurb: "The delegated strategy. Acts alone inside the standing mandate." },
-  principal: { title: "Principal", blurb: "The allocator. Grants exact one-use exceptions and owns the mandate." },
-  risk: { title: "Risk owner", blurb: "Watches period consumption, tunes asset limits, can decide exceptions." },
+// One on-chain mechanism, two presentations. Only words change: the CRESCO
+// program, the mandate and the exception flow are identical.
+const USE_CASES: Record<UseCase, {
+  label: string;
+  pitch: string;
+  roles: Record<WorkflowRole, { title: string; blurb: string }>;
+  defaults: { name: string; principal: string; operator: string; risk: string; limit: string };
+  formTitle: string;
+  operatorField: string;
+  amountLabel: string;
+}> = {
+  family: {
+    label: "Family",
+    pitch: "A teenager invests on their own inside an allowance. A parent says yes once to an exact request, without changing the rules.",
+    roles: {
+      operator: { title: "Teen", blurb: "Invests on their own inside the allowance. Anything above it becomes a request to a parent." },
+      principal: { title: "Parent", blurb: "Owns the allowance. Says yes once to an exact request, or no, without changing the rules." },
+      risk: { title: "Second parent", blurb: "Sees what was spent this period, adjusts the limits, can answer requests too." },
+    },
+    defaults: { name: "Family desk", principal: "Parent", operator: "Maya (16)", risk: "Second parent", limit: "0.50" },
+    formTitle: "Give a teenager an allowance they can use alone",
+    operatorField: "Teen",
+    amountLabel: "Amount to invest (devUSDC to devUSDT)",
+  },
+  capital: {
+    label: "Delegated capital",
+    pitch: "A strategy or AI agent trades on its own inside a standing mandate. The allocator grants one exact exception without widening it.",
+    roles: {
+      operator: { title: "Operator", blurb: "The delegated strategy or AI agent. Acts alone inside the standing mandate." },
+      principal: { title: "Principal", blurb: "The allocator. Grants exact one-use exceptions and owns the mandate." },
+      risk: { title: "Risk owner", blurb: "Watches period consumption, tunes asset limits, can decide exceptions." },
+    },
+    defaults: { name: "Delegated trading desk", principal: "Allocator", operator: "Momentum strategy", risk: "Risk owner", limit: "0.50" },
+    formTitle: "Give a strategy standing authority",
+    operatorField: "Operator (strategy or agent)",
+    amountLabel: "Swap amount (devUSDC to devUSDT)",
+  },
 };
+
+function caseOfWorkspace(ws: Workspace | null | undefined): UseCase {
+  return ws?.useCase === "family" ? "family" : "capital";
+}
+
 
 const STATUS_TONE: Record<string, string> = {
   PENDING: "border-yellow/40 bg-yellow-soft text-orange-text",
@@ -175,6 +214,11 @@ function RequestCard({ req, children }: { req: ExceptionRequest; children?: Reac
           Executed once · allowance consumed: {String(req.execution.allowanceConsumed)} · standing authority changed: {String(req.execution.standingAuthorityChanged)}
         </p>
       ) : null}
+      {req.grant?.principalApprovalVerifiedOnChain ? (
+        <p className="mt-1 text-[12px] font-bold text-green-strong">
+          Principal wallet signature verified on-chain in the grant transaction (Solana Ed25519 program)
+        </p>
+      ) : null}
       {req.grant?.signature || req.execution?.signature ? (
         <Signatures
           event={{
@@ -191,7 +235,7 @@ function RequestCard({ req, children }: { req: ExceptionRequest; children?: Reac
   );
 }
 
-function IntentOutcome({ result }: { result: IntentResult }) {
+function IntentOutcome({ result, requests = [] }: { result: IntentResult; requests?: ExceptionRequest[] }) {
   if (result.decision === "ALLOW") {
     return (
       <div role="status" className="mt-4 rounded-[18px] border border-green/25 bg-green-soft p-4 text-green-strong">
@@ -202,10 +246,22 @@ function IntentOutcome({ result }: { result: IntentResult }) {
     );
   }
   if (result.decision === "PENDING_PRINCIPAL") {
+    const live = requests.find((r) => r.id === result.request.id);
+    if (live && live.status !== "PENDING") {
+      const done = live.status === "EXECUTED";
+      return (
+        <div role="status" className={`mt-4 rounded-[18px] border p-4 ${done ? "border-green/25 bg-green-soft text-green-strong" : "border-line bg-surface-soft text-navy"}`}>
+          <p className="font-black">Exception request {live.id} · {live.status.replaceAll("_", " ")}</p>
+          <p className="mt-1 text-[13px] font-semibold">
+            {done ? "Approved once and executed; the standing limit did not change." : "Decided. Details and receipts are under the request."}
+          </p>
+        </div>
+      );
+    }
     return (
       <div role="status" className="mt-4 rounded-[18px] border border-yellow/40 bg-yellow-soft p-4 text-orange-text">
         <p className="font-black">Outside standing authority · exact exception requested</p>
-        <p className="mt-1 text-[13px] font-semibold">The CRESCO program refused it ({result.refusal.code}). Request {result.request.id} is waiting for the principal or risk owner.</p>
+        <p className="mt-1 text-[13px] font-semibold">The CRESCO program refused it ({result.refusal.code}). Request {result.request.id} went to the principal or risk owner; its live status is under My exception requests.</p>
       </div>
     );
   }
@@ -227,11 +283,22 @@ function IntentOutcome({ result }: { result: IntentResult }) {
 }
 
 function CreateWorkspace({ onCreated }: { onCreated: (ws: CreatedWorkspace) => void }) {
-  const [name, setName] = useState("Delegated trading desk");
-  const [principalLabel, setPrincipalLabel] = useState("Allocator");
-  const [operatorLabel, setOperatorLabel] = useState("Momentum strategy");
-  const [riskLabel, setRiskLabel] = useState("Risk owner");
-  const [limit, setLimit] = useState("0.50");
+  const [useCase, setUseCase] = useState<UseCase>("family");
+  const copy = USE_CASES[useCase];
+  const [name, setName] = useState(USE_CASES.family.defaults.name);
+  const [principalLabel, setPrincipalLabel] = useState(USE_CASES.family.defaults.principal);
+  const [operatorLabel, setOperatorLabel] = useState(USE_CASES.family.defaults.operator);
+  const [riskLabel, setRiskLabel] = useState(USE_CASES.family.defaults.risk);
+  const [limit, setLimit] = useState(USE_CASES.family.defaults.limit);
+  function pick(next: UseCase) {
+    const d = USE_CASES[next].defaults;
+    setUseCase(next);
+    setName(d.name);
+    setPrincipalLabel(d.principal);
+    setOperatorLabel(d.operator);
+    setRiskLabel(d.risk);
+    setLimit(d.limit);
+  }
   const [webhookUrl, setWebhookUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -242,6 +309,7 @@ function CreateWorkspace({ onCreated }: { onCreated: (ws: CreatedWorkspace) => v
     setError(null);
     try {
       const ws = await workflowApi.createWorkspace({
+        useCase,
         name,
         principalLabel,
         operatorLabel,
@@ -261,9 +329,23 @@ function CreateWorkspace({ onCreated }: { onCreated: (ws: CreatedWorkspace) => v
   return (
     <Card>
       <Eyebrow>New workspace</Eyebrow>
-      <h2 className="mt-2 text-[26px] font-black tracking-[-0.02em] text-navy-strong">Give a strategy standing authority</h2>
+      <div role="radiogroup" aria-label="Use case" className="mt-3 inline-flex rounded-full border border-line bg-surface-soft p-1">
+        {(["family", "capital"] as UseCase[]).map((u) => (
+          <button
+            key={u}
+            type="button"
+            role="radio"
+            aria-checked={useCase === u}
+            onClick={() => pick(u)}
+            className={`rounded-full px-4 py-1.5 text-[13px] font-black ${useCase === u ? "bg-blue text-white" : "text-navy"}`}
+          >
+            {USE_CASES[u].label}
+          </button>
+        ))}
+      </div>
+      <h2 className="mt-3 text-[26px] font-black tracking-[-0.02em] text-navy-strong">{copy.formTitle}</h2>
       <p className="mt-2 max-w-[60ch] text-[14px] font-semibold text-ink-2">
-        Creates its own Devnet mandate (not the judge lab). You receive one token per role, shown once, to hand to each person.
+        {copy.pitch} Same CRESCO program either way. Creates its own Devnet mandate (not the judge lab); you receive one token per role, shown once.
       </p>
       <form onSubmit={submit} className="mt-5 grid gap-4 md:grid-cols-2">
         <label className="text-[12px] font-black text-ink-2">Desk name<input className={input} value={name} onChange={(e) => setName(e.target.value)} /></label>
@@ -271,9 +353,9 @@ function CreateWorkspace({ onCreated }: { onCreated: (ws: CreatedWorkspace) => v
           <input className={input} inputMode="decimal" value={limit} onChange={(e) => setLimit(e.target.value)} aria-describedby="limit-help" />
           <span id="limit-help" className="mt-1 block text-[11px] font-semibold text-ink-3">Devnet bounds: 0.05 to 5.00</span>
         </label>
-        <label className="text-[12px] font-black text-ink-2">Principal<input className={input} value={principalLabel} onChange={(e) => setPrincipalLabel(e.target.value)} /></label>
-        <label className="text-[12px] font-black text-ink-2">Operator (strategy)<input className={input} value={operatorLabel} onChange={(e) => setOperatorLabel(e.target.value)} /></label>
-        <label className="text-[12px] font-black text-ink-2">Risk owner<input className={input} value={riskLabel} onChange={(e) => setRiskLabel(e.target.value)} /></label>
+        <label className="text-[12px] font-black text-ink-2">{copy.roles.principal.title}<input className={input} value={principalLabel} onChange={(e) => setPrincipalLabel(e.target.value)} /></label>
+        <label className="text-[12px] font-black text-ink-2">{copy.operatorField}<input className={input} value={operatorLabel} onChange={(e) => setOperatorLabel(e.target.value)} /></label>
+        <label className="text-[12px] font-black text-ink-2">{copy.roles.risk.title}<input className={input} value={riskLabel} onChange={(e) => setRiskLabel(e.target.value)} /></label>
         <label className="text-[12px] font-black text-ink-2">Webhook for exception requests (optional, https)<input className={input} value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)} placeholder="https://hooks.example.com/cresco" /></label>
         <div className="md:col-span-2">
           <button type="submit" disabled={busy} className="flex min-h-12 items-center gap-2 rounded-[16px] bg-blue px-5 text-[14px] font-black text-white shadow-button hover:bg-blue-strong disabled:opacity-60">
@@ -300,7 +382,7 @@ function TokenHandoff({ ws, onDone }: { ws: CreatedWorkspace; onDone: () => void
           return (
             <div key={role} className="flex flex-wrap items-center justify-between gap-2 rounded-[16px] border border-line p-3">
               <div>
-                <p className="text-[13px] font-black text-navy-strong">{ROLE_COPY[role].title}</p>
+                <p className="text-[13px] font-black text-navy-strong">{USE_CASES[caseOfWorkspace(ws)].roles[role].title}</p>
                 <p className="font-mono text-[11px] text-ink-3">{short(link, 38, 10)}</p>
               </div>
               <button
@@ -493,6 +575,7 @@ export default function WorldFairDeskPage() {
   }
 
   const pending = requests.filter((r) => r.status === "PENDING");
+  const roleCopy = USE_CASES[caseOfWorkspace(ws)].roles;
   const mandateStatus = mandate?.mandate?.status ?? (ws?.chain.status === "REVOKED" ? "REVOKED" : null);
   const notReady = Boolean(ws && ws.chain.status !== "READY");
 
@@ -512,13 +595,12 @@ export default function WorldFairDeskPage() {
         </header>
 
         <section className="mt-10">
-          <p className="text-[12px] font-black uppercase tracking-[0.13em] text-blue">World’s Fair · delegated capital desk</p>
+          <p className="text-[12px] font-black uppercase tracking-[0.13em] text-blue">World’s Fair · CRESCO desk · {ws ? USE_CASES[caseOfWorkspace(ws)].label : "Family or delegated capital"}</p>
           <h1 className="mt-3 max-w-[22ch] text-[40px] font-black leading-[1.02] tracking-[-0.04em] text-navy-strong md:text-[54px]">
-            The strategy acts. The principal decides the exceptions.
+            Act alone inside the rules. Ask once for the exception.
           </h1>
           <p className="mt-4 max-w-[70ch] text-[16px] font-semibold leading-relaxed text-ink-2">
-            Real Orca swaps on Solana Devnet inside a standing on-chain mandate. Outside it, the CRESCO program refuses and the
-            request goes to a person who can grant one exact exception, without widening the mandate.
+            {ws ? USE_CASES[caseOfWorkspace(ws)].pitch : "A teenager with a parent, or a strategy with its allocator: the same CRESCO program on Solana Devnet enforces the limit, refuses what goes beyond it, and lets the responsible person grant one exact exception without widening the rules."}
           </p>
         </section>
 
@@ -581,7 +663,7 @@ export default function WorldFairDeskPage() {
                     className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[13px] font-black ${tab === t ? "border-blue bg-blue text-white" : "border-line bg-white text-navy"}`}
                   >
                     {t === "history" ? <History className="size-4" /> : t === "api" ? <SlidersHorizontal className="size-4" /> : null}
-                    {t === "history" ? "History" : t === "api" ? "API" : ROLE_COPY[t].title}
+                    {t === "history" ? "History" : t === "api" ? "API" : roleCopy[t].title}
                     {(t === "principal" || t === "risk") && pendingCount > 0 ? (
                       <span className="inline-flex items-center gap-0.5 rounded-full bg-orange px-1.5 text-[11px] text-white"><Bell className="size-3" />{pendingCount}</span>
                     ) : null}
@@ -592,10 +674,10 @@ export default function WorldFairDeskPage() {
               {tab === "operator" && token("operator") ? (
                 <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
                   <Card>
-                    <Eyebrow>{ROLE_COPY.operator.title}</Eyebrow>
-                    <p className="mt-1 text-[13px] font-semibold text-ink-2">{ROLE_COPY.operator.blurb}</p>
+                    <Eyebrow>{roleCopy.operator.title}</Eyebrow>
+                    <p className="mt-1 text-[13px] font-semibold text-ink-2">{roleCopy.operator.blurb}</p>
                     <form onSubmit={submitIntent} className="mt-4 grid gap-3">
-                      <label className="text-[12px] font-black text-ink-2">Swap amount (devUSDC → devUSDT)
+                      <label className="text-[12px] font-black text-ink-2">{USE_CASES[caseOfWorkspace(ws)].amountLabel}
                         <input className="mt-1 w-full rounded-[14px] border border-line px-3 py-2.5 text-[15px] font-bold text-navy-strong" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
                       </label>
                       <label className="text-[12px] font-black text-ink-2">Max slippage (bps, 1–300)
@@ -606,7 +688,7 @@ export default function WorldFairDeskPage() {
                       </button>
                       <p className="text-[11px] font-bold text-ink-3">Each submit carries an idempotency key: a network retry cannot execute twice.</p>
                     </form>
-                    {intentResult ? <IntentOutcome result={intentResult} /> : null}
+                    {intentResult ? <IntentOutcome result={intentResult} requests={requests} /> : null}
                   </Card>
                   <Card>
                     <Eyebrow>My exception requests</Eyebrow>
@@ -620,8 +702,8 @@ export default function WorldFairDeskPage() {
               {(tab === "principal" || tab === "risk") && token(tab) ? (
                 <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
                   <Card>
-                    <Eyebrow>{ROLE_COPY[tab].title} · decisions</Eyebrow>
-                    <p className="mt-1 text-[13px] font-semibold text-ink-2">{ROLE_COPY[tab].blurb}</p>
+                    <Eyebrow>{roleCopy[tab].title} · decisions</Eyebrow>
+                    <p className="mt-1 text-[13px] font-semibold text-ink-2">{roleCopy[tab].blurb}</p>
                     <label className="mt-4 block text-[12px] font-black text-ink-2">Decision note (optional)
                       <input className="mt-1 w-full rounded-[14px] border border-line px-3 py-2 text-[14px] font-semibold" value={note} onChange={(e) => setNote(e.target.value)} maxLength={280} />
                     </label>

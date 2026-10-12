@@ -9,6 +9,7 @@ import {
   deriveWorldFairWorkspaceDelegate,
   normalizeWorldFairPolicy,
   WORLD_FAIR_LAB_POLICY,
+  worldFairApprovalProofInstructions,
   worldFairHardPrecheck,
   worldFairPythUnitPriceMicroUsd,
   worldFairSignatureFromError
@@ -88,4 +89,20 @@ test('a confirmation timeout keeps the signature for reconciliation', () => {
   const sig = '5'.repeat(88);
   assert.equal(worldFairSignatureFromError(new Error(`SOLANA_CONFIRMATION_TIMEOUT:${sig}`)), sig);
   assert.equal(worldFairSignatureFromError(new Error('fetch failed')), null);
+});
+
+test('principal approval proof becomes an Ed25519 verify + memo inside the grant transaction', async () => {
+  const { ed25519 } = await import('@noble/curves/ed25519');
+  const { Ed25519Program } = await import('@solana/web3.js');
+  const secret = ed25519.utils.randomPrivateKey();
+  const publicKey = new (await import('@solana/web3.js')).PublicKey(ed25519.getPublicKey(secret)).toBase58();
+  const message = "CRESCO World's Fair exception approval\nrequest:req-abc";
+  const signature = ed25519.sign(new TextEncoder().encode(message), secret);
+  const [verify, memo] = worldFairApprovalProofInstructions({ publicKey, message, signature, requestId: 'req-abc' });
+  assert.ok(verify.programId.equals(Ed25519Program.programId));
+  assert.ok(Buffer.from(verify.data).includes(Buffer.from(message)));
+  assert.ok(Buffer.from(verify.data).includes(Buffer.from(signature)));
+  assert.match(Buffer.from(memo.data).toString(), /req-abc/);
+  assert.deepEqual(worldFairApprovalProofInstructions(null), []);
+  assert.throws(() => worldFairApprovalProofInstructions({ publicKey, message, signature: new Uint8Array(10) }), /SIGNATURE_INVALID/);
 });

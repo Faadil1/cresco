@@ -16,10 +16,13 @@ export type WorkspacePolicy = {
   maxPeriodAmount: number;
 };
 
+export type UseCase = "family" | "capital";
+
 export type Workspace = {
   contractVersion: string;
   id: string;
   name: string;
+  useCase?: UseCase;
   createdAt: string;
   roles: {
     principal: { label: string; wallet: string | null };
@@ -75,7 +78,7 @@ export type ExceptionRequest = {
   standingMaxNotionalMicroUsd: number;
   policyDiff: { violatedDimensions?: string[]; perActionNotional?: string } | null;
   refusal?: { code: string; evidence: string };
-  grant?: { signature: string; allowance?: string; requestHash?: string; maxNotionalMicroUsd?: number } | null;
+  grant?: { signature: string; allowance?: string; requestHash?: string; maxNotionalMicroUsd?: number; principalApprovalVerifiedOnChain?: boolean; principalWallet?: string | null } | null;
   execution?: { signature: string; allowanceConsumed: boolean | null; standingAuthorityChanged: boolean | null };
   decision?: { decision: string; role: WorkflowRole; note: string | null; walletProof?: { publicKey: string } | null };
   staleReason?: string;
@@ -200,7 +203,7 @@ export function newIdempotencyKey(prefix = "intent") {
 }
 
 export const workflowApi = {
-  createWorkspace: (input: { name?: string; principalLabel?: string; operatorLabel?: string; riskLabel?: string; policy?: Partial<WorkspacePolicy>; webhookUrl?: string }) =>
+  createWorkspace: (input: { useCase?: UseCase; name?: string; principalLabel?: string; operatorLabel?: string; riskLabel?: string; policy?: Partial<WorkspacePolicy>; webhookUrl?: string }) =>
     call<CreatedWorkspace>("POST", "/workspaces", { body: input }).then((r) => r.body),
   getWorkspace: (id: string) => call<Workspace>("GET", `/workspaces/${id}`).then((r) => r.body),
   whoami: (id: string, token: string) => call<{ role: WorkflowRole }>("GET", `/workspaces/${id}/whoami`, { token }).then((r) => r.body),
