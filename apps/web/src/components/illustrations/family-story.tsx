@@ -202,6 +202,14 @@ export function StoryVignette({ role, className, title }: ArtProps & { role: Sto
 
       {/* Face: shaped chin, cheek gradients, eyelids, brow, nose and natural smile. */}
       <path d="M236 59c3-23 24-33 46-30 26 2 37 22 36 49l-3 23c-4 25-20 42-42 44-23 0-38-23-40-47z" fill={`url(#${sceneId}-skin)`} />
+      {teen ? (
+        <>
+          {/* A layered fringe reads as teenage hair rather than an uncovered adult forehead. */}
+          <path d="M235 55c3-19 20-27 36-28 18-2 38 8 41 25-10-7-20-9-31-9-8 9-19 12-29 10-5 5-11 7-17 8z" fill="#352829" />
+          <path d="M241 45c9-10 20-13 31-12m12 2c9 0 16 4 21 11" fill="none" stroke="#80604d" strokeWidth="3.8" strokeLinecap="round" opacity=".72" />
+          <path d="M247 57c10-6 18-6 26-11m5 5c6-4 13-7 23-4" fill="none" stroke="#4b3430" strokeWidth="3.6" strokeLinecap="round" />
+        </>
+      ) : null}
       <path d="M239 74c2-20 18-33 34-36" stroke="#ffdfb9" strokeWidth="7" strokeLinecap="round" opacity=".28" fill="none" />
       <path d="M307 79c2 22-8 39-19 47" stroke="#935d4e" strokeWidth="7" strokeLinecap="round" opacity=".16" fill="none" />
       <ellipse cx="236" cy="99" rx="7" ry="13" fill={skin} />
@@ -215,7 +223,14 @@ export function StoryVignette({ role, className, title }: ArtProps & { role: Sto
       <path d="M277 94c-3 8-5 15-1 17 2 2 6 2 8 0" stroke="#ab7260" strokeWidth="2.3" fill="none" strokeLinecap="round" />
       <path d="M264 122c9 6 20 7 30-1" stroke="#925246" strokeWidth="2.8" fill="none" strokeLinecap="round" />
       <path d="M268 127c8 3 15 3 22 0" stroke="#f4c5a6" strokeWidth="2" fill="none" opacity=".55" />
-      {operator ? <path d="M240 87h26m19 0h27m-46 0h19" stroke="#354554" strokeWidth="2" fill="none" opacity=".8" /> : null}
+      {operator ? (
+        <g fill="#e4f2ef" fillOpacity=".13" stroke="#354554" strokeWidth="2.4" strokeLinejoin="round">
+          <rect x="243" y="83" width="28" height="17" rx="5" />
+          <rect x="282" y="83" width="28" height="17" rx="5" />
+          <path d="M271 88c4-3 7-3 11 0M243 88l-7-3m74 3 6-3" fill="none" strokeLinecap="round" />
+          <path d="M249 87l5-2m34 2 5-2" stroke="#fffaf1" strokeOpacity=".4" strokeWidth="1.7" />
+        </g>
+      ) : null}
       {parent ? <circle cx="315" cy="104" r="4" stroke="#d5b368" strokeWidth="2" fill="none" /> : null}
 
       {/* Hand, sleeve, and tactile phone device — no simulated transaction state. */}
