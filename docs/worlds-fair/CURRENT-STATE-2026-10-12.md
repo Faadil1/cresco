@@ -27,6 +27,21 @@ after the vault auto-refill and dedicated RPC fixes:
 | 4 | `4dCtGen5i2eaYoumkyFAspJUq9FZKAPjdtSwnQ3P7btfoyRzWuGEJ6SjbWCJ7yNVBiRjnrVMyiQywgh7mP7yERkf` | `3DFSQBrBRj2CJphGJnUmQqwG75sYJB76CVUJuQBcNckR2inGAU9QCre7jV2ZgN87fttZMLx6XKzMn8hSJbRUcDYf` | `2D9rP66TNcQyVKCcy1y1uNkNgkMzGyPWnXPGnbiLqRX6u39H7jBphX7bQQuur6jJDbjerDHmL5688YKqXqnjXKcY` |
 | 5 | `4Jcz4xgz6A229sJ3gBCUKKkxTHsHWiLPZG4m2ZZH4M6eVWc4iJMgzu4Zz68GfJR828zCJftxt3vFfoBCvW4dQGVP` | `k4hCwYDNb5aVmKgSNFR7eCKWfPhdRci4WzSv45SQsZBupge7tpvyrLX4PSXgM8Bnh6y8WcNvGBLecp4XXjpcFbn` | `5tywCSMkeJ4HgzwdamGfwZNpo6CiPZpDU36bqAqDJExtmr8d5sA48XCg6UV5WSxsQ9cAeHUSKeMSVTrtXnJ9e9D5` |
 
+Campaign script result (`npm run campaign:worlds-fair -- --cycles 5 --threshold 0.8`, run by Faadil against
+the deployed API): mode LIVE_DEVNET, **5 of 5 passes, pass rate 1.0, predeclared threshold 0.8 met**.
+Each pass requires ALLOW, PENDING_PRINCIPAL, EXECUTED with allowance consumed and standing authority
+unchanged, and a replayed decision refused as REQUEST_ALREADY_DECIDED.
+
+| Step | p50 | p95 |
+| --- | --- | --- |
+| Standing intent (swap inside the mandate) | 2.7 s | 8.6 s |
+| Boundary intent (program refusal and request) | 1.0 s | 1.7 s |
+| Approve (exact grant and execution) | 3.6 s | 4.9 s |
+| Replay of a decided request (refused) | 0.29 s | 0.33 s |
+
+Raw report: `evidence/runtime/worlds-fair-workflow-campaign-1791817641822.json` (on Faadil's machine;
+committed when available). Scope: Devnet repeatability of this loop only, not production reliability.
+
 Explorer: `https://explorer.solana.com/tx/<signature>?cluster=devnet`.
 
 ## Failures met today, and how the product behaved
