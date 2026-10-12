@@ -1,0 +1,83 @@
+name: CRESCO human illustration v2 preview (no deploy)
+
+on:
+  push:
+    branches: [design/cresco-human-illustration-depth-v2-20261012]
+  pull_request:
+    branches: [main]
+    paths:
+      - apps/web/src/components/illustrations/family-story.tsx
+      - .github/workflows/cresco-human-art-preview.yml
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Install source deps and browser
+        run: |
+          npm install --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund @playwright/test
+          npx playwright install --with-deps chromium
+      - name: Render actual new illustration components on local frontend
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p art-preview
+          (npm run dev >art-preview/next-dev.log 2>&1 & echo $! >art-preview/next-dev.pid)
+          node --input-type=module <<'NODE'
+          import { chromium } from "@playwright/test";
+          import { mkdirSync, writeFileSync } from "node:fs";
+          const origin="http://127.0.0.1:3000";
+          let ready=false;
+          for(let i=0;i<36;i++){
+            try{const r=await fetch(origin+"/");if(r.ok){ready=true;break}}catch{}
+            await new Promise(resolve=>setTimeout(resolve,1000));
+          }
+          if(!ready)throw Error("Local frontend did not respond");
+          const browser=await chromium.launch({headless:true});
+          const shots=[
+            ["family-hero-1440","/",1440,900],
+            ["family-onboarding-mobile","/start",390,844],
+            ["teen-home-1440","/home",1440,900],
+            ["capital-desk-1440","/worlds-fair/desk?case=capital",1440,900]
+          ];
+          for(const [name,path,width,height] of shots){
+            const page=await browser.newPage({viewport:{width,height}});
+            await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:30000});
+            await page.evaluate(()=>document.fonts.ready);
+            await page.waitForTimeout(500);
+            const photo=await page.screenshot({type:"jpeg",quality:48,animations:"disabled"});
+            writeFileSync(`art-preview/${name}.jpg`,photo);
+            const art=await page.locator("svg[role=img]").count();
+            const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>document.documentElement.clientWidth+1);
+            console.log("CRESCO_ART_SCENE:"+JSON.stringify({name,path,width,height,art,overflow}));
+            if(["family-onboarding-mobile","teen-home-1440","capital-desk-1440"].includes(name)){
+              const b64=photo.toString("base64");
+              console.log(`CRESCO_ART_BEGIN:${name}:${b64.length}`);
+              for(let i=0;i<b64.length;i+=1800)console.log(`CRESCO_ART_CHUNK:${name}:${b64.slice(i,i+1800)}`);
+              console.log(`CRESCO_ART_END:${name}`);
+            }
+            if(overflow)process.exitCode=1;
+            await page.close();
+          }
+          await browser.close();
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cresco-human-art-v2-local-screens
+          path: apps/web/art-preview/
+          if-no-files-found: warn
