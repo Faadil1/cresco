@@ -82,18 +82,20 @@ test("operator ALLOW, soft boundary to principal approval, and UNKNOWN shown as 
   await page.getByRole("tab", { name: /operator/i }).click();
   await page.getByLabel(/swap amount/i).fill("0.20");
   await page.getByRole("button", { name: /submit intent/i }).click();
-  await expect(page.getByText(/ALLOW · executed inside standing authority/)).toBeVisible();
+  await expect(page.getByText(/Done alone · inside the standing limit/)).toBeVisible();
 
   await page.getByLabel(/swap amount/i).fill("0.75");
   await page.getByRole("button", { name: /submit intent/i }).click();
-  await expect(page.getByText(/exact exception requested/i).first()).toBeVisible();
+  await expect(page.getByText(/Above the limit · asked .* once/i).first()).toBeVisible();
 
   await page.getByRole("tab", { name: /principal/i }).click();
   const card = page.getByTestId("request-req-e2e000000001");
+  await expect(card.getByText("Requested $0.75")).toBeVisible();
+  await card.getByText(/on-chain details/i).click();
   await expect(card.getByText(/MAX_ACTION_NOTIONAL/)).toBeVisible();
   await card.getByRole("button", { name: /approve exactly once/i }).click();
   await page.getByText(/decided requests/i).click();
-  await expect(page.getByText(/Executed once · allowance consumed: true · standing authority changed: false/)).toBeVisible();
+  await expect(page.getByText(/Executed once\. Standing authority changed: no\./).first()).toBeVisible();
 
   state.nextIntentUnknown = true;
   await page.getByRole("tab", { name: /operator/i }).click();
