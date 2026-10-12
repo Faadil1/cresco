@@ -199,3 +199,11 @@ test('Worker v0.4: Durable Object refuses keys outside the workflow namespace', 
   const res = await stub.fetch('https://x.internal/wf-kv/put', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key: 'family', value: { hacked: true } }) });
   assert.equal(res.status, 400);
 });
+
+test('worker options: create token and bounded workspace capacity come from env', async () => {
+  const { worldFairWorkflowOptionsFromEnv } = await import('../src/cloudflare-worker.mjs');
+  assert.deepEqual(worldFairWorkflowOptionsFromEnv({}), {});
+  assert.deepEqual(worldFairWorkflowOptionsFromEnv({ WORLD_FAIR_CREATE_TOKEN: 't', WORLD_FAIR_MAX_WORKSPACES: '60' }), { createToken: 't', maxWorkspaces: 60 });
+  assert.deepEqual(worldFairWorkflowOptionsFromEnv({ WORLD_FAIR_MAX_WORKSPACES: '5000' }), {});
+  assert.deepEqual(worldFairWorkflowOptionsFromEnv({ WORLD_FAIR_MAX_WORKSPACES: 'abc' }), {});
+});

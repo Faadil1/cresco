@@ -7,6 +7,17 @@ import {
 } from './worlds-fair-orca-provider.mjs';
 import { createWorldFairWorkflow } from './worlds-fair-workflow.mjs';
 import { isWorkflowPath, workflowWriteScope } from './worlds-fair-workflow-http.mjs';
+
+// Optional lab limits from Worker vars: WORLD_FAIR_CREATE_TOKEN gates workspace
+// creation; WORLD_FAIR_MAX_WORKSPACES raises or lowers the capacity (default 25,
+// bounded to 1..200 because every workspace spends lab Devnet funds).
+export function worldFairWorkflowOptionsFromEnv(env = {}) {
+  const options = {};
+  if (env.WORLD_FAIR_CREATE_TOKEN) options.createToken = env.WORLD_FAIR_CREATE_TOKEN;
+  const max = Number(env.WORLD_FAIR_MAX_WORKSPACES);
+  if (Number.isSafeInteger(max) && max >= 1 && max <= 200) options.maxWorkspaces = max;
+  return options;
+}
 export { FamilyState };
 
 const DEFAULT_CRESCO_ORIGINS = Object.freeze([
@@ -275,7 +286,7 @@ async function handleWorkflowRequest({ request, env, services, path, body }) {
           chainFactory:
             services.worldFairWorkspaceChainFactory ??
             configuredWorldFairWorkspaceChainFactoryFromEnv(env),
-          options: env.WORLD_FAIR_CREATE_TOKEN ? { createToken: env.WORLD_FAIR_CREATE_TOKEN } : {}
+          options: worldFairWorkflowOptionsFromEnv(env)
         })
       : null);
 

@@ -7,10 +7,12 @@ lifecycle_state: POST_SLICE_LIVE_PRODUCT__WORLD_FAIR_DEVNET_PROVEN__PUBLIC_RUNTI
 source_of_truth:
   repository: Faadil1/cresco
   branch: main
-  current_main_commit: 4c7b82ff22ae7d4fb2756e68c640548bf1f7965d
+  current_main_commit: 43e62dfb2f699772e2471a7456b0af67bfa61536  # re-resolve at every touch
   baseline_family_prd: product/PRD.md
-  worlds_fair_living_prd: "Faadil1/cresco-worlds-fair@ffcc8ea64604990a4014cfb1c8a7a01809fdbe67:product/PRD.md"
-  public_product: https://cresco-lac.vercel.app
+  worlds_fair_living_prd: docs/worlds-fair/product/PRD.md  # consolidated into this repo 2026-10-12; cresco-worlds-fair is a pointer only
+  public_product: https://cresco.faadil-casecraft.workers.dev  # owner-deployed Worker 2026-10-12; exact deployed commit UNKNOWN until bound
+  public_product_previous: https://cresco-lac.vercel.app  # earlier host, not re-verified
+  noncanonical_preview: cloudflare-pages:cresco-visual-lab  # build fails on every main commit since >=2026-10-03; not the runtime
   public_api: https://keys-api-stocklana.faadil-casecraft.workers.dev
 
 canonical_baseline_reconciliation:
@@ -115,26 +117,35 @@ conditional_gateway_registry:
 operator_principal_workflow_v0_4:
   branch: claude/worlds-fair-operator-principal-workflow-2026-10-12
   status: LIVE_DEVNET_VERIFIED__CAMPAIGN_5_OF_5_2026-10-12
-  reality: LOCAL
-  reason_not_live: build environment had no Solana Devnet / Pyth network access; no deployment or Devnet write was performed
+  reality: LIVE_DEVNET_FOR_CAMPAIGN_PATHS__OTHERS_LOCAL
+  live_evidence: docs/worlds-fair/CURRENT-STATE-2026-10-12.md  # owner-run campaign 5/5 on the owner-deployed Worker; deployed commit not bound
   design: one on-chain mandate per workspace (judge lab mandate untouched); authority stays in the CRESCO program
   capabilities:
-    CAP-01_principal_creates_standing_mandate: IMPLEMENTED_LOCAL__SERVER_HELD_GUARDIAN
-    CAP-02_strategy_submits_own_intent_via_api: IMPLEMENTED_LOCAL
-    CAP-03_refusal_policy_diff_durable_request: IMPLEMENTED_LOCAL
-    CAP-04_principal_grants_exact_one_use_exception: IMPLEMENTED_LOCAL__WALLET_SIGNED_APPROVAL__ONCHAIN_GRANT_SERVER_GUARDIAN
+    CAP-01_principal_creates_standing_mandate: LIVE_DEVNET__SERVER_HELD_GUARDIAN
+    CAP-02_strategy_submits_own_intent_via_api: LIVE_DEVNET_CAMPAIGN_5_OF_5
+    CAP-03_refusal_policy_diff_durable_request: LIVE_DEVNET_CAMPAIGN_5_OF_5
+    CAP-04_principal_grants_exact_one_use_exception: LIVE_DEVNET_CAMPAIGN_5_OF_5__SERVER_GUARDIAN__PRINCIPAL_WALLET_GUARDIAN_LOCAL_PR40
     CAP-05_exact_once_mutation_replay_stale_hard: PROVEN_LIVE_IN_LAB__REUSED_BUILDERS
     CAP-06_venue_or_evidence_failure_rollback: PROVEN_LIVE_IN_LAB__REUSED_BUILDERS
     CAP-07_pause_resume_revoke_revise_with_stale_invalidation: IMPLEMENTED_LOCAL
     CAP-08_durable_history_with_receipts: IMPLEMENTED_LOCAL__DURABLE_OBJECT_STORE
-    CAP-09_public_self_serve_runtime: BLOCKED__REQUIRES_HUMAN_DEPLOY_keys-api-stocklana
+    CAP-09_public_self_serve_runtime: OWNER_DEPLOYED_2026-10-12__COMMIT_BINDING_UNKNOWN
     CAP-10_asset_rule_and_period_consumption: IMPLEMENTED_LOCAL
     CAP-11_notifications_poll_and_webhook: IMPLEMENTED_LOCAL
     CAP-12_strategy_api_openapi_example_client: IMPLEMENTED_LOCAL
   robustness: [idempotency_key, per_workspace_write_lease, request_expiry, interrupted_approval_to_unknown, unknown_never_success, signature_reconciliation, browser_e2e_mocked_api, repeatability_campaign_script]
   tests: {root_node: 195, web_vitest: 72, e2e_desk_chromium_local: 1}
-  remaining_gap_to_full_non_custodial: principal wallet as on-chain guardian (program already requires guardian signature on grant)
+  remaining_gap_to_full_non_custodial: principal-wallet guardian implemented LOCAL in PR #40; owner Phantom validation pending (docs/worlds-fair/PHANTOM-VALIDATION-PROTOCOL.md)
+  ai_operator_mcp: LOCAL  # integrations/mcp, tested via real workflow + router with fake chain
   live_verification_steps: docs/WORLDS-FAIR-OPERATOR-PRINCIPAL-WORKFLOW.md
+
+product_unification_2026_10_12:
+  decision: ONE_PRODUCT__FAMILY_AND_DELEGATED_CAPITAL_ENTER_THE_SAME_V0_4_WORKSPACE
+  root_entry: "/ -> /worlds-fair/desk?case=family | ?case=capital (PR #41 structure, follow-up in claude/integrations-and-ui-2026-10-12)"
+  legacy_family_app: "/start and /parent/sign-in remain reachable, labeled separate sign-in, demo lane; no identity or data migration"
+  identity_reality: SEPARATE_SESSIONS  # legacy demo-session auth vs v0.4 per-workspace role tokens; shared Solana program is not shared login
+  audit: docs/worlds-fair/RECONCILIATION-2026-10-12-PM.md
+open_prs_merge_order: ["#38 campaign evidence", "#39 enforcement truth", "#40 principal-wallet guardian", "#41 unified entry", "integrations + UI (stacked on #40, contains #38/#39/#41)"]
 
 exact_next_gate: SUBMISSION__PITCH_AND_DEMO_VIDEOS_THEN_COLOSSEUM_FINAL_SUBMIT
 exact_next_owner: HUMAN_FOR_DEPLOY_AND_DEVNET_WRITES__PBPD_FOR_ANY_REWORK
