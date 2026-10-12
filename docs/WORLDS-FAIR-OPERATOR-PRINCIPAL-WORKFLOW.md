@@ -1,6 +1,6 @@
 # CRESCO World's Fair: operator / principal workflow (API v0.4)
 
-Status: implemented and tested against deterministic chain doubles. **Not yet LIVE-verified on Devnet**: the build environment had no Solana/Pyth network access. Run the verification steps below before claiming LIVE.
+Status: **live on Solana Devnet** since 2026-10-12, with a 5 of 5 repeatability campaign on the deployed API (receipts: [worlds-fair/CURRENT-STATE-2026-10-12.md](worlds-fair/CURRENT-STATE-2026-10-12.md)). Which guarantees the program enforces and which the CRESCO server enforces: [worlds-fair/WHO-ENFORCES-WHAT.md](worlds-fair/WHO-ENFORCES-WHAT.md).
 
 ## What it adds
 
