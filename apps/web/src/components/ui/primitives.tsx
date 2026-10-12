@@ -360,7 +360,7 @@ export function IconCircle({
     pink: "bg-pink-soft text-[#a24f67]",
     yellow: "bg-yellow-soft text-warning",
     loss: "bg-loss-soft text-loss-text",
-    navy: "bg-[#e8ebee] text-navy",
+    navy: "bg-green-soft text-green-strong",
   };
   return (
     <span className={cn("grid shrink-0 place-items-center rounded-full", tones[tone], className)} style={{ width: size, height: size }}>
