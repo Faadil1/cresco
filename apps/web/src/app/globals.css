@@ -28,7 +28,7 @@
   /* Text-safe variants (WCAG AA 4.5:1 on light surfaces). Fills keep the brand values. */
   --cresco-orange-text: #995020;
 
-  --cresco-lavender: #8574b9;
+  --cresco-lavender: #715da7; /* >= 4.5:1 on CRESCO light surfaces */
   --cresco-lavender-soft: #eee8f8;
 
   --cresco-aqua: #51988c;
