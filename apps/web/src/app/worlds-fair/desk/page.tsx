@@ -63,6 +63,7 @@ const STATUS_TONE: Record<string, string> = {
   EXPIRED: "border-line bg-surface-soft text-ink-2",
   NOT_REQUIRED: "border-line bg-surface-soft text-ink-2",
   ROLLED_BACK: "border-lavender/30 bg-lavender-soft text-navy",
+  NOT_EXECUTED: "border-lavender/30 bg-lavender-soft text-navy",
   UNKNOWN: "border-loss/30 bg-loss-soft text-loss-text",
 };
 

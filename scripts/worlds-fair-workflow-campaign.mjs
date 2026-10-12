@@ -27,7 +27,7 @@ const flag = (name, fallback = null) => {
   return i >= 0 ? args[i + 1] ?? true : fallback;
 };
 
-export async function runCampaign({ request, cycles, threshold, standingAmount, boundaryAmount, feeLookup = null, now = () => Date.now() }) {
+export async function runCampaign({ request, cycles, threshold, standingAmount, boundaryAmount, feeLookup = null, now = () => Date.now(), pauseMs = 0, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) }) {
   const results = [];
   const latency = {};
   const record = (step, ms) => (latency[step] ??= []).push(ms);
@@ -39,6 +39,8 @@ export async function runCampaign({ request, cycles, threshold, standingAmount, 
   };
 
   for (let i = 1; i <= cycles; i += 1) {
+    // Pace cycles: public/free Devnet RPCs rate-limit bursts (HTTP 429).
+    if (i > 1 && pauseMs > 0) await sleep(pauseMs);
     const cycle = { cycle: i, steps: {}, pass: false, signatures: [] };
     try {
       const allow = await timed('standingIntent', () => request('POST', '/intents', 'operator', { action: 'SWAP_EXACT_IN', inputAmount: standingAmount, maxSlippageBps: 100 }, `campaign-${Date.now()}-${i}-a`));
@@ -183,7 +185,8 @@ async function main() {
     threshold,
     standingAmount: Math.round(Number(flag('standing', '0.2')) * 1_000_000),
     boundaryAmount: Math.round(Number(flag('boundary', '0.75')) * 1_000_000),
-    feeLookup: selfTest ? null : rpcFeeLookup()
+    feeLookup: selfTest ? null : rpcFeeLookup(),
+    pauseMs: selfTest ? 0 : Number(flag('pause-ms', '15000'))
   });
   report.mode = selfTest ? 'SELF_TEST_NO_NETWORK' : 'LIVE_DEVNET';
   report.observedAt = new Date().toISOString();

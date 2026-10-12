@@ -925,6 +925,15 @@ export function createWorldFairWorkflow({
       }
       const req = e.requestId ? requests[e.requestId] : null;
       let resolution = checks.length ? (checks.every((c) => c.status === 'CONFIRMED') ? 'EFFECTS_CONFIRMED' : checks.some((c) => c.status === 'FAILED') ? 'EFFECTS_FAILED' : 'STILL_UNKNOWN') : 'NO_SIGNATURE_RECORDED';
+      // A confirmed grant alone is not an executed exception: if no execution
+      // transaction was ever sent (it failed in simulation), the swap did not
+      // happen and the one-use allowance simply expires unused.
+      const isApprove = e.data?.operation === 'APPROVE';
+      const hasExecution = checks.some((c) => c.label === 'exception.execute');
+      if (isApprove && resolution === 'EFFECTS_CONFIRMED' && !hasExecution) {
+        resolution = 'GRANT_ONLY_EXECUTION_NOT_SENT';
+        if (req && req.status === 'UNKNOWN') req.status = 'NOT_EXECUTED';
+      }
       if (req && req.status === 'UNKNOWN' && resolution === 'EFFECTS_FAILED') {
         req.status = 'REFUSED_BY_PROGRAM';
       }

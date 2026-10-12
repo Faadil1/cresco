@@ -489,3 +489,16 @@ test('review fix: optional create token and top-up cooldown protect the shared g
   t += 11 * 60 * 1000;
   assert.equal((await wf2.topUpVault(id, bearer('principal'))).status, 200);
 });
+
+test('live fix: a confirmed grant without an execution transaction reconciles as NOT_EXECUTED, never as executed', async () => {
+  const { wf, id, bearer, chain } = await setup({ behaviour: { signatureStatus: () => ({ status: 'CONFIRMED' }) } });
+  chain.approveAndExecuteException = async () => {
+    throw Object.assign(new Error('Simulation failed: Error processing Instruction 1: custom program error: 0x1'), { worldFairGrant: { signature: 'g'.repeat(64) } });
+  };
+  const pending = await wf.submitIntent(id, bearer('operator'), { inputAmount: 700_000 });
+  const res = await wf.decide(id, pending.body.request.id, bearer('principal'), { decision: 'APPROVE' });
+  assert.equal(res.body.request.status, 'UNKNOWN');
+  const rec = await wf.reconcile(id, bearer('principal'));
+  assert.equal(rec.body.reconciled[0].resolution, 'GRANT_ONLY_EXECUTION_NOT_SENT');
+  assert.equal((await wf.listRequests(id)).body.requests[0].status, 'NOT_EXECUTED');
+});

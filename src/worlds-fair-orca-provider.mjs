@@ -905,7 +905,8 @@ export function createWorldFairOrcaProvider({
   now = () => new Date().toISOString(),
   delegate: delegateOverride = null,
   policy: policyInput = null,
-  strictLabState = true
+  strictLabState = true,
+  vaultTargetBaseUnits = VAULT_TARGET_BASE_UNITS
 }) {
   if (!guardian?.publicKey) throw new Error('WORLD_FAIR_GUARDIAN_REQUIRED');
   const policy = normalizeWorldFairPolicy(policyInput ?? WORLD_FAIR_LAB_POLICY);
@@ -1258,9 +1259,10 @@ export function createWorldFairOrcaProvider({
     );
   }
 
-  async function ensureInputVaultFunding() {
+  async function ensureInputVaultFunding(minimumBaseUnits = 0) {
+    const target = Math.max(vaultTargetBaseUnits, Number(minimumBaseUnits) || 0);
     const vault = await readTokenAccount(inputTradeVault);
-    if (Number(vault.amount) >= VAULT_TARGET_BASE_UNITS) return null;
+    if (Number(vault.amount) >= target) return null;
 
     const guardianUsdc = await getOrCreateAssociatedTokenAccount(
       rpc,
@@ -1271,7 +1273,7 @@ export function createWorldFairOrcaProvider({
     let guardianUsdcState = await readTokenAccount(guardianUsdc.address);
 
     const required =
-      VAULT_TARGET_BASE_UNITS - Number(vault.amount);
+      target - Number(vault.amount);
 
     for (let attempt = 1; attempt <= 2; attempt += 1) {
       const availableUsdc = Number(guardianUsdcState.amount);
@@ -2567,12 +2569,24 @@ export function createWorldFairOrcaProvider({
     };
   }
 
+  async function ensureWorkspaceVaultFor(inputAmount) {
+    if (strictLabState) return null; // the judge lab keeps its proven funding path
+    const vault = await readTokenAccount(inputTradeVault);
+    if (Number(vault.amount) >= Number(inputAmount)) return null;
+    await ensureDelegateFunding();
+    return ensureInputVaultFunding(Number(inputAmount));
+  }
+
   async function executeIntent({ inputAmount, slippageBps }) {
     return chainLock(async () => {
       const state = await loadState();
       validateExistingState(state);
       if (!state.mandate || !state.assetRule) throw new Error('WORLD_FAIR_WORKSPACE_NOT_BOOTSTRAPPED');
       const before = mandateView(state);
+      // An empty trade vault makes the token program fail mid-swap (error 0x1).
+      // Refill from the server-held Devnet guardian first, so the program
+      // decision is about authority, never about lab plumbing.
+      await ensureWorkspaceVaultFor(inputAmount);
       const q = await quoteIntent({ inputAmount, slippageBps });
       const standingMax = state.mandate.maxActionNotionalMicroUsd;
 
@@ -2660,6 +2674,7 @@ export function createWorldFairOrcaProvider({
         return { status: 'NOT_REQUIRED', code: 'ExceptionNotRequired', quote: quoteSummary(q) };
       }
       const blocked = worldFairHardPrecheck(state, q, Math.floor(Date.now() / 1000));
+      if (!blocked) await ensureWorkspaceVaultFor(q.inputAmount);
       if (blocked) {
         // The program would refuse execution after the grant; do not pay for a grant.
         return { status: 'REFUSED', boundary: 'HARD', code: blocked, evidence: 'PROGRAM_STATE_PRECHECK', quote: quoteSummary(q) };
@@ -2915,7 +2930,9 @@ export function createWorldFairWorkspaceChain({
     connection,
     delegate: deriveWorldFairWorkspaceDelegate(guardian, workspaceId),
     policy,
-    strictLabState: false
+    strictLabState: false,
+    // Room for several cycles of the 0.20 / 0.75 loop before an auto-refill.
+    vaultTargetBaseUnits: 5_000_000
   });
 }
 
