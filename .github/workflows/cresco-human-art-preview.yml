@@ -60,9 +60,15 @@ jobs:
             await page.evaluate(()=>document.fonts.ready);
             await page.waitForTimeout(500);
             if(name==="capital-desk-1440"){
-              await page.getByRole("radio",{name:"Delegated capital"}).click();
-              await page.waitForTimeout(350);
-              console.log("CRESCO_CAPITAL_SELECTED:"+await page.getByRole("radio",{name:"Delegated capital"}).getAttribute("aria-checked"));
+              const selector=page.getByRole("radio",{name:"Delegated capital"});
+              await page.waitForTimeout(2200);
+              console.log("CRESCO_CAPITAL_BEFORE:"+await selector.getAttribute("aria-checked"));
+              await selector.click();
+              await page.waitForTimeout(1000);
+              console.log("CRESCO_CAPITAL_SELECTED:"+await selector.getAttribute("aria-checked"));
+              console.log("CRESCO_CAPITAL_ILLUSTRATION:"+JSON.stringify(await page.locator('svg[role="img"]').allTextContents()));
+              const capitalSelected=await selector.getAttribute("aria-checked");
+              if(capitalSelected!=="true")process.exitCode=1;
             }
             const photo=await page.screenshot({type:"jpeg",quality:48,animations:"disabled"});
             writeFileSync(`art-preview/${name}.jpg`,photo);
