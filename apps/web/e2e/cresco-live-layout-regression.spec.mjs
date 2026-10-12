@@ -34,7 +34,16 @@ test("mobile CRESCO navigation exposes all settings without horizontal scrolling
 
 test("role story portrait is framed inside the live desk without privileged actions", async ({ page }) => {
   await page.goto("/worlds-fair/desk");
-  const portrait = page.getByRole("img", { name: /illustrated parent using CRESCO/i });
+  const portrait = page.getByRole("img", { name: /illustrated parent reviewing a CRESCO request/i });
   await expect(portrait).toBeVisible();
-  await expect(portrait.locator('g[transform="translate(-32 0)"]')).toHaveCount(1);
+  const face = portrait.locator('path[d^="M236 59c3-23"]');
+  await expect(face).toHaveCount(1);
+  const svgBox = await portrait.boundingBox();
+  const faceBox = await face.boundingBox();
+  expect(svgBox && faceBox).toBeTruthy();
+  // The facial features must stay within the image frame after the new pose is applied.
+  expect(faceBox.x).toBeGreaterThanOrEqual(svgBox.x);
+  expect(faceBox.x + faceBox.width).toBeLessThan(svgBox.x + svgBox.width - 7);
+  expect(faceBox.y).toBeGreaterThan(svgBox.y);
+  expect(faceBox.y + faceBox.height).toBeLessThan(svgBox.y + svgBox.height);
 });
