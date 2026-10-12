@@ -36,9 +36,11 @@ The current API URL keeps its original Cloudflare worker hostname so the already
 
 The current capital path moves a **demo SPL token**, not real securities. AAPL is the current proven Money lane with live Pyth market evidence. CRESCO does not claim brokerage, custody, mainnet execution, or real minor securities execution.
 
-## World's Fair: delegated capital desk (v0.4, Devnet)
+## World's Fair: Family and Delegated capital workspace (v0.4, Devnet)
 
-- Desk for operator, principal and risk owner: `/worlds-fair/desk` (judge lab stays at `/worlds-fair`).
+- One entry for both settings at `/`; the shared workspace is `/worlds-fair/desk` (judge lab stays at `/worlds-fair`).
+- Opt-in **principal-wallet guardian**: the parent's or allocator's own wallet signs the mandate, every exact exception, pause and resume. LIVE on Devnet with Phantom on 2026-10-12 ([record](docs/worlds-fair/PRINCIPAL-WALLET-GUARDIAN.md#live-test-record-owner-phantom-solana-devnet-2026-10-12)).
+- AI agents as operator through MCP, with no tool to approve or widen their own limit: [`integrations/mcp`](integrations/mcp/README.md).
 - Strategy API: `GET /api/v0.4/worlds-fair/openapi`, example client `examples/worlds-fair-strategy-client.mjs`.
 - Design, truth boundary, deploy and LIVE verification: [`docs/WORLDS-FAIR-OPERATOR-PRINCIPAL-WORKFLOW.md`](docs/WORLDS-FAIR-OPERATOR-PRINCIPAL-WORKFLOW.md).
 - Status: live on Devnet; 5 of 5 repeatability campaign on the deployed API ([evidence](docs/worlds-fair/CURRENT-STATE-2026-10-12.md)).
