@@ -1,0 +1,52 @@
+name: hosted-cresco-reliability-readonly-smoke
+# rerun: PR16 ORCA_CONTEXT deploy verification
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/hosted-cresco-reliability-readonly-smoke.yml"
+  workflow_dispatch:
+
+jobs:
+  readonly-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      FRONTEND: https://cresco.faadil-casecraft.workers.dev
+      API: https://keys-api-stocklana.faadil-casecraft.workers.dev
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify public frontend route
+        shell: bash
+        run: |
+          set -euo pipefail
+          code="$(curl -sS --max-time 30 -o /tmp/worlds-fair.html -w '%{http_code}' "$FRONTEND/worlds-fair")"
+          echo "FRONTEND_WORLD_FAIR_HTTP=$code"
+          test "$code" = "200"
+          test -s /tmp/worlds-fair.html
+          echo "FRONTEND_WORLD_FAIR_READ=PASS"
+
+      - name: Verify public runtime read
+        shell: bash
+        run: |
+          set -euo pipefail
+          code="$(curl -sS --max-time 30 -o /tmp/runtime.json -w '%{http_code}' "$API/api/v0.3/worlds-fair/runtime")"
+          echo "API_RUNTIME_HTTP=$code"
+          test "$code" = "200"
+
+          jq -e '
+            .status=="READY" and
+            .programId=="7pgPuPZSUUtFcvFtVGmS3piCE1bHY35kjb14vct9v45Z" and
+            .network=="solana-devnet"
+          ' /tmp/runtime.json >/dev/null
+
+          echo "API_RUNTIME_READ=PASS"
+
+      - name: Confirm no live execution
+        shell: bash
+        run: |
+          echo "WORLD_FAIR_LIVE_RUN=NOT_EXECUTED"
+          echo "READ_ONLY_SMOKE=PASS"

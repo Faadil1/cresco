@@ -1,0 +1,115 @@
+name: hosted-worlds-fair-self-serve-proof
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/hosted-worlds-fair-self-serve-proof.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: hosted-worlds-fair-self-serve-proof
+  cancel-in-progress: false
+
+jobs:
+  hosted-proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      WEB_URL: https://cresco-lac.vercel.app/worlds-fair
+      API_URL: https://keys-api-stocklana.faadil-casecraft.workers.dev
+      EXPECTED_PROGRAM_ID: 7pgPuPZSUUtFcvFtVGmS3piCE1bHY35kjb14vct9v45Z
+      EXPECTED_PROGRAM_SHA256: 084a3f7aad8a5772d773816579f5d2b98542c4b966dbb0dd7c60cb397db21f61
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for hosted World’s Fair API deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/runtime/hosted
+          ok=0
+          for attempt in $(seq 1 24); do
+            code="$(curl -sS --max-time 30 -o evidence/runtime/hosted/runtime.json -w '%{http_code}' "$API_URL/api/v0.3/worlds-fair/runtime" || true)"
+            echo "HOSTED_API_ATTEMPT=$attempt HTTP=$code"
+            if [ "$code" = "200" ] && jq -e               --arg program "$EXPECTED_PROGRAM_ID"               --arg sha "$EXPECTED_PROGRAM_SHA256"               '.type=="WORLD_FAIR_OPERATOR_LAB_RUNTIME" and
+               .programId==$program and
+               .programSha256==$sha and
+               .network=="solana-devnet"'               evidence/runtime/hosted/runtime.json >/dev/null; then
+              ok=1
+              break
+            fi
+            sleep 15
+          done
+          if [ "$ok" != "1" ]; then
+            echo "HOSTED_WORLD_FAIR_API=NOT_READY"
+            cat evidence/runtime/hosted/runtime.json || true
+            exit 1
+          fi
+          echo "HOSTED_WORLD_FAIR_API=PASS"
+
+      - name: Wait for hosted World’s Fair web surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          ok=0
+          for attempt in $(seq 1 24); do
+            code="$(curl -L -sS --max-time 30 -o evidence/runtime/hosted/worlds-fair.html -w '%{http_code}' "$WEB_URL" || true)"
+            echo "HOSTED_WEB_ATTEMPT=$attempt HTTP=$code"
+            if [ "$code" = "200" ] && grep -Fq "Authority that ends with the action." evidence/runtime/hosted/worlds-fair.html; then
+              ok=1
+              break
+            fi
+            sleep 15
+          done
+          if [ "$ok" != "1" ]; then
+            echo "HOSTED_WORLD_FAIR_WEB=NOT_READY"
+            exit 1
+          fi
+          echo "HOSTED_WORLD_FAIR_WEB=PASS"
+
+      - name: Execute one hosted canonical live sequence
+        shell: bash
+        run: |
+          set -euo pipefail
+          http_code="$(curl -sS --max-time 180             -H 'content-type: application/json'             -d '{"scenario":"CANONICAL_LIVE"}'             -o evidence/runtime/hosted/live-run.json             -w '%{http_code}'             "$API_URL/api/v0.3/worlds-fair/run")"
+          echo "HOSTED_LIVE_RUN_HTTP=$http_code"
+          test "$http_code" = "200"
+          jq -e             --arg program "$EXPECTED_PROGRAM_ID"             '.status=="PASS" and
+             .receipt.status=="PASS" and
+             .receipt.productState=="WORLD_FAIR_OPERATOR_LAB_LIVE" and
+             .receipt.programId==$program and
+             .receipt.scenarios.standingAutonomy.status=="PASS" and
+             .receipt.scenarios.softBoundary.status=="PASS" and
+             .receipt.scenarios.exactException.status=="PASS" and
+             .receipt.scenarios.hardBoundary.status=="PASS" and
+             .receipt.scenarios.evidenceFailure.status=="PASS" and
+             .receipt.scenarios.rollback.status=="PASS" and
+             .receipt.scenarios.staleAuthority.status=="PASS"'             evidence/runtime/hosted/live-run.json >/dev/null
+          echo "HOSTED_UI_API_SOLANA_CAUSAL_PATH=PASS"
+
+      - name: Record hosted proof summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "# Hosted World’s Fair self-serve proof"
+            echo
+            echo "- web: $WEB_URL"
+            echo "- api: $API_URL"
+            echo "- program: $EXPECTED_PROGRAM_ID"
+            echo "- program sha256: $EXPECTED_PROGRAM_SHA256"
+            echo "- runtime: PASS"
+            echo "- web surface: PASS"
+            echo "- hosted canonical live run: PASS"
+            echo "- observed at: $(date -u +%FT%TZ)"
+          } > evidence/runtime/hosted/SUMMARY.md
+
+      - name: Upload hosted proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hosted-worlds-fair-self-serve-proof
+          path: evidence/runtime/hosted
+          if-no-files-found: warn

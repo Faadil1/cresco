@@ -1,0 +1,194 @@
+name: hosted-cresco-cloudflare-browser-smoke
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/hosted-cresco-cloudflare-browser-smoke.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: hosted-cresco-cloudflare-browser-smoke
+  cancel-in-progress: false
+
+jobs:
+  browser-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      FRONTEND_ORIGIN: https://cresco.faadil-casecraft.workers.dev
+      API_ORIGIN: https://keys-api-stocklana.faadil-casecraft.workers.dev
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify exact CORS preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/runtime/hosted-browser
+
+          curl -sS -D evidence/runtime/hosted-browser/preflight-headers.txt             -o /dev/null             -X OPTIONS             -H "Origin: $FRONTEND_ORIGIN"             -H "Access-Control-Request-Method: POST"             -H "Access-Control-Request-Headers: content-type"             "$API_ORIGIN/api/v0.2/auth/demo-session"
+
+          grep -i -F "access-control-allow-origin: $FRONTEND_ORIGIN"             evidence/runtime/hosted-browser/preflight-headers.txt
+
+          echo "HOSTED_CORS_PREFLIGHT=PASS"
+
+      - name: Verify real demo-session API from new origin
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          code="$(curl -sS --max-time 30             -H "Origin: $FRONTEND_ORIGIN"             -H "content-type: application/json"             -d '{"role":"child","displayName":"BrowserProof"}'             -o evidence/runtime/hosted-browser/demo-session.json             -w '%{http_code}'             "$API_ORIGIN/api/v0.2/auth/demo-session")"
+
+          echo "HOSTED_DEMO_SESSION_HTTP=$code"
+          test "$code" = "200"
+
+          jq -e '
+            .role=="child" and
+            .displayName=="BrowserProof" and
+            (.token | type=="string") and
+            (.token | length > 10)
+          ' evidence/runtime/hosted-browser/demo-session.json >/dev/null
+
+          echo "HOSTED_DEMO_SESSION=PASS"
+
+      - name: Install browser
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/cresco-browser-proof
+          cd /tmp/cresco-browser-proof
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Prove hosted browser login and World’s Fair runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/cresco-browser-proof/proof.cjs <<'NODE'
+          const { chromium } = require("playwright");
+          const fs = require("node:fs");
+          const path = require("node:path");
+
+          (async () => {
+            const frontend = process.env.FRONTEND_ORIGIN;
+            const out = path.resolve(
+              process.env.GITHUB_WORKSPACE,
+              "evidence/runtime/hosted-browser"
+            );
+            fs.mkdirSync(out, { recursive: true });
+
+            const browser = await chromium.launch({ headless: true });
+            const page = await browser.newPage({
+              viewport: { width: 1440, height: 1000 }
+            });
+
+            const failures = [];
+            page.on("requestfailed", (request) => {
+              failures.push({
+                url: request.url(),
+                failure: request.failure()?.errorText || "unknown"
+              });
+            });
+
+            await page.goto(frontend + "/start", {
+              waitUntil: "networkidle",
+              timeout: 60000
+            });
+
+            await page.screenshot({
+              path: path.join(out, "start-before-login.png"),
+              fullPage: true
+            });
+
+            const demoButton = page.getByRole("button", {
+              name: /Try the demo as/i
+            });
+            await demoButton.waitFor({ state: "visible", timeout: 15000 });
+            await demoButton.click();
+
+            await page.waitForURL(/\/home$/, { timeout: 20000 });
+
+            await page.screenshot({
+              path: path.join(out, "home-after-login.png"),
+              fullPage: true
+            });
+
+            const homeUrl = page.url();
+            if (!homeUrl.endsWith("/home")) {
+              throw new Error("HOSTED_LOGIN_NAVIGATION_FAILED:" + homeUrl);
+            }
+
+            await page.goto(frontend + "/worlds-fair", {
+              waitUntil: "networkidle",
+              timeout: 60000
+            });
+
+            await page.getByText("Runtime state").waitFor({
+              state: "visible",
+              timeout: 15000
+            });
+
+            await page.getByText("Ready", { exact: true }).waitFor({
+              state: "visible",
+              timeout: 20000
+            });
+
+            await page.screenshot({
+              path: path.join(out, "worlds-fair-runtime-ready.png"),
+              fullPage: true
+            });
+
+            const summary = {
+              status: "PASS",
+              frontend,
+              loginNavigation: "PASS",
+              worldFairRuntime: "READY",
+              observedAt: new Date().toISOString(),
+              failedRequests: failures
+            };
+            fs.writeFileSync(
+              path.join(out, "browser-proof.json"),
+              JSON.stringify(summary, null, 2)
+            );
+
+            console.log("HOSTED_BROWSER_LOGIN=PASS");
+            console.log("HOSTED_WORLD_FAIR_RUNTIME_UI=READY");
+            console.log("HOSTED_BROWSER_SMOKE=PASS");
+
+            await browser.close();
+          })().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
+
+          cd /tmp/cresco-browser-proof
+          node proof.cjs
+
+      - name: Record summary
+        if: success()
+        shell: bash
+        run: |
+          cat > evidence/runtime/hosted-browser/SUMMARY.md <<EOF
+          # Hosted CRESCO Cloudflare browser smoke
+
+          - frontend: $FRONTEND_ORIGIN
+          - api: $API_ORIGIN
+          - exact CORS preflight: PASS
+          - real demo-session POST: PASS
+          - browser /start → /home: PASS
+          - /worlds-fair runtime state: READY
+          - live authority sequence: NOT RUN BY THIS SMOKE
+          - observed at: $(date -u +%FT%TZ)
+          EOF
+
+      - name: Upload proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hosted-cresco-cloudflare-browser-smoke
+          path: evidence/runtime/hosted-browser
+          if-no-files-found: warn
