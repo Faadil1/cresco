@@ -192,6 +192,10 @@ async function main() {
     fs.mkdirSync(path.dirname(out), { recursive: true });
     fs.writeFileSync(out, JSON.stringify(report, null, 2));
   }
+  const authFailures = report.results.filter((c) => c.steps.standing === 'HTTP_401' || c.steps.boundary === 'HTTP_401').length;
+  if (authFailures) {
+    console.error(`AUTH: ${authFailures} cycle(s) got HTTP 401. OPERATOR_TOKEN / PRINCIPAL_TOKEN must be the real wf_... tokens of WORKSPACE_ID (the text after "token=" in each role link), not placeholders.`);
+  }
   console.log(JSON.stringify({ mode: report.mode, cycles, passes: report.passes, passRate: report.passRate, threshold, thresholdMet: report.thresholdMet, latencyMs: report.latencyMs, fees: report.fees, out }, null, 2));
   process.exit(report.thresholdMet ? 0 : 1);
 }
