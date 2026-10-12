@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 
 import { Wordmark } from "@/components/shell";
+import { StoryVignette } from "@/components/illustrations/family-story";
 import { Avatar, EventRow, ExternalChip, GuardianBadge, MandateRail, railPoints } from "./desk-ui";
 import {
   devUsdc,
@@ -713,13 +714,23 @@ export default function WorldFairDeskPage() {
         {!id ? (
           <>
             <div className="mt-10"><JourneySteps current={0} /></div>
-            <section className="mt-10">
+            <section className="mt-10 grid items-center gap-6 lg:grid-cols-[1fr_0.78fr]">
+              <div>
               <h1 className="max-w-[18ch] font-display text-[44px] font-normal leading-[0.98] tracking-[-0.03em] text-navy-strong md:text-[64px]">
                 Set the line. <em className="text-green-strong">Everything else follows.</em>
               </h1>
               <div className="mt-6 flex flex-wrap items-center gap-4">
                 <UseCaseToggle value={landingCase} onChange={setLandingCase} />
                 <Link href="/how-it-works" className="text-[14px] font-medium text-blue hover:underline">How it works</Link>
+              </div>
+              </div>
+              <div className="cresco-editorial-panel overflow-hidden">
+                <StoryVignette role={landingCase === "family" ? "parent" : "capital"} className="block w-full" />
+                <p className="p-4 text-[12px] leading-relaxed text-ink-2">
+                  {landingCase === "family"
+                    ? "Family workspace · Parent, teen and second-parent roles. Demo assets only."
+                    : "Delegated capital workspace · Operator, principal and risk-owner roles. Solana Devnet."}
+                </p>
               </div>
             </section>
 
