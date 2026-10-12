@@ -42,7 +42,12 @@ jobs:
             ["home-tablet","/",768,1024],
             ["desk-desktop","/worlds-fair/desk",1440,900],
             ["desk-mobile","/worlds-fair/desk",390,844],
-            ["how-desktop","/how-it-works",1440,900]
+            ["how-desktop","/how-it-works",1440,900],
+            ["teen-home-desktop","/home",1440,900],
+            ["teen-home-mobile","/home",390,844],
+            ["learn-desktop","/learn",1440,900],
+            ["family-start-mobile","/start",390,844],
+            ["parent-login-desktop","/parent/sign-in",1440,900]
           ];
           mkdirSync("ui-audit-output",{recursive:true});
           let failures=0;const observations=[];
@@ -86,7 +91,7 @@ jobs:
                 if(status!==200)failures++;
                 const image=await page.screenshot({type:"jpeg",quality:45,fullPage:false,animations:"disabled"});
                 writeFileSync(`ui-audit-output/${label}.jpg`,image);
-                if(["home-desktop","home-mobile","desk-desktop"].includes(label)){
+                if(["home-desktop","home-mobile","desk-desktop","teen-home-desktop","teen-home-mobile","family-start-mobile"].includes(label)){
                   const b64=image.toString("base64");
                   console.log(`CRESCO_AUDIT_BEGIN:${label}:${b64.length}`);
                   for(let k=0;k<b64.length;k+=1800)console.log(`CRESCO_AUDIT_CHUNK:${label}:${b64.slice(k,k+1800)}`);
