@@ -10,12 +10,12 @@ export const metadata: Metadata = {
   title: { default: "CRESCO | Act alone inside the rules", template: "%s · CRESCO" },
   description:
     "CRESCO gives families, financial operators and automated strategies bounded autonomy, with one exact exception without widening standing authority.",
-  applicationName: "Cresco",
+  applicationName: "CRESCO",
   appleWebApp: { capable: true, title: "Cresco", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#e8ebee",
+  themeColor: "#fbf8f1",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
