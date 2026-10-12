@@ -6,7 +6,7 @@ For Benita, friends and unknown testers. **No Phantom, no private key, no funds.
 
 - Use only a URL you verified in your own browser after the latest deploy (the home page, `/`). Never send a workspace link: those carry role tokens.
 - Check the guardian's Devnet SOL and devUSDC. Each tester workspace spends some.
-- Capacity is 25 workspaces in total. Count the existing ones before a wave of more than about 10 testers.
+- Capacity is 25 workspaces in total by default. For a larger wave, set the Worker variable `WORLD_FAIR_MAX_WORKSPACES` (1 to 200) and redeploy the API Worker, after checking that the lab funds cover it.
 
 ## What the tester does (copy into the form)
 
