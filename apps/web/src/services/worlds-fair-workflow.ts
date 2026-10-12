@@ -17,12 +17,33 @@ export type WorkspacePolicy = {
 };
 
 export type UseCase = "family" | "capital";
+export type GuardianMode = "server" | "principal-wallet";
+
+/** A transaction the server prepared for the principal wallet (the on-chain guardian) to sign. */
+export type GuardianSignatureRequest = {
+  opId: string;
+  kind: "BOOTSTRAP" | "GRANT" | "LIFECYCLE";
+  label: string;
+  guardian: string;
+  transaction: string;
+  expiresAt: string;
+  submitTo: string;
+};
+
+type GuardianSigner = (request: GuardianSignatureRequest) => Promise<string>;
+let guardianSigner: GuardianSigner | null = null;
+
+/** Register how this browser signs guardian transactions (returns the signed transaction, base64). */
+export function setGuardianSigner(signer: GuardianSigner | null) {
+  guardianSigner = signer;
+}
 
 export type Workspace = {
   contractVersion: string;
   id: string;
   name: string;
   useCase?: UseCase;
+  guardianMode?: GuardianMode;
   createdAt: string;
   roles: {
     principal: { label: string; wallet: string | null };
@@ -187,6 +208,14 @@ async function call<T>(method: "GET" | "POST", path: string, opts: { token?: str
   } catch {
     body = {};
   }
+  // Principal-wallet guardian: the server cannot sign. Ask the wallet, then
+  // submit the signed transaction; the answer is the finished operation.
+  const guardianRequest = res.status === 202 ? (body.needsGuardianSignature as GuardianSignatureRequest | undefined) : undefined;
+  if (guardianRequest) {
+    if (!guardianSigner) throw new WorkflowApiError(202, "GUARDIAN_SIGNER_UNAVAILABLE", "This action needs the guardian wallet signature, but no wallet signer is available here.", body);
+    const signedTransaction = await guardianSigner(guardianRequest);
+    return call<T>("POST", guardianRequest.submitTo, { token: opts.token, body: { opId: guardianRequest.opId, signedTransaction } });
+  }
   // 202 (pending principal) and 503 UNKNOWN intents are decisions, not transport errors.
   if (res.ok || (res.status === 503 && body.decision === "UNKNOWN") || (res.status === 503 && body.request)) {
     return { status: res.status, body: body as T };
@@ -203,7 +232,7 @@ export function newIdempotencyKey(prefix = "intent") {
 }
 
 export const workflowApi = {
-  createWorkspace: (input: { useCase?: UseCase; name?: string; principalLabel?: string; operatorLabel?: string; riskLabel?: string; policy?: Partial<WorkspacePolicy>; webhookUrl?: string }) =>
+  createWorkspace: (input: { useCase?: UseCase; guardianMode?: GuardianMode; name?: string; principalLabel?: string; operatorLabel?: string; riskLabel?: string; policy?: Partial<WorkspacePolicy>; webhookUrl?: string }) =>
     call<CreatedWorkspace>("POST", "/workspaces", { body: input }).then((r) => r.body),
   getWorkspace: (id: string) => call<Workspace>("GET", `/workspaces/${id}`).then((r) => r.body),
   whoami: (id: string, token: string) => call<{ role: WorkflowRole }>("GET", `/workspaces/${id}/whoami`, { token }).then((r) => r.body),

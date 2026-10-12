@@ -30,7 +30,10 @@ const DEFAULTS = Object.freeze({
   // Optional shared secret: when set, POST /workspaces needs it (x-cresco-create-token).
   createToken: null,
   // Each top-up spends shared guardian SOL; rate-limit it per workspace.
-  topUpCooldownSeconds: 10 * 60
+  topUpCooldownSeconds: 10 * 60,
+  // A transaction prepared for the principal's wallet must be signed quickly:
+  // its blockhash and the Pyth message it carries both age out.
+  guardianOpTtlSeconds: 90
 });
 
 // Devnet safety envelope for principal-chosen policies (protects the shared
@@ -199,14 +202,65 @@ export function createWorldFairWorkflow({
     ws: (id) => `wf:ws:${id}`,
     events: (id) => `wf:ws:${id}:events`,
     requests: (id) => `wf:ws:${id}:requests`,
-    idem: (id) => `wf:ws:${id}:idem`
+    idem: (id) => `wf:ws:${id}:idem`,
+    guardianOps: (id) => `wf:ws:${id}:guardian-ops`
   };
+
+  const isWalletGuardian = (ws) => ws.guardianMode === 'principal-wallet';
 
   function chainFor(ws) {
     if (!chainFactory) fail(503, 'CHAIN_RUNTIME_UNAVAILABLE', 'Server Devnet runtime secrets are not configured', {
       requiredServerSecrets: ['DEVNET_KEYPAIR_JSON', 'PYTH_PRO_API_KEY', 'SOLANA_DEVNET_RPC_URL']
     });
+    if (isWalletGuardian(ws)) {
+      const wallet = ws.chain?.guardian ?? ws.principal.wallet?.publicKey;
+      if (!wallet) fail(409, 'PRINCIPAL_WALLET_REQUIRED', 'This workspace uses the principal wallet as on-chain guardian: bind the wallet first');
+      return chainFactory({ workspaceId: ws.id, policy: ws.policy, guardianWallet: wallet });
+    }
     return chainFactory({ workspaceId: ws.id, policy: ws.policy });
+  }
+
+  // --- principal-wallet guardian: transactions waiting for the wallet signature
+  async function loadGuardianOps(ws) {
+    const ops = (await store.get(keys.guardianOps(ws.id))) ?? {};
+    const nowMs = clock();
+    for (const [opId, op] of Object.entries(ops)) {
+      if (Date.parse(op.expiresAt) <= nowMs) delete ops[opId];
+    }
+    return ops;
+  }
+
+  async function issueGuardianOp(ws, kind, signatureRequest, extra = {}) {
+    const ops = await loadGuardianOps(ws);
+    const opId = `gop_${randomBytes(8).toString('hex')}`;
+    const expiresAt = new Date(clock() + cfg.guardianOpTtlSeconds * 1000).toISOString();
+    ops[opId] = {
+      opId,
+      kind,
+      label: signatureRequest.label,
+      message: signatureRequest.message,
+      lastValidBlockHeight: signatureRequest.lastValidBlockHeight ?? null,
+      createdAt: nowIso(),
+      expiresAt,
+      ...extra
+    };
+    await store.put(keys.guardianOps(ws.id), ops);
+    return {
+      status: 202,
+      body: {
+        contractVersion: WORKFLOW_CONTRACT_VERSION,
+        needsGuardianSignature: {
+          opId,
+          kind,
+          label: signatureRequest.label,
+          guardian: signatureRequest.guardian,
+          transaction: signatureRequest.transaction,
+          expiresAt,
+          submitTo: `/workspaces/${ws.id}/guardian/submit`
+        },
+        notice: 'Sign this exact transaction with the principal wallet (the on-chain guardian), then POST it to submitTo. The server cannot sign it.'
+      }
+    };
   }
 
   async function loadWorkspace(id) {
@@ -332,6 +386,7 @@ export function createWorldFairWorkflow({
       id: ws.id,
       name: ws.name,
       useCase: ws.useCase ?? 'capital',
+      guardianMode: ws.guardianMode ?? 'server',
       createdAt: ws.createdAt,
       roles: {
         principal: { label: ws.principal.label, wallet: ws.principal.wallet?.publicKey ?? null },
@@ -345,8 +400,13 @@ export function createWorldFairWorkflow({
       truthBoundary: {
         network: 'solana-devnet',
         mainnet: false,
-        onChainGuardian: 'SERVER_HELD_DEVNET_KEY',
-        principalApproval: ws.principal.wallet ? 'WALLET_SIGNED_MESSAGE_THEN_SERVER_EXECUTED' : 'ROLE_TOKEN_THEN_SERVER_EXECUTED',
+        onChainGuardian: isWalletGuardian(ws) ? 'PRINCIPAL_WALLET_NON_CUSTODIAL' : 'SERVER_HELD_DEVNET_KEY',
+        principalApproval: isWalletGuardian(ws)
+          ? 'PRINCIPAL_WALLET_SIGNS_THE_GRANT_TRANSACTION'
+          : ws.principal.wallet ? 'WALLET_SIGNED_MESSAGE_THEN_SERVER_EXECUTED' : 'ROLE_TOKEN_THEN_SERVER_EXECUTED',
+        serverRole: isWalletGuardian(ws)
+          ? 'PREPARES_TRANSACTIONS_PAYS_EXECUTION_FEES_FUNDS_DEVNET_VAULT_NO_MANDATE_AUTHORITY'
+          : 'HOLDS_DEVNET_GUARDIAN_KEY',
         operatorSigner: 'SERVER_DERIVED_WORKSPACE_DELEGATE',
         productionCustody: false,
         customerValidation: false
@@ -373,6 +433,9 @@ export function createWorldFairWorkflow({
       // Same on-chain mechanism, two presentations: a family (parent / teen)
       // or delegated capital (allocator / strategy or AI agent).
       useCase: body.useCase === 'family' ? 'family' : 'capital',
+      // 'principal-wallet': the principal's own wallet is the on-chain guardian
+      // (non-custodial). 'server': the Devnet lab key is the guardian.
+      guardianMode: body.guardianMode === 'principal-wallet' ? 'principal-wallet' : 'server',
       createdAt: nowIso(),
       policy,
       requestTtlSeconds: ttl,
@@ -415,6 +478,9 @@ export function createWorldFairWorkflow({
     let result;
     try {
       result = await chain.bootstrapWorkspace();
+      if (result?.status === 'NEEDS_GUARDIAN_SIGNATURE') {
+        return issueGuardianOp(ws, 'BOOTSTRAP', result.guardianSignature);
+      }
     } catch (error) {
       if (error?.worldFairBusy) fail(409, 'BUSY', 'Another write is in progress for this mandate', { retryAfterMs: 5000 });
       await appendEvent(ws, { type: 'OUTCOME_UNKNOWN', actor: 'principal', summary: 'Mandate bootstrap did not confirm; it is safe to retry (idempotent)', data: { operation: 'BOOTSTRAP', message: String(error?.message ?? error).slice(0, 300) } });
@@ -599,6 +665,30 @@ export function createWorldFairWorkflow({
     if (ws.principal.wallet && role !== 'principal') {
       fail(403, 'PRINCIPAL_WALLET_APPROVAL_REQUIRED', 'A principal wallet is bound: only a wallet-signed principal approval can grant an exception', { role });
     }
+    if (isWalletGuardian(ws)) {
+      // The wallet signs the grant transaction itself: that signature is the
+      // approval, checked by the runtime and the program (has_one = guardian).
+      const chain = chainFor(ws);
+      let result;
+      try {
+        result = await chain.approveAndExecuteException({
+          inputAmount: req.intent.inputAmount,
+          slippageBps: req.intent.maxSlippageBps,
+          expectedNonce: req.mandateNonce,
+          approvalProof: null
+        });
+      } catch (error) {
+        if (error?.worldFairBusy) fail(409, 'BUSY', 'Another write is in progress for this mandate', { retryAfterMs: 5000 });
+        fail(503, 'GRANT_PREPARATION_FAILED', 'Could not prepare the grant transaction; nothing was sent. Retry is safe.', { message: String(error?.message ?? error).slice(0, 300) });
+      }
+      if (result.status === 'NEEDS_GUARDIAN_SIGNATURE') {
+        req.guardianOpPreparedAt = nowIso();
+        await saveRequests(ws, requests);
+        return issueGuardianOp(ws, 'GRANT', result.guardianSignature, { requestId: rid, note, pendingException: result.pendingException });
+      }
+      req.decidedAt = nowIso();
+      return recordApprovalResult(ws, requests, req, rid, role, result, null);
+    }
     let walletProof = null;
     let approvalProof = null;
     if (role === 'principal' && ws.principal.wallet) {
@@ -632,9 +722,17 @@ export function createWorldFairWorkflow({
         await saveRequests(ws, requests);
         fail(409, 'BUSY', 'Another write is in progress for this mandate', { retryAfterMs: 5000 });
       }
+      return recordApprovalUnknown(ws, requests, req, rid, role, error);
+    }
+
+    req.decidedAt = nowIso();
+    return recordApprovalResult(ws, requests, req, rid, role, result, walletProof);
+  }
+
+  async function recordApprovalUnknown(ws, requests, req, rid, role, error) {
       req.status = 'UNKNOWN';
       req.decidedAt = nowIso();
-      req.grant = error?.worldFairGrant ?? null;
+      req.grant = error?.worldFairGrant ?? req.grant ?? null;
       const executionSignature = error?.worldFairExecutionSignature ?? signatureFromError(error);
       req.execution = executionSignature ? { signature: executionSignature, allowanceConsumed: null, standingAuthorityChanged: null } : null;
       await saveRequests(ws, requests);
@@ -650,9 +748,9 @@ export function createWorldFairWorkflow({
         ]
       });
       return { status: 503, body: { contractVersion: WORKFLOW_CONTRACT_VERSION, request: req, retryPolicy: 'REQUIRES_STATE_RECONCILIATION', eventId: event.id } };
-    }
+  }
 
-    req.decidedAt = nowIso();
+  async function recordApprovalResult(ws, requests, req, rid, role, result, walletProof) {
     req.chainResult = { status: result.status, code: result.code ?? null, boundary: result.boundary ?? null, quote: result.quote ?? null };
     let event;
     if (result.status === 'EXECUTED') {
@@ -725,12 +823,16 @@ export function createWorldFairWorkflow({
       await appendEvent(ws, { type: 'OUTCOME_UNKNOWN', actor: role, summary: `${label} not confirmed; read /mandate before retrying`, data: { operation: label, message: String(error?.message ?? error).slice(0, 300) } });
       fail(503, 'WRITE_UNCONFIRMED', `${label} did not confirm`, { retryPolicy: 'REQUIRES_STATE_RECONCILIATION' });
     }
+    if (result.status === 'NEEDS_GUARDIAN_SIGNATURE') {
+      return { pending: await issueGuardianOp(ws, 'LIFECYCLE', result.guardianSignature, { role, operationLabel: label, eventType, summary, data, apply: data.__apply ?? null }) };
+    }
     if (result.status !== 'CONFIRMED') {
       await appendEvent(ws, { type: 'LIFECYCLE_REFUSED', actor: role, summary: `${label} refused by the CRESCO program (${result.code})`, data: { code: result.code } });
       fail(409, 'PROGRAM_REFUSED', `${label} refused by the program: ${result.code}`, { code: result.code });
     }
     const newNonce = result.mandate?.nonce ?? result.mandate?.mandate?.nonce ?? null;
-    const event = await appendEvent(ws, { type: eventType, actor: role, summary, data: { ...data, mandate: result.mandate }, signatures: [{ label, signature: result.signature }] });
+    const { __apply, ...eventData } = data;
+    const event = await appendEvent(ws, { type: eventType, actor: role, summary, data: { ...eventData, mandate: result.mandate }, signatures: [{ label, signature: result.signature }] });
     const staled = await invalidatePending(ws, label, newNonce);
     return { event, result, staled };
   }
@@ -744,14 +846,16 @@ export function createWorldFairWorkflow({
     if (status === 'REVOKED' && body.confirm !== 'REVOKE') fail(400, 'REVOKE_CONFIRMATION_REQUIRED', 'Revocation is permanent: send confirm:"REVOKE"');
     const chain = chainFor(ws);
     const nonce = await currentNonce(chain);
-    const { event, result, staled } = await lifecycleWrite(
+    const written = await lifecycleWrite(
       ws, role,
       () => chain.setMandateStatus({ status, expectedNonce: nonce }),
       `mandate.${status.toLowerCase()}`,
       'MANDATE_STATUS_CHANGED',
       `Mandate ${status === 'ACTIVE' ? 'resumed' : status.toLowerCase()} by principal; pending exceptions invalidated`,
-      { status }
+      { status, __apply: { chainStatus: status === 'REVOKED' ? 'REVOKED' : null } }
     );
+    if (written.pending) return written.pending;
+    const { event, result, staled } = written;
     if (status === 'REVOKED') {
       ws.chain.status = 'REVOKED';
       await saveWorkspace(ws);
@@ -769,14 +873,16 @@ export function createWorldFairWorkflow({
     );
     const chain = chainFor(ws);
     const nonce = await currentNonce(chain);
-    const { event, result, staled } = await lifecycleWrite(
+    const written = await lifecycleWrite(
       ws, role,
       () => chain.revisePolicy({ values: { maxActionNotionalMicroUsd: next.maxActionNotionalMicroUsd, maxPeriodNotionalMicroUsd: next.maxPeriodNotionalMicroUsd }, expectedNonce: nonce }),
       'mandate.policy',
       'POLICY_REVISED',
       'Standing notional limits revised by principal; pending exceptions invalidated',
-      { before: { maxActionNotionalMicroUsd: ws.policy.maxActionNotionalMicroUsd, maxPeriodNotionalMicroUsd: ws.policy.maxPeriodNotionalMicroUsd }, after: { maxActionNotionalMicroUsd: next.maxActionNotionalMicroUsd, maxPeriodNotionalMicroUsd: next.maxPeriodNotionalMicroUsd } }
+      { before: { maxActionNotionalMicroUsd: ws.policy.maxActionNotionalMicroUsd, maxPeriodNotionalMicroUsd: ws.policy.maxPeriodNotionalMicroUsd }, after: { maxActionNotionalMicroUsd: next.maxActionNotionalMicroUsd, maxPeriodNotionalMicroUsd: next.maxPeriodNotionalMicroUsd }, __apply: { policy: next } }
     );
+    if (written.pending) return written.pending;
+    const { event, result, staled } = written;
     ws.policy = next;
     await saveWorkspace(ws);
     return { status: 200, body: { contractVersion: WORKFLOW_CONTRACT_VERSION, policy: ws.policy, mandate: result.mandate, staleRequests: staled, eventId: event.id } };
@@ -797,14 +903,16 @@ export function createWorldFairWorkflow({
     } else {
       enabled = Boolean(body.enabled);
     }
-    const { event, result, staled } = await lifecycleWrite(
+    const written = await lifecycleWrite(
       ws, role,
       () => chain.updateRule({ values: { maxActionAmount: next.maxActionAmount, maxPeriodAmount: next.maxPeriodAmount, enabled }, expectedNonce: nonce }),
       'assetRule.update',
       'ASSET_RULE_UPDATED',
       `Asset rule updated by ${role}${enabled ? '' : ' (disabled)'}; period counters reset, pending exceptions invalidated`,
-      { enabled, maxActionAmount: next.maxActionAmount, maxPeriodAmount: next.maxPeriodAmount }
+      { enabled, maxActionAmount: next.maxActionAmount, maxPeriodAmount: next.maxPeriodAmount, __apply: { policy: next } }
     );
+    if (written.pending) return written.pending;
+    const { event, result, staled } = written;
     ws.policy = next;
     await saveWorkspace(ws);
     return { status: 200, body: { contractVersion: WORKFLOW_CONTRACT_VERSION, policy: ws.policy, mandate: result.mandate, staleRequests: staled, eventId: event.id } };
@@ -882,10 +990,96 @@ export function createWorldFairWorkflow({
     if (!verifyWalletSignature({ publicKey: body.publicKey, message, signature: body.signature })) {
       fail(401, 'WALLET_SIGNATURE_INVALID', 'The wallet signature does not match the binding message', { expectedMessage: message });
     }
-    ws.principal.wallet = { publicKey: new PublicKey(String(body.publicKey)).toBase58(), boundAt: nowIso() };
+    const nextWallet = new PublicKey(String(body.publicKey)).toBase58();
+    if (isWalletGuardian(ws) && ws.chain?.guardian && ws.chain.guardian !== nextWallet) {
+      fail(409, 'GUARDIAN_WALLET_FIXED', 'This wallet is the on-chain guardian of the mandate and cannot be replaced', { guardian: ws.chain.guardian });
+    }
+    ws.principal.wallet = { publicKey: nextWallet, boundAt: nowIso() };
     await saveWorkspace(ws);
     const event = await appendEvent(ws, { type: 'WALLET_BOUND', actor: 'principal', summary: `Principal wallet ${ws.principal.wallet.publicKey} bound; approvals now require its signature` });
     return { status: 200, body: { contractVersion: WORKFLOW_CONTRACT_VERSION, wallet: ws.principal.wallet, eventId: event.id } };
+  }
+
+  // The principal's wallet signed a transaction this server prepared. Send it,
+  // then finish the operation it belongs to.
+  async function submitGuardian(id, token, body = {}) {
+    const ws = await loadWorkspace(id);
+    const role = authorize(ws, token, ['principal']);
+    if (!isWalletGuardian(ws)) fail(409, 'NOT_A_WALLET_GUARDIAN_WORKSPACE', 'This workspace uses the server guardian');
+    const ops = await loadGuardianOps(ws);
+    const op = ops[String(body.opId ?? '')];
+    if (!op) fail(410, 'GUARDIAN_OP_EXPIRED', 'Unknown or expired guardian operation; repeat the action to get a fresh transaction');
+    if (!body.signedTransaction) fail(400, 'SIGNED_TRANSACTION_REQUIRED', 'signedTransaction (base64) is required');
+    const chain = chainFor(ws);
+    // One submission per operation, whatever happens next.
+    delete ops[op.opId];
+    await store.put(keys.guardianOps(ws.id), ops);
+
+    let sent;
+    try {
+      sent = await chain.submitGuardianTransaction({ signedTransaction: body.signedTransaction, expectedMessage: op.message, lastValidBlockHeight: op.lastValidBlockHeight });
+    } catch (error) {
+      const message = String(error?.message ?? error);
+      if (/GUARDIAN_TRANSACTION_ALTERED|GUARDIAN_SIGNATURE_INVALID/.test(message)) {
+        fail(400, message.includes('ALTERED') ? 'GUARDIAN_TRANSACTION_ALTERED' : 'GUARDIAN_SIGNATURE_INVALID', 'The signed transaction is not the one prepared for the guardian wallet; nothing was sent');
+      }
+      const signature = error?.worldFairGuardianSignature ?? null;
+      await appendEvent(ws, {
+        type: 'OUTCOME_UNKNOWN',
+        actor: role,
+        requestId: op.requestId ?? null,
+        summary: `${op.label} (wallet-signed) did not confirm; reconcile before any retry`,
+        data: { operation: op.kind === 'GRANT' ? 'APPROVE' : op.label, message: message.slice(0, 300) },
+        signatures: signature ? [{ label: op.kind === 'GRANT' ? 'exception.grant' : op.label, signature }] : []
+      });
+      fail(503, 'GUARDIAN_TRANSACTION_UNCONFIRMED', 'The wallet-signed transaction did not confirm', { retryPolicy: 'REQUIRES_STATE_RECONCILIATION', signature });
+    }
+
+    if (sent.status === 'REFUSED') {
+      await appendEvent(ws, { type: 'LIFECYCLE_REFUSED', actor: role, requestId: op.requestId ?? null, summary: `${op.label} refused by the CRESCO program (${sent.code})`, data: { code: sent.code } });
+      fail(409, 'PROGRAM_REFUSED', `${op.label} refused by the program: ${sent.code}`, { code: sent.code });
+    }
+
+    if (op.kind === 'BOOTSTRAP') {
+      await appendEvent(ws, { type: 'GUARDIAN_TRANSACTION_CONFIRMED', actor: role, summary: 'Mandate created and bounded by the principal wallet (on-chain guardian)', signatures: [{ label: 'bootstrap.wallet', signature: sent.signature }] });
+      // Fund the delegate and vault (server-side Devnet funds), then READY.
+      return bootstrap(id, token);
+    }
+
+    if (op.kind === 'LIFECYCLE') {
+      let view = null;
+      try {
+        view = await chain.readMandate();
+      } catch {
+        view = null;
+      }
+      const event = await appendEvent(ws, { type: op.eventType, actor: role, summary: `${op.summary} (signed by the principal wallet)`, data: { ...Object.fromEntries(Object.entries(op.data ?? {}).filter(([k]) => k !== '__apply')), mandate: view?.mandate ?? null }, signatures: [{ label: op.operationLabel, signature: sent.signature }] });
+      const staled = await invalidatePending(ws, op.operationLabel, view?.mandate?.nonce ?? null);
+      if (op.apply?.policy) ws.policy = op.apply.policy;
+      if (op.apply?.chainStatus) ws.chain.status = op.apply.chainStatus;
+      await saveWorkspace(ws);
+      return { status: 200, body: { contractVersion: WORKFLOW_CONTRACT_VERSION, policy: ws.policy, mandate: view?.mandate ?? null, staleRequests: staled, eventId: event.id } };
+    }
+
+    // GRANT: the exact one-use allowance now exists on-chain; execute it once.
+    const requests = await loadRequests(ws);
+    const req = requests[op.requestId];
+    if (!req) fail(404, 'REQUEST_NOT_FOUND', 'Unknown exception request');
+    req.status = 'EXECUTING';
+    req.executingSince = nowIso();
+    req.decision = { decision: 'APPROVE', role, note: op.note ?? null, walletProof: { publicKey: ws.chain.guardian, grantTransactionSignedByGuardianWallet: true } };
+    req.grant = { signature: sent.signature, allowance: op.pendingException.allowance, signedByPrincipalWallet: ws.chain.guardian };
+    await saveRequests(ws, requests);
+    let result;
+    try {
+      result = await chain.executeGrantedException({ pending: op.pendingException, grantSignature: sent.signature });
+    } catch (error) {
+      if (!error.worldFairGrant) error.worldFairGrant = req.grant;
+      return recordApprovalUnknown(ws, requests, req, op.requestId, role, error);
+    }
+    req.decidedAt = nowIso();
+    if (!result.grant) result.grant = req.grant;
+    return recordApprovalResult(ws, requests, req, op.requestId, role, result, { publicKey: ws.chain.guardian });
   }
 
   async function topUpVault(id, token) {
@@ -985,6 +1179,7 @@ export function createWorldFairWorkflow({
     history,
     notifications,
     bindWallet,
+    submitGuardian,
     topUpVault,
     reconcile
   };

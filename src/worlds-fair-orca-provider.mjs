@@ -520,6 +520,29 @@ export function worldFairApprovalProofInstructions(proof) {
   ];
 }
 
+const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+export function base58Encode(bytes) {
+  const input = Buffer.from(bytes);
+  let value = BigInt('0x' + (input.toString('hex') || '0'));
+  let out = '';
+  while (value > 0n) {
+    out = BASE58_ALPHABET[Number(value % 58n)] + out;
+    value /= 58n;
+  }
+  for (const byte of input) {
+    if (byte !== 0) break;
+    out = '1' + out;
+  }
+  return out;
+}
+
+export class WorldFairGuardianSignatureRequired extends Error {
+  constructor(request) {
+    super('WORLD_FAIR_GUARDIAN_SIGNATURE_REQUIRED');
+    this.request = request;
+  }
+}
+
 const MANDATE_STATUS_CODES = Object.freeze({ ACTIVE: 0, PAUSED: 1, REVOKED: 2 });
 const MANDATE_STATUS_NAMES = Object.freeze(['ACTIVE', 'PAUSED', 'REVOKED']);
 
@@ -930,9 +953,16 @@ export function createWorldFairOrcaProvider({
   delegate: delegateOverride = null,
   policy: policyInput = null,
   strictLabState = true,
-  vaultTargetBaseUnits = VAULT_TARGET_BASE_UNITS
+  vaultTargetBaseUnits = VAULT_TARGET_BASE_UNITS,
+  // When set, this public key (the principal's own wallet) is the on-chain
+  // guardian: every guardian instruction is prepared here and signed by that
+  // wallet. The server keypair then only pays fees for executions and funds
+  // the workspace on Devnet; it holds no authority over the mandate.
+  guardianAuthority = null
 }) {
   if (!guardian?.publicKey) throw new Error('WORLD_FAIR_GUARDIAN_REQUIRED');
+  const walletGuardian = Boolean(guardianAuthority);
+  const guardianPk = walletGuardian ? new PublicKey(String(guardianAuthority)) : guardian.publicKey;
   const policy = normalizeWorldFairPolicy(policyInput ?? WORLD_FAIR_LAB_POLICY);
   if (!pythApiKey) throw new Error('PYTH_API_KEY_REQUIRED');
 
@@ -1006,6 +1036,151 @@ export function createWorldFairOrcaProvider({
     WORLD_FAIR_PROGRAM_ID
   );
 
+  // Server-held guardian: sign and send. Principal-wallet guardian: build the
+  // exact transaction, partially sign with any server signer it needs (the
+  // workspace delegate for initialize_charter) and hand it to the wallet.
+  async function sendGuardian({ label, instructions, extraSigners = [], context = null }) {
+    if (!walletGuardian) {
+      return sendInstructions({ rpc, feePayer: guardian, signers: [guardian, ...extraSigners], instructions });
+    }
+    const latest = await rpc.getLatestBlockhash('confirmed');
+    const tx = new Transaction({ feePayer: guardianPk, recentBlockhash: latest.blockhash });
+    for (const instruction of instructions) tx.add(instruction);
+    if (extraSigners.length) tx.partialSign(...extraSigners);
+    throw new WorldFairGuardianSignatureRequired({
+      label,
+      guardian: guardianPk.toBase58(),
+      transaction: tx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString('base64'),
+      message: tx.serializeMessage().toString('base64'),
+      lastValidBlockHeight: latest.lastValidBlockHeight,
+      context
+    });
+  }
+
+  // Submit a transaction the principal's wallet signed. It must be byte-for-byte
+  // the message this server prepared, fully signed, with the wallet's signature.
+  async function submitGuardianTransaction({ signedTransaction, expectedMessage, lastValidBlockHeight = null }) {
+    if (!walletGuardian) throw new Error('WORLD_FAIR_NOT_A_WALLET_GUARDIAN_WORKSPACE');
+    const tx = Transaction.from(Buffer.from(String(signedTransaction), 'base64'));
+    if (tx.serializeMessage().toString('base64') !== String(expectedMessage)) {
+      throw new Error('WORLD_FAIR_GUARDIAN_TRANSACTION_ALTERED');
+    }
+    const walletSig = tx.signatures.find((entry) => entry.publicKey.equals(guardianPk));
+    if (!walletSig?.signature || !tx.verifySignatures()) {
+      throw new Error('WORLD_FAIR_GUARDIAN_SIGNATURE_INVALID');
+    }
+    // The fee payer (the wallet) signature is the transaction id, known before send.
+    const signature = base58Encode(tx.signatures[0].signature);
+    try {
+      await rpc.sendRawTransaction(tx.serialize(), { skipPreflight: false, maxRetries: 3 });
+      const blockHeight = lastValidBlockHeight ?? (await rpc.getLatestBlockhash('confirmed')).lastValidBlockHeight;
+      await confirmSignatureOverRpc({ rpc, signature, lastValidBlockHeight: blockHeight });
+    } catch (error) {
+      const refusal = classifyWorldFairProgramRefusal(error);
+      if (refusal) return { status: 'REFUSED', code: refusal.code, boundary: refusal.boundary, signature };
+      throw Object.assign(error, { worldFairGuardianSignature: signature });
+    }
+    return { status: 'CONFIRMED', signature };
+  }
+
+  // Principal-wallet bootstrap: everything the guardian must sign, in ONE
+  // transaction. The nonce sequence is deterministic: initialize_mandate sets
+  // 0, transition_mandate(0) -> 1, initialize_asset_rule(1) -> 2,
+  // configure_mandate_policy(2) -> 3. Pieces that already exist are skipped.
+  function walletBootstrapInstructions(state) {
+    const out = [];
+    let nonce = state.mandate ? Number(state.mandate.nonce) : 0;
+    let stage = state.mandate ? state.mandate.stage : 2;
+    const signers = [];
+    if (!state.charter) {
+      signers.push(delegate);
+      out.push(ix('initialize_charter', [
+        publicKeyMeta(charter, false, true),
+        publicKeyMeta(guardianPk, true, true),
+        publicKeyMeta(delegate.publicKey, true, false),
+        publicKeyMeta(SystemProgram.programId)
+      ], [hashBytes('CRESCO-WORLDS-FAIR-OPERATOR-LAB'), u64le(10_000_000), u64le(10_000_000)]));
+    }
+    if (!state.mandate) {
+      out.push(ix('initialize_mandate', [
+        publicKeyMeta(charter),
+        publicKeyMeta(mandate, false, true),
+        publicKeyMeta(guardianPk, true, true),
+        publicKeyMeta(SystemProgram.programId)
+      ]));
+    }
+    if (stage === 2) {
+      const [reviewReceipt] = PublicKey.findProgramAddressSync(
+        [Buffer.from('review'), mandate.toBuffer(), u64le(nonce)],
+        WORLD_FAIR_PROGRAM_ID
+      );
+      out.push(ix('record_review', [
+        publicKeyMeta(charter),
+        publicKeyMeta(mandate),
+        publicKeyMeta(reviewReceipt, false, true),
+        publicKeyMeta(guardianPk, true, true),
+        publicKeyMeta(SystemProgram.programId)
+      ], [hashBytes('CRESCO-WF-OPERATOR-LAB-BOUNDED'), Buffer.from([1])]));
+      out.push(ix('transition_mandate', [
+        publicKeyMeta(charter),
+        publicKeyMeta(mandate, false, true),
+        publicKeyMeta(reviewReceipt),
+        publicKeyMeta(guardianPk, true, false)
+      ], [Buffer.from([3]), u64le(nonce)]));
+      nonce += 1;
+      stage = 3;
+    }
+    if (!state.assetRule) {
+      out.push(ix('initialize_asset_rule', [
+        publicKeyMeta(charter),
+        publicKeyMeta(mandate, false, true),
+        publicKeyMeta(assetRule, false, true),
+        publicKeyMeta(legacyVault, false, true),
+        publicKeyMeta(WORLD_FAIR_DEV_USDC),
+        publicKeyMeta(guardianPk, true, true),
+        publicKeyMeta(TOKEN_PROGRAM_ID),
+        publicKeyMeta(SystemProgram.programId)
+      ], [
+        u64le(nonce),
+        Buffer.from([ACTION_SWAP_EXACT_IN]),
+        u64le(policy.maxActionAmount),
+        u64le(policy.maxPeriodAmount),
+        i64le(policy.periodSeconds),
+        u64le(policy.maxUnitPriceMicroUsd),
+        u32le(WORLD_FAIR_PYTH_FEED.feedId)
+      ]));
+      nonce += 1;
+    }
+    for (const [exists, mint, vault] of [[state.inputVaultExists, WORLD_FAIR_DEV_USDC, inputTradeVault], [state.outputVaultExists, WORLD_FAIR_DEV_USDT, outputTradeVault]]) {
+      if (exists) continue;
+      out.push(ix('initialize_trade_vault', [
+        publicKeyMeta(charter),
+        publicKeyMeta(mandate),
+        publicKeyMeta(vault, false, true),
+        publicKeyMeta(mint),
+        publicKeyMeta(guardianPk, true, true),
+        publicKeyMeta(TOKEN_PROGRAM_ID),
+        publicKeyMeta(SystemProgram.programId)
+      ]));
+    }
+    const pristine = !state.mandate || (state.mandate.maxActionNotionalMicroUsd === 0 && state.mandate.maxPeriodNotionalMicroUsd === 0);
+    if (pristine) {
+      out.push(ix('configure_mandate_policy', [
+        publicKeyMeta(charter),
+        publicKeyMeta(mandate, false, true),
+        publicKeyMeta(guardianPk, true, false)
+      ], [
+        u64le(nonce),
+        u64le(policy.maxActionNotionalMicroUsd),
+        u64le(policy.maxPeriodNotionalMicroUsd),
+        i64le(policy.expiresAt),
+        u32le(policy.maxMarketAgeSeconds),
+        u32le(policy.maxConfidenceBps)
+      ]));
+    }
+    return { instructions: out, signers };
+  }
+
   async function loadState() {
     const [
       charterInfo,
@@ -1039,7 +1214,7 @@ export function createWorldFairOrcaProvider({
 
   function validateExistingState(state) {
     if (state.charter) {
-      if (!state.charter.guardian.equals(guardian.publicKey)) {
+      if (!state.charter.guardian.equals(guardianPk)) {
         throw new Error('WORLD_FAIR_LAB_GUARDIAN_MISMATCH');
       }
       if (!state.charter.beneficiary.equals(delegate.publicKey)) {
@@ -1086,16 +1261,15 @@ export function createWorldFairOrcaProvider({
   }
 
   async function initializeCharter() {
-    return sendInstructions({
-      rpc,
-      feePayer: guardian,
-      signers: [guardian, delegate],
+    return sendGuardian({
+      label: 'initialize_charter',
+      extraSigners: [delegate],
       instructions: [
         ix(
           'initialize_charter',
           [
             publicKeyMeta(charter, false, true),
-            publicKeyMeta(guardian.publicKey, true, true),
+            publicKeyMeta(guardianPk, true, true),
             publicKeyMeta(delegate.publicKey, true, false),
             publicKeyMeta(SystemProgram.programId)
           ],
@@ -1110,15 +1284,13 @@ export function createWorldFairOrcaProvider({
   }
 
   async function initializeMandate() {
-    return sendInstructions({
-      rpc,
-      feePayer: guardian,
-      signers: [guardian],
+    return sendGuardian({
+      label: 'initialize_mandate',
       instructions: [
         ix('initialize_mandate', [
           publicKeyMeta(charter),
           publicKeyMeta(mandate, false, true),
-          publicKeyMeta(guardian.publicKey, true, true),
+          publicKeyMeta(guardianPk, true, true),
           publicKeyMeta(SystemProgram.programId)
         ])
       ]
@@ -1137,10 +1309,8 @@ export function createWorldFairOrcaProvider({
     );
     let reviewSignature = null;
     if (!reviewInfo) {
-      reviewSignature = await sendInstructions({
-        rpc,
-        feePayer: guardian,
-        signers: [guardian],
+      reviewSignature = await sendGuardian({
+        label: 'record_review',
         instructions: [
           ix(
             'record_review',
@@ -1148,7 +1318,7 @@ export function createWorldFairOrcaProvider({
               publicKeyMeta(charter),
               publicKeyMeta(mandate),
               publicKeyMeta(reviewReceipt, false, true),
-              publicKeyMeta(guardian.publicKey, true, true),
+              publicKeyMeta(guardianPk, true, true),
               publicKeyMeta(SystemProgram.programId)
             ],
             [hashBytes('CRESCO-WF-OPERATOR-LAB-BOUNDED'), Buffer.from([1])]
@@ -1157,10 +1327,8 @@ export function createWorldFairOrcaProvider({
       });
     }
 
-    const transitionSignature = await sendInstructions({
-      rpc,
-      feePayer: guardian,
-      signers: [guardian],
+    const transitionSignature = await sendGuardian({
+      label: 'transition_mandate',
       instructions: [
         ix(
           'transition_mandate',
@@ -1168,7 +1336,7 @@ export function createWorldFairOrcaProvider({
             publicKeyMeta(charter),
             publicKeyMeta(mandate, false, true),
             publicKeyMeta(reviewReceipt),
-            publicKeyMeta(guardian.publicKey, true, false)
+            publicKeyMeta(guardianPk, true, false)
           ],
           [Buffer.from([3]), u64le(currentNonce)]
         )
@@ -1179,10 +1347,8 @@ export function createWorldFairOrcaProvider({
   }
 
   async function initializeRule(expectedNonce) {
-    return sendInstructions({
-      rpc,
-      feePayer: guardian,
-      signers: [guardian],
+    return sendGuardian({
+      label: 'initialize_asset_rule',
       instructions: [
         ix(
           'initialize_asset_rule',
@@ -1192,7 +1358,7 @@ export function createWorldFairOrcaProvider({
             publicKeyMeta(assetRule, false, true),
             publicKeyMeta(legacyVault, false, true),
             publicKeyMeta(WORLD_FAIR_DEV_USDC),
-            publicKeyMeta(guardian.publicKey, true, true),
+            publicKeyMeta(guardianPk, true, true),
             publicKeyMeta(TOKEN_PROGRAM_ID),
             publicKeyMeta(SystemProgram.programId)
           ],
@@ -1211,17 +1377,15 @@ export function createWorldFairOrcaProvider({
   }
 
   async function initializeTradeVault(mint, vault) {
-    return sendInstructions({
-      rpc,
-      feePayer: guardian,
-      signers: [guardian],
+    return sendGuardian({
+      label: 'initialize_trade_vault',
       instructions: [
         ix('initialize_trade_vault', [
           publicKeyMeta(charter),
           publicKeyMeta(mandate),
           publicKeyMeta(vault, false, true),
           publicKeyMeta(mint),
-          publicKeyMeta(guardian.publicKey, true, true),
+          publicKeyMeta(guardianPk, true, true),
           publicKeyMeta(TOKEN_PROGRAM_ID),
           publicKeyMeta(SystemProgram.programId)
         ])
@@ -1230,17 +1394,15 @@ export function createWorldFairOrcaProvider({
   }
 
   async function configurePolicy(expectedNonce, values = policy) {
-    return sendInstructions({
-      rpc,
-      feePayer: guardian,
-      signers: [guardian],
+    return sendGuardian({
+      label: 'configure_mandate_policy',
       instructions: [
         ix(
           'configure_mandate_policy',
           [
             publicKeyMeta(charter),
             publicKeyMeta(mandate, false, true),
-            publicKeyMeta(guardian.publicKey, true, false)
+            publicKeyMeta(guardianPk, true, false)
           ],
           [
             u64le(expectedNonce),
@@ -1415,6 +1577,16 @@ export function createWorldFairOrcaProvider({
     let state = await loadState();
     validateExistingState(state);
     const bootstrap = {};
+
+    if (walletGuardian) {
+      const plan = walletBootstrapInstructions(state);
+      if (plan.instructions.length) {
+        await sendGuardian({ label: 'bootstrap_mandate', instructions: plan.instructions, extraSigners: plan.signers });
+      }
+      bootstrap.delegateFunding = await ensureDelegateFunding();
+      bootstrap.inputVaultFunding = await ensureInputVaultFunding();
+      return { state: await loadState(), bootstrap };
+    }
 
     if (!state.charter) {
       bootstrap.initializeCharter = await initializeCharter();
@@ -1735,10 +1907,9 @@ export function createWorldFairOrcaProvider({
       WORLD_FAIR_PROGRAM_ID
     );
 
-    const signature = await sendInstructions({
-      rpc,
-      feePayer: guardian,
-      signers: [guardian],
+    const signature = await sendGuardian({
+      label: 'grant_allowance_once',
+      context: { kind: 'GRANT', requestHash: requestHash.toString('hex'), exactNotional: exactNotional.toString(), allowance: allowance.toBase58() },
       instructions: [
         ...worldFairApprovalProofInstructions(approvalProof),
         ix(
@@ -1748,7 +1919,7 @@ export function createWorldFairOrcaProvider({
             publicKeyMeta(mandate),
             publicKeyMeta(WORLD_FAIR_DEV_USDC),
             publicKeyMeta(allowance, false, true),
-            publicKeyMeta(guardian.publicKey, true, true),
+            publicKeyMeta(guardianPk, true, true),
             publicKeyMeta(SystemProgram.programId)
           ],
           [
@@ -2510,7 +2681,8 @@ export function createWorldFairOrcaProvider({
         inputTradeVault: inputTradeVault.toBase58(),
         outputTradeVault: outputTradeVault.toBase58()
       },
-      guardian: guardian.publicKey.toBase58(),
+      guardian: guardianPk.toBase58(),
+      feePayer: guardian.publicKey.toBase58(),
       delegate: delegate.publicKey.toBase58(),
       mandate: m
         ? {
@@ -2707,16 +2879,43 @@ export function createWorldFairOrcaProvider({
       }
 
       let exception;
+      const grantDeadline = Math.floor(Date.now() / 1000) + 300;
       try {
         exception = await grantSwapException({
           inputAmount: q.inputAmount,
           quote: q.quote,
           pyth: q.pyth,
-          deadline: Math.floor(Date.now() / 1000) + 300,
+          deadline: grantDeadline,
           expectedNonce: state.mandate.nonce,
           approvalProof
         });
       } catch (error) {
+        if (error instanceof WorldFairGuardianSignatureRequired) {
+          // The principal's wallet must sign the exact grant. Keep everything the
+          // execution needs so it can run right after the signed grant lands,
+          // with the same Pyth message (within its market-age window).
+          return {
+            status: 'NEEDS_GUARDIAN_SIGNATURE',
+            guardianSignature: error.request,
+            pendingException: {
+              inputAmount: q.inputAmount,
+              slippageBps: q.slippageBps,
+              deadline: grantDeadline,
+              expectedNonce: Number(state.mandate.nonce),
+              requestHash: error.request.context.requestHash,
+              exactNotional: error.request.context.exactNotional,
+              allowance: error.request.context.allowance,
+              pythMessage: q.pyth.message.toString('base64'),
+              unitPriceMicroUsd: q.pyth.unitPriceMicroUsd,
+              minOutput: q.quote.otherAmountThreshold.toString(),
+              sqrtPriceLimit: q.quote.sqrtPriceLimit.toString(),
+              tickArrays: [q.quote.tickArray0, q.quote.tickArray1, q.quote.tickArray2].map((k) => k.toBase58()),
+              standingMandateVersion: state.mandate.version,
+              spentThisPeriod: Number(state.assetRule.spentThisPeriod),
+              quote: quoteSummary(q)
+            }
+          };
+        }
         const refusal = classifyWorldFairProgramRefusal(error);
         if (!refusal) throw error;
         return { status: refusal.boundary === 'STALE' ? 'STALE' : 'REFUSED', boundary: refusal.boundary, code: refusal.code, quote: quoteSummary(q) };
@@ -2790,13 +2989,79 @@ export function createWorldFairOrcaProvider({
     });
   }
 
-  async function guardianWrite(name, keys, parts) {
-    return sendInstructions({
-      rpc,
-      feePayer: guardian,
-      signers: [guardian],
-      instructions: [ix(name, keys, parts)]
+  // Principal-wallet path, step 2: the wallet-signed grant has landed; execute
+  // the exact swap once with the stored Pyth message and quote bounds.
+  async function executeGrantedException({ pending, grantSignature }) {
+    return chainLock(async () => {
+      const allowance = new PublicKey(pending.allowance);
+      const allowanceState = await loadAllowance(allowance);
+      if (allowanceState.used) return { status: 'EXECUTION_REFUSED', code: 'AllowanceAlreadyUsed', boundary: 'HARD', allowanceConsumed: true };
+      const { data: poolData, pythTreasury } = await orcaContextState();
+      const quote = {
+        otherAmountThreshold: new BN(pending.minOutput),
+        sqrtPriceLimit: new BN(pending.sqrtPriceLimit),
+        tickArray0: new PublicKey(pending.tickArrays[0]),
+        tickArray1: new PublicKey(pending.tickArrays[1]),
+        tickArray2: new PublicKey(pending.tickArrays[2])
+      };
+      const exception = {
+        allowance,
+        requestHash: Buffer.from(pending.requestHash, 'hex'),
+        deadline: pending.deadline,
+        inputAmount: pending.inputAmount,
+        expectedNonce: pending.expectedNonce,
+        quote,
+        pyth: { message: Buffer.from(pending.pythMessage, 'base64'), unitPriceMicroUsd: pending.unitPriceMicroUsd }
+      };
+      const grant = {
+        signature: grantSignature,
+        allowance: pending.allowance,
+        requestHash: pending.requestHash,
+        maxNotionalMicroUsd: Number(pending.exactNotional),
+        deadline: pending.deadline,
+        mandateNonce: pending.expectedNonce,
+        signedByPrincipalWallet: guardianPk.toBase58(),
+        principalApprovalVerifiedOnChain: true,
+        principalWallet: guardianPk.toBase58()
+      };
+      let executionSignature;
+      try {
+        executionSignature = await executeException({ exception, poolData, pythTreasury });
+      } catch (error) {
+        const refusal = classifyWorldFairProgramRefusal(error);
+        if (!refusal) {
+          throw Object.assign(error, { worldFairGrant: grant, worldFairExecutionSignature: worldFairSignatureFromError(error) });
+        }
+        return { status: refusal.boundary === 'VENUE' ? 'ROLLED_BACK' : 'EXECUTION_REFUSED', code: refusal.code, boundary: refusal.boundary, grant, allowanceConsumed: false, quote: pending.quote };
+      }
+      let after = null;
+      try {
+        after = mandateView(await waitForAssetRuleSpentAtLeast(Number(pending.spentThisPeriod) + Number(pending.inputAmount)));
+      } catch {
+        after = null;
+      }
+      let consumed = null;
+      try {
+        consumed = (await loadAllowance(allowance)).used;
+      } catch {
+        consumed = null;
+      }
+      return {
+        status: 'EXECUTED',
+        grant,
+        executionSignature,
+        allowanceConsumed: consumed,
+        quote: pending.quote,
+        standingMandateVersionBefore: pending.standingMandateVersion,
+        standingMandateVersionAfter: after?.mandate?.version ?? null,
+        standingAuthorityChanged: after?.mandate ? after.mandate.version !== pending.standingMandateVersion : null,
+        assetRuleAfter: after?.assetRule ?? null
+      };
     });
+  }
+
+  async function guardianWrite(name, keys, parts) {
+    return sendGuardian({ label: name, instructions: [ix(name, keys, parts)] });
   }
 
   async function setMandateStatus({ status, expectedNonce }) {
@@ -2809,12 +3074,15 @@ export function createWorldFairOrcaProvider({
           [
             publicKeyMeta(charter),
             publicKeyMeta(mandate, false, true),
-            publicKeyMeta(guardian.publicKey, true, false)
+            publicKeyMeta(guardianPk, true, false)
           ],
           [u64le(expectedNonce), Buffer.from([code])]
         );
         return { status: 'CONFIRMED', signature, mandate: (await readMandate()).mandate };
       } catch (error) {
+        if (error instanceof WorldFairGuardianSignatureRequired) {
+          return { status: 'NEEDS_GUARDIAN_SIGNATURE', guardianSignature: error.request };
+        }
         const refusal = classifyWorldFairProgramRefusal(error);
         if (!refusal) throw error;
         return { status: 'REFUSED', code: refusal.code, boundary: refusal.boundary };
@@ -2829,6 +3097,9 @@ export function createWorldFairOrcaProvider({
         const signature = await configurePolicy(expectedNonce, next);
         return { status: 'CONFIRMED', signature, mandate: (await readMandate()).mandate };
       } catch (error) {
+        if (error instanceof WorldFairGuardianSignatureRequired) {
+          return { status: 'NEEDS_GUARDIAN_SIGNATURE', guardianSignature: error.request };
+        }
         const refusal = classifyWorldFairProgramRefusal(error);
         if (!refusal) throw error;
         return { status: 'REFUSED', code: refusal.code, boundary: refusal.boundary };
@@ -2847,7 +3118,7 @@ export function createWorldFairOrcaProvider({
             publicKeyMeta(charter),
             publicKeyMeta(mandate, false, true),
             publicKeyMeta(assetRule, false, true),
-            publicKeyMeta(guardian.publicKey, true, false)
+            publicKeyMeta(guardianPk, true, false)
           ],
           [
             u64le(expectedNonce),
@@ -2862,6 +3133,9 @@ export function createWorldFairOrcaProvider({
         );
         return { status: 'CONFIRMED', signature, mandate: await readMandate() };
       } catch (error) {
+        if (error instanceof WorldFairGuardianSignatureRequired) {
+          return { status: 'NEEDS_GUARDIAN_SIGNATURE', guardianSignature: error.request };
+        }
         const refusal = classifyWorldFairProgramRefusal(error);
         if (!refusal) throw error;
         return { status: 'REFUSED', code: refusal.code, boundary: refusal.boundary };
@@ -2888,8 +3162,15 @@ export function createWorldFairOrcaProvider({
 
   async function bootstrapWorkspace() {
     return chainLock(async () => {
-      const ready = await ensureReady();
-      return { bootstrap: ready.bootstrap, ...mandateView(ready.state) };
+      try {
+        const ready = await ensureReady();
+        return { bootstrap: ready.bootstrap, ...mandateView(ready.state) };
+      } catch (error) {
+        if (error instanceof WorldFairGuardianSignatureRequired) {
+          return { status: 'NEEDS_GUARDIAN_SIGNATURE', guardianSignature: error.request };
+        }
+        throw error;
+      }
     });
   }
 
@@ -2906,10 +3187,13 @@ export function createWorldFairOrcaProvider({
     updateRule,
     signatureStatus,
     bootstrapWorkspace,
+    submitGuardianTransaction,
+    executeGrantedException,
+    walletGuardian,
     policy,
     ids: {
       programId: WORLD_FAIR_PROGRAM_ID.toBase58(),
-      guardian: guardian.publicKey.toBase58(),
+      guardian: guardianPk.toBase58(),
       delegate: delegate.publicKey.toBase58()
     }
   };
@@ -2950,15 +3234,19 @@ export function createWorldFairWorkspaceChain({
   rpcUrl = 'https://api.devnet.solana.com',
   workspaceId,
   policy,
-  connection = null
+  connection = null,
+  guardianWallet = null
 }) {
   return createWorldFairOrcaProvider({
     rpcUrl,
     guardian,
     pythApiKey,
     connection,
-    delegate: deriveWorldFairWorkspaceDelegate(guardian, workspaceId),
+    // A principal-wallet workspace gets its own delegate (and so its own
+    // charter): it can never collide with a server-guardian mandate.
+    delegate: deriveWorldFairWorkspaceDelegate(guardian, guardianWallet ? `${workspaceId}-principal-wallet` : workspaceId),
     policy,
+    guardianAuthority: guardianWallet,
     strictLabState: false,
     // Room for several cycles of the 0.20 / 0.75 loop before an auto-refill.
     vaultTargetBaseUnits: 5_000_000
@@ -2974,12 +3262,12 @@ export function configuredWorldFairWorkspaceChainFactoryFromEnv(env = null) {
   if (!keypairJson || !pythApiKey) return null;
   const guardian = parseKeypair(keypairJson);
   const rpcUrl = read('SOLANA_DEVNET_RPC_URL') ?? 'https://api.devnet.solana.com';
-  return ({ workspaceId, policy }) => {
-    const key = `${workspaceId}:${JSON.stringify(policy ?? {})}`;
+  return ({ workspaceId, policy, guardianWallet = null }) => {
+    const key = `${workspaceId}:${guardianWallet ?? 'server'}:${JSON.stringify(policy ?? {})}`;
     if (!workspaceProviders.has(key)) {
       workspaceProviders.set(
         key,
-        createWorldFairWorkspaceChain({ guardian, pythApiKey, rpcUrl, workspaceId, policy })
+        createWorldFairWorkspaceChain({ guardian, pythApiKey, rpcUrl, workspaceId, policy, guardianWallet })
       );
     }
     return workspaceProviders.get(key);

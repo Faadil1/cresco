@@ -13,7 +13,7 @@ import {
 export const WORKFLOW_PREFIX = '/api/v0.4/worlds-fair';
 const JSON_HEADERS = { 'content-type': 'application/json; charset=utf-8' };
 
-const MUTATING = /^\/workspaces\/[a-z0-9-]+\/(bootstrap|intents|requests\/[a-z0-9-]+\/decision|mandate\/status|mandate\/policy|asset-rule|vault\/topup|principal\/wallet|reconcile)$/;
+const MUTATING = /^\/workspaces\/[a-z0-9-]+\/(bootstrap|intents|requests\/[a-z0-9-]+\/decision|mandate\/status|mandate\/policy|asset-rule|vault\/topup|principal\/wallet|guardian\/submit|reconcile)$/;
 
 export function isWorkflowPath(path) {
   return typeof path === 'string' && path.startsWith(WORKFLOW_PREFIX);
@@ -110,6 +110,7 @@ export function workflowOpenApi() {
       [`${WORKFLOW_PREFIX}/workspaces/{id}/notifications`]: { get: op('Role-specific notifications (?since=cursor)', ['operator', 'principal', 'risk']) },
       [`${WORKFLOW_PREFIX}/workspaces/{id}/principal/wallet`]: { post: op('Bind a principal wallet (signed binding message)', ['principal']) },
       [`${WORKFLOW_PREFIX}/workspaces/{id}/principal/wallet-message`]: { get: op('Exact wallet binding message (?issuedAt=)', []) },
+      [`${WORKFLOW_PREFIX}/workspaces/{id}/guardian/submit`]: { post: op('Submit a transaction signed by the principal wallet (guardianMode principal-wallet): { opId, signedTransaction }', ['principal']) },
       [`${WORKFLOW_PREFIX}/workspaces/{id}/reconcile`]: { post: op('Resolve UNKNOWN outcomes from transaction signatures', ['operator', 'principal', 'risk']) }
     }
   };
@@ -164,6 +165,7 @@ export async function routeWorldFairWorkflow({ method, path, body, headers, quer
     if (method === 'GET' && sub === '/history') return ok(await workflow.history(id, query));
     if (method === 'GET' && sub === '/notifications') return ok(await workflow.notifications(id, token, query));
     if (method === 'POST' && sub === '/principal/wallet') return ok(await workflow.bindWallet(id, token, body ?? {}));
+    if (method === 'POST' && sub === '/guardian/submit') return ok(await workflow.submitGuardian(id, token, body ?? {}));
     if (method === 'POST' && sub === '/reconcile') return ok(await workflow.reconcile(id, token));
     return { status: 404, headers: JSON_HEADERS, body: { error: 'NOT_FOUND' } };
   } catch (error) {
