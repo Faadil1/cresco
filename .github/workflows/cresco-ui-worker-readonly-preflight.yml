@@ -1,0 +1,73 @@
+name: CRESCO UI Worker read-only release preflight
+
+on:
+  push:
+    branches:
+      - ops/cresco-ui-worker-readonly-preflight-20261012
+
+permissions:
+  contents: read
+
+jobs:
+  worker-compatibility:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify original merged production source
+        working-directory: .
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "fdd90465cbe591ac8a9314de1e3176463c06b9a6"
+          echo "Underlying product source: fdd90465cbe591ac8a9314de1e3176463c06b9a6" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Install pinned frontend dependencies
+        run: npm install --no-audit --no-fund
+      - name: Compile actual Cloudflare Worker frontend
+        run: npm run build:vinext
+      - name: Verify Worker packaging WITHOUT deploying
+        run: npx vinext-cloudflare deploy --config dist/server/wrangler.json --dry-run
+      - name: Read public frontend routes without state mutations
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync } from "node:fs";
+          const origin = "https://cresco.faadil-casecraft.workers.dev";
+          const routes = ["/", "/how-it-works", "/start", "/parent/sign-in", "/worlds-fair/desk", "/worlds-fair"];
+          for (const path of routes) {
+            const url = origin + path;
+            let classification = "UNAVAILABLE";
+            let status = "unknown";
+            try {
+              const r = await fetch(url, { signal: AbortSignal.timeout(18000), redirect: "follow" });
+              status = String(r.status);
+              const body = await r.text();
+              classification = !r.ok ? "HTTP_ERROR" : (
+                path === "/" ? (
+                  body.includes("Grow independence") && body.includes("Keep the boundary") ? "NEW_EDITORIAL_VISIBLE" :
+                  body.includes("Act alone inside the rules") ? "PRIOR_DESIGN_VISIBLE" : "UNBOUND_OR_UNKNOWN"
+                ) : "ROUTE_REACHABLE"
+              );
+            } catch (e) {
+              classification = "NETWORK_UNAVAILABLE";
+              status = String(e?.name || "error");
+            }
+            const line = `| ${path} | ${status} | ${classification} |`;
+            console.log(line);
+            appendFileSync(process.env.GITHUB_STEP_SUMMARY, line + "\n");
+          }
+          NODE
+
+      - name: Record bounded preflight status
+        if: always()
+        shell: bash
+        run: |
+          echo "Build/dry-run here never performs a public deployment, API writes, Devnet calls or on-chain transaction." >> "$GITHUB_STEP_SUMMARY"
