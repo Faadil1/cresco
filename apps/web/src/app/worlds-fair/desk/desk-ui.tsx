@@ -41,40 +41,43 @@ export function MandateRail({
   principal: string;
   compact?: boolean;
 }) {
-  const maxPoint = points.reduce((m, p) => Math.max(m, p.amountMicroUsd), 0);
+  const shown = points.slice(-6);
+  const maxPoint = shown.reduce((m, p) => Math.max(m, p.amountMicroUsd), 0);
   const scale = Math.max(limitMicroUsd * 2, maxPoint * 1.15, 1);
   const limitPct = (limitMicroUsd / scale) * 100;
-  const pos = (v: number) => `${Math.min(97, Math.max(3, (v / scale) * 100))}%`;
-  const tone: Record<RailPoint["kind"], string> = {
-    alone: "bg-green ring-green/25",
-    pending: "bg-yellow ring-yellow/40",
-    approved: "bg-blue ring-blue/25",
-    refused: "bg-ink-3 ring-line",
+  const at = (v: number) => Math.min(96, Math.max(4, (v / scale) * 100));
+  const dot: Record<RailPoint["kind"], string> = {
+    alone: "size-3.5 bg-navy-strong",
+    approved: "size-3.5 bg-green",
+    pending: "size-4 border-2 border-blue bg-bg",
+    refused: "size-3 bg-ink-3/50",
   };
+  const label: Record<RailPoint["kind"], string> = { alone: "alone", approved: "approved once", pending: "waiting", refused: "not executed" };
+  const withLabels = !compact && shown.length <= 5;
   return (
     <figure aria-label={`Standing limit ${money(limitMicroUsd)}`} className="w-full">
-      <div className={`relative ${compact ? "h-16" : "h-20"}`}>
-        <div className="absolute inset-x-0 top-1/2 h-3 -translate-y-1/2 overflow-hidden rounded-full bg-surface-soft">
-          <div className="absolute inset-y-0 left-0 bg-green-soft" style={{ width: `${limitPct}%` }} />
-          <div className="absolute inset-y-0 right-0 bg-yellow-soft" style={{ width: `${100 - limitPct}%` }} />
-        </div>
-        <div className="absolute top-0 bottom-0 w-0.5 -translate-x-1/2 rounded-full bg-navy-strong" style={{ left: `${limitPct}%` }} />
-        <span className="absolute -top-1 -translate-x-1/2 whitespace-nowrap rounded-full bg-navy-strong px-2 py-0.5 text-[11px] font-black text-white" style={{ left: `${limitPct}%` }}>
-          Limit {money(limitMicroUsd)}
+      <div className={`relative ${withLabels ? "h-[150px]" : "h-[96px]"}`}>
+        <span className="absolute left-0 top-0 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-3">{operator} acts alone</span>
+        <span className="absolute right-0 top-0 text-right text-[11px] font-medium uppercase tracking-[0.14em] text-ink-3">Above: asks {principal} once</span>
+        <div className="absolute inset-x-0 top-[72px] h-px bg-navy-strong/70" />
+        <div className="absolute right-0 top-[71px] h-[3px] bg-blue/25" style={{ left: `${limitPct}%` }} />
+        <div className="absolute top-[24px] h-[96px] w-[1.5px] bg-blue" style={{ left: `${limitPct}%` }} />
+        <span className="absolute top-[22px] whitespace-nowrap pl-3 font-display text-[32px] leading-none text-blue" style={{ left: `${limitPct}%` }}>
+          {money(limitMicroUsd)}
+          <span className="mt-1 block font-sans text-[10px] font-medium uppercase tracking-[0.14em] text-ink-3">standing limit</span>
         </span>
-        {points.slice(-8).map((p) => (
-          <span
-            key={p.id}
-            title={`${money(p.amountMicroUsd)} · ${p.kind}`}
-            className={`absolute top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full ring-4 ${tone[p.kind]}`}
-            style={{ left: pos(p.amountMicroUsd) }}
-          />
+        {shown.map((p) => (
+          <span key={p.id} title={`${money(p.amountMicroUsd)} · ${label[p.kind]}`} className={`absolute top-[72px] -translate-x-1/2 -translate-y-1/2 rounded-full ${dot[p.kind]}`} style={{ left: `${at(p.amountMicroUsd)}%` }} />
         ))}
+        {withLabels
+          ? shown.map((p) => (
+              <span key={`l-${p.id}`} className="absolute top-[90px] -translate-x-1/2 whitespace-nowrap text-center text-[12px] text-ink-3" style={{ left: `${at(p.amountMicroUsd)}%` }}>
+                <span className="block font-display text-[22px] leading-tight text-navy-strong">{money(p.amountMicroUsd)}</span>
+                {label[p.kind]}
+              </span>
+            ))
+          : null}
       </div>
-      <figcaption className="mt-1 grid grid-cols-2 gap-3 text-[12px] font-bold">
-        <span className="text-green-strong">{operator} acts alone</span>
-        <span className="text-right text-orange-text">Above it: ask {principal} once</span>
-      </figcaption>
     </figure>
   );
 }
@@ -112,23 +115,15 @@ const STEPS: Record<UseCase, { title: string; body: string }[]> = {
 };
 
 export function HowItWorks({ useCase }: { useCase: UseCase }) {
-  const icons = [Zap, Hand, BadgeCheck];
-  const tones = ["bg-green-soft text-green-strong", "bg-yellow-soft text-orange-text", "bg-blue-soft text-blue"];
   return (
-    <ol className="grid gap-3 md:grid-cols-3">
-      {STEPS[useCase].map((step, i) => {
-        const Icon = icons[i];
-        return (
-          <li key={step.title} className="rounded-[22px] border border-line bg-white p-5 shadow-soft">
-            <div className="flex items-center gap-3">
-              <span className={`grid size-9 place-items-center rounded-[12px] ${tones[i]}`}><Icon className="size-4.5" /></span>
-              <p className="text-[11px] font-black uppercase tracking-[0.12em] text-ink-3">Step {i + 1}</p>
-            </div>
-            <p className="mt-3 text-[18px] font-black text-navy-strong">{step.title}</p>
-            <p className="mt-1 text-[14px] font-semibold leading-relaxed text-ink-2">{step.body}</p>
-          </li>
-        );
-      })}
+    <ol className="grid border-y border-line md:grid-cols-3">
+      {STEPS[useCase].map((step, i) => (
+        <li key={step.title} className={`py-7 md:py-8 ${i > 0 ? "border-t border-line md:border-l md:border-t-0 md:pl-8" : ""} ${i < 2 ? "md:pr-8" : ""}`}>
+          <p className={`font-display text-[64px] leading-[0.8] ${i === 1 ? "text-blue" : "text-navy-strong"}`}>0{i + 1}</p>
+          <p className="mt-5 text-[19px] font-semibold tracking-[-0.01em] text-navy-strong">{step.title}</p>
+          <p className="mt-2 max-w-[36ch] text-[15px] leading-relaxed text-ink-2">{step.body}</p>
+        </li>
+      ))}
     </ol>
   );
 }
@@ -142,21 +137,21 @@ export function ProofStrip() {
     { k: "Approve + execute", v: "3.6 s", s: "p50, one exact exception" },
   ];
   return (
-    <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[22px] border border-line bg-line md:grid-cols-4">
-      {items.map((it) => (
-        <div key={it.k} className="bg-white p-4">
-          <p className="text-[11px] font-black uppercase tracking-[0.12em] text-ink-3">{it.k}</p>
-          <p className="mt-1 text-[22px] font-black tabular text-navy-strong">{it.v}</p>
-          <p className="text-[12px] font-semibold text-ink-2">{it.s}</p>
+    <dl className="grid grid-cols-2 border-t border-line md:grid-cols-4">
+      {items.map((it, i) => (
+        <div key={it.k} className={`py-5 ${i % 2 === 1 ? "pl-5" : ""} md:pl-0 ${i > 0 ? "md:border-l md:border-line md:pl-6" : ""}`}>
+          <dt className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-3">{it.k}</dt>
+          <dd className="mt-2 font-display text-[36px] leading-none text-navy-strong">{it.v}</dd>
+          <dd className="mt-2 text-[12px] text-ink-3">{it.s}</dd>
         </div>
       ))}
-    </div>
+    </dl>
   );
 }
 
 export function Avatar({ name, tone = "bg-blue-soft text-blue" }: { name: string; tone?: string }) {
   const initial = name.trim().charAt(0).toUpperCase() || "?";
-  return <span aria-hidden className={`grid size-7 shrink-0 place-items-center rounded-full text-[12px] font-black ${tone}`}>{initial}</span>;
+  return <span aria-hidden className={`grid size-7 shrink-0 place-items-center rounded-full text-[12px] font-semibold ${tone}`}>{initial}</span>;
 }
 
 type Names = { operator: string; principal: string; risk: string };
@@ -188,14 +183,14 @@ export function EventRow({ event, names }: { event: WorkflowEvent; names: Names 
       <span className={`grid size-9 shrink-0 place-items-center rounded-full ${look.tone}`}><Icon className="size-4" /></span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-          <p className="text-[14px] font-black text-navy-strong">{look.title(names, event)}</p>
+          <p className="text-[14px] font-semibold text-navy-strong">{look.title(names, event)}</p>
           <time className="text-[11px] font-bold tabular text-ink-3">{new Date(event.at).toLocaleTimeString()}</time>
         </div>
         <p className="mt-0.5 text-[12px] font-semibold text-ink-3">{event.summary}</p>
         {event.signatures?.length ? (
           <div className="mt-2 flex flex-wrap gap-1.5">
             {event.signatures.map((s) => (
-              <a key={s.signature} href={s.explorer} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-full border border-line bg-white px-2.5 py-1 text-[11px] font-extrabold text-blue hover:border-blue/40">
+              <a key={s.signature} href={s.explorer} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-full border border-line bg-white px-2.5 py-1 text-[11px] font-medium text-blue hover:border-blue/40">
                 {s.label} <ExternalLink className="size-3" />
               </a>
             ))}
@@ -209,13 +204,13 @@ export function EventRow({ event, names }: { event: WorkflowEvent; names: Names 
 export function GuardianBadge({ walletGuardian, wallet }: { walletGuardian: boolean; wallet: string | null }) {
   if (walletGuardian) {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-green/30 bg-green-soft px-3 py-1 text-[12px] font-black text-green-strong">
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-green/30 bg-green-soft px-3 py-1 text-[12px] font-semibold text-green-strong">
         <Wallet className="size-3.5" /> Guardian: {wallet ? `${wallet.slice(0, 4)}…${wallet.slice(-4)}` : "your wallet"}
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-soft px-3 py-1 text-[12px] font-black text-ink-2">
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-soft px-3 py-1 text-[12px] font-semibold text-ink-2">
       <KeyRound className="size-3.5" /> Guardian: Devnet lab key
     </span>
   );
@@ -223,7 +218,7 @@ export function GuardianBadge({ walletGuardian, wallet }: { walletGuardian: bool
 
 export function ExternalChip({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-full border border-line bg-white px-3 py-1 text-[12px] font-extrabold text-blue hover:border-blue/40">
+    <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-full border border-line bg-white px-3 py-1 text-[12px] font-medium text-blue hover:border-blue/40">
       {children} <ArrowUpRight className="size-3.5" />
     </a>
   );

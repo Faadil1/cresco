@@ -2,31 +2,31 @@
 
 /*
  * Cresco design tokens — see docs/CRESCO-FRONTEND-DESIGN-SYSTEM.md.
- * Values come from the approved spec (§7). Cresco is light-only by design.
+ * Values come from the approved spec (§7). Cresco is light-only by design. Palette: Fog & Ink Blue (2026-10-12).
  */
 :root {
-  --cresco-bg: #fff9f1;
-  --cresco-surface: #ffffff;
-  --cresco-surface-soft: #f7faff;
+  --cresco-bg: #e8ebee;
+  --cresco-surface: #f5f6f8;
+  --cresco-surface-soft: #eef0f3;
 
-  --cresco-blue: #1769f6;
-  --cresco-blue-strong: #0f57e8;
-  --cresco-blue-soft: #eaf2ff;
+  --cresco-blue: #1f3bcc;
+  --cresco-blue-strong: #172ea8;
+  --cresco-blue-soft: #dfe4f8;
 
-  --cresco-navy: #102b63;
-  --cresco-navy-strong: #08235b;
-  --cresco-text-secondary: #5d6a80;
-  --cresco-text-muted: #637084;
+  --cresco-navy: #2a2f38;
+  --cresco-navy-strong: #14171c;
+  --cresco-text-secondary: #565d68;
+  --cresco-text-muted: #646b76;
 
-  --cresco-green: #21b66f;
-  --cresco-green-strong: #0c7a47;
-  --cresco-green-soft: #e8f8ef;
+  --cresco-green: #2f7d5b;
+  --cresco-green-strong: #1f5e42;
+  --cresco-green-soft: #e2ece6;
 
-  --cresco-yellow: #ffbc32;
+  --cresco-yellow: #c99a3c;
   --cresco-orange: #ff8a3d;
-  --cresco-yellow-soft: #fff5d8;
+  --cresco-yellow-soft: #f1ead9;
   /* Text-safe variants (WCAG AA 4.5:1 on light surfaces). Fills keep the brand values. */
-  --cresco-orange-text: #a64d0b;
+  --cresco-orange-text: #8a5a12;
 
   --cresco-lavender: #8b75f7;
   --cresco-lavender-soft: #f0edff;
@@ -42,12 +42,12 @@
   --cresco-loss-text: #c8373a;
   --cresco-warning: #d98a13;
 
-  --cresco-border: #dce6f2;
-  --cresco-border-soft: #ebf0f6;
+  --cresco-border: #d5dae1;
+  --cresco-border-soft: #e1e5ea;
 
-  --cresco-shadow-card: 0 8px 24px rgba(16, 43, 99, 0.08), 0 2px 8px rgba(16, 43, 99, 0.04);
-  --cresco-shadow-soft: 0 2px 10px rgba(16, 43, 99, 0.05);
-  --cresco-shadow-button: 0 6px 16px rgba(23, 105, 246, 0.28);
+  --cresco-shadow-card: 0 1px 0 rgba(20, 23, 28, 0.04), 0 24px 48px -32px rgba(20, 40, 120, 0.28);
+  --cresco-shadow-soft: 0 1px 0 rgba(20, 23, 28, 0.04), 0 12px 32px -28px rgba(20, 40, 120, 0.3);
+  --cresco-shadow-button: 0 10px 24px -14px rgba(31, 59, 204, 0.55);
 
   --nav-height: 72px;
   color-scheme: light;
@@ -84,7 +84,8 @@
   --color-line: var(--cresco-border);
   --color-line-soft: var(--cresco-border-soft);
 
-  --font-sans: var(--font-nunito-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Instrument Serif", ui-serif, Georgia, serif;
 
   --shadow-card: var(--cresco-shadow-card);
   --shadow-soft: var(--cresco-shadow-soft);

@@ -38,6 +38,8 @@ Not done, on purpose:
 - No account merge, no token migration, no data migration.
 - Converging the legacy sessions into workspace roles needs its own design, with the owner deciding whether the earlier app is retired.
 
+**Owner correction (same evening).** The Family app (`/start`: Key, Learn, Explore, Portfolio, Profile, and `/parent`) is part of the product, not a legacy lane. The home page now sends "Enter Family" to `/start` with "Parent sign-in" beside it. The live family mandate on Solana (`/worlds-fair/desk?case=family`, with the parent's wallet as guardian) is linked from the Family card. Sessions stay separate, as described above.
+
 ## Safety properties preserved
 
 - Role tokens stay workspace-scoped and are never placed in public links. Share links carry the token only in the URL fragment, which is scrubbed after import.

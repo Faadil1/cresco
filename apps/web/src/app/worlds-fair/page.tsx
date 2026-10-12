@@ -316,7 +316,7 @@ export default function WorldsFairPage() {
               </span>
               LIVE · SOLANA DEVNET · JUDGE LAB
             </div>
-            <h1 className="mt-6 max-w-[13ch] text-[48px] font-black leading-[0.98] tracking-[-0.045em] text-navy-strong sm:text-[64px] lg:text-[76px]">
+            <h1 className="mt-6 max-w-[13ch] font-display text-[56px] font-normal leading-[0.94] tracking-[-0.03em] text-navy-strong sm:text-[76px] lg:text-[96px]">
               Authority that ends with the action.
             </h1>
             <p className="mt-6 max-w-[64ch] text-[17px] font-semibold leading-relaxed text-ink-2 md:text-[19px]">

@@ -1,14 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Nunito_Sans } from "next/font/google";
+import "@fontsource-variable/inter";
+import "@fontsource/instrument-serif/400.css";
+import "@fontsource/instrument-serif/400-italic.css";
 import { ToastProvider } from "@/components/ui/feedback";
 import { StoreProvider } from "@/state/store";
 import "./globals.css";
-
-const nunitoSans = Nunito_Sans({
-  variable: "--font-nunito-sans",
-  subsets: ["latin"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: { default: "CRESCO | Act alone inside the rules", template: "%s · CRESCO" },
@@ -19,7 +15,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#fff9f1",
+  themeColor: "#e8ebee",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -27,7 +23,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${nunitoSans.variable} antialiased`}>
+    <html lang="en" className="antialiased">
       <body className="min-h-dvh">
         <a
           href="#main"

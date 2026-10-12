@@ -179,15 +179,15 @@ async function signGuardianTransaction(request: GuardianSignatureRequest) {
 setGuardianSigner(signGuardianTransaction);
 
 function Pill({ children, tone }: { children: React.ReactNode; tone: string }) {
-  return <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-black ${tone}`}>{children}</span>;
+  return <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${tone}`}>{children}</span>;
 }
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <section className={`rounded-[26px] border border-line bg-white p-5 shadow-soft md:p-6 ${className}`}>{children}</section>;
+  return <section className={`rounded-[28px] border border-line bg-surface p-5 shadow-soft md:p-6 ${className}`}>{children}</section>;
 }
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
-  return <p className="text-[11px] font-black uppercase tracking-[0.12em] text-ink-3">{children}</p>;
+  return <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-3">{children}</p>;
 }
 
 function Bar({ pct, label }: { pct: number | null; label: string }) {
@@ -211,7 +211,7 @@ function Signatures({ event }: { event: Pick<WorkflowEvent, "signatures"> }) {
   return (
     <div className="mt-2 flex flex-wrap gap-2">
       {event.signatures.map((s) => (
-        <a key={s.signature} href={s.explorer} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-full border border-line px-2.5 py-1 text-[11px] font-extrabold text-blue hover:border-blue/40">
+        <a key={s.signature} href={s.explorer} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-full border border-line px-2.5 py-1 text-[11px] font-medium text-blue hover:border-blue/40">
           {s.label} <ExternalLink className="size-3" />
         </a>
       ))}
@@ -241,11 +241,11 @@ function RequestCard({ req, names, children }: { req: ExceptionRequest; names?: 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Avatar name={who.operator} tone="bg-yellow-soft text-orange-text" />
-          <p className="text-[15px] font-black text-navy-strong">{who.operator} asks for {usd(req.requestedNotionalMicroUsd)}</p>
+          <p className="text-[15px] font-semibold text-navy-strong">{who.operator} asks for {usd(req.requestedNotionalMicroUsd)}</p>
         </div>
         <Pill tone={STATUS_TONE[req.status] ?? STATUS_TONE.STALE}>{headline}</Pill>
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-2 text-[13px] font-black">
+      <div className="mt-3 grid grid-cols-2 gap-2 text-[13px] font-semibold">
         <div className="rounded-[14px] bg-yellow-soft p-3 text-orange-text">Requested {usd(req.requestedNotionalMicroUsd)}</div>
         <div className="rounded-[14px] bg-surface-soft p-3 text-navy">Standing limit {usd(req.standingMaxNotionalMicroUsd)}</div>
       </div>
@@ -277,7 +277,7 @@ function RequestCard({ req, names, children }: { req: ExceptionRequest; names?: 
         />
       ) : null}
       <details className="mt-3 rounded-[14px] bg-surface-soft px-3 py-2">
-        <summary className="cursor-pointer text-[12px] font-black text-navy">On-chain details</summary>
+        <summary className="cursor-pointer text-[12px] font-semibold text-navy">On-chain details</summary>
         <dl className="mt-2 grid gap-1 text-[12px] font-semibold text-ink-2">
           <div>Trade: swap {devUsdc(req.intent.inputAmount)} to devUSDT, max slippage {req.intent.maxSlippageBps} bps</div>
           <div>Policy Diff: {(req.policyDiff?.violatedDimensions ?? []).join(", ") || "n/a"}</div>
@@ -295,9 +295,9 @@ function IntentOutcome({ result, requests = [], principal = "the principal" }: {
   if (result.decision === "ALLOW") {
     return (
       <div role="status" className="mt-4 rounded-[18px] border border-green/25 bg-green-soft p-4 text-green-strong">
-        <p className="flex items-center gap-2 font-black"><CheckCircle2 className="size-4" /> Done alone · inside the standing limit</p>
+        <p className="flex items-center gap-2 font-semibold"><CheckCircle2 className="size-4" /> Done alone · inside the standing limit</p>
         <p className="mt-1 text-[13px] font-semibold">Executed on Solana for {usd(result.receipt.quote.notionalMicroUsd)}. Nobody had to approve it.{result.idempotentReplay ? " Replayed from the idempotency key." : ""}</p>
-        <a href={result.receipt.explorer} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-[12px] font-extrabold text-blue">Transaction on Explorer <ExternalLink className="size-3" /></a>
+        <a href={result.receipt.explorer} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-[12px] font-medium text-blue">Transaction on Explorer <ExternalLink className="size-3" /></a>
       </div>
     );
   }
@@ -307,7 +307,7 @@ function IntentOutcome({ result, requests = [], principal = "the principal" }: {
       const done = live.status === "EXECUTED";
       return (
         <div role="status" className={`mt-4 rounded-[18px] border p-4 ${done ? "border-blue/25 bg-blue-soft text-navy-strong" : "border-line bg-surface-soft text-navy"}`}>
-          <p className="flex items-center gap-2 font-black">{done ? <CheckCircle2 className="size-4 text-blue" /> : null}{done ? `${principal} approved it · executed once` : `Request ${live.status.replaceAll("_", " ").toLowerCase()}`}</p>
+          <p className="flex items-center gap-2 font-semibold">{done ? <CheckCircle2 className="size-4 text-blue" /> : null}{done ? `${principal} approved it · executed once` : `Request ${live.status.replaceAll("_", " ").toLowerCase()}`}</p>
           <p className="mt-1 text-[13px] font-semibold">
             {done ? "The standing limit did not change." : "Details and receipts are under the request."}
           </p>
@@ -316,7 +316,7 @@ function IntentOutcome({ result, requests = [], principal = "the principal" }: {
     }
     return (
       <div role="status" className="mt-4 rounded-[18px] border border-yellow/50 bg-yellow-soft p-4 text-orange-text">
-        <p className="flex items-center gap-2 font-black"><Clock className="size-4" /> Above the limit · asked {principal} once</p>
+        <p className="flex items-center gap-2 font-semibold"><Clock className="size-4" /> Above the limit · asked {principal} once</p>
         <p className="mt-1 text-[13px] font-semibold">The CRESCO program refused it ({result.refusal.code}) and filed one exact request. Its live status is on the right.</p>
       </div>
     );
@@ -324,14 +324,14 @@ function IntentOutcome({ result, requests = [], principal = "the principal" }: {
   if (result.decision === "REFUSE") {
     return (
       <div role="status" className="mt-4 rounded-[18px] border border-loss/20 bg-loss-soft p-4 text-loss-text">
-        <p className="font-black">Refused · {result.boundary} boundary ({result.code})</p>
+        <p className="font-semibold">Refused · {result.boundary} boundary ({result.code})</p>
         <p className="mt-1 text-[13px] font-semibold">This one cannot be approved: there is no exception path for a hard boundary.</p>
       </div>
     );
   }
   return (
     <div role="alert" className="mt-4 rounded-[18px] border border-loss/30 bg-loss-soft p-4 text-loss-text">
-      <p className="font-black">Outcome UNKNOWN</p>
+      <p className="font-semibold">Outcome UNKNOWN</p>
       <p className="mt-1 text-[13px] font-semibold">{result.message}</p>
       <p className="mt-1 text-[12px] font-bold">CRESCO does not show success when confirmation is uncertain. Use “Reconcile” before resubmitting.</p>
     </div>
@@ -348,7 +348,7 @@ function UseCaseToggle({ value, onChange }: { value: UseCase; onChange: (next: U
           role="radio"
           aria-checked={value === u}
           onClick={() => onChange(u)}
-          className={`rounded-full px-4 py-1.5 text-[13px] font-black transition-colors ${value === u ? "bg-navy-strong text-white" : "text-navy hover:text-blue"}`}
+          className={`rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors ${value === u ? "bg-navy-strong text-white" : "text-navy hover:text-blue"}`}
         >
           {USE_CASES[u].label}
         </button>
@@ -403,11 +403,11 @@ function CreateWorkspace({ useCase, onCreated }: { useCase: UseCase; onCreated: 
   }
 
   const input = "mt-1.5 w-full rounded-[14px] border border-line bg-white px-3.5 py-3 text-[15px] font-bold text-navy-strong transition-colors focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/10";
-  const label = "text-[12px] font-black text-ink-2";
+  const label = "text-[12px] font-semibold text-ink-2";
   return (
     <Card className="md:p-8">
       <Eyebrow>Try it on Solana Devnet</Eyebrow>
-      <h2 className="mt-2 text-[28px] font-black tracking-[-0.02em] text-navy-strong">{copy.formTitle}</h2>
+      <h2 className="mt-2 font-display text-[40px] font-normal leading-[1.02] tracking-[-0.02em] text-navy-strong">{copy.formTitle}</h2>
       <p className="mt-2 max-w-[62ch] text-[14px] font-semibold leading-relaxed text-ink-2">
         {copy.pitch} You get one private link per person, shown once.
       </p>
@@ -425,20 +425,20 @@ function CreateWorkspace({ useCase, onCreated }: { useCase: UseCase; onCreated: 
           <label className={`flex cursor-pointer items-start gap-3 rounded-[18px] border p-4 text-[13px] font-semibold text-ink-2 transition-colors ${walletGuardian ? "border-green/40 bg-green-soft" : "border-line bg-surface-soft hover:border-blue/30"}`}>
             <input type="checkbox" className="mt-1 size-4 accent-green" checked={walletGuardian} onChange={(e) => setWalletGuardian(e.target.checked)} />
             <span>
-              <span className="flex items-center gap-1.5 font-black text-navy-strong"><Wallet className="size-4" /> My wallet is the on-chain guardian (non-custodial)</span>
+              <span className="flex items-center gap-1.5 font-semibold text-navy-strong"><Wallet className="size-4" /> My wallet is the on-chain guardian (non-custodial)</span>
               The {copy.roles.principal.title.toLowerCase()}&apos;s wallet signs the mandate, every exact exception and every pause, resume or revoke. The server holds no authority over the mandate. Needs a Solana wallet on Devnet with a little Devnet SOL.
             </span>
           </label>
         </div>
         <details className="rounded-[16px] border border-line px-4 py-3">
-          <summary className="cursor-pointer text-[13px] font-black text-navy">More options</summary>
+          <summary className="cursor-pointer text-[13px] font-semibold text-navy">More options</summary>
           <div className="mt-3 grid gap-4 md:grid-cols-2">
             <label className={label}>Desk name<input className={input} value={name} onChange={(e) => setName(e.target.value)} /></label>
             <label className={label}>Webhook for exception requests (optional, https)<input className={input} value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)} placeholder="https://hooks.example.com/cresco" /></label>
           </div>
         </details>
         <div className="flex flex-wrap items-center gap-4">
-          <button type="submit" disabled={busy} className="flex min-h-12 items-center gap-2 rounded-[16px] bg-blue px-6 text-[15px] font-black text-white shadow-button transition-colors hover:bg-blue-strong disabled:opacity-60">
+          <button type="submit" disabled={busy} className="flex min-h-12 items-center gap-2 rounded-[16px] bg-blue px-6 text-[15px] font-semibold text-white shadow-button transition-colors hover:bg-blue-strong disabled:opacity-60">
             {busy ? <LoaderCircle className="size-4 animate-spin" /> : <KeyRound className="size-4" />} Create workspace
           </button>
           <p className="text-[12px] font-semibold text-ink-3">Creates its own Devnet mandate, separate from the judge lab.</p>
@@ -455,7 +455,7 @@ function TokenHandoff({ ws, onDone }: { ws: CreatedWorkspace; onDone: () => void
   return (
     <Card className="border-blue/30">
       <Eyebrow>Role links · shown once</Eyebrow>
-      <h2 className="mt-2 text-[22px] font-black text-navy-strong">Hand each role its own link</h2>
+      <h2 className="mt-2 text-[22px] font-semibold text-navy-strong">Hand each role its own link</h2>
       <p className="mt-1 text-[13px] font-semibold text-ink-2">{ws.tokenNotice} This browser keeps all three so you can try every role.</p>
       <div className="mt-4 grid gap-3">
         {(["operator", "principal", "risk"] as WorkflowRole[]).map((role) => {
@@ -463,7 +463,7 @@ function TokenHandoff({ ws, onDone }: { ws: CreatedWorkspace; onDone: () => void
           return (
             <div key={role} className="flex flex-wrap items-center justify-between gap-2 rounded-[16px] border border-line p-3">
               <div>
-                <p className="text-[13px] font-black text-navy-strong">{USE_CASES[caseOfWorkspace(ws)].roles[role].title}</p>
+                <p className="text-[13px] font-semibold text-navy-strong">{USE_CASES[caseOfWorkspace(ws)].roles[role].title}</p>
                 <p className="font-mono text-[11px] text-ink-3">{short(link, 38, 10)}</p>
               </div>
               <button
@@ -476,7 +476,7 @@ function TokenHandoff({ ws, onDone }: { ws: CreatedWorkspace; onDone: () => void
                     setCopied(null);
                   }
                 }}
-                className="inline-flex items-center gap-1 rounded-full border border-line px-3 py-1.5 text-[12px] font-extrabold text-blue"
+                className="inline-flex items-center gap-1 rounded-full border border-line px-3 py-1.5 text-[12px] font-medium text-blue"
               >
                 {copied === role ? <Check className="size-3.5" /> : <Copy className="size-3.5" />} {copied === role ? "Copied" : "Copy link"}
               </button>
@@ -484,7 +484,7 @@ function TokenHandoff({ ws, onDone }: { ws: CreatedWorkspace; onDone: () => void
           );
         })}
       </div>
-      <button type="button" onClick={onDone} className="mt-4 inline-flex items-center gap-1 text-[13px] font-black text-blue">
+      <button type="button" onClick={onDone} className="mt-4 inline-flex items-center gap-1 text-[13px] font-semibold text-blue">
         Continue to the desk <ArrowRight className="size-4" />
       </button>
     </Card>
@@ -682,10 +682,10 @@ export default function WorldFairDeskPage() {
         <header className="flex flex-wrap items-center justify-between gap-4">
           <Wordmark size="md" />
           <nav aria-label="CRESCO product" className="flex flex-wrap gap-2">
-            <Link href="/" className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-extrabold text-navy shadow-soft hover:border-blue/35">CRESCO home</Link>
-            <Link href="/worlds-fair" className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-extrabold text-navy shadow-soft hover:border-blue/35">Technical proof</Link>
+            <Link href="/" className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft hover:border-blue/35">CRESCO home</Link>
+            <Link href="/worlds-fair" className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft hover:border-blue/35">Technical proof</Link>
             {id ? (
-              <button type="button" onClick={() => { saveKeychain({ workspaceId: null, tokens: {} }); setKeychain({ workspaceId: null, tokens: {} }); setWs(null); setMandate(null); setRequests([]); setEvents([]); }} className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-extrabold text-navy shadow-soft">
+              <button type="button" onClick={() => { saveKeychain({ workspaceId: null, tokens: {} }); setKeychain({ workspaceId: null, tokens: {} }); setWs(null); setMandate(null); setRequests([]); setEvents([]); }} className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft">
                 Leave workspace
               </button>
             ) : null}
@@ -695,8 +695,8 @@ export default function WorldFairDeskPage() {
         {!id ? (
           <>
             <section className="mt-10 lg:mt-12">
-              <p className="text-[12px] font-black uppercase tracking-[0.13em] text-blue">CRESCO workspace · Solana Devnet</p>
-              <h1 className="mt-3 max-w-[22ch] text-[36px] font-black leading-[1.04] tracking-[-0.04em] text-navy-strong md:text-[48px]">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.13em] text-blue">CRESCO workspace · Solana Devnet</p>
+              <h1 className="mt-4 max-w-[20ch] font-display text-[44px] font-normal leading-[0.98] tracking-[-0.03em] text-navy-strong md:text-[68px]">
                 Start a workspace. Set the line. Share one link per person.
               </h1>
               <p className="mt-4 max-w-[62ch] text-[16px] font-semibold leading-relaxed text-ink-2">{caseCopy.pitch}</p>
@@ -733,7 +733,7 @@ export default function WorldFairDeskPage() {
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <Eyebrow>{caseCopy.label} desk · {ws.id}</Eyebrow>
-                    <h1 className="mt-1 text-[30px] font-black tracking-[-0.03em] text-navy-strong md:text-[36px]">{ws.name}</h1>
+                    <h1 className="mt-1 font-display text-[40px] font-normal leading-none tracking-[-0.02em] text-navy-strong md:text-[52px]">{ws.name}</h1>
                     <div className="mt-3 flex flex-wrap gap-2">
                       {(["operator", "principal", "risk"] as WorkflowRole[]).map((r) => (
                         <span key={r} className="inline-flex items-center gap-2 rounded-full border border-line bg-white py-1 pl-1 pr-3 text-[12px] font-bold text-navy">
@@ -762,35 +762,35 @@ export default function WorldFairDeskPage() {
                 <div className="mt-6 grid gap-3 sm:grid-cols-3">
                   <div className="rounded-[18px] bg-surface-soft p-4">
                     <Eyebrow>Standing limit / trade</Eyebrow>
-                    <p className="mt-1 text-[24px] font-black tabular text-navy-strong">{usd(limitMicro)}</p>
+                    <p className="mt-1 font-display text-[34px] font-normal leading-tight tabular text-navy-strong">{usd(limitMicro)}</p>
                     <p className="text-[12px] font-semibold text-ink-3">Period cap {usd(mandate?.mandate?.maxPeriodNotionalMicroUsd ?? ws.policy.maxPeriodNotionalMicroUsd)}</p>
                   </div>
                   <div className="rounded-[18px] bg-surface-soft p-4">
                     <Eyebrow>Activity</Eyebrow>
-                    <p className="mt-1 text-[24px] font-black tabular text-navy-strong">{aloneCount} alone · {approvedCount} approved</p>
+                    <p className="mt-2 text-[24px] font-medium tracking-[-0.02em] tabular text-navy-strong">{aloneCount} alone · {approvedCount} approved</p>
                     <p className="text-[12px] font-semibold text-ink-3">Every one with an Explorer receipt</p>
                   </div>
                   <div className={`rounded-[18px] p-4 ${pending.length ? "bg-yellow-soft" : "bg-surface-soft"}`}>
                     <Eyebrow>Waiting for {names.principal}</Eyebrow>
-                    <p className={`mt-1 text-[24px] font-black tabular ${pending.length ? "text-orange-text" : "text-navy-strong"}`}>{pending.length}</p>
+                    <p className={`mt-1 font-display text-[34px] font-normal leading-tight tabular ${pending.length ? "text-orange-text" : "text-navy-strong"}`}>{pending.length}</p>
                     <p className="text-[12px] font-semibold text-ink-3">{pending.length ? "Exact requests to decide" : "Nothing to decide"}</p>
                   </div>
                 </div>
 
                 {notReady && token("principal") && ws.chain.status === "NOT_BOOTSTRAPPED" ? (
                   <div className="mt-5 rounded-[18px] border border-blue/25 bg-blue-soft p-5">
-                    <p className="text-[15px] font-black text-navy-strong">Create the mandate on Solana Devnet</p>
+                    <p className="text-[15px] font-semibold text-navy-strong">Create the mandate on Solana Devnet</p>
                     {walletGuardianWs ? (
                       <p className="mt-1 text-[13px] font-semibold text-ink-2">Your wallet becomes the on-chain guardian: one transaction creates the charter, mandate, asset rule and trade vaults, and you sign it. The lab then funds the Devnet vault.</p>
                     ) : (
                       <p className="mt-1 text-[13px] font-semibold text-ink-2">Charter, mandate, asset rule, trade vaults and funding. Several transactions; safe to retry.</p>
                     )}
                     {walletGuardianWs && !ws.roles.principal.wallet ? (
-                      <button type="button" disabled={Boolean(actionBusy)} onClick={bindWallet} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-[14px] bg-blue px-4 text-[13px] font-black text-white disabled:opacity-60">
+                      <button type="button" disabled={Boolean(actionBusy)} onClick={bindWallet} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-[14px] bg-blue px-4 text-[13px] font-semibold text-white disabled:opacity-60">
                         {actionBusy === "wallet" ? <LoaderCircle className="size-4 animate-spin" /> : <Wallet className="size-4" />} Connect the guardian wallet
                       </button>
                     ) : (
-                      <button type="button" disabled={actionBusy === "bootstrap"} onClick={() => run("bootstrap", () => workflowApi.bootstrap(ws.id, token("principal")!))} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-[14px] bg-blue px-4 text-[13px] font-black text-white disabled:opacity-60">
+                      <button type="button" disabled={actionBusy === "bootstrap"} onClick={() => run("bootstrap", () => workflowApi.bootstrap(ws.id, token("principal")!))} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-[14px] bg-blue px-4 text-[13px] font-semibold text-white disabled:opacity-60">
                         {actionBusy === "bootstrap" ? <LoaderCircle className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />} {walletGuardianWs ? "Sign and create the mandate" : "Bootstrap mandate"}
                       </button>
                     )}
@@ -800,7 +800,7 @@ export default function WorldFairDeskPage() {
               </Card>
 
               <div className="flex flex-wrap items-center gap-3">
-                <span className="text-[12px] font-black uppercase tracking-[0.12em] text-ink-3">View as</span>
+                <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-ink-3">View as</span>
                 <div role="tablist" aria-label="Desk views" className="flex flex-wrap gap-1.5 rounded-[22px] border border-line bg-white p-1 shadow-soft sm:rounded-full">
                   {([...roles, "history", "api"] as Tab[]).map((t) => (
                     <button
@@ -808,7 +808,7 @@ export default function WorldFairDeskPage() {
                       role="tab"
                       aria-selected={tab === t}
                       onClick={() => setTab(t)}
-                      className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-black transition-colors ${tab === t ? "bg-navy-strong text-white" : "text-navy hover:bg-surface-soft"}`}
+                      className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold transition-colors ${tab === t ? "bg-navy-strong text-white" : "text-navy hover:bg-surface-soft"}`}
                     >
                       {t === "history" ? <History className="size-4" /> : t === "api" ? <SlidersHorizontal className="size-4" /> : null}
                       {t === "history" ? "History" : t === "api" ? "API & agents" : roleCopy[t].title}
@@ -826,20 +826,20 @@ export default function WorldFairDeskPage() {
                     <div className="flex items-center gap-3">
                       <Avatar name={names.operator} tone="bg-green-soft text-green-strong" />
                       <div>
-                        <p className="text-[16px] font-black text-navy-strong">{names.operator}</p>
+                        <p className="text-[16px] font-semibold text-navy-strong">{names.operator}</p>
                         <p className="text-[12px] font-semibold text-ink-2">{roleCopy.operator.blurb}</p>
                       </div>
                     </div>
                     <form onSubmit={submitIntent} className="mt-6 grid gap-4">
-                      <label className="text-[12px] font-black text-ink-2">{USE_CASES[caseOfWorkspace(ws)].amountLabel}
+                      <label className="text-[12px] font-semibold text-ink-2">{USE_CASES[caseOfWorkspace(ws)].amountLabel}
                         <div className="relative mt-1.5">
-                          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[26px] font-black text-ink-3">$</span>
-                          <input className="w-full rounded-[18px] border border-line bg-white py-4 pl-10 pr-4 text-[30px] font-black tabular text-navy-strong focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/10" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[26px] font-semibold text-ink-3">$</span>
+                          <input className="w-full rounded-[18px] border border-line bg-white py-4 pl-10 pr-4 font-display text-[40px] font-normal tabular text-navy-strong focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/10" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
                         </div>
                       </label>
                       <div className="flex flex-wrap gap-2">
                         {quickAmounts.map((q) => (
-                          <button key={q} type="button" onClick={() => setAmount((q / 1e6).toFixed(2))} className={`rounded-full border px-3 py-1.5 text-[12px] font-black ${q <= limitMicro ? "border-green/30 bg-green-soft text-green-strong" : "border-yellow/50 bg-yellow-soft text-orange-text"}`}>
+                          <button key={q} type="button" onClick={() => setAmount((q / 1e6).toFixed(2))} className={`rounded-full border px-3 py-1.5 text-[12px] font-semibold ${q <= limitMicro ? "border-green/30 bg-green-soft text-green-strong" : "border-yellow/50 bg-yellow-soft text-orange-text"}`}>
                             {usd(q)} · {q <= limitMicro ? "inside the limit" : "above the limit"}
                           </button>
                         ))}
@@ -847,13 +847,13 @@ export default function WorldFairDeskPage() {
                       <p className={`rounded-[14px] px-4 py-3 text-[13px] font-bold ${insideLimit ? "bg-green-soft text-green-strong" : "bg-yellow-soft text-orange-text"}`}>
                         {insideLimit ? `Under ${usd(limitMicro)}: executes now, nobody is asked.` : `Above ${usd(limitMicro)}: the program refuses it and asks ${names.principal} once for this exact trade.`}
                       </p>
-                      <details className="text-[12px] font-black text-ink-2">
+                      <details className="text-[12px] font-semibold text-ink-2">
                         <summary className="cursor-pointer text-navy">Advanced</summary>
                         <label className="mt-2 block">Max slippage (bps, 1–300)
                           <input className="mt-1 w-full rounded-[14px] border border-line px-3 py-2.5 text-[15px] font-bold text-navy-strong" inputMode="numeric" value={slippage} onChange={(e) => setSlippage(e.target.value)} />
                         </label>
                       </details>
-                      <button type="submit" disabled={actionBusy === "intent" || notReady || mandateStatus === "REVOKED"} className="flex min-h-13 items-center justify-center gap-2 rounded-[16px] bg-blue px-5 py-3.5 text-[15px] font-black text-white shadow-button transition-colors hover:bg-blue-strong disabled:opacity-60">
+                      <button type="submit" disabled={actionBusy === "intent" || notReady || mandateStatus === "REVOKED"} className="flex min-h-13 items-center justify-center gap-2 rounded-[16px] bg-blue px-5 py-3.5 text-[15px] font-semibold text-white shadow-button transition-colors hover:bg-blue-strong disabled:opacity-60">
                         {actionBusy === "intent" ? <><LoaderCircle className="size-4 animate-spin" /> Executing on Devnet…</> : <>Submit intent <ArrowRight className="size-4" /></>}
                       </button>
                       <p className="text-[11px] font-bold text-ink-3">Each submit carries an idempotency key: a network retry cannot execute twice.</p>
@@ -875,7 +875,7 @@ export default function WorldFairDeskPage() {
                     <div className="flex items-center gap-3">
                       <Avatar name={tab === "principal" ? names.principal : names.risk} tone={tab === "principal" ? "bg-blue-soft text-blue" : "bg-lavender-soft text-navy"} />
                       <div>
-                        <p className="text-[16px] font-black text-navy-strong">{tab === "principal" ? names.principal : names.risk} · decisions</p>
+                        <p className="text-[16px] font-semibold text-navy-strong">{tab === "principal" ? names.principal : names.risk} · decisions</p>
                         <p className="text-[12px] font-semibold text-ink-2">{roleCopy[tab].blurb}</p>
                       </div>
                     </div>
@@ -883,11 +883,11 @@ export default function WorldFairDeskPage() {
                       {pending.length ? pending.map((r) => (
                         <RequestCard key={r.id} req={r} names={names}>
                           <div className="mt-4 flex flex-wrap gap-2">
-                            <button type="button" disabled={Boolean(actionBusy)} onClick={() => decide(r, "APPROVE", tab)} className="inline-flex min-h-11 items-center gap-1.5 rounded-[14px] bg-green px-5 text-[14px] font-black text-white shadow-soft transition-opacity hover:opacity-90 disabled:opacity-60">
+                            <button type="button" disabled={Boolean(actionBusy)} onClick={() => decide(r, "APPROVE", tab)} className="inline-flex min-h-11 items-center gap-1.5 rounded-[14px] bg-green px-5 text-[14px] font-semibold text-white shadow-soft transition-opacity hover:opacity-90 disabled:opacity-60">
                               {actionBusy === `decide-${r.id}` ? <LoaderCircle className="size-4 animate-spin" /> : tab === "principal" && ws.roles.principal.wallet ? <Wallet className="size-4" /> : <Check className="size-4" />}
                               Approve exactly once
                             </button>
-                            <button type="button" disabled={Boolean(actionBusy)} onClick={() => decide(r, "REFUSE", tab)} className="inline-flex min-h-11 items-center gap-1.5 rounded-[14px] border border-loss/30 bg-white px-4 text-[14px] font-black text-loss-text disabled:opacity-60">
+                            <button type="button" disabled={Boolean(actionBusy)} onClick={() => decide(r, "REFUSE", tab)} className="inline-flex min-h-11 items-center gap-1.5 rounded-[14px] border border-loss/30 bg-white px-4 text-[14px] font-semibold text-loss-text disabled:opacity-60">
                               <X className="size-4" /> Refuse
                             </button>
                           </div>
@@ -895,12 +895,12 @@ export default function WorldFairDeskPage() {
                         </RequestCard>
                       )) : <p className="rounded-[18px] border border-dashed border-line p-6 text-center text-[13px] font-semibold text-ink-2">Nothing waiting. Requests appear here as soon as {names.operator} crosses the limit.</p>}
                     </div>
-                    <label className="mt-4 block text-[12px] font-black text-ink-2">Note with your decision (optional)
+                    <label className="mt-4 block text-[12px] font-semibold text-ink-2">Note with your decision (optional)
                       <input className="mt-1 w-full rounded-[14px] border border-line px-3 py-2.5 text-[14px] font-semibold" value={note} onChange={(e) => setNote(e.target.value)} maxLength={280} />
                     </label>
                     {requests.some((r) => r.status !== "PENDING") ? (
                       <details className="mt-5">
-                        <summary className="cursor-pointer text-[13px] font-black text-navy">Decided requests</summary>
+                        <summary className="cursor-pointer text-[13px] font-semibold text-navy">Decided requests</summary>
                         <div className="mt-3 grid gap-3">{requests.filter((r) => r.status !== "PENDING").slice(0, 10).map((r) => <RequestCard key={r.id} req={r} names={names} />)}</div>
                       </details>
                     ) : null}
@@ -917,7 +917,7 @@ export default function WorldFairDeskPage() {
                         </div>
                       ) : <p className="mt-2 text-[13px] font-semibold text-ink-2">Available once the mandate is live.</p>}
                       <details className="mt-4">
-                        <summary className="cursor-pointer text-[12px] font-black text-navy">Edit the asset rule</summary>
+                        <summary className="cursor-pointer text-[12px] font-semibold text-navy">Edit the asset rule</summary>
                         <form
                           className="mt-3 grid grid-cols-2 gap-2"
                           onSubmit={(e) => {
@@ -925,9 +925,9 @@ export default function WorldFairDeskPage() {
                             void run("rule", () => workflowApi.updateAssetRule(ws.id, token(tab)!, { ...(ruleAction ? { maxActionAmount: toBase(ruleAction) } : {}), ...(rulePeriod ? { maxPeriodAmount: toBase(rulePeriod) } : {}) }));
                           }}
                         >
-                          <label className="text-[11px] font-black text-ink-2">Max / action (devUSDC)<input className="mt-1 w-full rounded-[12px] border border-line px-2 py-2 text-[13px] font-bold" value={ruleAction} onChange={(e) => setRuleAction(e.target.value)} placeholder={String((mandate?.assetRule?.maxActionAmount ?? ws.policy.maxActionAmount) / 1e6)} /></label>
-                          <label className="text-[11px] font-black text-ink-2">Max / period (devUSDC)<input className="mt-1 w-full rounded-[12px] border border-line px-2 py-2 text-[13px] font-bold" value={rulePeriod} onChange={(e) => setRulePeriod(e.target.value)} placeholder={String((mandate?.assetRule?.maxPeriodAmount ?? ws.policy.maxPeriodAmount) / 1e6)} /></label>
-                          <button type="submit" disabled={Boolean(actionBusy) || notReady} className="col-span-2 rounded-[12px] border border-line px-3 py-2 text-[12px] font-black text-navy disabled:opacity-60">Update asset rule (resets period counters)</button>
+                          <label className="text-[11px] font-semibold text-ink-2">Max / action (devUSDC)<input className="mt-1 w-full rounded-[12px] border border-line px-2 py-2 text-[13px] font-bold" value={ruleAction} onChange={(e) => setRuleAction(e.target.value)} placeholder={String((mandate?.assetRule?.maxActionAmount ?? ws.policy.maxActionAmount) / 1e6)} /></label>
+                          <label className="text-[11px] font-semibold text-ink-2">Max / period (devUSDC)<input className="mt-1 w-full rounded-[12px] border border-line px-2 py-2 text-[13px] font-bold" value={rulePeriod} onChange={(e) => setRulePeriod(e.target.value)} placeholder={String((mandate?.assetRule?.maxPeriodAmount ?? ws.policy.maxPeriodAmount) / 1e6)} /></label>
+                          <button type="submit" disabled={Boolean(actionBusy) || notReady} className="col-span-2 rounded-[12px] border border-line px-3 py-2 text-[12px] font-semibold text-navy disabled:opacity-60">Update asset rule (resets period counters)</button>
                         </form>
                       </details>
                     </Card>
@@ -937,19 +937,19 @@ export default function WorldFairDeskPage() {
                         <Eyebrow>Your controls</Eyebrow>
                         <div className="mt-3 flex flex-wrap gap-2">
                           {mandateStatus === "ACTIVE" ? (
-                            <button type="button" disabled={Boolean(actionBusy)} onClick={() => run("pause", () => workflowApi.setStatus(ws.id, token("principal")!, "PAUSED"))} className="inline-flex items-center gap-1.5 rounded-[12px] border border-line px-3 py-2 text-[12px] font-black text-navy hover:border-blue/40"><Pause className="size-4" /> Pause</button>
+                            <button type="button" disabled={Boolean(actionBusy)} onClick={() => run("pause", () => workflowApi.setStatus(ws.id, token("principal")!, "PAUSED"))} className="inline-flex items-center gap-1.5 rounded-[12px] border border-line px-3 py-2 text-[12px] font-semibold text-navy hover:border-blue/40"><Pause className="size-4" /> Pause</button>
                           ) : null}
                           {mandateStatus === "PAUSED" ? (
-                            <button type="button" disabled={Boolean(actionBusy)} onClick={() => run("resume", () => workflowApi.setStatus(ws.id, token("principal")!, "ACTIVE"))} className="inline-flex items-center gap-1.5 rounded-[12px] border border-line px-3 py-2 text-[12px] font-black text-navy hover:border-blue/40"><Play className="size-4" /> Resume</button>
+                            <button type="button" disabled={Boolean(actionBusy)} onClick={() => run("resume", () => workflowApi.setStatus(ws.id, token("principal")!, "ACTIVE"))} className="inline-flex items-center gap-1.5 rounded-[12px] border border-line px-3 py-2 text-[12px] font-semibold text-navy hover:border-blue/40"><Play className="size-4" /> Resume</button>
                           ) : null}
                           {mandateStatus && mandateStatus !== "REVOKED" ? (
-                            <button type="button" disabled={Boolean(actionBusy)} onClick={() => { if (window.confirm("Revoke permanently? This mandate can never be reactivated.")) void run("revoke", () => workflowApi.setStatus(ws.id, token("principal")!, "REVOKED", "REVOKE")); }} className="inline-flex items-center gap-1.5 rounded-[12px] border border-loss/30 px-3 py-2 text-[12px] font-black text-loss-text"><AlertTriangle className="size-4" /> Revoke</button>
+                            <button type="button" disabled={Boolean(actionBusy)} onClick={() => { if (window.confirm("Revoke permanently? This mandate can never be reactivated.")) void run("revoke", () => workflowApi.setStatus(ws.id, token("principal")!, "REVOKED", "REVOKE")); }} className="inline-flex items-center gap-1.5 rounded-[12px] border border-loss/30 px-3 py-2 text-[12px] font-semibold text-loss-text"><AlertTriangle className="size-4" /> Revoke</button>
                           ) : null}
-                          <button type="button" disabled={Boolean(actionBusy) || notReady} onClick={() => run("topup", () => workflowApi.topUpVault(ws.id, token("principal")!))} className="inline-flex items-center gap-1.5 rounded-[12px] border border-line px-3 py-2 text-[12px] font-black text-navy hover:border-blue/40">Top up Devnet vault</button>
+                          <button type="button" disabled={Boolean(actionBusy) || notReady} onClick={() => run("topup", () => workflowApi.topUpVault(ws.id, token("principal")!))} className="inline-flex items-center gap-1.5 rounded-[12px] border border-line px-3 py-2 text-[12px] font-semibold text-navy hover:border-blue/40">Top up Devnet vault</button>
                         </div>
                         <form className="mt-4 flex flex-wrap items-end gap-2" onSubmit={(e) => { e.preventDefault(); if (newLimit) void run("policy", () => workflowApi.revisePolicy(ws.id, token("principal")!, { maxActionNotionalMicroUsd: toBase(newLimit) })); }}>
-                          <label className="text-[11px] font-black text-ink-2">New standing limit (USD)<input className="mt-1 w-32 rounded-[12px] border border-line px-2 py-2 text-[13px] font-bold" value={newLimit} onChange={(e) => setNewLimit(e.target.value)} placeholder={String(limitMicro / 1e6)} /></label>
-                          <button type="submit" disabled={Boolean(actionBusy) || notReady} className="rounded-[12px] bg-navy px-3 py-2 text-[12px] font-black text-white disabled:opacity-60">Revise policy</button>
+                          <label className="text-[11px] font-semibold text-ink-2">New standing limit (USD)<input className="mt-1 w-32 rounded-[12px] border border-line px-2 py-2 text-[13px] font-bold" value={newLimit} onChange={(e) => setNewLimit(e.target.value)} placeholder={String(limitMicro / 1e6)} /></label>
+                          <button type="submit" disabled={Boolean(actionBusy) || notReady} className="rounded-[12px] bg-navy px-3 py-2 text-[12px] font-semibold text-white disabled:opacity-60">Revise policy</button>
                         </form>
                         <p className="mt-2 text-[11px] font-bold text-ink-3">Any change to the mandate makes pending requests stale automatically.</p>
                         <div className="mt-4 border-t border-line-soft pt-4">
@@ -958,7 +958,7 @@ export default function WorldFairDeskPage() {
                           ) : ws.roles.principal.wallet ? (
                             <p className="flex items-center gap-2 text-[12px] font-bold text-green-strong"><Wallet className="size-4" /> Approvals require a signature from {short(ws.roles.principal.wallet)}</p>
                           ) : (
-                            <button type="button" disabled={Boolean(actionBusy)} onClick={bindWallet} className="inline-flex items-center gap-1.5 rounded-[12px] border border-line px-3 py-2 text-[12px] font-black text-navy"><Wallet className="size-4" /> Bind my wallet for approvals</button>
+                            <button type="button" disabled={Boolean(actionBusy)} onClick={bindWallet} className="inline-flex items-center gap-1.5 rounded-[12px] border border-line px-3 py-2 text-[12px] font-semibold text-navy"><Wallet className="size-4" /> Bind my wallet for approvals</button>
                           )}
                         </div>
                       </Card>
@@ -972,7 +972,7 @@ export default function WorldFairDeskPage() {
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <Eyebrow>What happened · newest first</Eyebrow>
                     {roles[0] ? (
-                      <button type="button" disabled={Boolean(actionBusy)} onClick={() => run("reconcile", () => workflowApi.reconcile(ws.id, token(roles[0])!))} className="rounded-full border border-line px-3 py-1.5 text-[12px] font-black text-navy">Reconcile unknown outcomes</button>
+                      <button type="button" disabled={Boolean(actionBusy)} onClick={() => run("reconcile", () => workflowApi.reconcile(ws.id, token(roles[0])!))} className="rounded-full border border-line px-3 py-1.5 text-[12px] font-semibold text-navy">Reconcile unknown outcomes</button>
                     ) : null}
                   </div>
                   <ol className="mt-3 divide-y divide-line-soft">
