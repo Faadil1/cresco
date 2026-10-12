@@ -695,13 +695,13 @@ export default function WorldFairDeskPage() {
   const quickAmounts = [Math.max(50_000, Math.round(limitMicro * 0.6 / 10_000) * 10_000), Math.round(limitMicro * 1.5 / 10_000) * 10_000];
 
   return (
-    <main id="main" className="relative min-h-screen bg-bg">
+    <main id="main" className="cresco-app-workspace relative min-h-screen">
       <div className="relative mx-auto max-w-[1240px] px-5 pb-20 pt-6 md:px-10 md:pt-8">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <Wordmark size="md" />
           <nav aria-label="CRESCO product" className="flex flex-wrap gap-2">
-            <Link href="/" className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft hover:border-blue/35">CRESCO home</Link>
-            <Link href="/worlds-fair" className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft hover:border-blue/35">Technical proof</Link>
+            <Link href="/" className="rounded-full border border-line bg-surface/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft hover:border-green/35">CRESCO home</Link>
+            <Link href="/worlds-fair" className="rounded-full border border-line bg-surface/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft hover:border-green/35">Technical proof</Link>
             {id ? (
               <button type="button" onClick={() => { saveKeychain({ workspaceId: null, tokens: {} }); setKeychain({ workspaceId: null, tokens: {} }); setWs(null); setMandate(null); setRequests([]); setEvents([]); }} className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft">
                 Leave workspace
@@ -715,7 +715,7 @@ export default function WorldFairDeskPage() {
             <div className="mt-10"><JourneySteps current={0} /></div>
             <section className="mt-10">
               <h1 className="max-w-[18ch] font-display text-[44px] font-normal leading-[0.98] tracking-[-0.03em] text-navy-strong md:text-[64px]">
-                Set the line. <em className="text-blue">Everything else follows.</em>
+                Set the line. <em className="text-green-strong">Everything else follows.</em>
               </h1>
               <div className="mt-6 flex flex-wrap items-center gap-4">
                 <UseCaseToggle value={landingCase} onChange={setLandingCase} />
