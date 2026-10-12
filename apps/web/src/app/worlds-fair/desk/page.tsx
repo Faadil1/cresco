@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 
 import { Wordmark } from "@/components/shell";
-import { Avatar, EventRow, ExternalChip, GuardianBadge, HowItWorks, MandateRail, ProofStrip, railPoints } from "./desk-ui";
+import { Avatar, EventRow, ExternalChip, GuardianBadge, MandateRail, railPoints } from "./desk-ui";
 import {
   devUsdc,
   loadKeychain,
@@ -449,13 +449,31 @@ function CreateWorkspace({ useCase, onCreated }: { useCase: UseCase; onCreated: 
   );
 }
 
+const JOURNEY = ["Set the line", "Share one link per person", "Create the mandate", "Act and approve"];
+
+// Where am I? A four-step path from an empty desk to a live mandate.
+function JourneySteps({ current }: { current: number }) {
+  return (
+    <ol aria-label="Your progress" className="flex flex-wrap gap-x-6 gap-y-2 text-[13px]">
+      {JOURNEY.map((label, i) => (
+        <li key={label} aria-current={i === current ? "step" : undefined} className={`flex items-center gap-2 ${i === current ? "text-navy-strong" : i < current ? "text-ink-3" : "text-ink-3/70"}`}>
+          <span className={`grid size-6 place-items-center rounded-full text-[11px] font-semibold ${i === current ? "bg-blue text-white" : i < current ? "bg-navy-strong text-bg" : "border border-line"}`}>
+            {i < current ? <Check aria-hidden className="size-3.5" /> : i + 1}
+          </span>
+          {label}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 function TokenHandoff({ ws, onDone }: { ws: CreatedWorkspace; onDone: () => void }) {
   const [copied, setCopied] = useState<string | null>(null);
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   return (
     <Card className="border-blue/30">
       <Eyebrow>Role links · shown once</Eyebrow>
-      <h2 className="mt-2 text-[22px] font-semibold text-navy-strong">Hand each role its own link</h2>
+      <h2 className="mt-2 font-display text-[36px] font-normal leading-tight tracking-[-0.02em] text-navy-strong">Hand each role its own link</h2>
       <p className="mt-1 text-[13px] font-semibold text-ink-2">{ws.tokenNotice} This browser keeps all three so you can try every role.</p>
       <div className="mt-4 grid gap-3">
         {(["operator", "principal", "risk"] as WorkflowRole[]).map((role) => {
@@ -484,7 +502,7 @@ function TokenHandoff({ ws, onDone }: { ws: CreatedWorkspace; onDone: () => void
           );
         })}
       </div>
-      <button type="button" onClick={onDone} className="mt-4 inline-flex items-center gap-1 text-[13px] font-semibold text-blue">
+      <button type="button" onClick={onDone} className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-full bg-navy-strong px-6 text-[15px] font-medium text-bg hover:bg-navy">
         Continue to the desk <ArrowRight className="size-4" />
       </button>
     </Card>
@@ -694,41 +712,38 @@ export default function WorldFairDeskPage() {
 
         {!id ? (
           <>
-            <section className="mt-10 lg:mt-12">
-              <p className="text-[12px] font-semibold uppercase tracking-[0.13em] text-blue">CRESCO workspace · Solana Devnet</p>
-              <h1 className="mt-4 max-w-[20ch] font-display text-[44px] font-normal leading-[0.98] tracking-[-0.03em] text-navy-strong md:text-[68px]">
-                Start a workspace. Set the line. Share one link per person.
+            <div className="mt-10"><JourneySteps current={0} /></div>
+            <section className="mt-10">
+              <h1 className="max-w-[18ch] font-display text-[44px] font-normal leading-[0.98] tracking-[-0.03em] text-navy-strong md:text-[64px]">
+                Set the line. <em className="text-blue">Everything else follows.</em>
               </h1>
-              <p className="mt-4 max-w-[62ch] text-[16px] font-semibold leading-relaxed text-ink-2">{caseCopy.pitch}</p>
-              <div className="mt-5 flex flex-wrap items-center gap-3">
+              <div className="mt-6 flex flex-wrap items-center gap-4">
                 <UseCaseToggle value={landingCase} onChange={setLandingCase} />
-                <span className="text-[13px] font-semibold text-ink-3">Same CRESCO program, two kinds of people.</span>
+                <Link href="/how-it-works" className="text-[14px] font-medium text-blue hover:underline">How it works</Link>
               </div>
-            </section>
-
-            <section className="mt-8">
-              <HowItWorks useCase={landingCase} />
             </section>
 
             <section className="mt-8">
               <CreateWorkspace useCase={landingCase} onCreated={onCreated} />
             </section>
-
-            <section className="mt-6">
-              <ProofStrip />
-            </section>
           </>
         ) : null}
 
         <div className="mt-8 grid gap-6">
-          {handoff ? <TokenHandoff ws={handoff} onDone={() => setHandoff(null)} /> : null}
+          {handoff ? (
+            <>
+              <JourneySteps current={1} />
+              <TokenHandoff ws={handoff} onDone={() => setHandoff(null)} />
+            </>
+          ) : null}
           {loadError ? <p role="alert" className="rounded-[16px] border border-loss/25 bg-loss-soft p-4 text-[13px] font-bold text-loss-text">{loadError}</p> : null}
           {id && !ws && !loadError ? (
             <p className="flex items-center gap-2 text-[14px] font-bold text-ink-2"><LoaderCircle className="size-4 animate-spin" /> Loading the workspace…</p>
           ) : null}
 
-          {ws ? (
+          {ws && !handoff ? (
             <>
+              {notReady && ws.chain.status === "NOT_BOOTSTRAPPED" ? <JourneySteps current={2} /> : null}
               <Card className="md:p-7">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>

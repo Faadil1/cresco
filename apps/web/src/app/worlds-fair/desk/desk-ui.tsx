@@ -101,7 +101,7 @@ export function railPoints(events: WorkflowEvent[], requests: ExceptionRequest[]
     .map(({ id, amountMicroUsd, kind }) => ({ id, amountMicroUsd, kind }));
 }
 
-const STEPS: Record<UseCase, { title: string; body: string }[]> = {
+export const STEPS: Record<UseCase, { title: string; body: string }[]> = {
   family: [
     { title: "Act alone", body: "Maya invests $0.30. It is under her $0.50 limit, so it executes on Solana. Nobody is asked." },
     { title: "Ask once", body: "She wants $0.75. The CRESCO program refuses it and files one exact request to her parent." },
