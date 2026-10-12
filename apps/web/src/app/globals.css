@@ -225,7 +225,7 @@ body {
   color: var(--cresco-green-strong);
 }
 .cresco-demo-card {
-  position: relative;
+  /* Position is set by the caller (absolute for hero/example overlays). */
   border: 1px solid rgba(225, 215, 197, .86);
   border-radius: 18px;
   background: rgba(255, 253, 248, .97);
