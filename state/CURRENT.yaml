@@ -124,7 +124,7 @@ operator_principal_workflow_v0_4:
     CAP-01_principal_creates_standing_mandate: LIVE_DEVNET__SERVER_HELD_GUARDIAN
     CAP-02_strategy_submits_own_intent_via_api: LIVE_DEVNET_CAMPAIGN_5_OF_5
     CAP-03_refusal_policy_diff_durable_request: LIVE_DEVNET_CAMPAIGN_5_OF_5
-    CAP-04_principal_grants_exact_one_use_exception: LIVE_DEVNET_CAMPAIGN_5_OF_5__SERVER_GUARDIAN__PRINCIPAL_WALLET_GUARDIAN_LOCAL_PR40
+    CAP-04_principal_grants_exact_one_use_exception: LIVE_DEVNET_CAMPAIGN_5_OF_5__SERVER_GUARDIAN__PRINCIPAL_WALLET_GUARDIAN_LIVE_DEVNET_2026-10-12
     CAP-05_exact_once_mutation_replay_stale_hard: PROVEN_LIVE_IN_LAB__REUSED_BUILDERS
     CAP-06_venue_or_evidence_failure_rollback: PROVEN_LIVE_IN_LAB__REUSED_BUILDERS
     CAP-07_pause_resume_revoke_revise_with_stale_invalidation: IMPLEMENTED_LOCAL
@@ -135,7 +135,7 @@ operator_principal_workflow_v0_4:
     CAP-12_strategy_api_openapi_example_client: IMPLEMENTED_LOCAL
   robustness: [idempotency_key, per_workspace_write_lease, request_expiry, interrupted_approval_to_unknown, unknown_never_success, signature_reconciliation, browser_e2e_mocked_api, repeatability_campaign_script]
   tests: {root_node: 195, web_vitest: 72, e2e_desk_chromium_local: 1}
-  remaining_gap_to_full_non_custodial: principal-wallet guardian implemented LOCAL in PR #40; owner Phantom validation pending (docs/worlds-fair/PHANTOM-VALIDATION-PROTOCOL.md)
+  remaining_gap_to_full_non_custodial: principal-wallet guardian LIVE on Devnet (opt-in), owner Phantom run 2026-10-12, ws-8431126ec17347e0, record in docs/worlds-fair/PRINCIPAL-WALLET-GUARDIAN.md; revoke/revise in wallet mode not exercised live
   ai_operator_mcp: LOCAL  # integrations/mcp, tested via real workflow + router with fake chain
   live_verification_steps: docs/WORLDS-FAIR-OPERATOR-PRINCIPAL-WORKFLOW.md
 
@@ -145,7 +145,7 @@ product_unification_2026_10_12:
   family_app: "first-class again (owner correction 2026-10-12); separate sessions from v0.4 workspace roles; no identity or data migration"
   identity_reality: SEPARATE_SESSIONS  # legacy demo-session auth vs v0.4 per-workspace role tokens; shared Solana program is not shared login
   audit: docs/worlds-fair/RECONCILIATION-2026-10-12-PM.md
-open_prs_merge_order: ["#38 campaign evidence", "#39 enforcement truth", "#40 principal-wallet guardian", "#41 unified entry", "integrations + UI (stacked on #40, contains #38/#39/#41)"]
+merged_2026_10_12: ["#38", "#39", "#40", "#41 (via #42)", "#42", "#43", "#44", "#45"]  # main 434482e at the Phantom run
 
 exact_next_gate: SUBMISSION__PITCH_AND_DEMO_VIDEOS_THEN_COLOSSEUM_FINAL_SUBMIT
 exact_next_owner: HUMAN_FOR_DEPLOY_AND_DEVNET_WRITES__PBPD_FOR_ANY_REWORK

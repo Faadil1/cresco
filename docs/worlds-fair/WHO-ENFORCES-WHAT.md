@@ -1,8 +1,11 @@
 # Who enforces what (submitted build, 2026-10-12)
 
 CRESCO's claim is that the capital path, not the user interface, is the guard. That is true against the
-actor (the teen, strategy or agent). It is not yet true against the CRESCO server itself. This page says
-exactly where the line is today.
+actor (the teen, strategy or agent). Against the CRESCO server itself, it depends on the workspace mode:
+with the opt-in **principal-wallet guardian** (LIVE on Devnet since 2026-10-12, see
+[PRINCIPAL-WALLET-GUARDIAN.md](PRINCIPAL-WALLET-GUARDIAN.md)), the principal's wallet signs every guardian
+instruction. In the default mode, the guardian is a server-held Devnet key. The table describes the default
+mode; the last section describes the wallet mode.
 
 | Guarantee | Enforced by | Notes |
 |---|---|---|
@@ -16,16 +19,20 @@ exactly where the line is today.
 | Pause, resume, revoke, revise, asset-rule edits are the principal's decision | **CRESCO API** | Executed on-chain by the server-held guardian key |
 | An uncertain outcome is never shown as success | **CRESCO API** | UNKNOWN until reconciled from transaction signatures |
 
-## What a compromised CRESCO server could do today
+## What a compromised CRESCO server could do (default server-guardian mode)
 
 - Grant an exception, change limits, pause or resume, because it holds the guardian key.
 - It could not make the actor exceed limits without signing as the guardian, and every such change is a
   public, signed Devnet transaction that the history and Explorer expose.
 
-## What closes the gap
+## Principal-wallet guardian mode (opt-in, LIVE on Devnet 2026-10-12)
 
-Make the principal's own wallet the on-chain guardian. The program already requires the guardian's
-signature for `initialize_charter`, `transition_mandate`, `configure_mandate_policy`, `set_mandate_status`,
-`update_asset_rule` and `grant_allowance_once`; no program change is needed. The server would prepare
-transactions and the principal's wallet would sign and pay for them. Until then, the guardian is a
-server-held Devnet key and CRESCO does not claim non-custodial approval.
+The principal's wallet is `charter.guardian`. Creating the mandate, every exact exception
+(`grant_allowance_once`), pause and resume were signed by the owner's Phantom wallet in a live Devnet run
+(workspace `ws-8431126ec17347e0`, receipts in PRINCIPAL-WALLET-GUARDIAN.md). The server prepares
+transactions, pays execution fees, funds the Devnet vault and co-signs a memo that grants nothing; it
+cannot grant, pause, resume or change limits. It accepts only the byte-identical transaction it prepared.
+
+Still server-side in this mode: the operator's delegate key (it acts inside the standing mandate, which is
+the product) and the Devnet funding. Revoke and limit revision in wallet mode share the pause code path but
+were not exercised live.

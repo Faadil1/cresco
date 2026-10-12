@@ -1,6 +1,6 @@
 # Phantom validation protocol: principal-wallet guardian (PR #40)
 
-Run by the owner. Until the record at the end is filled with real signatures, the mode stays **LOCAL** and must not be described as live.
+Run by the owner. **Completed on 2026-10-12: LIVE.** The full record with Explorer receipts is in [PRINCIPAL-WALLET-GUARDIAN.md](PRINCIPAL-WALLET-GUARDIAN.md#live-test-record-owner-phantom-solana-devnet-2026-10-12).
 
 ## Preconditions
 
@@ -28,13 +28,6 @@ Negative checks (optional):
 - Reject in Phantom at step 7: the request stays PENDING and nothing is granted.
 - Try to bind a second wallet after step 3: refused with `GUARDIAN_WALLET_FIXED`.
 
-## Record (fill in, then this mode can be called LIVE on Devnet)
+## Record
 
-- Date/time, deployed commit:
-- Workspace id:
-- Phantom address (guardian):
-- Bootstrap signature:
-- Grant signature (wallet-signed):
-- Execution signature:
-- Pause signature (wallet-signed):
-- Screenshots: Phantom prompt for the grant; Explorer charter showing `guardian`
+Filled on 2026-10-12: see [PRINCIPAL-WALLET-GUARDIAN.md](PRINCIPAL-WALLET-GUARDIAN.md#live-test-record-owner-phantom-solana-devnet-2026-10-12). Workspace `ws-8431126ec17347e0`, guardian `F1evavYnc3ScKDvfyCvws91Zj2bGAtyGzW6JyjUwSofp`.

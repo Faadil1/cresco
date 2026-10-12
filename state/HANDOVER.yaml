@@ -34,7 +34,7 @@ current_truth:
   main_commit: 43e62dfb2f699772e2471a7456b0af67bfa61536
   public_frontend_owner_deployed: https://cresco.faadil-casecraft.workers.dev
   v0_4_workflow_live_devnet_campaign: 5_OF_5_OWNER_RUN_2026-10-12
-  principal_wallet_guardian: LOCAL_PR40__OWNER_PHANTOM_VALIDATION_PENDING
+  principal_wallet_guardian: LIVE_DEVNET_OWNER_PHANTOM_2026-10-12__ws-8431126ec17347e0
   ai_operator_mcp: LOCAL
   one_product_entry: LOCAL_BRANCH_claude/integrations-and-ui-2026-10-12__CONTAINS_PR41
   product_live: true
@@ -55,11 +55,11 @@ workstream_priority:
   remaining_material_depth_gaps:
     - current_main_public_runtime_binding_after_PR29_reliability_fix
     - legacy_family_app_sessions_not_converged_with_workspace_roles
-    - principal_wallet_guardian_live_validation_pending_owner
+    - principal_wallet_guardian_revoke_and_revise_not_exercised_live
     - workspace_capacity_25_and_lab_funding_for_external_tests
     - external_target_operator_value_and_wtp_not_proven
     - time_to_first_value_and_operational_economics_not_measured
-  next_highest_value_depth_delta: OWNER_PHANTOM_VALIDATION_THEN_REAL_TESTER_ROUND_ON_VERIFIED_PUBLIC_URL
+  next_highest_value_depth_delta: REAL_TESTER_ROUND_ON_VERIFIED_PUBLIC_URL
   public_deploy_stop_condition: BLOCKED_MISSING_CLOUDFLARE_GITHUB_SECRETS
   source_side_product_work_stop_condition: NONE
   demo_packaging_allowed: false
@@ -69,7 +69,7 @@ do_not_claim:
   - latest_main_is_current_public_runtime
   - public_redeploy_completed
   - mainnet_execution
-  - principal_wallet_guardian_live_before_owner_phantom_record
+  - principal_wallet_guardian_as_default_mode  # it is opt-in; default workspaces use the server-held lab key
   - tester_feedback_as_customer_validation
   - real_securities_execution
   - proof_receipt_equals_public_runtime_binding
