@@ -12,8 +12,8 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
   return (
     <main id="main" className="mx-auto flex min-h-dvh max-w-[420px] flex-col items-center justify-center px-5 text-center">
       <PlantPot className="size-24" />
-      <h1 className="mt-4 text-[26px] font-black text-navy-strong">Something went wrong</h1>
-      <p className="mt-2 text-[15px] font-semibold text-ink-2">Nothing was bought or sent. You can try again, or reset the demo on this device.</p>
+      <h1 className="mt-4 text-[34px] font-display font-normal text-navy-strong">Something went wrong</h1>
+      <p className="mt-2 text-[15px] text-ink-2">Nothing was bought or sent. You can try again, or reset the demo on this device.</p>
       <div className="mt-6 w-full space-y-3">
         <ActionButton onClick={reset}>Try again</ActionButton>
         <ActionButton

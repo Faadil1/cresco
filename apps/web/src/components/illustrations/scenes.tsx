@@ -1,216 +1,155 @@
-import { useId } from "react";
 import type { IllustrationKey, MarketAsset } from "@/domain/types";
+
+import { P, STROKE, a11y } from "./palette";
 
 type SvgProps = { className?: string; title?: string };
 
-function a11y(title?: string) {
-  return title ? { role: "img" as const, "aria-label": title } : { "aria-hidden": true as const };
-}
-
-function Backdrop({ id, from, to }: { id: string; from: string; to: string }) {
-  return (
-    <>
-      <defs>
-        <linearGradient id={`${id}bd`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor={from} />
-          <stop offset="1" stopColor={to} />
-        </linearGradient>
-      </defs>
-      <rect width="320" height="200" fill={`url(#${id}bd)`} />
-    </>
-  );
-}
-
-function MiniKid({ x, y, s = 1 }: { x: number; y: number; s?: number }) {
-  return (
-    <g transform={`translate(${x} ${y}) scale(${s})`}>
-      <path d="M-26 70c2-22 12-34 26-34s24 12 26 34z" fill="#2d6ff0" />
-      <rect x="-6" y="24" width="12" height="14" rx="4" fill="#e0a57c" />
-      <ellipse cx="0" cy="10" rx="19" ry="20" fill="#f3c39c" />
-      <path d="M-19 8c-3-15 6-25 19-25 7 0 12 2 15 5 6 3 8 8 6 16-2-5-5-7-8-9-4 5-11 6-17 4-5-1-9 2-12 5z" fill="#5b3421" />
-      <ellipse cx="-7" cy="12" rx="2.3" ry="2.8" fill="#2b2238" />
-      <ellipse cx="8" cy="12" rx="2.3" ry="2.8" fill="#2b2238" />
-      <path d="M-5 20c3 3 8 3 11 0" stroke="#9b4a3a" strokeWidth="2" fill="none" strokeLinecap="round" />
-      <circle cx="-12" cy="18" r="3" fill="#f59f8b" opacity=".45" />
-      <circle cx="13" cy="18" r="3" fill="#f59f8b" opacity=".45" />
-    </g>
-  );
-}
-
-/** Tony's Pizza — the ownership metaphor from the approved lesson screen. */
-export function PizzaShopScene({ className, title, caption }: SvgProps & { caption?: string }) {
-  const id = useId();
+// Lesson scenes share one frame: a fog card, a fine ink drawing and a single
+// accent that marks the idea of the lesson.
+function Frame({ children, className, title }: SvgProps & { children: React.ReactNode }) {
   return (
     <svg viewBox="0 0 320 200" className={className} {...a11y(title)}>
-      <Backdrop id={id} from="#dff0ff" to="#fff5e6" />
-      <circle cx="40" cy="150" r="30" fill="#8fdc9f" />
-      <circle cx="286" cy="148" r="28" fill="#8fdc9f" />
-      {/* shop */}
-      <rect x="54" y="52" width="212" height="128" rx="6" fill="#fff4e4" />
-      <rect x="54" y="52" width="212" height="128" rx="6" fill="none" stroke="#f2d7b3" strokeWidth="2" />
-      <rect x="76" y="22" width="168" height="34" rx="10" fill="#c7372f" />
-      <text x="160" y="46" textAnchor="middle" fontSize="18" fontWeight="900" fill="#ffe7a8" letterSpacing="1">
-        TONY&apos;S PIZZA
-      </text>
-      <path d="M48 62h224l-10 24H58z" fill="#e24a3b" />
-      {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-        <path key={i} d={`M${66 + i * 30} 62h15l-3 24h-15z`} fill="#fff" opacity=".9" />
-      ))}
-      <rect x="72" y="98" width="70" height="52" rx="6" fill="#bfe0ff" />
-      <rect x="182" y="98" width="62" height="82" rx="6" fill="#8f5a3a" />
-      <circle cx="232" cy="142" r="3" fill="#ffd36b" />
-      {/* pizza */}
-      <ellipse cx="160" cy="176" rx="64" ry="18" fill="#102b63" opacity=".08" />
-      <circle cx="160" cy="150" r="46" fill="#f2b04b" />
-      <circle cx="160" cy="150" r="39" fill="#ffd36b" />
-      <circle cx="160" cy="150" r="36" fill="#f46a4e" opacity=".22" />
-      {Array.from({ length: 10 }).map((_, i) => {
-        const a = (i / 10) * Math.PI * 2;
-        return (
-          <line key={i} x1="160" y1="150" x2={160 + Math.cos(a) * 39} y2={150 + Math.sin(a) * 39} stroke="#e9a13a" strokeWidth="1.4" />
-        );
+      <rect width="320" height="200" fill={P.surface} />
+      <path d="M24 176h272" stroke={P.line} />
+      {children}
+    </svg>
+  );
+}
+
+/** Owning one slice of a shop: the ownership metaphor of the first lesson. */
+export function PizzaShopScene({ className, title, caption }: SvgProps & { caption?: string }) {
+  const cx = 160;
+  const cy = 98;
+  const r = 62;
+  const slices = 8;
+  const pt = (i: number) => {
+    const a = (i / slices) * Math.PI * 2 - Math.PI / 2;
+    return [cx + r * Math.cos(a), cy + r * Math.sin(a)] as const;
+  };
+  const [x0, y0] = pt(1);
+  const [x1, y1] = pt(2);
+  return (
+    <Frame className={className} title={title}>
+      <circle cx={cx} cy={cy} r={r + 8} fill={P.ochreSoft} />
+      <circle cx={cx} cy={cy} r={r} fill={P.white} stroke={P.ink} strokeWidth="1.5" />
+      {Array.from({ length: slices }, (_, i) => {
+        const [x, y] = pt(i);
+        return <path key={i} d={`M${cx} ${cy}L${x.toFixed(2)} ${y.toFixed(2)}`} stroke={P.line} strokeWidth="1.25" />;
       })}
-      {[
-        [146, 136], [174, 140], [152, 164], [178, 162], [160, 150], [138, 154], [168, 126],
-      ].map(([x, y], i) => (
-        <circle key={i} cx={x} cy={y} r="5" fill="#d8413a" />
+      <path d={`M${cx} ${cy}L${x0.toFixed(2)} ${y0.toFixed(2)}A${r} ${r} 0 0 1 ${x1.toFixed(2)} ${y1.toFixed(2)}Z`} fill={P.blue} transform="translate(8 -4)" />
+      {[[136, 76], [178, 130], [130, 122], [190, 66]].map(([x, y]) => (
+        <circle key={`${x}-${y}`} cx={x} cy={y} r="4" fill={P.ochre} opacity=".7" />
       ))}
-      {/* the one piece */}
-      <path d="M160 150L199 150A39 39 0 0 1 191.55 172.92Z" fill="#fff3c4" stroke="#1769f6" strokeWidth="2.5" strokeLinejoin="round" />
       {caption ? (
         <g>
-          <rect x="198" y="164" width="44" height="24" rx="12" fill="#1769f6" />
-          <text x="220" y="181" textAnchor="middle" fontSize="13" fontWeight="800" fill="#fff">
+          <rect x="236" y="34" width="56" height="26" rx="13" fill={P.ink} />
+          <text x="264" y="51.5" textAnchor="middle" fontSize="13" fontWeight="600" fill={P.white} fontFamily="Inter, sans-serif">
             {caption}
           </text>
+          <path d="M236 47c-14 0-20 4-24 12" {...STROKE} strokeWidth={1.25} />
         </g>
       ) : null}
-      <MiniKid x={276} y={100} s={0.95} />
-    </svg>
+    </Frame>
   );
 }
 
 function StorefrontScene({ className, title }: SvgProps) {
-  const id = useId();
   return (
-    <svg viewBox="0 0 320 200" className={className} {...a11y(title)}>
-      <Backdrop id={id} from="#e8faf8" to="#fff9f1" />
-      <rect x="30" y="70" width="60" height="110" rx="5" fill="#d7e5ff" />
-      <rect x="236" y="56" width="56" height="124" rx="5" fill="#e5deff" />
-      <rect x="92" y="60" width="140" height="120" rx="6" fill="#fff" />
-      <path d="M86 60h152l-10 26H96z" fill="#21b66f" />
-      {[0, 1, 2, 3, 4].map((i) => (
-        <path key={i} d={`M${104 + i * 26} 60h13l-2 26h-13z`} fill="#fff" opacity=".85" />
+    <Frame className={className} title={title}>
+      <path d="M92 176V78h136v98" fill={P.white} stroke={P.ink} strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M84 78l14-30h124l14 30z" fill={P.blueSoft} stroke={P.ink} strokeWidth="1.5" strokeLinejoin="round" />
+      {[0, 1, 2, 3].map((i) => (
+        <path key={i} d={`M${84 + i * 38} 78c0 9 6 14 19 14s19-5 19-14`} fill={i === 1 ? P.blue : P.white} stroke={P.ink} strokeWidth="1.5" />
       ))}
-      <rect x="104" y="98" width="56" height="44" rx="5" fill="#bfe0ff" />
-      <rect x="172" y="98" width="46" height="82" rx="5" fill="#1769f6" />
-      <circle cx="210" cy="140" r="3" fill="#fff" />
-      <rect x="112" y="40" width="100" height="22" rx="8" fill="#102b63" />
-      <text x="162" y="56" textAnchor="middle" fontSize="12" fontWeight="800" fill="#fff">OPEN</text>
-      <MiniKid x={58} y={120} s={0.85} />
-      <g>
-        <circle cx="270" cy="150" r="14" fill="#ffbc32" />
-        <text x="270" y="155" textAnchor="middle" fontSize="14" fontWeight="900" fill="#fff">$</text>
-      </g>
-    </svg>
+      <rect x="108" y="112" width="48" height="40" rx="3" fill={P.fog} stroke={P.ink} strokeWidth="1.25" />
+      <path d="M176 176v-58h30v58" fill={P.surface} stroke={P.ink} strokeWidth="1.5" />
+      <circle cx="200" cy="148" r="2" fill={P.ink} />
+      <path d="M118 140l10-10 8 6 12-14" stroke={P.sage} strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </Frame>
   );
 }
 
 function ChartScene({ className, title }: SvgProps) {
-  const id = useId();
+  const pts = "48,150 82,132 112,140 146,108 178,118 210,82 244,92 274,56";
   return (
-    <svg viewBox="0 0 320 200" className={className} {...a11y(title)}>
-      <Backdrop id={id} from="#f0edff" to="#fff9f1" />
-      <rect x="40" y="30" width="240" height="140" rx="16" fill="#fff" />
-      <path d="M60 140L100 118L130 128L170 90L200 100L250 56" stroke="#21b66f" strokeWidth="5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M60 140L100 118L130 128L170 90L200 100L250 56V150H60z" fill="#21b66f" opacity=".12" />
-      <circle cx="250" cy="56" r="7" fill="#21b66f" />
-      <g>
-        <rect x="64" y="44" width="58" height="22" rx="11" fill="#e8f8ef" />
-        <text x="93" y="59" textAnchor="middle" fontSize="11" fontWeight="800" fill="#139459">Buyers ↑</text>
-      </g>
-      <MiniKid x={270} y={130} s={0.8} />
-    </svg>
+    <Frame className={className} title={title}>
+      {[60, 100, 140].map((y) => (
+        <path key={y} d={`M40 ${y}h240`} stroke={P.line} strokeDasharray="2 5" />
+      ))}
+      <polygon points={`${pts} 274,176 48,176`} fill={P.blueSoft} />
+      <polyline points={pts} fill="none" stroke={P.blue} strokeWidth="2.25" strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx="274" cy="56" r="5" fill={P.white} stroke={P.blue} strokeWidth="2" />
+      <circle cx="146" cy="108" r="3" fill={P.ink} />
+    </Frame>
   );
 }
 
 function ScaleScene({ className, title }: SvgProps) {
-  const id = useId();
   return (
-    <svg viewBox="0 0 320 200" className={className} {...a11y(title)}>
-      <Backdrop id={id} from="#fff5d8" to="#fff9f1" />
-      <path d="M160 40v120" stroke="#102b63" strokeWidth="6" strokeLinecap="round" />
-      <path d="M120 170h80" stroke="#102b63" strokeWidth="8" strokeLinecap="round" />
-      <path d="M80 70L240 54" stroke="#102b63" strokeWidth="5" strokeLinecap="round" />
-      <path d="M80 70l-24 50h48z" fill="none" stroke="#8b96a8" strokeWidth="2" />
-      <path d="M240 54l-24 50h48z" fill="none" stroke="#8b96a8" strokeWidth="2" />
-      <ellipse cx="80" cy="122" rx="30" ry="7" fill="#eb5757" />
-      <text x="80" y="112" textAnchor="middle" fontSize="12" fontWeight="800" fill="#eb5757">RISK</text>
-      <ellipse cx="240" cy="106" rx="30" ry="7" fill="#21b66f" />
-      <text x="240" y="96" textAnchor="middle" fontSize="12" fontWeight="800" fill="#139459">REWARD</text>
-      <circle cx="160" cy="40" r="8" fill="#ffbc32" />
-    </svg>
+    <Frame className={className} title={title}>
+      <path d="M160 40v136M128 176h64M84 70h152" {...STROKE} />
+      <circle cx="160" cy="40" r="5" fill={P.ink} />
+      <path d="M84 70l-24 52h48z" fill="none" stroke={P.ink} strokeWidth="1.25" strokeLinejoin="round" />
+      <path d="M236 70l-24 52h48z" fill="none" stroke={P.ink} strokeWidth="1.25" strokeLinejoin="round" />
+      <path d="M56 122a28 10 0 0 0 56 0z" fill={P.sageSoft} stroke={P.ink} strokeWidth="1.5" />
+      <path d="M208 122a28 10 0 0 0 56 0z" fill={P.blueSoft} stroke={P.ink} strokeWidth="1.5" />
+      <circle cx="84" cy="112" r="9" fill={P.sage} />
+      <rect x="226" y="102" width="20" height="18" rx="3" fill={P.blue} />
+    </Frame>
   );
 }
 
 function BasketScene({ className, title }: SvgProps) {
-  const id = useId();
   return (
-    <svg viewBox="0 0 320 200" className={className} {...a11y(title)}>
-      <Backdrop id={id} from="#e8f8ef" to="#fff9f1" />
-      <circle cx="118" cy="78" r="22" fill="#1769f6" />
-      <circle cx="160" cy="66" r="24" fill="#21b66f" />
-      <circle cx="204" cy="80" r="22" fill="#ffbc32" />
-      <circle cx="140" cy="96" r="18" fill="#8b75f7" />
-      <circle cx="184" cy="98" r="18" fill="#ff7aa8" />
-      <path d="M82 104h156l-16 70H98z" fill="#d4883f" />
-      <path d="M82 104h156l-4 14H86z" fill="#b86e2a" />
-      {[0, 1, 2, 3, 4, 5].map((i) => (
-        <path key={i} d={`M${104 + i * 22} 120v48`} stroke="#b86e2a" strokeWidth="3" />
-      ))}
-    </svg>
+    <Frame className={className} title={title}>
+      <circle cx="128" cy="90" r="18" fill={P.blue} />
+      <circle cx="166" cy="80" r="16" fill={P.sage} />
+      <circle cx="198" cy="94" r="15" fill={P.ochre} />
+      <circle cx="150" cy="104" r="14" fill={P.clay} />
+      <path d="M92 104h136l-14 64a8 8 0 0 1-8 6H114a8 8 0 0 1-8-6z" fill={P.white} stroke={P.ink} strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M120 120l6 40M160 120v40M200 120l-6 40M100 134h120" stroke={P.line} strokeWidth="1.25" />
+      <path d="M104 104c4-30 24-48 56-48s52 18 56 48" {...STROKE} />
+    </Frame>
   );
 }
 
 function SharesScene({ className, title }: SvgProps) {
-  const id = useId();
+  const cells = Array.from({ length: 24 }, (_, i) => i);
   return (
-    <svg viewBox="0 0 320 200" className={className} {...a11y(title)}>
-      <Backdrop id={id} from="#eaf2ff" to="#fff9f1" />
-      {[
-        [80, 70, "#1769f6"], [140, 52, "#21b66f"], [200, 70, "#ff8a3d"], [110, 124, "#8b75f7"], [170, 124, "#55cfc6"], [230, 124, "#ff7aa8"],
-      ].map(([x, y, c], i) => (
-        <g key={i}>
-          <rect x={x as number} y={y as number} width="46" height="40" rx="10" fill={c as string} />
-          <rect x={(x as number) + 8} y={(y as number) + 10} width="30" height="6" rx="3" fill="#fff" opacity=".85" />
-          <rect x={(x as number) + 8} y={(y as number) + 22} width="18" height="6" rx="3" fill="#fff" opacity=".6" />
-        </g>
-      ))}
-      <path d="M40 176h240" stroke="#dce6f2" strokeWidth="3" strokeLinecap="round" />
-    </svg>
+    <Frame className={className} title={title}>
+      {cells.map((i) => {
+        const col = i % 6;
+        const row = Math.floor(i / 6);
+        const mine = i === 9;
+        return (
+          <rect
+            key={i}
+            x={94 + col * 23}
+            y={50 + row * 23}
+            width="19"
+            height="19"
+            rx="3"
+            fill={mine ? P.blue : P.white}
+            stroke={mine ? P.blue : P.line}
+            strokeWidth="1.25"
+          />
+        );
+      })}
+      <path d="M154 72c30-34 70-30 92-14" {...STROKE} strokeWidth={1.25} />
+      <text x="248" y="56" fontSize="13" fill={P.ink} fontFamily="Inter, sans-serif">1 share</text>
+    </Frame>
   );
 }
 
 function PiggyScene({ className, title }: SvgProps) {
-  const id = useId();
   return (
-    <svg viewBox="0 0 320 200" className={className} {...a11y(title)}>
-      <Backdrop id={id} from="#ffeef4" to="#fff9f1" />
-      <g transform="translate(96 44) scale(1.1)">
-        <ellipse cx="58" cy="54" rx="46" ry="36" fill="#ff8fb3" />
-        <ellipse cx="58" cy="48" rx="38" ry="26" fill="#ffa3c2" />
-        <path d="M30 24l-4-16 18 10z" fill="#ff7aa8" />
-        <ellipse cx="102" cy="56" rx="12" ry="10" fill="#ff7aa8" />
-        <circle cx="98" cy="55" r="2.2" fill="#b83d69" />
-        <circle cx="106" cy="55" r="2.2" fill="#b83d69" />
-        <circle cx="84" cy="40" r="3.5" fill="#3a2238" />
-        <rect x="30" y="84" width="12" height="16" rx="5" fill="#ff7aa8" />
-        <rect x="70" y="84" width="12" height="16" rx="5" fill="#ff7aa8" />
-        <rect x="46" y="16" width="22" height="5" rx="2.5" fill="#b83d69" />
-      </g>
-      <circle cx="170" cy="30" r="12" fill="#ffbc32" />
-      <circle cx="170" cy="30" r="8" fill="#ffd36b" />
-    </svg>
+    <Frame className={className} title={title}>
+      <circle cx="162" cy="42" r="12" fill={P.blue} />
+      <path d="M162 58v14" {...STROKE} strokeDasharray="2 4" />
+      <path d="M100 124c0-28 26-46 62-46 30 0 50 12 58 30h12v26h-12c-5 9-11 15-20 20v16h-18v-11c-9 2-21 2-30 0v11h-18v-17c-20-8-34-17-34-29z" fill={P.white} stroke={P.ink} strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M146 88h30" {...STROKE} strokeWidth={2.5} />
+      <circle cx="204" cy="114" r="2.5" fill={P.ink} />
+    </Frame>
   );
 }
 
@@ -239,32 +178,23 @@ export function LessonIllustration({
   }
 }
 
-/** Company hero: an illustrated storefront tinted with the company's identity. */
+/** Company hero: a calm facade with the company's own colour on the sign. */
 export function CompanyHero({ asset, className }: { asset: MarketAsset; className?: string }) {
-  const id = useId();
   const { background, foreground, mark } = asset.brand;
+  const light = background.toLowerCase() === "#ffffff";
   return (
     <svg viewBox="0 0 390 200" preserveAspectRatio="xMidYMid slice" className={className} aria-hidden>
-      <defs>
-        <linearGradient id={`${id}sky`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#bcd8ff" />
-          <stop offset="1" stopColor="#eaf2ff" />
-        </linearGradient>
-      </defs>
-      <rect width="390" height="200" fill={`url(#${id}sky)`} />
-      <rect x="0" y="60" width="70" height="140" fill="#d7e5ff" />
-      <rect x="320" y="40" width="70" height="160" fill="#d7e5ff" />
-      <circle cx="40" cy="170" r="30" fill="#8fdc9f" />
-      <circle cx="354" cy="172" r="28" fill="#8fdc9f" />
-      <path d="M86 200V84c0-10 8-18 18-18h182c10 0 18 8 18 18v116z" fill="#f7faff" />
-      <path d="M86 200V84c0-10 8-18 18-18h182c10 0 18 8 18 18v116z" fill="none" stroke="#dce6f2" strokeWidth="2" />
-      <rect x="106" y="112" width="178" height="88" rx="6" fill="#cfe2ff" />
-      <path d="M195 112v88M150 112v88M240 112v88" stroke="#f7faff" strokeWidth="4" />
-      <rect x="165" y="76" width="60" height="30" rx="10" fill={background} stroke="#dce6f2" strokeWidth={background === "#ffffff" ? 2 : 0} />
-      <text x="195" y="98" textAnchor="middle" fontSize={mark.length > 2 ? 14 : 20} fontWeight="900" fill={foreground}>
+      <rect width="390" height="200" fill={P.fog} />
+      <path d="M0 200V96h48v104M342 200V70h48v130" fill={P.surface} stroke={P.line} />
+      <path d="M96 200V82a12 12 0 0 1 12-12h174a12 12 0 0 1 12 12v118" fill={P.white} stroke={P.ink} strokeWidth="1.25" />
+      {[0, 1, 2, 3].map((i) => (
+        <rect key={i} x={116 + i * 41} y="120" width="33" height="80" rx="2" fill={P.surface} stroke={P.line} />
+      ))}
+      <rect x="160" y="84" width="70" height="26" rx="13" fill={background} stroke={light ? P.line : "none"} />
+      <text x="195" y="102" textAnchor="middle" fontSize={mark.length > 2 ? 12 : 16} fontWeight="600" fill={foreground} fontFamily="Inter, sans-serif">
         {mark}
       </text>
-      <rect y="196" width="390" height="4" fill="#b3cdfa" />
+      <path d="M0 199.5h390" stroke={P.ink} strokeOpacity=".2" />
     </svg>
   );
 }

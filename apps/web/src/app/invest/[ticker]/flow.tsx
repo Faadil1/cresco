@@ -35,7 +35,7 @@ export function InvestFlow({ ticker, initialMode, initialAmount }: { ticker: str
     <main id="main" className="mx-auto flex min-h-dvh w-full max-w-[560px] flex-col px-5 pt-4 md:pt-8">
       <div className="flex items-center gap-2">
         <BackButton label="Back" />
-        <p className="flex-1 text-center text-[15px] font-extrabold text-navy-strong">
+        <p className="flex-1 text-center text-[15px] font-semibold text-navy-strong">
           {mode === "practice" ? "Practice investment" : "Money investment"}
         </p>
         <span className="w-9" />
@@ -210,19 +210,19 @@ function Flow({ asset, mode, initialAmount }: { asset: MarketAsset; mode: Mode; 
     return (
       <div className="animate-rise mt-8 flex flex-1 flex-col items-center text-center">
         <PlantPot className="animate-bloom size-28" />
-        <h1 className="mt-4 text-[26px] font-black text-navy-strong">
+        <h1 className="mt-4 text-[34px] font-display font-normal text-navy-strong">
           {mode === "practice"
             ? "Added to your Practice Portfolio"
             : phase.allowedOnce
               ? "Done once. Your Key didn't change."
               : "Done. No parent approval needed."}
         </h1>
-        <p className="mt-2 max-w-[34ch] text-[15px] font-semibold text-ink-2">
+        <p className="mt-2 max-w-[34ch] text-[15px] text-ink-2">
           {formatAmount(amount)} in {asset.companyName} · about {formatShares(shares)} shares at a {asset.dataStatus === "live" ? "live" : "sample"} price of {formatUsd(asset.price)}.
         </p>
         {mode === "money" && phase.allowedOnce ? (
           <div className="mt-4 w-full rounded-[16px] border-2 border-green/25 bg-green-soft px-4 py-3 text-left">
-            <p className="text-[12px] font-black uppercase tracking-[0.08em] text-green-strong">One-time permission → USED</p>
+            <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-green-strong">One-time permission → USED</p>
             <p className="mt-1 text-[13.5px] font-semibold text-navy">
               This boundary crossing was consumed. Standing Key v{mandate.version} is still the same.
             </p>
@@ -261,7 +261,7 @@ function Flow({ asset, mode, initialAmount }: { asset: MarketAsset; mode: Mode; 
             <Row k="On-chain" v={onChainLabel(phase.result.proof)} />
           </dl>
           {phase.result.proof?.status === "DEMO_NOT_EXECUTED" || phase.result.proof?.status === "PRACTICE_LOCAL" ? (
-            <p className="mt-3 text-[12.5px] font-semibold text-ink-3">
+            <p className="mt-3 text-[12.5px] text-ink-3">
               When Money Mode is connected to the CRESCO Solana program, this screen shows the network, transaction signature and a
               link to view it on Solana.
             </p>
@@ -278,10 +278,10 @@ function Flow({ asset, mode, initialAmount }: { asset: MarketAsset; mode: Mode; 
         <span className="grid size-20 place-items-center rounded-full bg-blue-soft text-blue">
           <Clock className="size-9" />
         </span>
-        <h1 className="mt-5 text-[26px] font-black text-navy-strong">
+        <h1 className="mt-5 text-[34px] font-display font-normal text-navy-strong">
           {pending ? "Sent. Waiting for confirmation." : "We're still checking on this."}
         </h1>
-        <p className="mt-2 max-w-[34ch] text-[15px] font-semibold text-ink-2">
+        <p className="mt-2 max-w-[34ch] text-[15px] text-ink-2">
           {pending
             ? `${formatAmount(amount)} in ${asset.companyName} was submitted to Solana devnet and isn't confirmed yet.`
             : `We couldn't confirm whether ${formatAmount(amount)} in ${asset.companyName} went through.`}{" "}
@@ -305,8 +305,8 @@ function Flow({ asset, mode, initialAmount }: { asset: MarketAsset; mode: Mode; 
         <span className="animate-bloom grid size-20 place-items-center rounded-full bg-blue-soft text-blue">
           <Send className="size-9" />
         </span>
-        <h1 className="mt-5 text-[26px] font-black text-navy-strong">Request sent</h1>
-        <p className="mt-2 max-w-[32ch] text-[15px] font-semibold text-ink-2">
+        <h1 className="mt-5 text-[34px] font-display font-normal text-navy-strong">Request sent</h1>
+        <p className="mt-2 max-w-[32ch] text-[15px] text-ink-2">
           {state.profile.parentName} can say not this time, allow this request once, or create a wider standing Key. You&apos;ll see the answer on Home.
         </p>
         <div className="mt-auto w-full space-y-3 pb-[calc(16px+env(safe-area-inset-bottom))] pt-8">
@@ -333,8 +333,8 @@ function Flow({ asset, mode, initialAmount }: { asset: MarketAsset; mode: Mode; 
       <Card className="flex items-center gap-3 p-3.5">
         <CompanyLogo asset={asset} size={44} />
         <div className="min-w-0 flex-1">
-          <p className="text-[16px] font-extrabold text-navy-strong">{asset.companyName}</p>
-          <p className="text-[12.5px] font-bold text-ink-3">
+          <p className="text-[16px] font-semibold text-navy-strong">{asset.companyName}</p>
+          <p className="text-[12.5px] text-ink-3">
             {formatUsd(asset.price)} · {asset.ticker}
           </p>
         </div>
@@ -348,16 +348,16 @@ function Flow({ asset, mode, initialAmount }: { asset: MarketAsset; mode: Mode; 
       ) : (
         <>
           {allowOnce ? (
-            <div className="mt-3 flex items-start gap-2 rounded-[14px] bg-green-soft px-3.5 py-3 text-[13.5px] font-bold text-green-strong">
+            <div className="mt-3 flex items-start gap-2 rounded-[14px] bg-green-soft px-3.5 py-3 text-[13.5px] font-medium text-green-strong">
               <CheckCircle2 aria-hidden className="mt-0.5 size-4 shrink-0" />
               {state.profile.parentName} allowed this request once. Standing Key v{mandate.version} stays unchanged.
             </div>
           ) : null}
 
           <label className="mt-5 block text-center">
-            <span className="text-[14px] font-extrabold text-ink-2">How much?</span>
+            <span className="text-[14px] text-ink-2">How much?</span>
             <span className="mt-1 flex items-center justify-center gap-1">
-              <span className="text-[40px] font-black text-ink-3">$</span>
+              <span className="text-[40px] text-ink-3">$</span>
               <input
                 inputMode="decimal"
                 maxLength={7}
@@ -368,7 +368,7 @@ function Flow({ asset, mode, initialAmount }: { asset: MarketAsset; mode: Mode; 
                 }}
                 aria-label="Amount in dollars"
                 style={{ width: `${Math.max(1, amountText.length) + 0.6}ch` }}
-                className="min-w-[1.6ch] max-w-[7ch] bg-transparent text-center text-[48px] font-black text-navy-strong tabular focus:outline-none"
+                className="min-w-[1.6ch] max-w-[7ch] bg-transparent text-center text-[48px] font-semibold text-navy-strong tabular focus:outline-none"
               />
             </span>
           </label>
@@ -388,15 +388,15 @@ function Flow({ asset, mode, initialAmount }: { asset: MarketAsset; mode: Mode; 
           </div>
 
           <div className="mt-4 rounded-[16px] border border-line-soft bg-surface p-3.5">
-            <div className="flex items-center justify-between text-[13.5px] font-bold">
+            <div className="flex items-center justify-between text-[13.5px] font-medium">
               <span className="text-ink-2">{mode === "practice" ? "Practice balance" : "Available to invest"}</span>
               <span className="flex items-center gap-2">
                 {mode === "money" ? <DemoMoneyTag /> : null}
-                <span className="font-extrabold text-navy-strong tabular">{formatUsd(cash)}</span>
+                <span className="font-semibold text-navy-strong tabular">{formatUsd(cash)}</span>
               </span>
             </div>
             {mode === "money" ? (
-              <p className="mt-2 flex items-start gap-2 text-[13px] font-semibold text-ink-2">
+              <p className="mt-2 flex items-start gap-2 text-[13px] text-ink-2">
                 <ShieldCheck aria-hidden className="mt-0.5 size-4 shrink-0 text-green" />
                 Key v{mandate.version} · up to {formatAmount(mandate.maxActionNotional)} per action · {formatAmount(remainingThisPeriod(mandate))} left{" "}
                 {mandate.periodLabel}. Inside this Key, you act on your own.
@@ -422,16 +422,16 @@ function Flow({ asset, mode, initialAmount }: { asset: MarketAsset; mode: Mode; 
           ) : (
             <>
               {moneyBlockedPreview && preview ? (
-                <p role="status" className="mt-3 flex items-start gap-2 rounded-[14px] bg-[#fff7ef] px-3.5 py-3 text-[13px] font-semibold text-navy">
+                <p role="status" className="mt-3 flex items-start gap-2 rounded-[14px] bg-[#f5f6f8] px-3.5 py-3 text-[13px] font-semibold text-navy">
                   <Info aria-hidden className="mt-0.5 size-4 shrink-0 text-orange-text" />
                   {explainEvaluation(preview, mandate, asset.companyName, mode).body}
                 </p>
               ) : null}
 
-              <div className="mt-4 rounded-[16px] bg-surface-soft p-3.5 text-[13.5px] font-semibold text-ink-2">
+              <div className="mt-4 rounded-[16px] bg-surface-soft p-3.5 text-[13.5px] text-ink-2">
                 {validAmount ? (
                   <>
-                    You&apos;d own about <span className="font-extrabold text-navy-strong tabular">{formatShares(shares)}</span> shares of{" "}
+                    You&apos;d own about <span className="font-semibold text-navy-strong tabular">{formatShares(shares)}</span> shares of{" "}
                     {asset.companyName}. Prices go up and down, so this could be worth more or less later.
                   </>
                 ) : (
@@ -440,8 +440,8 @@ function Flow({ asset, mode, initialAmount }: { asset: MarketAsset; mode: Mode; 
               </div>
 
               <label className="mt-4 block">
-                <span className="text-[14px] font-extrabold text-navy-strong">
-                  Why this company? <span className="font-semibold text-ink-3">(optional)</span>
+                <span className="text-[14px] font-semibold text-navy-strong">
+                  Why this company? <span className="text-ink-3">(optional)</span>
                 </span>
                 <input
                   value={reason}
@@ -502,8 +502,8 @@ const SOURCE_LABEL: Record<ActionEvaluation["source"], string> = {
 function Row({ k, v }: { k: string; v: string }) {
   return (
     <div className="flex items-start justify-between gap-4 px-3.5 py-2.5">
-      <dt className="text-[13px] font-bold text-ink-2">{k}</dt>
-      <dd className="max-w-[60%] break-words text-right text-[13px] font-extrabold text-navy-strong">{v}</dd>
+      <dt className="text-[13px] text-ink-2">{k}</dt>
+      <dd className="max-w-[60%] break-words text-right text-[13px] font-semibold text-navy-strong">{v}</dd>
     </div>
   );
 }

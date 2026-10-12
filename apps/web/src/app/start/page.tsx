@@ -49,7 +49,7 @@ export default function StartPage() {
         <KidBust className="size-24" />
       </div>
       <label className="mt-6 block">
-        <span className="text-[14px] font-extrabold text-navy-strong">Email</span>
+        <span className="text-[14px] font-semibold text-navy-strong">Email</span>
         <input
           type="email"
           inputMode="email"
@@ -60,13 +60,13 @@ export default function StartPage() {
           className="mt-1.5 h-[52px] w-full rounded-[15px] border border-line bg-surface px-4 text-[15px] font-semibold text-navy placeholder:text-ink-3 focus:border-blue focus:outline-none focus:ring-2 focus:ring-blue/20"
         />
       </label>
-      <p className="mt-3 rounded-[14px] bg-surface-soft px-3.5 py-3 text-[12.5px] font-semibold text-ink-2">
+      <p className="mt-3 rounded-[14px] bg-surface-soft px-3.5 py-3 text-[12.5px] text-ink-2">
         Demo sign-in: no email is sent and no production account is created. When the CRESCO backend is available, family progress and requests sync through the demo backend.
       </p>
       {error ? (
         <p
           role="alert"
-          className="mt-3 rounded-[14px] border border-loss/25 bg-loss-soft px-3.5 py-3 text-[12.5px] font-bold text-loss-text"
+          className="mt-3 rounded-[14px] border border-loss/25 bg-loss-soft px-3.5 py-3 text-[12.5px] font-medium text-loss-text"
         >
           {error}
         </p>

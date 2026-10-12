@@ -38,12 +38,12 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
   }, [hydrated, allowed, router]);
 
   return (
-    <div className="min-h-dvh bg-[#fbfcfe]">
+    <div className="min-h-dvh bg-[#f5f6f8]">
       <header className="sticky top-0 z-30 border-b border-line-soft bg-surface/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-[1120px] items-center gap-4 px-5 md:px-8">
           <Link href="/parent" aria-label="Parent overview" className="flex items-center gap-2">
             <Wordmark size="sm" />
-            <span className="rounded-full bg-[#e8edf7] px-2 py-0.5 text-[11px] font-extrabold text-navy">Parent</span>
+            <span className="rounded-full bg-[#e8ebee] px-2 py-0.5 text-[11px] font-semibold text-navy">Parent</span>
           </Link>
           <nav aria-label="Parent" className="ml-auto hidden gap-1 md:flex">
             {LINKS.map((l) => (
@@ -52,7 +52,7 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
                 href={l.href}
                 aria-current={pathname === l.href ? "page" : undefined}
                 className={cn(
-                  "rounded-[11px] px-3 py-2 text-[14px] font-extrabold",
+                  "rounded-[11px] px-3 py-2 text-[14px] font-semibold",
                   pathname === l.href ? "bg-blue-soft text-blue" : "text-ink-2 hover:text-navy",
                 )}
               >
@@ -64,7 +64,7 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
             type="button"
             onClick={switchToChild}
             disabled={switching}
-            className="ml-auto text-[13px] font-extrabold text-blue disabled:opacity-60 md:ml-2"
+            className="ml-auto text-[13px] font-semibold text-blue disabled:opacity-60 md:ml-2"
           >
             {switching ? "Switching…" : `${state.profile.childName}'s view`}
           </button>

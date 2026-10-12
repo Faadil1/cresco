@@ -42,8 +42,8 @@ export default function AddMoneyPage() {
       {done != null ? (
         <Card className="mt-5 p-5 text-center">
           <CheckCircle2 aria-hidden className="animate-bloom mx-auto size-12 text-green" />
-          <p className="mt-2 text-[18px] font-extrabold text-navy-strong">{formatAmount(done)} added</p>
-          <p className="mt-1 text-[13.5px] font-semibold text-ink-2">Demo funds only. No payment was taken.</p>
+          <p className="mt-2 text-[18px] font-semibold text-navy-strong">{formatAmount(done)} added</p>
+          <p className="mt-1 text-[13.5px] text-ink-2">Demo funds only. No payment was taken.</p>
           <ActionButton className="mt-4" href="/parent" variant="secondary">
             Back to overview
           </ActionButton>
@@ -62,17 +62,17 @@ export default function AddMoneyPage() {
           </div>
           {amount === "custom" ? (
             <label className="mt-3 block">
-              <span className="text-[14px] font-extrabold text-navy-strong">Custom amount (up to $500)</span>
+              <span className="text-[14px] font-semibold text-navy-strong">Custom amount (up to $500)</span>
               <input
                 inputMode="decimal"
                 value={custom}
                 onChange={(e) => setCustom(e.target.value.replace(/[^0-9.]/g, ""))}
                 placeholder="$0"
-                className="mt-1.5 h-[52px] w-full rounded-[15px] border border-line bg-surface px-4 text-[16px] font-bold text-navy focus:border-blue focus:outline-none focus:ring-2 focus:ring-blue/20"
+                className="mt-1.5 h-[52px] w-full rounded-[15px] border border-line bg-surface px-4 text-[16px] font-medium text-navy focus:border-blue focus:outline-none focus:ring-2 focus:ring-blue/20"
               />
             </label>
           ) : null}
-          <p className="mt-4 rounded-[14px] bg-yellow-soft px-3.5 py-3 text-[13px] font-semibold text-[#6f4a06]">
+          <p className="mt-4 rounded-[14px] bg-yellow-soft px-3.5 py-3 text-[13px] font-semibold text-[#6e5119]">
             Demo mode: no bank or card is connected, and no payment is taken. This adds demo money so you can try Money Mode.
           </p>
           <ActionButton className="mt-5" disabled={!valid || busy} onClick={add}>

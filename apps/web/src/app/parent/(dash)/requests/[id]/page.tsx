@@ -86,10 +86,10 @@ export default function RequestDecisionPage() {
         <div className="flex items-center gap-3">
           {asset ? <CompanyLogo asset={asset} size={44} /> : null}
           <div className="flex-1">
-            <p className="text-[17px] font-extrabold text-navy-strong">
+            <p className="text-[17px] font-semibold text-navy-strong">
               {formatAmount(request.requestedNotional)} in {asset?.companyName ?? request.asset}
             </p>
-            <p className="text-[13px] font-semibold text-ink-2">
+            <p className="text-[13px] text-ink-2">
               {periodRequest
                 ? `Would go past the ${formatAmount(m.maxPeriodNotional)} monthly limit`
                 : `Current limit: ${formatAmount(request.standingLimit)} per action`}
@@ -98,13 +98,13 @@ export default function RequestDecisionPage() {
         </div>
         <blockquote className="mt-3 rounded-[14px] bg-surface-soft px-3.5 py-3 text-[14.5px] font-semibold text-navy">
           &ldquo;{request.reason}&rdquo;
-          <footer className="mt-1 text-[12px] font-bold text-ink-3">{child}</footer>
+          <footer className="mt-1 text-[12px] text-ink-3">{child}</footer>
         </blockquote>
       </Card>
 
       {decided ? (
         <Card className="mt-4 p-4 text-center">
-          <p className="text-[16px] font-extrabold text-navy-strong">
+          <p className="text-[16px] font-semibold text-navy-strong">
             {request.status === "REFUSED"
               ? `Not this time. Standing Key v${m.version} remains.`
               : request.status === "WIDENED"
@@ -114,8 +114,8 @@ export default function RequestDecisionPage() {
         </Card>
       ) : stale ? (
         <Card className="mt-4 p-4">
-          <p className="text-[15px] font-extrabold text-navy-strong">Limits changed since this request</p>
-          <p className="mt-1 text-[13.5px] font-semibold text-ink-2">
+          <p className="text-[15px] font-semibold text-navy-strong">Limits changed since this request</p>
+          <p className="mt-1 text-[13.5px] text-ink-2">
             This request was made under v{request.mandateVersion}. Current limits are v{m.version}. {child} can try again under the new
             limits.
           </p>
@@ -123,7 +123,7 @@ export default function RequestDecisionPage() {
       ) : (
         <>
           <Card className="mt-4 border-2 border-blue/15 bg-blue-soft p-4">
-            <p className="text-[12px] font-black uppercase tracking-[0.08em] text-blue-strong">Standing Key v{m.version}</p>
+            <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-blue-strong">Standing Key v{m.version}</p>
             <p className="mt-1 text-[13.5px] font-semibold text-navy">
               Choose the relationship to this boundary: keep the Key, allow this request once, or create a new standing Key.
             </p>
@@ -145,15 +145,15 @@ export default function RequestDecisionPage() {
                   {o.icon}
                 </IconCircle>
                 <span>
-                  <span className="block text-[15px] font-extrabold text-navy-strong">{o.title}</span>
-                  <span className="block text-[13.5px] font-semibold text-ink-2">{o.body}</span>
+                  <span className="block text-[15px] font-semibold text-navy-strong">{o.title}</span>
+                  <span className="block text-[13.5px] text-ink-2">{o.body}</span>
                 </span>
               </button>
             ))}
           </div>
           {choice === "REFUSE" ? (
             <label className="mt-3 block">
-              <span className="text-[13.5px] font-extrabold text-navy-strong">Note for {child} (optional)</span>
+              <span className="text-[13.5px] font-semibold text-navy-strong">Note for {child} (optional)</span>
               <input
                 value={note}
                 maxLength={120}
@@ -183,7 +183,7 @@ export default function RequestDecisionPage() {
         <ul className="space-y-2 rounded-[16px] border border-line-soft p-3.5 text-[14px] font-semibold">
           <li className="flex items-center justify-between">
             <span className="text-ink-2">Per action</span>
-            <span className="flex items-center gap-2 font-extrabold tabular">
+            <span className="flex items-center gap-2 font-semibold tabular">
               <span className="text-ink-3 line-through">{formatAmount(m.maxActionNotional)}</span>
               <ArrowRight aria-hidden className="size-4 text-ink-3" />
               <span className="text-navy-strong">{formatAmount(periodRequest ? m.maxActionNotional : newPerAction)}</span>
@@ -191,7 +191,7 @@ export default function RequestDecisionPage() {
           </li>
           <li className="flex items-center justify-between">
             <span className="text-ink-2">Per month</span>
-            <span className="flex items-center gap-2 font-extrabold tabular">
+            <span className="flex items-center gap-2 font-semibold tabular">
               <span className={newPerPeriod === m.maxPeriodNotional ? "text-navy-strong" : "text-ink-3 line-through"}>
                 {formatAmount(m.maxPeriodNotional)}
               </span>
@@ -204,7 +204,7 @@ export default function RequestDecisionPage() {
             </span>
           </li>
         </ul>
-        <p className="mt-3 text-[12.5px] font-semibold text-ink-3">
+        <p className="mt-3 text-[12.5px] text-ink-3">
           This is the only choice on this screen that changes standing authority. It creates Key v{m.version + 1}. Only you can make this change.
         </p>
         <ActionButton className="mt-4" onClick={decide} disabled={busy} data-autofocus>

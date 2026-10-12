@@ -34,8 +34,8 @@ export default function ReadyStep() {
               {r.icon}
             </IconCircle>
             <div>
-              <p className="text-[15px] font-extrabold text-navy-strong">{r.title}</p>
-              <p className="text-[13.5px] font-semibold text-ink-2">{r.body}</p>
+              <p className="text-[15px] font-semibold text-navy-strong">{r.title}</p>
+              <p className="text-[13.5px] text-ink-2">{r.body}</p>
             </div>
           </li>
         ))}

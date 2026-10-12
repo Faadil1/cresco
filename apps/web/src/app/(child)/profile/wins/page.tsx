@@ -31,17 +31,17 @@ export default function WinsPage() {
         <Avatar size={60} />
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between">
-            <p className="text-[19px] font-black text-navy-strong">Level {level}</p>
-            <p className="text-[13px] font-extrabold text-ink-2 tabular">{formatNumber(xp)} XP</p>
+            <p className="text-[19px] font-semibold text-navy-strong">Level {level}</p>
+            <p className="text-[13px] text-ink-2 tabular">{formatNumber(xp)} XP</p>
           </div>
           <ProgressBar value={progress} tone="green" className="mt-2" label="Progress to next level" />
-          <p className="mt-1 text-right text-[11.5px] font-bold text-ink-3">
+          <p className="mt-1 text-right text-[11.5px] text-ink-3">
             {formatNumber(toNext)} XP to Level {level + 1}
           </p>
         </div>
       </Card>
 
-      <div role="tablist" aria-label="Wins" className="mt-4 grid h-10 grid-cols-2 rounded-[14px] bg-[#edf1f7] p-1">
+      <div role="tablist" aria-label="Wins" className="mt-4 grid h-10 grid-cols-2 rounded-full bg-surface-soft p-1">
         {(["badges", "challenges"] as const).map((t) => (
           <button
             key={t}
@@ -50,7 +50,7 @@ export default function WinsPage() {
             aria-selected={tab === t}
             aria-controls={`panel-${t}`}
             onClick={() => setTab(t)}
-            className={`rounded-[11px] text-[13.5px] font-extrabold transition-colors ${tab === t ? "bg-blue text-white" : "text-ink-2"}`}
+            className={`rounded-full text-[13.5px] font-medium transition-colors ${tab === t ? "bg-navy-strong text-bg" : "text-ink-2"}`}
           >
             {t === "badges" ? "Badges" : "Challenges"}
           </button>
@@ -69,16 +69,16 @@ export default function WinsPage() {
             <Card as="li" key={c.id} className="p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-[15px] font-extrabold text-navy-strong">{c.title}</p>
-                  <p className="text-[13px] font-semibold text-ink-2">{c.caption}</p>
+                  <p className="text-[15px] font-semibold text-navy-strong">{c.title}</p>
+                  <p className="text-[13px] text-ink-2">{c.caption}</p>
                 </div>
-                <span className="inline-flex shrink-0 items-center gap-1 text-[13px] font-extrabold text-orange-text">
+                <span className="inline-flex shrink-0 items-center gap-1 text-[13px] font-semibold text-orange-text">
                   <Star aria-hidden className="size-3.5 fill-yellow text-yellow" />+{c.xp}
                 </span>
               </div>
               <div className="mt-3 flex items-center gap-3">
                 <ProgressBar value={c.progress / c.target} tone="yellow" label={`${c.title} progress`} />
-                <span className="text-[12.5px] font-extrabold text-ink-2 tabular">
+                <span className="text-[12.5px] text-ink-2 tabular">
                   {c.progress}/{c.target}
                 </span>
               </div>
@@ -87,7 +87,7 @@ export default function WinsPage() {
         </ul>
       )}
 
-      <p className="mt-5 text-center text-[12.5px] font-semibold text-ink-3">
+      <p className="mt-5 text-center text-[12.5px] text-ink-3">
         Wins celebrate learning and curiosity. They never change your Money Mode limits.
       </p>
     </div>

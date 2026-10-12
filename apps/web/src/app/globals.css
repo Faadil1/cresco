@@ -23,31 +23,31 @@
   --cresco-green-soft: #e2ece6;
 
   --cresco-yellow: #c99a3c;
-  --cresco-orange: #ff8a3d;
+  --cresco-orange: #c4674a;
   --cresco-yellow-soft: #f1ead9;
   /* Text-safe variants (WCAG AA 4.5:1 on light surfaces). Fills keep the brand values. */
   --cresco-orange-text: #8a5a12;
 
-  --cresco-lavender: #8b75f7;
-  --cresco-lavender-soft: #f0edff;
+  --cresco-lavender: #6c78c9;
+  --cresco-lavender-soft: #e7e9f6;
 
-  --cresco-aqua: #55cfc6;
-  --cresco-aqua-soft: #e8faf8;
+  --cresco-aqua: #4f8f8a;
+  --cresco-aqua-soft: #e1eeec;
 
-  --cresco-pink: #ff7aa8;
-  --cresco-pink-soft: #ffeef4;
+  --cresco-pink: #b5627a;
+  --cresco-pink-soft: #f3e4e8;
 
-  --cresco-loss: #eb5757;
-  --cresco-loss-soft: #fff0f0;
-  --cresco-loss-text: #c8373a;
-  --cresco-warning: #d98a13;
+  --cresco-loss: #c24a43;
+  --cresco-loss-soft: #f8e9e7;
+  --cresco-loss-text: #a8342e;
+  --cresco-warning: #b07a1e;
 
   --cresco-border: #d5dae1;
   --cresco-border-soft: #e1e5ea;
 
   --cresco-shadow-card: 0 1px 0 rgba(20, 23, 28, 0.04), 0 24px 48px -32px rgba(20, 40, 120, 0.28);
   --cresco-shadow-soft: 0 1px 0 rgba(20, 23, 28, 0.04), 0 12px 32px -28px rgba(20, 40, 120, 0.3);
-  --cresco-shadow-button: 0 10px 24px -14px rgba(31, 59, 204, 0.55);
+  --cresco-shadow-button: 0 8px 20px -14px rgba(20, 23, 28, 0.45);
 
   --nav-height: 72px;
   color-scheme: light;

@@ -100,10 +100,10 @@ export default function ExplorePage() {
       {markets.length > 0 ? (
         <section className="mt-5" aria-labelledby="explore-markets">
           <div className="mb-3">
-            <p id="explore-markets" className="text-[15px] font-extrabold text-navy-strong">
+            <p id="explore-markets" className="text-[15px] font-semibold text-navy-strong">
               Explore how different markets move
             </p>
-            <p className="mt-1 max-w-[720px] text-[12.5px] font-semibold text-ink-3">
+            <p className="mt-1 max-w-[720px] text-[12.5px] text-ink-3">
               Live Pyth market truth for learning and Practice. AAPL stays the primary Money proof; access to a market feed never grants Money authority.
             </p>
           </div>
@@ -116,12 +116,12 @@ export default function ExplorePage() {
                 <li key={group.id} className="rounded-[18px] border border-line-soft bg-surface p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-[14px] font-extrabold text-navy-strong">{group.label}</p>
-                      <p className="mt-1 text-[11.5px] font-semibold leading-snug text-ink-3">
+                      <p className="text-[14px] font-semibold text-navy-strong">{group.label}</p>
+                      <p className="mt-1 text-[11.5px] leading-snug text-ink-3">
                         {group.learningAngle}
                       </p>
                     </div>
-                    <span className="shrink-0 rounded-full bg-green-soft px-2 py-1 text-[10px] font-extrabold text-green-strong">
+                    <span className="shrink-0 rounded-full bg-green-soft px-2 py-1 text-[10px] font-semibold text-green-strong">
                       Live · Pyth
                     </span>
                   </div>
@@ -129,16 +129,16 @@ export default function ExplorePage() {
                     {liveFeeds.slice(0, 3).map((feed) => (
                       <div key={feed.symbol} className="flex items-center justify-between gap-3 rounded-[12px] bg-bg px-3 py-2">
                         <div className="min-w-0">
-                          <p className="truncate text-[12.5px] font-extrabold text-navy-strong">
+                          <p className="truncate text-[12.5px] font-semibold text-navy-strong">
                             {feed.displaySymbol}
                           </p>
-                          <p className="text-[10.5px] font-bold text-ink-3">
+                          <p className="text-[10.5px] text-ink-3">
                             {feed.productMode === "PRIMARY_MONEY_PROOF"
                               ? "Primary Money proof"
                               : "Learn · Practice"}
                           </p>
                         </div>
-                        <p className="shrink-0 text-right text-[12px] font-extrabold text-navy-strong">
+                        <p className="shrink-0 text-right text-[12px] font-semibold text-navy-strong">
                           {typeof feed.price === "number"
                             ? `${feed.price.toLocaleString(undefined, { maximumFractionDigits: 4 })}`
                             : feed.priceStatus}
@@ -146,7 +146,7 @@ export default function ExplorePage() {
                       </div>
                     ))}
                   </div>
-                  <p className="mt-3 text-[10.5px] font-bold text-ink-3">
+                  <p className="mt-3 text-[10.5px] text-ink-3">
                     Feed access ≠ Money eligibility · Authority effect: none
                   </p>
                 </li>
@@ -178,10 +178,10 @@ export default function ExplorePage() {
       {tessera.length > 0 ? (
         <section className="mt-8" aria-labelledby="private-market-representations">
           <div className="mb-3">
-            <p id="private-market-representations" className="text-[15px] font-extrabold text-navy-strong">
+            <p id="private-market-representations" className="text-[15px] font-semibold text-navy-strong">
               How private-market tokens differ
             </p>
-            <p className="mt-1 text-[12.5px] font-semibold text-ink-3">
+            <p className="mt-1 text-[12.5px] text-ink-3">
               Live Tessera representations for learning and Practice. These are loan participation rights, not direct company shares, and they are not enabled for Money Mode.
             </p>
           </div>
@@ -190,26 +190,26 @@ export default function ExplorePage() {
               <li key={asset.id} className="rounded-[18px] border border-line-soft bg-surface p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-[14px] font-extrabold text-navy-strong">{asset.underlyingCompany}</p>
-                    <p className="mt-0.5 text-[12px] font-bold text-ink-3">{asset.id} · Tessera</p>
+                    <p className="text-[14px] font-semibold text-navy-strong">{asset.underlyingCompany}</p>
+                    <p className="mt-0.5 text-[12px] text-ink-3">{asset.id} · Tessera</p>
                   </div>
-                  <span className="rounded-full bg-green-soft px-2 py-1 text-[10px] font-extrabold text-green-strong">
+                  <span className="rounded-full bg-green-soft px-2 py-1 text-[10px] font-semibold text-green-strong">
                     Learn / Practice
                   </span>
                 </div>
-                <p className="mt-3 text-[12.5px] font-semibold text-ink-2">
+                <p className="mt-3 text-[12.5px] text-ink-2">
                   Loan participation right · not direct equity
                 </p>
                 <div className="mt-3 flex items-end justify-between gap-3">
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-ink-3">Tessera mark</p>
-                    <p className="mt-0.5 text-[14px] font-extrabold text-navy-strong">
+                    <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-ink-3">Tessera mark</p>
+                    <p className="mt-0.5 text-[14px] font-semibold text-navy-strong">
                       {typeof asset.market.markPrice === "number"
                         ? `${asset.market.markPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
                         : "Unavailable"}
                     </p>
                   </div>
-                  <p className="text-right text-[10.5px] font-bold text-ink-3">
+                  <p className="text-right text-[10.5px] text-ink-3">
                     Eligibility not inferred
                     <br />
                     Authority effect: none
@@ -221,7 +221,7 @@ export default function ExplorePage() {
         </section>
       ) : null}
 
-      <p className="mt-4 text-center text-[12px] font-semibold text-ink-3">
+      <p className="mt-4 text-center text-[12px] text-ink-3">
         Fresh entitled Pyth quotes are labeled Live · Pyth. Configured entitled feeds also use Pyth history; unavailable prices or history stay clearly sample for learning.
       </p>
     </div>

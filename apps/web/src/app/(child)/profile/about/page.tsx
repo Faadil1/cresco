@@ -105,14 +105,14 @@ export default function AboutPage() {
       <ul className="mt-4 space-y-3">
         {truths.map((t) => (
           <Card as="li" key={t.title} className="p-4">
-            <p className="text-[15px] font-extrabold text-navy-strong">{t.title}</p>
-            <p className="mt-1 text-[14px] font-semibold text-ink-2">{t.body}</p>
+            <p className="text-[15px] font-semibold text-navy-strong">{t.title}</p>
+            <p className="mt-1 text-[14px] text-ink-2">{t.body}</p>
           </Card>
         ))}
       </ul>
 
       <details className="group mt-5 rounded-[20px] border border-line-soft bg-surface p-4">
-        <summary className="flex cursor-pointer list-none items-center justify-between text-[15px] font-extrabold text-navy-strong">
+        <summary className="flex cursor-pointer list-none items-center justify-between text-[15px] font-semibold text-navy-strong">
           Technical details
           <ChevronDown aria-hidden className="size-5 text-ink-3 transition-transform group-open:rotate-180" />
         </summary>
@@ -128,7 +128,7 @@ export default function AboutPage() {
           <Detail k="Proven live market feed" v="Pyth Pro Equity.US.AAPL/USD (server-side only)" />
         </dl>
         <a
-          className="mt-3 inline-block text-[13px] font-extrabold text-blue hover:underline"
+          className="mt-3 inline-block text-[13px] font-semibold text-blue hover:underline"
           href={`https://explorer.solana.com/address/${PROGRAM_ID}?cluster=devnet`}
           target="_blank"
           rel="noreferrer"
@@ -137,8 +137,8 @@ export default function AboutPage() {
         </a>
 
         <div className="mt-4 rounded-[16px] border border-line-soft bg-surface-soft p-3.5">
-          <p className="text-[13px] font-extrabold text-navy-strong">Live Solana proof lane</p>
-          <p className="mt-1 text-[12.5px] font-semibold text-ink-2">
+          <p className="text-[13px] font-semibold text-navy-strong">Live Solana proof lane</p>
+          <p className="mt-1 text-[12.5px] text-ink-2">
             Runs a $5 AAPL-bounded action through the CRESCO devnet program using a demo/mock SPL token and live signed Pyth market
             truth. This is not a real share purchase, brokerage or custody flow.
           </p>
@@ -158,12 +158,12 @@ export default function AboutPage() {
           {liveProof.status !== "idle" ? (
             <div
               role="status"
-              className="mt-3 rounded-[12px] border border-line-soft bg-surface px-3 py-2.5 text-[12.5px] font-semibold text-ink-2"
+              className="mt-3 rounded-[12px] border border-line-soft bg-surface px-3 py-2.5 text-[12.5px] text-ink-2"
             >
               <p>{liveProof.message}</p>
               {liveProof.signature ? (
                 <a
-                  className="mt-1.5 inline-block font-extrabold text-blue hover:underline"
+                  className="mt-1.5 inline-block font-semibold text-blue hover:underline"
                   href={`https://explorer.solana.com/tx/${liveProof.signature}?cluster=devnet`}
                   target="_blank"
                   rel="noreferrer"
@@ -222,8 +222,8 @@ export default function AboutPage() {
 function Detail({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
   return (
     <div>
-      <dt className="font-bold text-ink-3">{k}</dt>
-      <dd className={`break-all font-extrabold text-navy ${mono ? "font-mono text-[12px]" : ""}`}>{v}</dd>
+      <dt className="text-ink-3">{k}</dt>
+      <dd className={`break-all font-semibold text-navy ${mono ? "font-mono text-[12px]" : ""}`}>{v}</dd>
     </div>
   );
 }
@@ -232,8 +232,8 @@ function ControlRow({ label, hint, checked, onChange }: { label: string; hint: s
   return (
     <div className="flex items-center gap-3 py-3">
       <div className="flex-1">
-        <p className="text-[14px] font-extrabold text-navy-strong">{label}</p>
-        <p className="text-[12.5px] font-semibold text-ink-2">{hint}</p>
+        <p className="text-[14px] font-semibold text-navy-strong">{label}</p>
+        <p className="text-[12.5px] text-ink-2">{hint}</p>
       </div>
       <Toggle checked={checked} onChange={onChange} label={label} />
     </div>

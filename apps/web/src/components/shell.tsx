@@ -47,7 +47,7 @@ export function MobileBottomNavigation() {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex h-full flex-col items-center justify-center gap-1 text-[11px] font-bold transition-colors duration-150",
+                  "flex h-full flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors duration-150",
                   active ? "text-blue" : "text-ink-3 hover:text-navy",
                 )}
               >
@@ -86,7 +86,7 @@ export function DesktopNavigation() {
                   href={item.href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex flex-col items-center gap-1 rounded-[14px] px-2 py-2.5 text-[11.5px] font-extrabold transition-colors duration-150 lg:flex-row lg:gap-3 lg:px-3.5 lg:text-[15px]",
+                    "flex flex-col items-center gap-1 rounded-[14px] px-2 py-2.5 text-[11.5px] font-semibold transition-colors duration-150 lg:flex-row lg:gap-3 lg:px-3.5 lg:text-[15px]",
                     active ? "bg-blue-soft text-blue" : "text-ink-2 hover:bg-surface-soft hover:text-navy",
                   )}
                 >
@@ -101,8 +101,8 @@ export function DesktopNavigation() {
       <div className="mt-auto hidden items-center gap-3 rounded-[16px] bg-surface-soft p-3 lg:flex">
         <Avatar size={40} />
         <div className="min-w-0">
-          <p className="truncate text-[14px] font-extrabold text-navy-strong">{state.profile.childName}</p>
-          <p className="text-[12px] font-bold text-ink-2">{state.mode === "practice" ? "Practice mode" : "Money mode"}</p>
+          <p className="truncate text-[14px] font-semibold text-navy-strong">{state.profile.childName}</p>
+          <p className="text-[12px] text-ink-2">{state.mode === "practice" ? "Practice mode" : "Money mode"}</p>
         </div>
       </div>
     </aside>

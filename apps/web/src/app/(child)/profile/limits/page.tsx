@@ -24,8 +24,8 @@ export default function MyLimitsPage() {
           <>
             <MandateSummaryCard mandate={mandate} who="Standing Key" />
             <Card className="mt-4 p-4">
-              <p className="text-[15px] font-extrabold text-navy-strong">How your freedom works</p>
-              <ul className="mt-2 space-y-2 text-[14px] font-semibold text-ink-2">
+              <p className="text-[15px] font-semibold text-navy-strong">How your freedom works</p>
+              <ul className="mt-2 space-y-2 text-[14px] text-ink-2">
                 <li><strong>Inside:</strong> act right away. No parent approval is needed.</li>
                 <li><strong>At the boundary:</strong> adjust, practice, or ask for more room.</li>
                 <li><strong>Learning never mints permission:</strong> lessons, scores and results can inform a conversation, but only {state.profile.parentName} can create a wider standing Key.</li>
@@ -33,14 +33,14 @@ export default function MyLimitsPage() {
               <DemoMoneyTag className="mt-3" />
             </Card>
             <Card className="mt-4 p-4">
-              <p className="text-[15px] font-extrabold text-navy-strong">How independence grows</p>
+              <p className="text-[15px] font-semibold text-navy-strong">How independence grows</p>
               <div className="mt-3 grid grid-cols-2 gap-2 text-[13px] font-semibold">
                 <div className="rounded-[14px] bg-green-soft p-3 text-green-strong">
-                  <p className="font-extrabold">Allow once</p>
+                  <p className="font-semibold">Allow once</p>
                   <p className="mt-1">One boundary crossing. Key v{mandate.version} stays the same.</p>
                 </div>
                 <div className="rounded-[14px] bg-blue-soft p-3 text-blue-strong">
-                  <p className="font-extrabold">Widen the Key</p>
+                  <p className="font-semibold">Widen the Key</p>
                   <p className="mt-1">A guardian creates Key v{mandate.version + 1} with more standing room.</p>
                 </div>
               </div>
@@ -52,7 +52,7 @@ export default function MyLimitsPage() {
                 {allowed.map((a) => (
                   <li key={a.ticker} className="flex items-center gap-2 rounded-[14px] border border-line-soft bg-surface p-2.5">
                     <CompanyLogo asset={a} size={30} className="rounded-[10px]" />
-                    <span className="truncate text-[13.5px] font-bold text-navy">{a.companyName}</span>
+                    <span className="truncate text-[13.5px] font-medium text-navy">{a.companyName}</span>
                   </li>
                 ))}
               </ul>
@@ -61,7 +61,7 @@ export default function MyLimitsPage() {
             {state.requests.length ? (
               <section className="mt-5">
                 <SectionHeader title="My Key history" />
-                <p className="mb-3 text-[13px] font-semibold leading-relaxed text-ink-2">
+                <p className="mb-3 text-[13px] leading-relaxed text-ink-2">
                   Only boundary moments appear here, not every action inside your Key. See when you asked for more room, when a one-time yes was used, and when a guardian created a new standing Key.
                 </p>
                 <div className="space-y-2">

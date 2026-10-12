@@ -116,13 +116,13 @@ export default function ParentDashboard() {
     <div className="animate-rise">
       <header className="flex items-center gap-3">
         <Avatar size={52} />
-        <h1 className="min-w-0 flex-1 text-[23px] font-black leading-tight text-navy-strong md:text-[28px]">{child}&apos;s Progress</h1>
-        <label className="relative inline-flex h-9 shrink-0 items-center rounded-[11px] border border-line-soft bg-surface text-[12.5px] font-extrabold text-ink-2">
+        <h1 className="min-w-0 flex-1 text-[30px] font-display font-normal leading-[1.05] text-navy-strong md:text-[36px]">{child}&apos;s Progress</h1>
+        <label className="relative inline-flex h-9 shrink-0 items-center rounded-[11px] border border-line-soft bg-surface text-[12.5px] text-ink-2">
           <span className="sr-only">Dashboard period</span>
           <select
             value={rangeDays}
             onChange={(event) => setRangeDays(Number(event.target.value) as 7 | 30)}
-            className="h-full appearance-none rounded-[11px] bg-transparent pl-3 pr-8 font-extrabold outline-none"
+            className="h-full appearance-none rounded-[11px] bg-transparent pl-3 pr-8 font-semibold outline-none"
           >
             <option value={7}>Last 7 days</option>
             <option value={30}>Last 30 days</option>
@@ -150,8 +150,8 @@ export default function ParentDashboard() {
           />
 
           {pending.length ? (
-            <Card className="border-[#ffd9b8] bg-[#fff9f3] p-4">
-              <p className="flex items-center gap-2 text-[15px] font-extrabold text-navy-strong">
+            <Card className="border-[#f3e0d8] bg-[#f5f6f8] p-4">
+              <p className="flex items-center gap-2 text-[15px] font-semibold text-navy-strong">
                 <Inbox aria-hidden className="size-5 text-orange-text" /> {pending.length === 1 ? "1 request" : `${pending.length} requests`} for
                 more room
               </p>
@@ -160,12 +160,12 @@ export default function ParentDashboard() {
                   <li key={r.id}>
                     <Link href={`/parent/requests/${r.id}`} className="flex items-center gap-3 rounded-[14px] bg-surface p-3">
                       <div className="min-w-0 flex-1">
-                        <p className="text-[14px] font-extrabold text-navy-strong">
+                        <p className="text-[14px] font-semibold text-navy-strong">
                           {formatAmount(r.requestedNotional)} in {nameOf(r.asset)}
                         </p>
-                        <p className="truncate text-[12.5px] font-semibold text-ink-2">&ldquo;{r.reason}&rdquo;</p>
+                        <p className="truncate text-[12.5px] text-ink-2">&ldquo;{r.reason}&rdquo;</p>
                       </div>
-                      <span className="text-[13px] font-extrabold text-blue">Review</span>
+                      <span className="text-[13px] font-semibold text-blue">Review</span>
                       <ChevronRight aria-hidden className="size-4 text-ink-3" />
                     </Link>
                   </li>
@@ -191,7 +191,7 @@ export default function ParentDashboard() {
               </>
             }
           />
-          <p className="-mt-2 px-1 text-[12.5px] font-semibold text-ink-3">
+          <p className="-mt-2 px-1 text-[12.5px] text-ink-3">
             You define the boundary. Inside it, {child} can act without asking. You&apos;ll only hear about actions outside it.
           </p>
         </div>
@@ -200,10 +200,10 @@ export default function ParentDashboard() {
         <div className="min-w-0 space-y-5">
           <Card className="p-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-[16px] font-extrabold text-navy-strong">Portfolio Performance</h2>
+              <h2 className="text-[16px] font-semibold text-navy-strong">Portfolio Performance</h2>
               {view ? <PriceChange percent={view.totalChangePercent} size="md" /> : null}
             </div>
-            <p className="text-[12px] font-bold text-ink-3">Practice portfolio · sample prices</p>
+            <p className="text-[12px] text-ink-3">Practice portfolio · sample prices</p>
             {assets.status === "error" ? (
               <ErrorState className="mt-3" onRetry={assets.reload} />
             ) : perf ? (
@@ -217,28 +217,28 @@ export default function ParentDashboard() {
             ) : assets.status === "loading" ? (
               <Skeleton className="mt-2 h-[120px] w-full" />
             ) : (
-              <p className="mt-3 text-[14px] font-semibold text-ink-2">No practice investments yet.</p>
+              <p className="mt-3 text-[14px] text-ink-2">No practice investments yet.</p>
             )}
           </Card>
 
           <Card className="p-4">
-            <h2 className="text-[16px] font-extrabold text-navy-strong">Topics Learned</h2>
+            <h2 className="text-[16px] font-semibold text-navy-strong">Topics Learned</h2>
             {topics.length ? (
               <ul className="mt-2 flex flex-wrap gap-2">
                 {topics.map((t) => (
-                  <li key={t} className="rounded-full bg-blue-soft px-3 py-1 text-[12.5px] font-extrabold text-blue-strong">
+                  <li key={t} className="rounded-full bg-blue-soft px-3 py-1 text-[12.5px] font-semibold text-blue-strong">
                     {t}
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="mt-2 text-[14px] font-semibold text-ink-2">No topics finished yet.</p>
+              <p className="mt-2 text-[14px] text-ink-2">No topics finished yet.</p>
             )}
           </Card>
 
           <Card className="p-4">
-            <h2 className="text-[16px] font-extrabold text-navy-strong">Learning activity</h2>
-            <p className="text-[12px] font-bold text-ink-3">
+            <h2 className="text-[16px] font-semibold text-navy-strong">Learning activity</h2>
+            <p className="text-[12px] text-ink-3">
               Synced lesson minutes · last {rangeDays} days
             </p>
             <WeeklyBars data={learningBars} className="mt-3" />
@@ -256,8 +256,8 @@ export default function ParentDashboard() {
                     {s.icon}
                   </IconCircle>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[14.5px] font-extrabold text-navy-strong">{s.title}</span>
-                    <span className="block text-[12.5px] font-semibold text-ink-2">{s.sub}</span>
+                    <span className="block text-[14.5px] font-semibold text-navy-strong">{s.title}</span>
+                    <span className="block text-[12.5px] text-ink-2">{s.sub}</span>
                   </span>
                   <ChevronRight aria-hidden className="size-5 text-ink-3" />
                 </Link>
@@ -265,8 +265,8 @@ export default function ParentDashboard() {
             ))}
           </ul>
           <Card className="p-4">
-            <p className="text-[14px] font-extrabold text-navy-strong">About Money Mode</p>
-            <p className="mt-1 text-[13px] font-semibold text-ink-2">
+            <p className="text-[14px] font-semibold text-navy-strong">About Money Mode</p>
+            <p className="mt-1 text-[13px] text-ink-2">
               Money Mode uses Solana Devnet test capital and a demo SPL token. It is not connected to a bank, broker or custodian and does not represent real securities.
             </p>
           </Card>
@@ -283,9 +283,9 @@ function Stat({ icon, tone, value, label }: { icon: React.ReactNode; tone: "blue
         <IconCircle tone={tone} size={26}>
           {icon}
         </IconCircle>
-        <span className="text-[22px] font-black text-navy-strong tabular">{value}</span>
+        <span className="text-[22px] font-semibold text-navy-strong tabular">{value}</span>
       </span>
-      <p className="mt-1 text-[11.5px] font-bold leading-tight text-ink-2">{label}</p>
+      <p className="mt-1 text-[11.5px] leading-tight text-ink-2">{label}</p>
     </div>
   );
 }
