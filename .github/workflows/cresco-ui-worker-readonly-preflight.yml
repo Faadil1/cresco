@@ -74,6 +74,42 @@ jobs:
           }
           NODE
 
+      - name: Capture public pages without credentials or transactions
+        shell: bash
+        run: |
+          npm install --no-save --no-audit --no-fund @playwright/test
+          npx playwright install --with-deps chromium
+          node --input-type=module <<'NODE'
+          import { chromium } from "@playwright/test";
+          import { appendFileSync } from "node:fs";
+          const browser = await chromium.launch({ headless: true });
+          const base = "https://cresco.faadil-casecraft.workers.dev";
+          const shots = [
+            ["home-desktop", "/", { width: 1440, height: 900 }],
+            ["home-mobile", "/", { width: 390, height: 844 }],
+            ["desk-desktop", "/worlds-fair/desk", { width: 1440, height: 900 }]
+          ];
+          try {
+            for (const [name, path, viewport] of shots) {
+              const ctx = await browser.newContext({ viewport, deviceScaleFactor: 1, colorScheme: "light" });
+              const page = await ctx.newPage();
+              await page.goto(base + path, { waitUntil: "domcontentloaded", timeout: 30000 });
+              await page.evaluate(() => document.fonts.ready);
+              await page.waitForTimeout(900);
+              const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+              const jpeg = await page.screenshot({ type: "jpeg", quality: 48, fullPage: false, animations: "disabled" });
+              const b64 = jpeg.toString("base64");
+              console.log(`CRESCO_SCREENSHOT_BEGIN:${name}:${b64.length}`);
+              for (let i = 0; i < b64.length; i += 1800) console.log(`CRESCO_SCREENSHOT_CHUNK:${name}:${b64.slice(i, i + 1800)}`);
+              console.log(`CRESCO_SCREENSHOT_END:${name}`);
+              const summary = `- ${name} ${viewport.width}x${viewport.height}: browser rendered; horizontal-overflow=${overflow}\n`;
+              console.log(summary);
+              appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
+              await ctx.close();
+            }
+          } finally { await browser.close(); }
+          NODE
+
       - name: Record bounded preflight status
         if: always()
         shell: bash
