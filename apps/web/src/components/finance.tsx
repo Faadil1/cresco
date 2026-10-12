@@ -7,7 +7,7 @@ import { formatPercent, formatUsd, trendOf } from "@/domain/format";
 import type { HoldingView, MarketAsset, PricePoint } from "@/domain/types";
 import { Sprout } from "./illustrations/objects";
 import { Card, cn } from "./ui/primitives";
-import { Skeleton } from "./ui/feedback";
+import { DataStatusTag, Skeleton } from "./ui/feedback";
 
 /* ------------------------------------------------------------------ */
 /* Identity                                                             */
@@ -221,7 +221,11 @@ export function CompanyCard({ asset, series, href }: { asset: MarketAsset; serie
           <div className="text-[12px] text-ink-3">{asset.ticker}</div>
           <div className="mt-0.5 flex items-center gap-1.5">
             <span className="text-[14px] font-semibold text-navy tabular">{formatUsd(asset.price)}</span>
-            <PriceChange percent={asset.dayChangePercent} showIcon={false} />
+            {asset.priceSource === "mock" ? (
+              <PriceChange percent={asset.dayChangePercent} showIcon={false} />
+            ) : (
+              <DataStatusTag status={asset.dataStatus} />
+            )}
           </div>
           <div className="truncate text-[12px] text-ink-2">{asset.shortDescription}</div>
         </div>

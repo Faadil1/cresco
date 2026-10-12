@@ -222,7 +222,7 @@ export default function ExplorePage() {
       ) : null}
 
       <p className="mt-4 text-center text-[12px] text-ink-3">
-        Fresh entitled Pyth quotes are labeled Live · Pyth. Configured entitled feeds also use Pyth history; unavailable prices or history stay clearly sample for learning.
+        Prices come from Pyth when available, otherwise they are labeled Sample prices. Live · Pyth means published in the last minute; Delayed means the last published price, for example after market close. Charts and daily change stay sample unless Pyth history is available.
       </p>
     </div>
   );

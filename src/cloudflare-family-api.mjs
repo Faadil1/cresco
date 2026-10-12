@@ -6,6 +6,7 @@ import {
   fetchPythProHistory,
   discoverPythProMarkets,
 } from "./pyth-adapter.mjs";
+import { fetchHermesQuotes } from "./pyth-hermes.mjs";
 
 const FAMILY_NAME = "stocklana-demo-family";
 
@@ -588,7 +589,21 @@ export async function handleFamilyApi(request, env) {
       .map((item) => item.trim().toUpperCase())
       .filter((item) => MARKET_UNIVERSE.includes(item));
 
-    const quotes = await Promise.all(requested.map(marketQuote));
+    const proQuotes = await Promise.all(requested.map(marketQuote));
+    // The entitled Pyth Pro feed wins when it answers. Otherwise the public
+    // Pyth price service (Hermes) supplies a real published price for
+    // learning and Practice. It never fabricates: missing stays UNAVAILABLE.
+    const needHermes = proQuotes.filter((q) => q.status !== "FRESH").map((q) => q.symbol);
+    const hermes = needHermes.length && env?.PYTH_HERMES_DISABLED !== "true"
+      ? await fetchHermesQuotes(needHermes, typeof env?.HERMES_FETCH === "function" ? { fetchImpl: env.HERMES_FETCH } : {})
+      : [];
+    const hermesBySymbol = new Map(hermes.map((q) => [q.symbol, q]));
+    const rank = { FRESH: 2, STALE: 1, UNAVAILABLE: 0 };
+    const quotes = proQuotes.map((pro) => {
+      const pub = hermesBySymbol.get(pro.symbol);
+      if (!pub || (rank[pub.status] ?? 0) <= (rank[pro.status] ?? 0)) return pro;
+      return { ...pub, tokenizedSymbol: pro.symbol + "x" };
+    });
     return json({
       contractVersion: "0.2",
       type: "V0_2_MARKET_QUOTES",
@@ -596,6 +611,7 @@ export async function handleFamilyApi(request, env) {
       truthBoundary: {
         onlyFreshPythIsLive: true,
         unavailableIsNeverZero: true,
+        sources: ["PYTH_PRO", "PYTH_HERMES"],
       },
     });
   }

@@ -112,8 +112,14 @@ function Loaded({ asset }: { asset: MarketAsset }) {
           </div>
           <div className="mt-3 flex flex-wrap items-end gap-x-2 gap-y-1">
             <span className="text-[30px] font-semibold leading-none text-navy-strong tabular">{formatUsd(asset.price)}</span>
-            <PriceChange percent={asset.dayChangePercent} size="lg" className="mb-0.5" />
-            <span className="mb-1 text-[12px] text-ink-3">today</span>
+            {asset.priceSource === "mock" ? (
+              <>
+                <PriceChange percent={asset.dayChangePercent} size="lg" className="mb-0.5" />
+                <span className="mb-1 text-[12px] text-ink-3">today</span>
+              </>
+            ) : asset.asOf ? (
+              <span className="mb-1 text-[12px] text-ink-3">as of {new Date(asset.asOf).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span>
+            ) : null}
             <DataStatusTag status={asset.dataStatus} className="mb-1 ml-auto" />
           </div>
         </Card>
