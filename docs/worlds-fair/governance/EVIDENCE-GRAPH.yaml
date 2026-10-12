@@ -1,0 +1,296 @@
+version: "1.1"
+project: "cresco-worlds-fair"
+date: "2026-10-02"
+policy: "Faadil1/faadil-agent-system/EVIDENCE-GRAPH-POLICY.yaml@1.0.0"
+status: "ACTIVE_WORLD_FAIR_LIVE"
+authority: NONE
+
+purpose: >-
+  Trace material live/transactional claims without upgrading historical Stocklana proof
+  beyond its evidence class. Missing causal edges remain explicit.
+
+claims:
+  - claim_id: STOCKLANA_BASELINE_SOLANA_CAPITAL_PATH
+    statement: "The historical Stocklana/CRESCO baseline demonstrated a Solana Devnet capital-path proof."
+    evidence_class: TECHNICAL_PROOF
+    truth_state: OBSERVED
+    graph_status: PARTIAL
+    scenario:
+      scenario_id: BASELINE_ALLOW_REFUSE_ALLOW_ONCE_REPLAY
+      scenario_type: BOUNDARY
+      preconditions: "Historical Stocklana demo state and Solana Devnet program."
+      expected_consequence: "In-bound action executes; boundary action refuses; exact one-time exception executes once; replay refuses."
+    runtime_execution:
+      status: PARTIAL
+      pointer: "Historical baseline repo/runtime referenced by docs/BASELINE-DELTA.md."
+      limitation: "Exact execution receipt is not copied into this World’s Fair repo."
+    dependency:
+      dependency_id: SOLANA_DEVNET_BASELINE
+      role: "historical execution network"
+      live_or_stub: LIVE_BASELINE
+      load_bearing: true
+    receipt_or_telemetry:
+      status: PARTIAL
+      artifact_pointer: "Faadil1/cresco historical evidence; not reclassified here."
+      observed_or_generated: OBSERVED_BASELINE
+    commit:
+      status: UNKNOWN
+      repository: "Faadil1/cresco"
+      commit_sha: UNKNOWN
+    deployment:
+      status: PARTIAL
+      runtime_url_or_environment: "https://cresco-lac.vercel.app/"
+      deployment_identity: UNKNOWN
+      deployment_state: "historical public baseline"
+    limitation: >-
+      This claim remains historical baseline evidence only. The missing exact commit/deployment binding
+      prevents this graph from upgrading it into a current World’s Fair live claim.
+
+  - claim_id: WORLD_FAIR_FINAL_WEDGE_SELECTED
+    statement: "CRESCO has selected its World’s Fair company wedge."
+    evidence_class: BEHAVIOR_PROOF
+    truth_state: OBSERVED
+    graph_status: COMPLETE
+    artifact_pointer: "product/CONCEPT-LOCK-2026-10-01.md"
+    commit: "be3dd0ec6df28fdf947644bb4cf046d952b3c3fe"
+    note: "Internal product decision complete; does not imply market validation."
+
+  - claim_id: WORLD_FAIR_TECHNICAL_REALITY
+    statement: "The locked delegated-capital vertical is technically feasible as a bounded extension of the existing CRESCO Solana program."
+    evidence_class: TECHNICAL_PROOF
+    truth_state: OBSERVED
+    graph_status: COMPLETE
+    artifact_pointer: "technical/TECHNICAL-REALITY-CHECK-2026-10-01.md"
+    source_commit: "Faadil1/cresco@0eb10dd8352bba69b9717d0d62d89794c9e384cc"
+    project_commit: "6797eb7865707f4af319193b0345ead87eb1446f5"
+    limitation: "Technical feasibility alone does not prove operator demand."
+
+  - claim_id: WORLD_FAIR_LIVE_CORE_LOOP
+    statement: "The selected World’s Fair CRESCO wedge has a real Solana Devnet core loop with execution-bound delegated capital authority."
+    evidence_class: PRODUCTION_EVIDENCE
+    truth_state: OBSERVED
+    graph_status: COMPLETE
+    scenario:
+      scenario_id: CRESCO_ORCA_V1_LIVE
+      scenario_type: SUCCESS_BOUNDARY_NEGATIVE_RECOVERY
+      preconditions: "Protected Devnet principal, CRESCO World’s Fair program, Orca devUSDC/devUSDT pool, Pyth Lazer evidence."
+      expected_consequence: >-
+        Standing swaps execute; soft boundary refuses; exact one-use exception executes without widening
+        standing authority; mutation/replay/hard/evidence/stale paths refuse; Orca failure rolls back.
+    runtime_execution:
+      status: LIVE
+      network: "solana-devnet"
+      program_id: "7pgPuPZSUUtFcvFtVGmS3piCE1bHY35kjb14vct9v45Z"
+      workflow_run: 37037374212
+      workflow_job: 110938798095
+    dependencies:
+      - dependency_id: SOLANA_DEVNET
+        role: "execution and state"
+        live_or_stub: LIVE
+        load_bearing: true
+      - dependency_id: ORCA_WHIRLPOOLS
+        role: "swap execution venue"
+        program_id: "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+        pool: "63cMwvN8eoaD39os9bKP8brmA7Xtov9VxahnPufWCSdg"
+        live_or_stub: LIVE_DEVNET
+        load_bearing: true
+      - dependency_id: PYTH_LAZER
+        role: "market/notional evidence; authority effect NONE"
+        feed_id: 7
+        live_or_stub: LIVE
+        load_bearing: true
+    receipt_or_telemetry:
+      status: COMPLETE
+      artifact_pointer: "evidence/runtime/FIRST-LIVE-VERTICAL-SLICE-2026-10-02.md"
+      github_artifact_id: 11240747626
+      github_artifact_digest: "sha256:9981020726439b4271dcb6c584d160ccdfc4c161458d8e191a025a9a17b65350"
+      validator: "WORLD_FAIR_ORCA_RECEIPT_VALID=PASS"
+    commit:
+      status: COMPLETE
+      repository: "Faadil1/cresco"
+      deployment_source_head: "783ba885addd7926bc0028e56340833d13c973c5"
+      verifier_head: "e419d514d0367a5f92761ac034b3046e62980e57"
+      verifier_merge_sha_in_receipt: "b7365c93e8940237d46c7a6331303dddd06cc2e5"
+      source_equivalence: >-
+        Compare deployment_source_head..verifier_head changes only the proof harness and workflow;
+        no programs/keys/** or on-chain program source changed.
+      binary_hash_hardening: PROVEN
+      binary_binding_run: 37037374212
+      binary_binding_job: 110938798095
+      binary_binding_source_head: "e419d514d0367a5f92761ac034b3046e62980e57"
+      local_program_sha256: "084a3f7aad8a5772d773816579f5d2b98542c4b966dbb0dd7c60cb397db21f61"
+      onchain_program_sha256: "084a3f7aad8a5772d773816579f5d2b98542c4b966dbb0dd7c60cb397db21f61"
+      bit_identical: true
+    deployment:
+      status: COMPLETE
+      environment: "Solana Devnet"
+      deployment_identity: "7pgPuPZSUUtFcvFtVGmS3piCE1bHY35kjb14vct9v45Z"
+      deployment_source_run: 37021918279
+      deployment_state: "live reusable devnet runtime"
+    limitation: >-
+      The runtime binary is bit-identical to the rebuild at source head e419d514d0367a5f92761ac034b3046e62980e57.
+      This proves the bounded Devnet mechanism, not mainnet readiness, audited production security,
+      institutional trading, operator demand, WTP or adoption.
+
+  - claim_id: WORLD_FAIR_ATOMIC_EXCEPTION_ROLLBACK
+    statement: "A failed Orca execution does not consume the one-use exceptional authority or mutate CRESCO period counters."
+    evidence_class: PRODUCTION_EVIDENCE
+    truth_state: OBSERVED
+    graph_status: COMPLETE
+    scenario:
+      scenario_id: ORCA_FAILURE_ROLLBACK
+      scenario_type: RECOVERY
+      trigger: "Impossible min-output threshold."
+      observed_refusal: "AmountOutBelowMinimum"
+      allowance_consumed: false
+      counters_changed: false
+    runtime_execution:
+      status: LIVE
+      workflow_run: 37037374212
+      program_id: "7pgPuPZSUUtFcvFtVGmS3piCE1bHY35kjb14vct9v45Z"
+    receipt_or_telemetry:
+      status: COMPLETE
+      artifact_pointer: "evidence/runtime/FIRST-LIVE-VERTICAL-SLICE-2026-10-02.md"
+
+  - claim_id: WORLD_FAIR_SHARED_PRODUCT_CORE
+    statement: "The reusable World’s Fair server-side product core executes the canonical CRESCO→Orca authority sequence live on Solana Devnet."
+    evidence_class: PRODUCTION_EVIDENCE
+    truth_state: OBSERVED
+    graph_status: COMPLETE
+    runtime_execution:
+      status: LIVE
+      network: "solana-devnet"
+      program_id: "7pgPuPZSUUtFcvFtVGmS3piCE1bHY35kjb14vct9v45Z"
+      provider_delegate: "4VLFryH36ed8Mc7ByBMLwvtrtYMgo2hKmAicDU2oRfj7"
+      mandate: "CPdat8L1kNUZXAHd6smzeK14nRXD9p1kXU4pF6SSMBXG"
+      workflow_run: 37083019145
+      workflow_job: 111087447682
+      source_head: "cedfbb400f00f28fbe4268fde46ab68933d42e3c"
+    receipt_or_telemetry:
+      status: COMPLETE
+      artifact_pointer: "evidence/runtime/WORLDS-FAIR-OPERATOR-LAB-LIVE-2026-10-02.md"
+      github_artifact_id: 11258404544
+      github_artifact_digest: "sha256:81f00eb244dd6afee201ecaf55c3972f734cf0843d3ce183ed91517b8f6815bf"
+      validator: "WORLD_FAIR_OPERATOR_LAB_RECEIPT_VALID=PASS"
+    deployment_build:
+      worker_bundle_status: PASS
+      cloudflare_ci_run: 37083019089
+      source_head: "cedfbb400f00f28fbe4268fde46ab68933d42e3c"
+      public_hosted_deployment_status: PROVEN_API_ONLY
+      public_merge_commit: "5645e199c93d6c158969e17727f8a87c85c95484"
+      public_cloudflare_build: "6a6199db-e2b2-4ab9-9e63-d03c88a734ec"
+      hosted_api_proof_run: 37084475468
+      hosted_api_proof_attempt: 3
+      hosted_api_proof_job: 111097900800
+      hosted_api_proof_artifact: 11259669023
+    concurrency:
+      durable_live_run_lease: PROVEN_TESTED
+      overlapping_public_run_result: "409 BUSY"
+    limitation: >-
+      Shared live product-core execution and public hosted API→Solana execution are proven.
+      The public /worlds-fair browser surface is still missing, so judge self-serve remains unproven.
+
+  - claim_id: WORLD_FAIR_PR29_EXACT_HEAD_7_OF_7
+    statement: "PR #29 exact head b77b5378c6088c50c2912a4b4254c43b28f549fd completes all seven canonical World’s Fair scenarios live on Solana Devnet in one receipt-validated run."
+    evidence_class: PRODUCTION_EVIDENCE
+    truth_state: OBSERVED
+    graph_status: COMPLETE
+    runtime_execution:
+      status: LIVE_PREMERGE_EXACT_HEAD
+      network: "solana-devnet"
+      program_id: "7pgPuPZSUUtFcvFtVGmS3piCE1bHY35kjb14vct9v45Z"
+      program_sha256: "084a3f7aad8a5772d773816579f5d2b98542c4b966dbb0dd7c60cb397db21f61"
+      source_head: "b77b5378c6088c50c2912a4b4254c43b28f549fd"
+      pull_request: 29
+      source_promotion:
+        merge_status: MERGED_TO_MAIN
+        merge_commit: "b81133c6e3c57c36f6baedcfcce3cf9b8d46d3e3"
+        merged_at: "2026-10-04T19:51:31Z"
+        postmerge_test_run: 37229869661
+        postmerge_test_result: PASS
+        postmerge_cloudflare_ci_run: 37229869664
+        postmerge_cloudflare_ci_result: PASS
+        public_deploy_of_merge_commit: BLOCKED_MISSING_CLOUDFLARE_GITHUB_SECRETS
+        public_promotion_attempt:
+          ops_branch: "ops/worlds-fair-public-promotion-2026-10-04"
+          ops_commit: "99e42d71bd060559b7454426ad0fd153825d12b5"
+          workflow_run: 37233079206
+          workflow_job: 111526689182
+          result: BLOCKED_BEFORE_DEPLOYMENT
+          cloudflare_api_token_available: false
+          cloudflare_account_id_available: false
+          deployment_attempts: 0
+          public_live_attempts: 0
+          evidence: "evidence/runtime/HOSTED-PUBLIC-PROMOTION-BLOCKED-MISSING-CLOUDFLARE-SECRETS-2026-10-04.md"
+        postdeploy_repeatability: NOT_PROVEN
+      workflow_run: 37214175230
+      workflow_job: 111471209923
+      starting_nonce: 13
+      completed_nonce: 14
+    receipt_or_telemetry:
+      status: PASS
+      validator: "WORLD_FAIR_OPERATOR_LAB_RECEIPT_VALID=PASS"
+      github_artifact: 11307628144
+      github_artifact_digest: "sha256:e2f93357e79d89a40ae864df76b7f7dce81ea837de1b12fab06a689cfb5a65ce"
+      artifact_pointer: "evidence/runtime/HOSTED-PR29-EXACT-HEAD-7-OF-7-LIVE-PASS-2026-10-04.md"
+      canonical_scenarios: 7
+    limitation: "Exact-head live behavior is proven and that repair is merged to main with post-merge CI PASS. Public deployment is currently blocked because the authorized GitHub deployment workflow had no Cloudflare API token or account ID; no deploy or public live call occurred. Post-deploy repeatability remains unproven."
+
+  - claim_id: WORLD_FAIR_HOSTED_API_TO_SOLANA
+    statement: "The public CRESCO v0.3 World’s Fair API executes the canonical CRESCO→Orca authority sequence live on Solana Devnet."
+    evidence_class: PRODUCTION_EVIDENCE
+    truth_state: OBSERVED
+    graph_status: COMPLETE
+    runtime_execution:
+      status: LIVE
+      network: "solana-devnet"
+      program_id: "7pgPuPZSUUtFcvFtVGmS3piCE1bHY35kjb14vct9v45Z"
+      program_sha256: "084a3f7aad8a5772d773816579f5d2b98542c4b966dbb0dd7c60cb397db21f61"
+      public_api: "https://keys-api-stocklana.faadil-casecraft.workers.dev"
+      product_merge_commit: "5645e199c93d6c158969e17727f8a87c85c95484"
+      cloudflare_build: "6a6199db-e2b2-4ab9-9e63-d03c88a734ec"
+      workflow_run: 37084475468
+      workflow_attempt: 3
+      workflow_job: 111097900800
+    receipt_or_telemetry:
+      status: PASS
+      artifact_pointer: "evidence/runtime/HOSTED-API-SOLANA-PASS-2026-10-02.md"
+      github_artifact: 11259669023
+      github_artifact_digest: "sha256:b8aaf603ab494fa3b7face4135fd4e1d5d568966c4044073f3f4c615142fd499"
+      canonical_scenarios: 7
+    limitation: "Hosted API→Solana is proven and the browser path is now separately proven; independent external-human operator validation remains outside this technical claim."
+
+  - claim_id: WORLD_FAIR_HOSTED_JUDGE_SELF_SERVE
+    statement: "A judge can open the public World’s Fair surface and trigger the live CRESCO→Orca sequence without code or GitHub Actions."
+    evidence_class: PRODUCTION_EVIDENCE
+    truth_state: OBSERVED
+    graph_status: COMPLETE
+    evidence:
+      workflow_run: 37124741369
+      workflow_job: 111207650592
+      artifact: 11274434523
+      artifact_digest: "sha256:ee3b8da1eeeb3a107f0a9e27b4bb5adc72484cd3dae24428cce0b1927b1dafe8"
+      artifact_pointer: "evidence/runtime/HOSTED-BROWSER-TO-SOLANA-LIVE-PASS-2026-10-03.md"
+      result: "browser-triggered 7/7 PASS; fresh state-empty browser can reach Ready runtime and live-run control"
+    limitation: "This proves technical self-serve capability, not independent external-human usage, demand, WTP or adoption."
+
+  - claim_id: WORLD_FAIR_EXECUTION_BOUND_CAPITAL_AUTHORITY_VALUE
+    statement: "Execution-bound delegated capital authority has validated operator value."
+    evidence_class: OUTCOME_PROOF
+    truth_state: UNKNOWN
+    graph_status: MISSING
+    reason: "The mechanism is live, but direct representative operator/customer validation remains missing."
+
+  - claim_id: WORLD_FAIR_ATOMIC_EXCEPTION_EXECUTION_VALUE
+    statement: "Atomic exception consumption + capital execution is materially valuable to target operators."
+    evidence_class: OUTCOME_PROOF
+    truth_state: UNKNOWN
+    graph_status: UNKNOWN
+    reason: "Atomic behavior is technically proven; operator desirability is still unvalidated."
+
+rules:
+  - "No baseline edge is silently upgraded to current World’s Fair LIVE."
+  - "Any sponsor-native, transactional, reliability/recovery or judge-facing material claim must add the full causal path."
+  - "Missing commit→deployment or execution→receipt edges keep the claim PARTIAL/MISSING/UNKNOWN."
+  - "Replay may support reproducibility but cannot replace a claimed live execution."
+  - "Technical mechanism proof never upgrades operator value, WTP or adoption claims."

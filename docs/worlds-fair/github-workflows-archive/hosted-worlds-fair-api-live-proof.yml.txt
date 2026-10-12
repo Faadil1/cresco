@@ -1,0 +1,81 @@
+name: hosted-worlds-fair-api-live-proof
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/hosted-worlds-fair-api-live-proof.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: hosted-worlds-fair-api-live-proof
+  cancel-in-progress: false
+
+jobs:
+  hosted-api-live:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    env:
+      API_URL: https://keys-api-stocklana.faadil-casecraft.workers.dev
+      EXPECTED_PROGRAM_ID: 7pgPuPZSUUtFcvFtVGmS3piCE1bHY35kjb14vct9v45Z
+      EXPECTED_PROGRAM_SHA256: 084a3f7aad8a5772d773816579f5d2b98542c4b966dbb0dd7c60cb397db21f61
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify hosted bound runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/runtime/hosted-api
+          code="$(curl -sS --max-time 30             -o evidence/runtime/hosted-api/runtime.json             -w '%{http_code}'             "$API_URL/api/v0.3/worlds-fair/runtime")"
+          echo "HOSTED_API_RUNTIME_HTTP=$code"
+          test "$code" = "200"
+          jq -e             --arg program "$EXPECTED_PROGRAM_ID"             --arg sha "$EXPECTED_PROGRAM_SHA256"             '.type=="WORLD_FAIR_OPERATOR_LAB_RUNTIME" and
+             .programId==$program and
+             .programSha256==$sha and
+             .network=="solana-devnet"'             evidence/runtime/hosted-api/runtime.json >/dev/null
+          echo "HOSTED_WORLD_FAIR_RUNTIME=PASS"
+
+      - name: Execute hosted canonical live sequence
+        shell: bash
+        run: |
+          set -euo pipefail
+          code="$(curl -sS --max-time 180             -H 'content-type: application/json'             -d '{"scenario":"CANONICAL_LIVE"}'             -o evidence/runtime/hosted-api/live-run.json             -w '%{http_code}'             "$API_URL/api/v0.3/worlds-fair/run")"
+          echo "HOSTED_API_LIVE_RUN_HTTP=$code"
+          test "$code" = "200"
+          jq -e             --arg program "$EXPECTED_PROGRAM_ID"             '.status=="PASS" and
+             .receipt.status=="PASS" and
+             .receipt.productState=="WORLD_FAIR_OPERATOR_LAB_LIVE" and
+             .receipt.programId==$program and
+             .receipt.scenarios.standingAutonomy.status=="PASS" and
+             .receipt.scenarios.softBoundary.status=="PASS" and
+             .receipt.scenarios.exactException.status=="PASS" and
+             .receipt.scenarios.hardBoundary.status=="PASS" and
+             .receipt.scenarios.evidenceFailure.status=="PASS" and
+             .receipt.scenarios.rollback.status=="PASS" and
+             .receipt.scenarios.staleAuthority.status=="PASS"'             evidence/runtime/hosted-api/live-run.json >/dev/null
+          echo "HOSTED_API_TO_SOLANA_CAUSAL_PATH=PASS"
+
+      - name: Record hosted API proof summary
+        if: success()
+        shell: bash
+        run: |
+          {
+            echo "# Hosted World’s Fair API live proof"
+            echo
+            echo "- api: $API_URL"
+            echo "- program: $EXPECTED_PROGRAM_ID"
+            echo "- program sha256: $EXPECTED_PROGRAM_SHA256"
+            echo "- hosted runtime: PASS"
+            echo "- hosted API→Solana canonical live sequence: PASS"
+            echo "- observed at: $(date -u +%FT%TZ)"
+          } > evidence/runtime/hosted-api/SUMMARY.md
+
+      - name: Upload hosted API proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hosted-worlds-fair-api-live-proof
+          path: evidence/runtime/hosted-api
+          if-no-files-found: warn

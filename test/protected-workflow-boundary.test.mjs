@@ -12,7 +12,8 @@ const protectedWorkflows = [
 
 for (const workflow of protectedWorkflows) {
   test(`${workflow} is manual-only because it can mutate external or Devnet state`, () => {
-    const yaml = fs.readFileSync(workflow, 'utf8');
+    // Normalize CRLF: a Windows checkout (core.autocrlf) must not fail the boundary check.
+    const yaml = fs.readFileSync(workflow, 'utf8').replace(/\r\n/g, '\n');
     assert.match(yaml, /\non:\n\s+workflow_dispatch:\s*(?:\n|$)/);
     assert.doesNotMatch(yaml, /\n\s{2}push:\s*(?:\n|$)/);
     assert.doesNotMatch(yaml, /\n\s{2}pull_request:\s*(?:\n|$)/);

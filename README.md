@@ -6,6 +6,17 @@ CRESCO gives young people real room to make financial decisions inside family-se
 
 > **Learn in context. Act freely inside bounds. Ask for more freedom only at the boundary.**
 
+## Crypto World's Fair (Colosseum, October 2026)
+
+**Act alone inside the rules. Ask once for the exception.** The same Solana program now serves two cases: a teenager inside a parent's allowance, and a strategy or AI agent inside an allocator's mandate. Beyond the limit the program refuses, and the responsible person approves one exact action once, without widening the rules.
+
+- Live desk (Family or Delegated capital): https://cresco.faadil-casecraft.workers.dev/worlds-fair/desk
+- What is live, with Devnet receipts and the 5 of 5 repeatability campaign: [docs/worlds-fair/CURRENT-STATE-2026-10-12.md](docs/worlds-fair/CURRENT-STATE-2026-10-12.md)
+- Everything about the World's Fair work (product, discovery, evidence): [docs/worlds-fair/](docs/worlds-fair/README.md)
+
+> "What I find exciting about CRESCO is the ability to approve one exact exception without widening the agent's standing mandate. Through my work on Sanction, I recognize how much that boundary matters, and I'm excited about CRESCO's opportunity to carry that control all the way through to execution."
+> Eric Lovold, founder of Sanction (quoted with permission)
+
 ## Live product and proof
 
 - Product: https://cresco-lac.vercel.app
@@ -24,6 +35,13 @@ CRESCO gives young people real room to make financial decisions inside family-se
 The current API URL keeps its original Cloudflare worker hostname so the already-deployed runtime stays reachable. It serves CRESCO and is treated only as a legacy infrastructure identifier.
 
 The current capital path moves a **demo SPL token**, not real securities. AAPL is the current proven Money lane with live Pyth market evidence. CRESCO does not claim brokerage, custody, mainnet execution, or real minor securities execution.
+
+## World's Fair: delegated capital desk (v0.4, Devnet)
+
+- Desk for operator, principal and risk owner: `/worlds-fair/desk` (judge lab stays at `/worlds-fair`).
+- Strategy API: `GET /api/v0.4/worlds-fair/openapi`, example client `examples/worlds-fair-strategy-client.mjs`.
+- Design, truth boundary, deploy and LIVE verification: [`docs/WORLDS-FAIR-OPERATOR-PRINCIPAL-WORKFLOW.md`](docs/WORLDS-FAIR-OPERATOR-PRINCIPAL-WORKFLOW.md).
+- Status: implemented and tested locally; LIVE Devnet verification pending.
 
 ## The product model
 

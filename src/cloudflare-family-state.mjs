@@ -59,6 +59,47 @@ export class FamilyState {
       ? await request.json().catch(() => ({}))
       : {};
 
+    // World's Fair workflow storage (v0.4): small JSON documents, one key each.
+    if (method === "POST" && path === "/wf-kv/get") {
+      const key = String(body.key || "");
+      if (!key.startsWith("wf:")) return json({ error: "KEY_INVALID" }, 400);
+      const value = await this.state.storage.get(key);
+      return json({ value: value === undefined ? null : value });
+    }
+
+    if (method === "POST" && path === "/wf-kv/put") {
+      const key = String(body.key || "");
+      if (!key.startsWith("wf:")) return json({ error: "KEY_INVALID" }, 400);
+      await this.state.storage.put(key, body.value ?? null);
+      return json({ ok: true });
+    }
+
+    // Generic named lease (per-workspace write serialization).
+    if (method === "POST" && path === "/lease/acquire") {
+      const name = String(body.name || "");
+      const requestId = String(body.requestId || "");
+      if (!name || !requestId) return json({ error: "LEASE_ARGS_REQUIRED" }, 400);
+      const ttlMs = Math.min(Math.max(Number(body.ttlMs) || 120000, 1000), 10 * 60 * 1000);
+      const nowMs = Date.now();
+      const key = "lease:" + name;
+      const current = await this.state.storage.get(key);
+      if (current && current.requestId !== requestId && Number(current.expiresAtMs || 0) > nowMs) {
+        return json({ acquired: false, status: "BUSY", retryAfterMs: Math.max(1000, Number(current.expiresAtMs) - nowMs) }, 409);
+      }
+      await this.state.storage.put(key, { requestId, expiresAtMs: nowMs + ttlMs, acquiredAt: new Date(nowMs).toISOString() });
+      return json({ acquired: true });
+    }
+
+    if (method === "POST" && path === "/lease/release") {
+      const key = "lease:" + String(body.name || "");
+      const current = await this.state.storage.get(key);
+      if (current && current.requestId === String(body.requestId || "")) {
+        await this.state.storage.delete(key);
+        return json({ released: true });
+      }
+      return json({ released: false });
+    }
+
     if (method === "POST" && path === "/worlds-fair-lock/acquire") {
       const requestId = String(body.requestId || "");
       if (!requestId) return json({ error: "REQUEST_ID_REQUIRED" }, 400);

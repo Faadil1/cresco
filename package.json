@@ -15,7 +15,9 @@
     "proof:pyth-markets": "node scripts/pyth-market-discovery-proof.mjs",
     "quality:gate": "node scripts/validate-build-quality.mjs",
     "proof:worlds-fair-orca": "node scripts/worlds-fair-orca-v1-proof.cjs",
-    "inspect:orca-devnet": "node scripts/orca-devnet-inspect.mjs"
+    "inspect:orca-devnet": "node scripts/orca-devnet-inspect.mjs",
+    "campaign:worlds-fair": "node scripts/worlds-fair-workflow-campaign.mjs",
+    "example:strategy": "node examples/worlds-fair-strategy-client.mjs"
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.32.1",
@@ -25,7 +27,8 @@
     "@orca-so/whirlpools-sdk": "0.22.0",
     "@solana/web3.js": "1.98.4",
     "decimal.js": "10.5.0",
-    "bn.js": "5.2.2"
+    "bn.js": "5.2.2",
+    "@noble/curves": "1.9.7"
   },
   "devDependencies": {
     "mocha": "11.7.2"

@@ -15,10 +15,13 @@ async function readJson(req) {
 const server = http.createServer(async (req, res) => {
   try {
     const body = req.method === 'POST' ? await readJson(req) : null;
+    const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
     const result = await routeCrescoHttp({
       method: req.method,
-      path: new URL(req.url, `http://${req.headers.host || 'localhost'}`).pathname,
-      body
+      path: url.pathname,
+      body,
+      headers: req.headers,
+      query: Object.fromEntries(url.searchParams)
     });
 
     res.statusCode = result.status;
@@ -26,7 +29,7 @@ const server = http.createServer(async (req, res) => {
     res.setHeader('access-control-allow-methods', 'GET,POST,OPTIONS');
     res.setHeader(
       'access-control-allow-headers',
-      'content-type,idempotency-key'
+      'content-type,idempotency-key,authorization'
     );
 
     for (const [name, value] of Object.entries(result.headers ?? {})) {

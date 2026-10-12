@@ -1,0 +1,576 @@
+# Frozen as of 2026-10-04 (copied from the former cresco-worlds-fair repository). Current state: ../CURRENT-STATE-2026-10-12.md
+
+handover:
+  protocol_version: 1
+  project: cresco-worlds-fair
+  date: 2026-10-02
+  source_of_truth: GitHub
+  repository: Faadil1/cresco-worlds-fair
+  branch: main
+
+  resume_rule: >-
+    Read state/CURRENT.yaml first, then this HANDOVER, then product/PRD.md,
+    governance/LIFECYCLE-COVERAGE.yaml, governance/GATEWAY-REGISTRY.yaml,
+    governance/EVIDENCE-GRAPH.yaml and governance/REALITY-LEDGER.md.
+    For global policy, read Faadil1/faadil-agent-system main CURRENT/HANDOVER and the control-plane policies.
+    Chat memory is routing context only.
+
+  lifecycle_status: ACTIVE
+  product_status: OPERATOR_LAB_SHARED_CORE_PROVEN__HOSTED_SELF_SERVE_PENDING_WITH_VALIDATION_GAP
+  build_authorized: true
+  terminal_completeness_allowed: false
+
+  reconciliation:
+    adopted_at: 2026-10-01
+    no_backdating: true
+    central_control_plane: SYSTEM_CONTROL_PLANE_V1_ACTIVE
+    product_reality: INTEGRATION_FIRST_PRODUCT_EXPLOITATION_V1_3_ACTIVE
+    evidence_graph: ACTIVE_BOUNDED
+    reference_intelligence: ACTIVE_ADVISORY
+    rule_lifecycle_decision: NO_CHANGE
+    cross_project_learning_decision: NO_CHANGE
+
+  last_proven_gate:
+    id: PRODUCT_EXPLOITATION_LOOP__SHARED_LIVE_PRODUCT_CORE
+    status: PROVEN
+    evidence: evidence/runtime/WORLDS-FAIR-OPERATOR-LAB-LIVE-2026-10-02.md
+    note: >-
+      A reusable server-side World’s Fair provider executed the same CRESCO→Orca mechanism live,
+      with stable distinct delegate, 7/7 consequence scenarios, durable overlap refusal and a
+      Cloudflare-buildable API path.
+
+  current_gate:
+    id: PUBLIC_RUNTIME__HOSTED_JUDGE_SELF_SERVE
+    status: ACTIVE
+    blockers:
+      - repair_hosted_API_blockhash_expiry_and_transient_RPC_reads_PR12
+      - publish_worlds_fair_web_route_from_current_main
+      - hosted_UI_to_API_to_Solana_receipt
+      - clean_room_judge_self_serve
+      - fresh_environment_reproducibility
+
+  preserved_validation_gaps:
+    - direct_representative_operator_evidence
+    - CRESCO_specific_pull_or_WTP
+    - at_least_two_credible_target_users_or_operators_willing_to_test
+    - exception_shape_distribution
+    - stale_policy_operator_preference
+    - atomic_execution_operator_value
+
+  current_hypothesis:
+    statement: >-
+      CRESCO may be strongest as execution-bound delegated capital authority rather than another generic
+      authorization ledger, preserving standing authority while issuing bounded exceptional authority.
+    truth_state: INFERRED
+    confidence: "mechanism technically proven on Devnet; operator value remains unvalidated"
+    primary_residual_source:
+      - research/SANCTION-DELTA.md
+      - research/INTERVIEW-SANCTION-2026-09-29.md
+      - research/PRIMER-VAULT-DELTA.md
+
+  product_reality:
+    world_fair_live_vertical_slice: PROVEN
+    product_exploitation_loop: ACTIVE
+    live_receipt: evidence/runtime/FIRST-LIVE-VERTICAL-SLICE-2026-10-02.md
+    shared_core_receipt: evidence/runtime/WORLDS-FAIR-OPERATOR-LAB-LIVE-2026-10-02.md
+    shared_product_core: PROVEN_LIVE
+    real_user_surface_code: PROVEN_BUILD_NOT_HOSTED
+    public_runtime: MISSING
+    judge_self_serve: MISSING
+    depth_gap_review: product/POST-VERTICAL-SLICE-DEPTH-GAP-REVIEW-2026-10-02.md
+    highest_safe_action_tier: APPROVAL_GATED_WRITE
+    next_depth_target: HOSTED_JUDGE_SELF_SERVE
+
+  evidence_graph:
+    file: governance/EVIDENCE-GRAPH.yaml
+    baseline_graph_status: PARTIAL
+    world_fair_live_claim_status: PROVEN_WITH_RUNTIME_BINDING_HARDENING_ACTIVE
+    next_update_trigger:
+      - runtime_binary_hash_binding
+      - real_user_surface
+      - judge_self_serve
+      - fresh_environment_reproducibility
+      - demo/submission claim
+
+  reference_intelligence:
+    adevar_pre_audit_credits_cwf_2026:
+      status: CLASSIFIED_REFERENCE_ONLY
+      central_inbox: Faadil1/faadil-agent-system/reference_intelligence/INBOX.yaml
+      adoption: PENDING
+      note: "Useful security/pre-audit opportunity; it does not alter product scope or create a new gate by itself."
+
+  official_rules:
+    verified_at: 2026-10-01
+    source: https://colosseum.com/legal/Crypto%20World%27s%20Fair%20Hackathon%20Rules.pdf
+    deadline: 2026-10-12T23:59:00-07:00
+    judging:
+      - Functionality
+      - Potential Impact
+      - Novelty
+      - UX
+      - Open-source
+      - Business Plan
+    relevant_constraints:
+      - one_team_per_entrant
+      - one_project_submission_per_team
+      - content_in_English
+      - Solana_track_requires_integration_with_Solana
+
+  outreach:
+    checkpoint: 2026-10-01
+    result: "No new operator replies beyond Eric as of checkpoint."
+    interpretation: "Neutral; not negative market evidence."
+    external_send_boundary: HUMAN_PROTECTED_ACTION
+
+  devnet_cleanup_authorization:
+    status: PROVEN_EXECUTED
+    authorized_at: 2026-10-02
+    program_id: "6fo7kPmWAZg6XgLASv1e21rSiGnXQexk6dg2ja1uZyAi"
+    action: "Irreversible Solana Devnet program close with --bypass-warning solely to reclaim CI-only ephemeral rent."
+    scope_boundary: "No public/baseline CRESCO program and no other Program ID is authorized."
+    execution_run_id: 37025843893
+    execution_job_id: 110900139584
+    authority_check: PASS
+    reclaimed_lamports: 2853314160
+    wallet_balance_after_lamports: 5030464216
+    closure_verification: PASS
+    execution_note: "Authorized CI cleanup completed and is verified by the dedicated GitHub Actions run."
+
+  first_live_vertical_slice:
+    status: PROVEN
+    receipt: evidence/runtime/FIRST-LIVE-VERTICAL-SLICE-2026-10-02.md
+    runtime_program_id: "7pgPuPZSUUtFcvFtVGmS3piCE1bHY35kjb14vct9v45Z"
+    workflow_run: 37037374212
+    workflow_job: 110938798095
+    verified_head: "e419d514d0367a5f92761ac034b3046e62980e57"
+    artifact_id: 11240747626
+    artifact_digest: "sha256:9981020726439b4271dcb6c584d160ccdfc4c161458d8e191a025a9a17b65350"
+    truth_boundary: "Devnet mechanism proof only; no mainnet, audited production security, operator demand, WTP or adoption claim."
+
+  product_exploitation_loop:
+    status: ACTIVE
+    depth_gap_review: product/POST-VERTICAL-SLICE-DEPTH-GAP-REVIEW-2026-10-02.md
+
+  cloudflare_frontend_migration:
+    status: PROVEN_HOSTED
+    migration_pr: 13
+    proven_head: "f567c2b5ebcb1ab04ae8bb63e1c06fcd72f92469"
+    merge_commit: "6f7b9010d09f15e4b90ed2afbbf8a136397ce4d5"
+    root_directory: apps/web
+    worker_name: cresco
+    evidence:
+      - evidence/runtime/CRESCO-CLOUDFLARE-FRONTEND-MIGRATION-PREDEPLOY-2026-10-03.md
+      - evidence/runtime/CRESCO-CLOUDFLARE-CORS-AUTH-HOSTED-PASS-2026-10-03.md
+    hosted_origin: https://cresco.faadil-casecraft.workers.dev
+    hosted_browser_smoke_run: 37124397821
+    hosted_browser_smoke_artifact: 11274134281
+    legacy_pages_project: "cresco-visual-lab = LEGACY_OBSOLETE because apps/visual-lab was removed"
+
+  public_deployment_checkpoint:
+    status: EXECUTED_PARTIAL_PUBLICATION
+    authorized_at: 2026-10-02
+    human_authorization: "oui allons y"
+    authorized_source_head: "cedfbb400f00f28fbe4268fde46ab68933d42e3c"
+    pull_request: 11
+    merge_commit: "fa26ff06028b57042c850bef4b9467b39e786ea6"
+    cloudflare_worker: PROVEN_PUBLIC
+    cloudflare_version: "ab366ebc-24d5-48c1-94b8-3163bba13293"
+    hosted_runtime_get: PROVEN_PASS
+    hosted_runtime_post: PROVEN_PASS_AFTER_PR12_REPAIR
+    hosted_api_to_solana: PROVEN_PASS
+    hosted_api_proof_run: 37084475468
+    hosted_api_proof_attempt: 3
+    hosted_api_proof_job: 111097900800
+    hosted_api_proof_artifact: 11259669023
+    hosted_api_evidence: evidence/runtime/HOSTED-API-SOLANA-PASS-2026-10-02.md
+    hosted_frontend: PROVEN_HOSTED_BROWSER_RUNTIME_READY
+    vercel_historical_owner: Benita2001
+    vercel_source_pull_request: 1
+    vercel_expected_project: cresco
+    vercel_expected_domain: https://cresco-lac.vercel.app
+    vercel_root_directory: apps/web
+    vercel_connection_evidence: evidence/runtime/VERCEL-FRONTEND-CONNECTION-BLOCK-2026-10-02.md
+    evidence: evidence/runtime/HOSTED-PUBLIC-RUNTIME-FIRST-ATTEMPT-2026-10-02.md
+    active_repair_pr: 12
+    active_repair_branch: fix/worlds-fair-hosted-confirmation-v1
+    repair_proven_head: "40abac5acfabe4b682b47a589e177fbe5340a273"
+    repair_live_run: 37085360077
+    repair_live_artifact: 11260647857
+    repair_evidence: evidence/runtime/HOSTED-CONFIRMATION-REPAIR-PREMERGE-2026-10-02.md
+    repair_merge_authorization: CONSUMED
+    repair_authorized_head: "40abac5acfabe4b682b47a589e177fbe5340a273"
+    repair_merge_commit: "5645e199c93d6c158969e17727f8a87c85c95484"
+    repair_cloudflare_build: "6a6199db-e2b2-4ab9-9e63-d03c88a734ec"
+    repair_authorized_scope: "Merge PR #12 and redeploy existing CRESCO Cloudflare Worker for World’s Fair Devnet repair only."
+    repair_hosted_result: PROVEN_PASS
+    scope: "CRESCO World’s Fair Worker/API + /worlds-fair frontend only; no mainnet, no new Solana program, no submission."
+    prior_cleanup_authorization_reusable: false
+
+  exact_next_gate: PUBLIC_RUNTIME__HOSTED_JUDGE_SELF_SERVE
+  exact_next_action: >-
+    Main remains at b81133c6e3c57c36f6baedcfcce3cf9b8d46d3e3 with the PR #29 repair that has
+    one receipt-validated 7/7 Solana Devnet PASS and green post-merge CI. The authorized temporary branch
+    ops/worlds-fair-public-promotion-2026-10-04 was created from that exact commit; one one-shot deployment
+    workflow was added at ops commit 99e42d71bd060559b7454426ad0fd153825d12b5. Workflow run
+    37233079206 / job 111526689182 stopped at its credential guard because GitHub Actions exposed neither
+    CLOUDFLARE_API_TOKEN nor CLOUDFLARE_ACCOUNT_ID. Checkout, deployment, public runtime read, public 7/7
+    POST and receipt verification were all skipped. Public deployment attempts = 0; public live attempts = 0;
+    reruns = 0; alternative deployment attempts = 0. Canonical blocker:
+    PUBLIC_DEPLOY_BLOCKED_MISSING_CLOUDFLARE_GITHUB_SECRETS. Do not claim the public Worker contains
+    b81133c6e3c57c36f6baedcfcce3cf9b8d46d3e3 until a separately authorized credentialed deployment succeeds.
+    No frontend deploy, mainnet, repeatability or mutation/closure of PR #19/#20/#21/#22/#23/#24/#25/#26/#27/#28
+    is authorized.
+
+  prohibited_shortcuts:
+    - no_silent_concept_lock
+    - no_world_fair_live_claim_from_stocklana_baseline
+    - no_reference_to_canonical_auto_promotion
+    - no_read_only_fallback_only_for_demo_convenience
+    - no_evidence_artifact_as_primary_product_engine
+    - no_claim_upgrade_without_runtime_evidence_edges
+
+
+  workstream_scope:
+    this_project_thread: COLOSSEUM_ONLY
+    adevar_pre_audit: SEPARATE_CONVERSATION_WORKSTREAM
+    shared_product_core: CRESCO
+    rule: "Adevar may consume the same product evidence later but does not steer Colosseum concept selection or build scope."
+
+
+  human_override:
+    id: BUILD_WITH_VALIDATION_GAP_2026_10_01
+    status: PROVEN
+    reason: "No new operator replies; human explicitly instructed the project to advance."
+    truth_rule: "Missing operator evidence remains missing and cannot be described as passed."
+
+  concept_lock:
+    status: PROVEN
+    artifact: product/CONCEPT-LOCK-2026-10-01.md
+    selected_vertical: DELEGATED_TRADING_CAPITAL_MANDATES
+    product: EXECUTION_BOUND_DELEGATED_CAPITAL_AUTHORITY_FOR_SOLANA
+    validation_gap_preserved: true
+
+  technical_reality_check:
+    status: PROVEN
+    verdict: PASS_WITH_BOUNDED_DELTA
+    artifact: technical/TECHNICAL-REALITY-CHECK-2026-10-01.md
+    build_authorized: true
+
+
+  backend_engineering_intelligence:
+    status: PROVEN
+    selected_adapter: ORCA_WHIRLPOOLS_DEVNET
+    artifact: technical/BACKEND-ENGINEERING-INTELLIGENCE-2026-10-01.md
+
+  bounded_specification:
+    status: PROVEN
+    artifact: spec/WORLDS-FAIR-V1-IMPLEMENTATION-SPEC.md
+
+  demo_first_architecture:
+    status: PROVEN
+    artifact: technical/DEMO-FIRST-ARCHITECTURE-2026-10-01.md
+
+  build_authorization:
+    status: PROVEN
+    scope: "Bounded one-venue World’s Fair vertical only"
+    validation_gap_preserved: true
+    arbitrary_CPI_forbidden: true
+
+  cors_auth_recovery_checkpoint:
+    status: MERGED_DEPLOYED_AND_HOSTED_PASS
+    pull_request: 14
+    authorized_head: "8fcc5300dfcd86b90c27be379d96df2e7af8b879"
+    merge_commit: "f6c71177155ccd3ebeaebb1aff9897aaf1758aac"
+    backend_cloudflare_build: "819f0895-5058-4159-923a-492957a80b3f"
+    frontend_cloudflare_build: "7491d3f6-74bd-463d-bac6-284c9b142bd7"
+    hosted_browser_run: 37124397821
+    hosted_browser_job: 111206672658
+    hosted_browser_artifact: 11274134281
+    evidence: evidence/runtime/CRESCO-CLOUDFLARE-CORS-AUTH-HOSTED-PASS-2026-10-03.md
+    authorization_status: CONSUMED
+
+  browser_live_sequence_checkpoint:
+    status: EXECUTED_PROVEN
+    workflow_run: 37124741369
+    workflow_job: 111207650592
+    artifact: 11274434523
+    artifact_digest: "sha256:ee3b8da1eeeb3a107f0a9e27b4bb5adc72484cd3dae24428cce0b1927b1dafe8"
+    starting_nonce: 6
+    result: PASS_7_OF_7
+    clean_browser_context: PASS
+    external_human_judge: NOT_OBSERVED
+    evidence: evidence/runtime/HOSTED-BROWSER-TO-SOLANA-LIVE-PASS-2026-10-03.md
+
+  manual_intermittent_live_run:
+    status: OBSERVED
+    outcome: UNKNOWN
+    error: WORLD_FAIR_LIVE_RUN_UNCONFIRMED
+    observed_nonce: 7
+    effect: HOSTED_SELF_SERVE_PARTIAL__INTERMITTENT_LIVE_RUN
+    evidence: evidence/runtime/HOSTED-MANUAL-INTERMITTENT-UNKNOWN-2026-10-03.md
+
+  reliability_observability_repair_checkpoint:
+    status: MERGED_DEPLOYED_AWAITING_POSTDEPLOY_REPEATABILITY_PROOF
+    branch: fix/worlds-fair-live-reliability-observability-v1
+    exact_head: "e868b1522c9fa28486777e3805f52a4c5d27093e"
+    root_test_run: 37126812481
+    premerge_gate_run: 37126812495
+    web_run: 37126812491
+    live_devnet_validation: PASS
+    live_validation_run: 37127681552
+    live_validation_job: 111216233302
+    live_validation_artifact: 11275770747
+    live_validation_digest: "sha256:2764b817a451142177bb944408bf21c0cbccb32f9668e9aa91592378d2f7e8d0"
+    starting_nonce: 7
+    ending_nonce: 8
+    merge_redeploy_authorization: CONSUMED
+    merge_commit: "0ef9dc9618d9cbdfac1e714b7349993f4292aff9"
+    backend_cloudflare_build: "a3a7d586-8392-417f-a574-744e340ee469"
+    frontend_cloudflare_build: "2b755dc6-b38e-4a75-a5d1-d91ce01104fd"
+    readonly_postdeploy_smoke_run: 37128446709
+    readonly_postdeploy_smoke_job: 111218484824
+    additional_live_devnet_run_authorized: false
+    evidence:
+      - evidence/runtime/HOSTED-LIVE-RELIABILITY-OBSERVABILITY-PREMERGE-2026-10-03.md
+      - evidence/runtime/HOSTED-LIVE-RELIABILITY-OBSERVABILITY-LIVE-VALIDATION-PASS-2026-10-03.md
+      - evidence/runtime/HOSTED-LIVE-RELIABILITY-OBSERVABILITY-MERGE-DEPLOY-2026-10-03.md
+
+  orca_context_read_retry_checkpoint:
+    status: MERGED_DEPLOYED_AWAITING_POSTDEPLOY_REPEATABILITY_PROOF
+    branch: fix/worlds-fair-orca-context-read-retry-v1
+    exact_head: "9eb857bb3c369a0ab412977a976c131afac6899f"
+    triggering_repeatability_run: 37137899070
+    attempt_1: PASS_NONCE_8_TO_9
+    attempt_2: UNKNOWN_ORCA_CONTEXT_READ_ZERO_EFFECTS
+    attempt_3: NOT_EXECUTED
+    root_test_run: 37138454184
+    premerge_gate_run: 37138454256
+    live_devnet_validation: PASS
+    live_validation_run: 37140787012
+    live_validation_job: 111254615300
+    live_validation_artifact: 11280785419
+    live_validation_digest: "sha256:a9b7e7ec909c69c5d0e1b3332888dbdd2bd7bef7dc22ae8a26a1c91538e4626d"
+    starting_nonce: 9
+    ending_nonce: 10
+    orca_context_phase: PASS
+    merge_redeploy_authorization: CONSUMED
+    merge_commit: "27300a396d9f3049f19e7aed228acdb2f0bdf9d9"
+    backend_cloudflare_build: "35efb0a3-f66e-4e66-9839-57893ee75be4"
+    frontend_cloudflare_build: "b70afa8d-707a-4665-9a05-e29db714c98f"
+    readonly_postdeploy_smoke_run: 37141529993
+    readonly_postdeploy_smoke_job: 111256798620
+    additional_live_devnet_run_authorized: false
+    evidence:
+      - evidence/runtime/HOSTED-POSTDEPLOY-REPEATABILITY-3X-ATTEMPT-2026-10-03.md
+      - evidence/runtime/HOSTED-ORCA-CONTEXT-READ-RETRY-PREMERGE-2026-10-03.md
+      - evidence/runtime/HOSTED-ORCA-CONTEXT-READ-RETRY-LIVE-VALIDATION-PASS-2026-10-03.md
+      - evidence/runtime/HOSTED-ORCA-CONTEXT-READ-RETRY-MERGE-DEPLOY-2026-10-03.md
+
+  orca_quote_read_backoff_checkpoint:
+    status: MERGED_INDIRECTLY_AS_STACKED_HISTORY_VIA_PR18__SUPERSEDED
+    branch: fix/worlds-fair-orca-quote-read-backoff-v1
+    exact_head: "6af66d051493b4c3d8ce820ee4f615d5723e1ea8"
+    pull_request: 17
+    triggering_repeatability_run: 37137899070
+    triggering_repeatability_attempt: 2
+    attempt_1: PASS_NONCE_10_TO_11
+    attempt_2: UNKNOWN_STANDING_1_QUOTE_TRANSIENT_RPC_ZERO_EFFECTS
+    attempt_3: NOT_EXECUTED
+    retry_profile_attempts: 6
+    retry_profile_base_delay_ms: 2000
+    root_test_run: 37142542533
+    premerge_gate_run: 37142542593
+    pr_root_test_run: 37148741598
+    pr_cloudflare_worker_ci_run: 37148741578
+    live_devnet_validation: FAIL_PRE_RECEIPT_TRANSIENT_RPC
+    live_validation_run: 37148741602
+    live_validation_job: 111277964299
+    live_starting_nonce: 11
+    receipt_artifact: NOT_CREATED
+    confirmed_effect_set: NOT_INDEPENDENTLY_RECONCILED
+    merge_redeploy_authorization: NOT_SEPARATELY_GRANTED__COMMITS_LANDED_VIA_PR18
+    github_pr17_final_state: MERGED_CLOSED_AUTOMATICALLY_AFTER_STACKED_PR18_MERGE
+    separate_pr17_mutation_issued: false
+    evidence:
+      - evidence/runtime/HOSTED-POSTDEPLOY-REPEATABILITY-AFTER-ORCA-RETRY-2026-10-03.md
+      - evidence/runtime/HOSTED-ORCA-QUOTE-READ-BACKOFF-PREMERGE-2026-10-03.md
+      - evidence/runtime/HOSTED-PRE-RECEIPT-RPC-BOTTLENECK-2026-10-03.md
+      - evidence/runtime/HOSTED-PREFLIGHT-STATE-READ-BACKOFF-MERGE-DEPLOY-2026-10-03.md
+
+  preflight_state_read_backoff_checkpoint:
+    status: MERGED_DEPLOYED_AWAITING_POSTDEPLOY_REPEATABILITY_PROOF
+    branch: fix/worlds-fair-preflight-read-backoff-v1
+    exact_head: "494818b67b0e2ab8cdb304c64422e36d89dc67f0"
+    base_head: "6af66d051493b4c3d8ce820ee4f615d5723e1ea8"
+    base_main: "27300a396d9f3049f19e7aed228acdb2f0bdf9d9"
+    preserves_quote_read_repair: true
+    retry_scope: READ_ONLY
+    retry_profile_attempts: 6
+    retry_profile_base_delay_ms: 2000
+    root_test_run: 37148961794
+    root_test_result: PASS
+    pull_request: 18
+    pr_root_test_run: 37149230534
+    pr_root_test_result: PASS
+    pr_cloudflare_worker_ci_run: 37149230535
+    pr_cloudflare_worker_ci_result: PASS
+    live_devnet_validation: PASS
+    live_validation_run: 37149230540
+    live_validation_job: 111279373905
+    starting_nonce: 11
+    ending_nonce: 12
+    receipt_artifact: 11283376180
+    receipt_artifact_digest: "sha256:383773aa09db6d5fe8cd562fc4ef80cb08aac3693181d2b7cdf216f871960f19"
+    canonical_scenarios: PASS_7_OF_7
+    public_rpc_429_observed: true
+    merge_redeploy_authorization: CONSUMED
+    merge_commit: "1266756fb6a00318618daefe9db3d875387411b5"
+    merge_test_run: 37151328912
+    merge_cloudflare_worker_ci_run: 37151328955
+    backend_cloudflare_build: "d53d266e-6e95-4bf0-8b04-1da9fd57dc73"
+    backend_cloudflare_version: "89081162-c598-421c-a782-713a4c254176"
+    frontend_cloudflare_build: "69e33e84-bc5d-4c78-bdf6-39bc33e5f93d"
+    frontend_cloudflare_version: "85118cba-c28e-4270-9bad-b3d941785564"
+    public_deployment_state: PROVEN_DEPLOYED
+    readonly_frontend_route: SERVED
+    readonly_runtime_status: READY
+    readonly_runtime_network: solana-devnet
+    readonly_runtime_nonce: 12
+    additional_live_devnet_run_authorized: false
+    postdeploy_repeatability: FAILED_CLIENT_RESPONSE_TIMEOUT
+    repeatability_run: 37137899070
+    repeatability_run_attempt: 3
+    repeatability_job: 111286432675
+    repeatability_attempt_1: UNKNOWN_CLIENT_TIMEOUT_NO_RESPONSE
+    repeatability_attempt_2: NOT_EXECUTED
+    repeatability_attempt_3: NOT_EXECUTED
+    repeatability_artifact: 11284247154
+    repeatability_artifact_digest: "sha256:9441331039e847dd1c6e4036b0ad6434c575b6719ce0a800ad8aa636c542619a"
+    reconciled_nonce: 12
+    reconciled_state_mutation: NONE_OBSERVED_AT_IMMEDIATE_CHECKPOINT
+    effect_truth: SUPERSEDED_BY_DELAYED_STATE_ADVANCEMENT
+    delayed_reconciliation_nonce: 13
+    delayed_reconciliation_version: 14
+    delayed_reconciliation_status: MUTATION_OBSERVED_AFTER_CLIENT_TIMEOUT
+    delayed_completion_truth: INFERRED_HIGH_CONFIDENCE_NOT_RECEIPT_PROVEN
+    evidence:
+      - evidence/runtime/HOSTED-PRE-RECEIPT-RPC-BOTTLENECK-2026-10-03.md
+      - evidence/runtime/HOSTED-PREFLIGHT-STATE-READ-BACKOFF-LIVE-VALIDATION-PASS-2026-10-03.md
+      - evidence/runtime/HOSTED-PREFLIGHT-STATE-READ-BACKOFF-MERGE-DEPLOY-2026-10-03.md
+      - evidence/runtime/HOSTED-POSTDEPLOY-REPEATABILITY-CLIENT-TIMEOUT-2026-10-03.md
+
+  read_rpc_retry_ownership_checkpoint:
+    status: LIVE_VALIDATION_FAILED_WITH_STATE_RECONCILED_PARTIAL_EFFECT
+    branch: fix/worlds-fair-read-rpc-retry-ownership-v1
+    exact_head: "127da0c98f2860f1b285c8c651a8be6c2a0b43fa"
+    base_main: "1266756fb6a00318618daefe9db3d875387411b5"
+    safe_read_connection_disable_rate_limit_retry: true
+    explicit_read_retry_attempts: 6
+    explicit_read_retry_base_delay_ms: 2000
+    writes_share_read_connection: false
+    root_test_run: 37152132080
+    root_test_result: PASS
+    pull_request: 19
+    pr_state: OPEN_UNMERGED
+    pr_root_test_run: 37152497599
+    pr_root_test_result: PASS
+    pr_cloudflare_worker_ci_run: 37152497604
+    pr_cloudflare_worker_ci_result: PASS
+    live_devnet_validation: FAIL
+    live_validation_run: 37152497520
+    live_validation_job: 111289071719
+    live_starting_nonce: 13
+    live_receipt_artifact: NOT_CREATED
+    exact_failure_phase: UNKNOWN_MISSING_PARTIAL_RECEIPT
+    post_failure_runtime_status: READY
+    post_failure_nonce: 13
+    post_failure_version: 14
+    post_failure_spent_this_period: 5000000
+    post_failure_spent_notional_micro_usd: 4999871
+    post_failure_input_vault: 1300000
+    post_failure_output_vault: 12698674
+    input_vault_ready_floor: 1500000
+    partial_effect_truth: STATE_RECONCILED_NONZERO_EFFECT
+    zero_effect_claim: false
+    blind_replay_allowed: false
+    merge_redeploy_authorization: NOT_GRANTED
+    harness_branch: fix/postdeploy-repeatability-timeout-classification-v1
+    harness_exact_head: "b95b7f847e189cc1c5048c7cd3be95a2c06bdc27"
+    harness_auto_live_trigger_removed: true
+    evidence:
+      - evidence/runtime/HOSTED-POSTDEPLOY-REPEATABILITY-CLIENT-TIMEOUT-2026-10-03.md
+      - evidence/runtime/HOSTED-READ-RPC-RETRY-OWNERSHIP-PREMERGE-2026-10-03.md
+      - evidence/runtime/HOSTED-READ-RPC-RETRY-OWNERSHIP-LIVE-FAIL-PARTIAL-EFFECT-2026-10-03.md
+
+  partial_receipt_pyth_retry_checkpoint:
+    status: LIVE_VALIDATION_FAILED_AT_STANDING_2_QUOTE_WITH_CONFIRMED_PARTIAL_EFFECT
+    branch: fix/worlds-fair-retry-observability-v2-clean
+    exact_head: "65a9fea6cbd0535ea867690a848bc1a50ccbe08d"
+    base_main: "1266756fb6a00318618daefe9db3d875387411b5"
+    ahead_by: 1
+    behind_by: 0
+    stacked_intermediate_branch: fix/worlds-fair-partial-receipt-pyth-retry-v1
+    stacked_intermediate_head: "e56f0953b815b207be02d4928f26ca8ddcff4d03"
+    stacked_intermediate_status: SUPERSEDED_TO_AVOID_PR19_ANCESTRY
+    pyth_transient_retry_attempts: 4
+    pyth_transient_retry_base_delay_ms: 1000
+    pyth_auth_entitlement_retry: false
+    failure_artifact_persists_diagnostic: true
+    failure_artifact_persists_partial_receipt: true
+    failure_artifact_persists_runtime_before_after: true
+    smoke_syntax_check_enabled: true
+    root_test_run: 37153090829
+    root_test_result: PASS
+    pull_request: 20
+    pr_state: OPEN_UNMERGED
+    pr_root_test_run: 37153482193
+    pr_root_test_result: PASS
+    pr_cloudflare_worker_ci_run: 37153482173
+    pr_cloudflare_worker_ci_result: PASS
+    pr_orca_devnet_discovery_run: 37153482180
+    pr_orca_devnet_discovery_result: PASS_READ_ONLY
+    authorized_live_devnet_validation: FAIL
+    authorized_live_run: 37153482247
+    authorized_live_job: 111291962294
+    live_starting_nonce: 13
+    exact_failure_phase: STANDING_2_QUOTE
+    exact_failure_phase_kind: READ
+    failure_class: UNKNOWN_RUNTIME
+    failure_reason_code: WORLD_FAIR_RUNTIME_FAILURE
+    failure_retry_policy: NOT_AUTOMATICALLY_RETRYABLE
+    confirmed_effect_label: standingAutonomy.1
+    confirmed_effect_signature: "ttsTwumZDbZGf55mHNpyhhdSshji59jLc5wYnEa1GVY88YJrTf6zke3MpzZ1DWp9esfwEGYjmLaj2dHWGdGhPXo"
+    runtime_before_spent_this_period: 5000000
+    runtime_after_spent_this_period: 5200000
+    runtime_before_input_vault: 1500000
+    runtime_after_input_vault: 1300000
+    runtime_before_output_vault: 12698674
+    runtime_after_output_vault: 12898653
+    partial_effect_truth: CONFIRMED
+    zero_effect_claim: false
+    blind_replay_allowed: false
+    failure_artifact: 11285206479
+    failure_artifact_digest: "sha256:19cbf99083fb7bd69d830e466d5521855736c5adc14660b3d92793abda27076a"
+    auto_triggered_second_live_capable_workflow: worlds-fair-orca-devnet-proof
+    auto_triggered_second_live_capable_run: 37153482170
+    auto_triggered_second_live_capable_job: 111291961939
+    auto_trigger_scope_status: OUTSIDE_AUTHORIZATION_EXECUTED_AND_FAILED
+    auto_trigger_final_result: FAIL
+    auto_trigger_live_slice_step: EXECUTED_FAILED
+    auto_trigger_failure_phase: BOOTSTRAP_SOL_TO_DEVUSDC_SIMULATION
+    auto_trigger_failure_reason: INSUFFICIENT_LAMPORTS
+    auto_trigger_payer_available_lamports: 35717296
+    auto_trigger_required_lamports: 101488440
+    auto_trigger_program_redeploy: false
+    auto_trigger_program_reused: true
+    auto_trigger_program_binding_sha256: "084a3f7aad8a5772d773816579f5d2b98542c4b966dbb0dd7c60cb397db21f61"
+    auto_trigger_delegate_scope: RANDOM_ISOLATED
+    auto_trigger_shared_operator_lab_accounts_mutated: false
+    auto_trigger_isolated_setup_writes_before_failure: true
+    auto_trigger_bootstrap_swap_effect: NONE_SIMULATION_REJECTED
+    github_connector_cancel_available: false
+    merge_redeploy_authorization: NOT_GRANTED
+    pr19_mutation_authorized: false
+    evidence:
+      - evidence/runtime/HOSTED-READ-RPC-RETRY-OWNERSHIP-LIVE-FAIL-PARTIAL-EFFECT-2026-10-03.md
+      - evidence/runtime/HOSTED-CLEAN-RETRY-OBSERVABILITY-LIVE-FAIL-STANDING2QUOTE-2026-10-03.md

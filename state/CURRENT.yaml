@@ -1,6 +1,6 @@
 version: 0.1.0
 project_id: cresco
-date: 2026-10-11
+date: 2026-10-12
 status: ACTIVE
 lifecycle_state: POST_SLICE_LIVE_PRODUCT__WORLD_FAIR_DEVNET_PROVEN__PUBLIC_RUNTIME_BINDING_PENDING_PROTECTED_ACTION
 
@@ -102,7 +102,7 @@ conditional_gateway_registry:
   NEGATIVE_PATHS: PROVEN
   FAILURE_RECOVERY: PROVEN
   PROTECTED_LIVE_WORKFLOW_TRIGGER_SAFETY: PROVEN_IN_THIS_CHANGESET_PENDING_MERGE
-  REAL_OPERATOR_PRINCIPAL_WORKFLOW: BLOCKED_NOT_IMPLEMENTED
+  REAL_OPERATOR_PRINCIPAL_WORKFLOW: IMPLEMENTED_LOCAL__LIVE_DEVNET_VERIFICATION_PENDING
   EXTERNAL_TARGET_OPERATOR_EVIDENCE: BLOCKED_VALIDATION_GAP
   RUNTIME_COMMIT_BINDING: PARTIAL_PUBLIC_RUNTIME_BINDING_UNKNOWN_AFTER_PR29
   PUBLIC_RUNTIME_REDEPLOY: BLOCKED_MISSING_CLOUDFLARE_GITHUB_SECRETS
@@ -112,9 +112,37 @@ conditional_gateway_registry:
   REAL_SECURITIES_EXECUTION: N_A_NOT_CLAIMED
   SUBMISSION_OR_RELEASE_READINESS: BLOCKED_BY_PRODUCT_DEPTH_AND_RUNTIME_BINDING
 
-exact_next_gate: PRODUCT_EXPLOITATION__REAL_OPERATOR_PRINCIPAL_WORKFLOW
-exact_next_owner: PBPD_OR_EXISTING_IMPLEMENTATION_OWNER__HUMAN_ONLY_FOR_PROTECTED_LIVE_ACTIONS
+operator_principal_workflow_v0_4:
+  branch: claude/worlds-fair-operator-principal-workflow-2026-10-12
+  status: IMPLEMENTED_AND_TESTED_LOCALLY__NOT_LIVE_VERIFIED
+  reality: LOCAL
+  reason_not_live: build environment had no Solana Devnet / Pyth network access; no deployment or Devnet write was performed
+  design: one on-chain mandate per workspace (judge lab mandate untouched); authority stays in the CRESCO program
+  capabilities:
+    CAP-01_principal_creates_standing_mandate: IMPLEMENTED_LOCAL__SERVER_HELD_GUARDIAN
+    CAP-02_strategy_submits_own_intent_via_api: IMPLEMENTED_LOCAL
+    CAP-03_refusal_policy_diff_durable_request: IMPLEMENTED_LOCAL
+    CAP-04_principal_grants_exact_one_use_exception: IMPLEMENTED_LOCAL__WALLET_SIGNED_APPROVAL__ONCHAIN_GRANT_SERVER_GUARDIAN
+    CAP-05_exact_once_mutation_replay_stale_hard: PROVEN_LIVE_IN_LAB__REUSED_BUILDERS
+    CAP-06_venue_or_evidence_failure_rollback: PROVEN_LIVE_IN_LAB__REUSED_BUILDERS
+    CAP-07_pause_resume_revoke_revise_with_stale_invalidation: IMPLEMENTED_LOCAL
+    CAP-08_durable_history_with_receipts: IMPLEMENTED_LOCAL__DURABLE_OBJECT_STORE
+    CAP-09_public_self_serve_runtime: BLOCKED__REQUIRES_HUMAN_DEPLOY_keys-api-stocklana
+    CAP-10_asset_rule_and_period_consumption: IMPLEMENTED_LOCAL
+    CAP-11_notifications_poll_and_webhook: IMPLEMENTED_LOCAL
+    CAP-12_strategy_api_openapi_example_client: IMPLEMENTED_LOCAL
+  robustness: [idempotency_key, per_workspace_write_lease, request_expiry, interrupted_approval_to_unknown, unknown_never_success, signature_reconciliation, browser_e2e_mocked_api, repeatability_campaign_script]
+  tests: {root_node: 195, web_vitest: 72, e2e_desk_chromium_local: 1}
+  remaining_gap_to_full_non_custodial: principal wallet as on-chain guardian (program already requires guardian signature on grant)
+  live_verification_steps: docs/WORLDS-FAIR-OPERATOR-PRINCIPAL-WORKFLOW.md
+
+exact_next_gate: LIVE_DEVNET_VERIFICATION__OPERATOR_PRINCIPAL_WORKFLOW_V0_4
+exact_next_owner: HUMAN_FOR_DEPLOY_AND_DEVNET_WRITES__PBPD_FOR_ANY_REWORK
 exact_next_action: >-
+  Review PR for branch claude/worlds-fair-operator-principal-workflow-2026-10-12. Deploy the Worker with
+  `wrangler deploy --name keys-api-stocklana` (human-authorized), bootstrap one workspace on /worlds-fair/desk, run the
+  manual LIVE checks and `npm run campaign:worlds-fair -- --cycles 5 --threshold 0.8`, then promote capability reality
+  from LOCAL to LIVE only for what the campaign receipts prove. Previous instruction, kept for provenance:
   Merge nothing automatically. Validate this P0 audit change through non-live CI first. After the protected-workflow
   trigger repair is proven, continue Product Exploitation by implementing a real multi-role World Fair workflow:
   operator/strategy action -> standing evaluation -> Policy Diff -> exception request -> principal/risk-owner decision

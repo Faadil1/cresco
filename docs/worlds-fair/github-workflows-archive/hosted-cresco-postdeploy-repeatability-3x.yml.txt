@@ -1,0 +1,368 @@
+name: hosted-cresco-postdeploy-repeatability-3x
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/hosted-cresco-postdeploy-repeatability-3x.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: hosted-cresco-postdeploy-repeatability-3x
+  cancel-in-progress: false
+
+jobs:
+  repeatability-3x:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      FRONTEND_ORIGIN: https://cresco.faadil-casecraft.workers.dev
+      API_ORIGIN: https://keys-api-stocklana.faadil-casecraft.workers.dev
+      ATTEMPTS: "3"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install browser
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/cresco-repeatability
+          cd /tmp/cresco-repeatability
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Execute three fresh-browser live attempts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/runtime/hosted-postdeploy-repeatability
+
+          cat > /tmp/cresco-repeatability/repeatability.cjs <<'NODE'
+          const { chromium } = require("playwright");
+          const fs = require("node:fs");
+          const path = require("node:path");
+
+          const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+          (async () => {
+            const frontend = process.env.FRONTEND_ORIGIN;
+            const api = process.env.API_ORIGIN;
+            const attempts = Number(process.env.ATTEMPTS || "3");
+            const out = path.resolve(
+              process.env.GITHUB_WORKSPACE,
+              "evidence/runtime/hosted-postdeploy-repeatability"
+            );
+
+            const scenarioKeys = [
+              "standingAutonomy",
+              "softBoundary",
+              "exactException",
+              "hardBoundary",
+              "evidenceFailure",
+              "rollback",
+              "staleAuthority"
+            ];
+
+            const summary = {
+              status: "IN_PROGRESS",
+              frontend,
+              api,
+              requestedAttempts: attempts,
+              completedAttempts: 0,
+              stoppedEarly: false,
+              attempts: [],
+              startedAt: new Date().toISOString()
+            };
+
+            const writeSummary = () => {
+              fs.writeFileSync(
+                path.join(out, "repeatability-summary.json"),
+                JSON.stringify(summary, null, 2)
+              );
+            };
+
+            const browser = await chromium.launch({ headless: true });
+
+            try {
+              for (let index = 1; index <= attempts; index += 1) {
+                const context = await browser.newContext({
+                  viewport: { width: 1440, height: 1000 },
+                  storageState: { cookies: [], origins: [] }
+                });
+                const page = await context.newPage();
+
+                const failedRequests = [];
+                page.on("requestfailed", (request) => {
+                  failedRequests.push({
+                    url: request.url(),
+                    error: request.failure()?.errorText || "unknown"
+                  });
+                });
+
+                const attempt = {
+                  index,
+                  freshBrowserContext: true,
+                  startedAt: new Date().toISOString(),
+                  runtimeReadyBefore: false,
+                  httpStatus: null,
+                  responseStatus: null,
+                  startingNonce: null,
+                  endingNonce: null,
+                  scenarioPasses: 0,
+                  transactionLinks: 0,
+                  browserRequestFailures: 0,
+                  diagnostic: null,
+                  partialReceipt: null,
+                  result: "IN_PROGRESS"
+                };
+                summary.attempts.push(attempt);
+                writeSummary();
+
+                await page.goto(frontend + "/worlds-fair", {
+                  waitUntil: "networkidle",
+                  timeout: 60000
+                });
+
+                await page.getByText("Ready", { exact: true }).waitFor({
+                  state: "visible",
+                  timeout: 20000
+                });
+                attempt.runtimeReadyBefore = true;
+
+                await page.screenshot({
+                  path: path.join(out, `attempt-${index}-01-ready.png`),
+                  fullPage: true
+                });
+
+                const responsePromise = page.waitForResponse(
+                  (response) =>
+                    response.url() === api + "/api/v0.3/worlds-fair/run" &&
+                    response.request().method() === "POST",
+                  { timeout: 240000 }
+                );
+
+                await page
+                  .getByRole("button", { name: /Run live authority sequence/i })
+                  .click();
+
+                const response = await responsePromise;
+                attempt.httpStatus = response.status();
+
+                let body = null;
+                try {
+                  body = await response.json();
+                } catch {
+                  body = {
+                    status: "UNKNOWN",
+                    diagnostic: {
+                      reasonCode: "MALFORMED_JSON",
+                      message: "Live API response was not valid JSON."
+                    }
+                  };
+                }
+
+                fs.writeFileSync(
+                  path.join(out, `attempt-${index}-response.json`),
+                  JSON.stringify(body, null, 2)
+                );
+
+                attempt.responseStatus = body?.status ?? null;
+                attempt.startingNonce =
+                  body?.receipt?.startingNonce ??
+                  body?.partialReceipt?.startingNonce ??
+                  null;
+                attempt.diagnostic = body?.diagnostic ?? null;
+                attempt.partialReceipt = body?.partialReceipt ?? null;
+                attempt.browserRequestFailures = failedRequests.length;
+
+                const passReceipt =
+                  response.status() === 200 &&
+                  body?.status === "PASS" &&
+                  body?.receipt?.status === "PASS" &&
+                  body?.receipt?.productState === "WORLD_FAIR_OPERATOR_LAB_LIVE";
+
+                if (!passReceipt) {
+                  attempt.result = "UNKNOWN_OR_FAIL";
+                  attempt.completedAt = new Date().toISOString();
+                  summary.status = "STOPPED_ON_FIRST_FAILURE";
+                  summary.stoppedEarly = true;
+                  summary.failureAttempt = index;
+
+                  await page.screenshot({
+                    path: path.join(out, `attempt-${index}-99-failure.png`),
+                    fullPage: true
+                  });
+
+                  writeSummary();
+
+                  console.error(
+                    "POSTDEPLOY_REPEATABILITY_STOP=" +
+                      JSON.stringify({
+                        attempt: index,
+                        httpStatus: attempt.httpStatus,
+                        responseStatus: attempt.responseStatus,
+                        diagnostic: attempt.diagnostic,
+                        currentPhase:
+                          attempt.partialReceipt?.progress?.currentPhase ?? null,
+                        confirmedEffects:
+                          attempt.partialReceipt?.progress?.confirmedEffects?.length ?? 0
+                      })
+                  );
+
+                  await context.close();
+                  throw new Error(
+                    `POSTDEPLOY_REPEATABILITY_ATTEMPT_${index}_NOT_PASS`
+                  );
+                }
+
+                for (const key of scenarioKeys) {
+                  if (body.receipt?.scenarios?.[key]?.status !== "PASS") {
+                    attempt.result = "SCENARIO_FAIL";
+                    attempt.completedAt = new Date().toISOString();
+                    summary.status = "STOPPED_ON_FIRST_FAILURE";
+                    summary.stoppedEarly = true;
+                    summary.failureAttempt = index;
+                    writeSummary();
+                    await context.close();
+                    throw new Error(
+                      `POSTDEPLOY_REPEATABILITY_SCENARIO_FAIL:${index}:${key}`
+                    );
+                  }
+                }
+
+                attempt.scenarioPasses = 7;
+
+                await page.getByText("7/7 live checks proven", {
+                  exact: true
+                }).waitFor({
+                  state: "visible",
+                  timeout: 60000
+                });
+
+                await page.screenshot({
+                  path: path.join(out, `attempt-${index}-02-pass.png`),
+                  fullPage: true
+                });
+
+                const transactionLinks = await page
+                  .locator('a[href*="explorer.solana.com/tx/"]')
+                  .evaluateAll((els) =>
+                    els
+                      .map((el) => el.getAttribute("href"))
+                      .filter(Boolean)
+                  );
+
+                attempt.transactionLinks = transactionLinks.length;
+
+                const runtimeResponse = await page.request.get(
+                  api + "/api/v0.3/worlds-fair/runtime",
+                  { timeout: 30000 }
+                );
+                const runtime = await runtimeResponse.json();
+
+                if (
+                  runtimeResponse.status() !== 200 ||
+                  runtime?.status !== "READY"
+                ) {
+                  attempt.result = "POST_RUN_RUNTIME_NOT_READY";
+                  attempt.completedAt = new Date().toISOString();
+                  summary.status = "STOPPED_ON_FIRST_FAILURE";
+                  summary.stoppedEarly = true;
+                  summary.failureAttempt = index;
+                  writeSummary();
+                  await context.close();
+                  throw new Error(
+                    `POSTDEPLOY_REPEATABILITY_RUNTIME_NOT_READY:${index}`
+                  );
+                }
+
+                attempt.endingNonce = runtime?.mandate?.nonce ?? null;
+
+                if (
+                  Number.isInteger(attempt.startingNonce) &&
+                  Number.isInteger(attempt.endingNonce) &&
+                  attempt.endingNonce !== attempt.startingNonce + 1
+                ) {
+                  attempt.result = "NONCE_PROGRESSION_MISMATCH";
+                  attempt.completedAt = new Date().toISOString();
+                  summary.status = "STOPPED_ON_FIRST_FAILURE";
+                  summary.stoppedEarly = true;
+                  summary.failureAttempt = index;
+                  writeSummary();
+                  await context.close();
+                  throw new Error(
+                    `POSTDEPLOY_REPEATABILITY_NONCE_MISMATCH:${index}:${attempt.startingNonce}->${attempt.endingNonce}`
+                  );
+                }
+
+                attempt.result = "PASS";
+                attempt.completedAt = new Date().toISOString();
+                summary.completedAttempts = index;
+                writeSummary();
+
+                console.log(
+                  `POSTDEPLOY_REPEATABILITY_ATTEMPT_${index}=PASS startingNonce=${attempt.startingNonce} endingNonce=${attempt.endingNonce} txLinks=${attempt.transactionLinks} requestFailures=${attempt.browserRequestFailures}`
+                );
+
+                await context.close();
+
+                if (index < attempts) {
+                  // Avoid hammering public Devnet RPC between independent runs.
+                  await sleep(45000);
+                }
+              }
+
+              summary.status = "PASS";
+              summary.completedAttempts = attempts;
+              summary.completedAt = new Date().toISOString();
+              writeSummary();
+
+              console.log("POSTDEPLOY_REPEATABILITY_3X=PASS");
+            } finally {
+              await browser.close();
+            }
+          })().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
+
+          cd /tmp/cresco-repeatability
+          node repeatability.cjs
+
+      - name: Record bounded repeatability verdict
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -e '
+            .status=="PASS" and
+            .completedAttempts==3 and
+            ([.attempts[].result] | all(.=="PASS"))
+          ' evidence/runtime/hosted-postdeploy-repeatability/repeatability-summary.json >/dev/null
+
+          cat > evidence/runtime/hosted-postdeploy-repeatability/SUMMARY.md <<EOF
+          # CRESCO post-deploy hosted repeatability
+
+          - scope: 3 maximum fresh-browser live attempts
+          - frontend: $FRONTEND_ORIGIN
+          - API: $API_ORIGIN
+          - Solana network: Devnet
+          - stop on first UNKNOWN/FAIL: enabled
+          - blind write retry: disabled
+          - result: 3/3 PASS
+          - external human validation: NOT CLAIMED
+          - observed at: $(date -u +%FT%TZ)
+          EOF
+
+          echo "POSTDEPLOY_REPEATABILITY_BOUNDED_3X=PASS"
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hosted-cresco-postdeploy-repeatability-3x
+          path: evidence/runtime/hosted-postdeploy-repeatability
+          if-no-files-found: warn

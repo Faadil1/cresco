@@ -1,0 +1,293 @@
+name: hosted-cresco-browser-live-proof
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/hosted-cresco-browser-live-proof.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: hosted-cresco-browser-live-proof
+  cancel-in-progress: false
+
+jobs:
+  browser-live-proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      FRONTEND_ORIGIN: https://cresco.faadil-casecraft.workers.dev
+      API_ORIGIN: https://keys-api-stocklana.faadil-casecraft.workers.dev
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install browser
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/cresco-browser-live
+          cd /tmp/cresco-browser-live
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Execute one canonical live sequence from hosted browser UI
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/runtime/hosted-browser-live
+
+          cat > /tmp/cresco-browser-live/proof.cjs <<'NODE'
+          const { chromium } = require("playwright");
+          const fs = require("node:fs");
+          const path = require("node:path");
+
+          (async () => {
+            const frontend = process.env.FRONTEND_ORIGIN;
+            const api = process.env.API_ORIGIN;
+            const out = path.resolve(
+              process.env.GITHUB_WORKSPACE,
+              "evidence/runtime/hosted-browser-live"
+            );
+
+            const browser = await chromium.launch({ headless: true });
+            const context = await browser.newContext({
+              viewport: { width: 1440, height: 1000 }
+            });
+            const page = await context.newPage();
+
+            const failedRequests = [];
+            page.on("requestfailed", (request) => {
+              failedRequests.push({
+                url: request.url(),
+                error: request.failure()?.errorText || "unknown"
+              });
+            });
+
+            await page.goto(frontend + "/worlds-fair", {
+              waitUntil: "networkidle",
+              timeout: 60000
+            });
+
+            await page.getByText("Ready", { exact: true }).waitFor({
+              state: "visible",
+              timeout: 20000
+            });
+
+            await page.screenshot({
+              path: path.join(out, "01-runtime-ready.png"),
+              fullPage: true
+            });
+
+            const responsePromise = page.waitForResponse(
+              (response) =>
+                response.url() === api + "/api/v0.3/worlds-fair/run" &&
+                response.request().method() === "POST",
+              { timeout: 240000 }
+            );
+
+            await page
+              .getByRole("button", { name: /Run live authority sequence/i })
+              .click();
+
+            const response = await responsePromise;
+            const status = response.status();
+            const body = await response.json();
+
+            fs.writeFileSync(
+              path.join(out, "browser-live-response.json"),
+              JSON.stringify(body, null, 2)
+            );
+
+            if (status !== 200) {
+              throw new Error("HOSTED_BROWSER_LIVE_HTTP_" + status);
+            }
+
+            if (
+              body?.status !== "PASS" ||
+              body?.receipt?.status !== "PASS" ||
+              body?.receipt?.productState !== "WORLD_FAIR_OPERATOR_LAB_LIVE"
+            ) {
+              throw new Error("HOSTED_BROWSER_LIVE_RECEIPT_NOT_PASS");
+            }
+
+            const scenarioKeys = [
+              "standingAutonomy",
+              "softBoundary",
+              "exactException",
+              "hardBoundary",
+              "evidenceFailure",
+              "rollback",
+              "staleAuthority"
+            ];
+
+            for (const key of scenarioKeys) {
+              if (body.receipt?.scenarios?.[key]?.status !== "PASS") {
+                throw new Error("HOSTED_BROWSER_SCENARIO_FAIL:" + key);
+              }
+            }
+
+            await page.getByText("7/7 live checks proven", { exact: true }).waitFor({
+              state: "visible",
+              timeout: 60000
+            });
+
+            await page.screenshot({
+              path: path.join(out, "02-live-7-of-7.png"),
+              fullPage: true
+            });
+
+            const transactionLinks = await page
+              .locator('a[href*="explorer.solana.com/tx/"]')
+              .evaluateAll((els) => els.map((el) => el.getAttribute("href")));
+
+            if (!transactionLinks.length) {
+              throw new Error("HOSTED_BROWSER_NO_TRANSACTION_LINKS");
+            }
+
+            const proof = {
+              status: "PASS",
+              frontend,
+              api,
+              browserTriggered: true,
+              uiResult: "7/7 live checks proven",
+              programId: body.receipt.programId,
+              startingNonce: body.receipt.startingNonce,
+              observedAtCompleted: body.receipt.observedAtCompleted,
+              scenarioKeys,
+              transactionLinks,
+              failedRequests
+            };
+
+            fs.writeFileSync(
+              path.join(out, "browser-live-proof.json"),
+              JSON.stringify(proof, null, 2)
+            );
+
+            console.log("HOSTED_BROWSER_TO_API_TO_SOLANA=PASS");
+            console.log("HOSTED_BROWSER_7_OF_7=PASS");
+            console.log("HOSTED_BROWSER_TRANSACTION_LINKS=" + transactionLinks.length);
+
+            await browser.close();
+          })().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
+
+          cd /tmp/cresco-browser-live
+          node proof.cjs
+
+      - name: Fresh-context self-serve read check
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cat > /tmp/cresco-browser-live/clean-room.cjs <<'NODE'
+          const { chromium } = require("playwright");
+          const fs = require("node:fs");
+          const path = require("node:path");
+
+          (async () => {
+            const frontend = process.env.FRONTEND_ORIGIN;
+            const out = path.resolve(
+              process.env.GITHUB_WORKSPACE,
+              "evidence/runtime/hosted-browser-live"
+            );
+
+            const browser = await chromium.launch({ headless: true });
+            const context = await browser.newContext({
+              viewport: { width: 1280, height: 900 },
+              storageState: { cookies: [], origins: [] }
+            });
+            const page = await context.newPage();
+
+            await page.goto(frontend, {
+              waitUntil: "networkidle",
+              timeout: 60000
+            });
+
+            await page.screenshot({
+              path: path.join(out, "03-clean-room-home.png"),
+              fullPage: true
+            });
+
+            await page.goto(frontend + "/worlds-fair", {
+              waitUntil: "networkidle",
+              timeout: 60000
+            });
+
+            await page.getByText("Ready", { exact: true }).waitFor({
+              state: "visible",
+              timeout: 20000
+            });
+
+            const runButton = page.getByRole("button", {
+              name: /Run live authority sequence/i
+            });
+            await runButton.waitFor({ state: "visible", timeout: 15000 });
+
+            await page.screenshot({
+              path: path.join(out, "04-clean-room-worlds-fair-ready.png"),
+              fullPage: true
+            });
+
+            fs.writeFileSync(
+              path.join(out, "clean-room-proof.json"),
+              JSON.stringify(
+                {
+                  status: "PASS",
+                  freshBrowserContext: true,
+                  priorStorageState: "NONE",
+                  publicHomeReachable: true,
+                  worldFairReady: true,
+                  runControlVisible: true,
+                  liveRunTriggeredInCleanRoomStep: false,
+                  externalHumanJudge: false,
+                  observedAt: new Date().toISOString()
+                },
+                null,
+                2
+              )
+            );
+
+            console.log("CLEAN_ROOM_BROWSER_SURFACE=PASS");
+            console.log("CLEAN_ROOM_EXTERNAL_HUMAN_JUDGE=NOT_CLAIMED");
+
+            await browser.close();
+          })().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
+
+          cd /tmp/cresco-browser-live
+          node clean-room.cjs
+
+      - name: Record summary
+        if: success()
+        shell: bash
+        run: |
+          cat > evidence/runtime/hosted-browser-live/SUMMARY.md <<EOF
+          # Hosted CRESCO browser live proof
+
+          - frontend: $FRONTEND_ORIGIN
+          - api: $API_ORIGIN
+          - browser-triggered canonical live sequence: PASS
+          - UI consequence ledger: 7/7 PASS
+          - transaction links visible in browser: PASS
+          - fresh browser context can reach public product: PASS
+          - fresh browser context sees World’s Fair runtime READY: PASS
+          - fresh browser context sees live-run control: PASS
+          - external human judge validation: NOT CLAIMED
+          - observed at: $(date -u +%FT%TZ)
+          EOF
+
+      - name: Upload proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hosted-cresco-browser-live-proof
+          path: evidence/runtime/hosted-browser-live
+          if-no-files-found: warn

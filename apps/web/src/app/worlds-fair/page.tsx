@@ -291,12 +291,20 @@ export default function WorldsFairPage() {
       <div className="relative mx-auto max-w-[1240px] px-5 pb-20 pt-6 md:px-10 md:pt-8">
         <header className="flex items-center justify-between gap-4">
           <Wordmark size="md" />
-          <Link
-            href="/"
-            className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-extrabold text-navy shadow-soft hover:border-blue/35"
-          >
-            Product home
-          </Link>
+          <nav className="flex gap-2">
+            <Link
+              href="/worlds-fair/desk"
+              className="rounded-full bg-blue px-4 py-2 text-[13px] font-extrabold text-white shadow-button hover:bg-blue-strong"
+            >
+              Open the desk
+            </Link>
+            <Link
+              href="/"
+              className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-extrabold text-navy shadow-soft hover:border-blue/35"
+            >
+              Product home
+            </Link>
+          </nav>
         </header>
 
         <section className="mt-12 grid gap-8 lg:grid-cols-[1.18fr_0.82fr] lg:items-end">

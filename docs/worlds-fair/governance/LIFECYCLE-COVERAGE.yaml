@@ -1,0 +1,311 @@
+version: "1.0"
+project: "cresco-worlds-fair"
+date: "2026-10-02"
+project_type: "HACKATHON_PRODUCT"
+lifecycle_status: "ACTIVE"
+product_state: "FIRST_LIVE_VERTICAL_SLICE_PROVEN_WITH_VALIDATION_GAP"
+current_owner: "PBPD / Product Exploitation owner"
+terminal_completeness_allowed: false
+
+source_of_truth:
+  central_repository: "Faadil1/faadil-agent-system"
+  central_branch: "main"
+  central_current_version: "0.1.48-system-control-plane-v1-active"
+  project_repository: "Faadil1/cresco-worlds-fair"
+  project_branch: "main"
+
+exact_next_gate: "PUBLIC_RUNTIME__HOSTED_JUDGE_SELF_SERVE"
+exact_next_action: >-
+  PUBLIC_RUNTIME__HOSTED_JUDGE_SELF_SERVE is operationally BLOCKED on Cloudflare deployment credentials.
+  Main b81133c6e3c57c36f6baedcfcce3cf9b8d46d3e3 contains the 7/7-proven repair and post-merge CI is green,
+  but authorized ops run 37233079206 stopped before deployment because CLOUDFLARE_API_TOKEN and
+  CLOUDFLARE_ACCOUNT_ID were unavailable to GitHub Actions. No public runtime read or live POST occurred.
+  Preserve the current public-runtime truth boundary until a separately authorized credentialed deployment succeeds.
+
+capabilities:
+  - capability: faadil_system_router
+    owner: faadil_system_router
+    status: SATISFIED
+    evidence_pointer: "2026-10-01 system reconciliation against central CURRENT/HANDOVER and router skill"
+    reconstruction_note: "Adopted now at this material touch; not backdated."
+
+  - capability: hackathon_opportunity_intelligence
+    owner: hackathon_opportunity_intelligence
+    status: SATISFIED
+    evidence_pointer:
+      - "state/CURRENT.yaml"
+      - "research/CONCEPT-COLLISION-V3.md"
+      - "docs/REALITY-GATE.md"
+
+  - capability: authorization_owner
+    owner: human
+    status: SATISFIED
+    evidence_pointer: "Research/discovery project is active; consequential build remains explicitly unauthorized."
+    reconstruction_note: "This does not satisfy build authorization."
+
+  - capability: problem_worthiness_or_problem_reality
+    owner: hackathon_opportunity_intelligence
+    status: SATISFIED
+    evidence_pointer:
+      - "docs/REALITY-GATE.md"
+      - "research/NEGATIVE-EVENT-MAP.md"
+    reconstruction_note: "Capability executed; Concept Lock still blocked on direct operator evidence."
+
+  - capability: negative_event_gate
+    owner: product_reality
+    status: SATISFIED
+    evidence_pointer: "research/NEGATIVE-EVENT-MAP.md"
+
+  - capability: prototype_killer_or_simpler_alternative_challenge
+    owner: hackathon_opportunity_intelligence
+    status: SATISFIED
+    evidence_pointer:
+      - "docs/SEMANTIC-TEARDOWN.md"
+      - "research/CONCEPT-COLLISION-V3.md"
+      - "research/SANCTION-DELTA.md"
+      - "research/PRIMER-VAULT-DELTA.md"
+    reconstruction_note: "Satisfied by hostile reconstruction/feature-absorption work; no claim that a separate named tool ran."
+
+  - capability: living_PRD
+    owner: existing_product_owner
+    status: SATISFIED
+    evidence_pointer: "product/PRD.md"
+
+  - capability: spec_kit_or_equivalent_bounded_specification
+    owner: spec_kit_or_equivalent
+    status: SATISFIED
+    evidence_pointer: "spec/WORLDS-FAIR-V1-IMPLEMENTATION-SPEC.md"
+    reconstruction_note: "Satisfied by an equivalent bounded implementation specification; Spec Kit is not treated as a mandatory named tool."
+
+  - capability: production_owner
+    owner: PBPD
+    status: SATISFIED
+    evidence_pointer:
+      - "product/CONCEPT-LOCK-2026-10-01.md"
+      - "technical/TECHNICAL-REALITY-CHECK-2026-10-01.md"
+    reconstruction_note: "PBPD becomes active for architecture/build planning after Concept Lock; build execution remains gated."
+
+  - capability: evidence_and_evaluation
+    owner: existing_product_owner
+    status: SATISFIED
+    evidence_pointer:
+      - "governance/REALITY-LEDGER.md"
+      - "governance/EVIDENCE-GRAPH.yaml"
+      - "research/INTERVIEW-SANCTION-2026-09-29.md"
+    reconstruction_note: "Discovery evidence is active; World’s Fair live-product evidence remains missing."
+
+  - capability: engineering_quality_assurance
+    owner: PBPD_or_authorized_implementation_owner
+    status: SATISFIED
+    evidence_pointer:
+      - "evidence/engineering/WORLDS-FAIR-ORCA-V1-ENGINEERING-QUALITY-2026-10-02.md"
+      - "evidence/runtime/FIRST-LIVE-VERTICAL-SLICE-2026-10-02.md"
+    reconstruction_note: "Bounded v1 quality is proven for the live-slice head; this capability re-triggers on every material code change."
+
+  - capability: trace_design_experience_assurance
+    owner: TRACE
+    status: NOT_APPLICABLE_WITH_REASON
+    not_applicable_reason: "No new evaluator-facing World’s Fair product surface is locked/built yet."
+
+  - capability: winner_intelligence
+    owner: hackathon_opportunity_intelligence
+    status: SATISFIED
+    evidence_pointer:
+      - "state/CURRENT.yaml"
+      - "product/PRD.md"
+
+  - capability: competitive_collision
+    owner: hackathon_opportunity_intelligence
+    status: SATISFIED
+    evidence_pointer:
+      - "docs/SEMANTIC-TEARDOWN.md"
+      - "research/CONCEPT-COLLISION-V3.md"
+      - "research/SANCTION-DELTA.md"
+      - "research/PRIMER-VAULT-DELTA.md"
+    reconstruction_note: "Monitoring remains active; capability itself has been executed."
+
+  - capability: competitive_or_judged_build_cycle
+    owner: project
+    status: SATISFIED
+    evidence_pointer: "governance/GATEWAY-REGISTRY.yaml"
+    reconstruction_note: "Cycle registered and active; later stages remain pending by phase."
+
+  - capability: post_build_reconciliation
+    owner: PBPD
+    status: SATISFIED
+    evidence_pointer:
+      - "product/POST-VERTICAL-SLICE-DEPTH-GAP-REVIEW-2026-10-02.md"
+      - "state/CURRENT.yaml"
+    reconstruction_note: "First post-build reconciliation completed; Product Exploitation Loop is active."
+
+  - capability: project_finisher
+    owner: project_finisher
+    status: NOT_APPLICABLE_WITH_REASON
+    not_applicable_reason: "Not at BUILD_CANDIDATE_READY or terminal transition."
+
+  - capability: protected_human_action
+    owner: human
+    status: BLOCKED
+    evidence_pointer:
+      - "state/CURRENT.yaml"
+      - "state/HANDOVER.yaml"
+    reconstruction_note: >-
+      Prior protected actions were separately authorized and consumed. The public Cloudflare frontend,
+      exact CORS, hosted demo login, and one browser-triggered World’s Fair Devnet 7/7 sequence are now proven.
+      Keep this guard active for any future protected runtime write or irreversible action.
+
+  - capability: post_mortem_and_learning
+    owner: existing_owner
+    status: NOT_APPLICABLE_WITH_REASON
+    not_applicable_reason: "Project remains active."
+
+missing:
+  - "Independent external-human judge/operator trial remains a preserved validation gap."
+  - "Direct representative operator evidence remains a preserved validation gap."
+  - "CRESCO-specific willingness-to-pay or equivalent pull signal remains a preserved validation gap."
+  - "At least two credible target users/operators willing to test remains a preserved validation gap."
+
+triggered_but_unresolved:
+  - "PUBLIC_RUNTIME__HOSTED_JUDGE_SELF_SERVE"
+  - "DEMO_ENVIRONMENT / judge self-serve"
+  - "ENGINEERING_QUALITY_ASSURANCE re-triggers on material code touch"
+  - "Competitive Novelty / Kill monitoring remains active"
+  - "Direct operator evidence remains an explicit validation gap"
+
+human_overrides:
+  - id: BUILD_WITH_VALIDATION_GAP_2026_10_01
+    status: PROVEN
+    scope: "Allows progression past blocked direct-market-evidence gate without converting missing evidence to PASS."
+    evidence_pointer:
+      - "state/CURRENT.yaml"
+      - "state/HANDOVER.yaml"
+reconstructed_artifacts: []
+
+product_depth_and_live_reality:
+  central_policy: "Faadil1/faadil-agent-system/PRODUCT-REALITY-POLICY.yaml@1.3.0"
+  adoption: "ACTIVE_FROM_2026-10-01_MATERIAL_TOUCH"
+  no_backdating: true
+  world_fair_live_vertical_slice_exists: true
+  product_exploitation_loop: "ACTIVE"
+  reason: "The World’s Fair CRESCO→Orca Devnet vertical slice is now proven; the Product Exploitation Loop is required before terminal polish."
+  depth_gap_review: "product/POST-VERTICAL-SLICE-DEPTH-GAP-REVIEW-2026-10-02.md"
+
+evidence_graph:
+  file: "governance/EVIDENCE-GRAPH.yaml"
+  applicability: "ACTIVE_BOUNDED"
+  terminal_live_claims_allowed: false
+
+reference_intelligence:
+  central_inbox_reference: "adevar_pre_audit_credits_cwf_2026"
+  status: "CLASSIFIED_REFERENCE_ONLY"
+  owner_for_decision: "existing project owner / human"
+  auto_adoption: false
+
+rule_lifecycle:
+  decision: NO_CHANGE
+  reason: "This reconciliation adopts existing canon; it does not create a new universal rule."
+
+cross_project_learning:
+  decision: NO_CHANGE
+  reason: "No post-mortem or multi-project evidence justifies a system-level generalization from CRESCO yet."
+
+
+competitive_judge_cycle:
+  RUBRIC:
+    status: SATISFIED
+    evidence: "research/OFFICIAL-RULES-2026-10-01.md"
+  PAIN:
+    status: SATISFIED
+    note: "Category-level pain supported; direct operator recurrence remains a Pre-Build Reality blocker."
+  PROBLEM:
+    status: SATISFIED
+    note: "Working problem is explicit but final wedge is not locked."
+  NEGATIVE_EVENT:
+    status: SATISFIED
+    evidence: "research/NEGATIVE-EVENT-MAP.md"
+  DIFFERENTIATOR:
+    status: SATISFIED
+    note: "Locked as execution-bound delegated capital authority; market desirability remains validation-gap bounded."
+  EXECUTION:
+    status: SATISFIED
+    note: "First live slice and reusable shared product core are both proven on Solana Devnet."
+  LIVE_DEPTH:
+    status: IN_PROGRESS
+    note: "PR #29's 7/7-proven repair is merged to main and post-merge CI is green. Public deployment is BLOCKED because the authorized one-shot GitHub workflow had no CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID; no deploy or public live call occurred. LIVE_DEPTH remains IN_PROGRESS."
+  EVIDENCE:
+    status: SATISFIED
+    note: "Live core, runtime binding, shared product core, rollback and bounded refusal receipts exist; hosted public-runtime evidence remains the next causal edge."
+  STORY:
+    status: NOT_APPLICABLE_WITH_REASON
+    reason: "Not at Demo/Submission lock."
+  DEMO:
+    status: NOT_APPLICABLE_WITH_REASON
+    reason: "No locked World’s Fair product to demo."
+  Q_AND_A:
+    status: NOT_APPLICABLE_WITH_REASON
+    reason: "Not at terminal judge-assurance stage."
+
+product_reality_packet:
+  applicable: true
+  owner_now: "PBPD / existing product owner after Concept Lock"
+  packet_status: partial
+  proof_classes_present:
+    - TECHNICAL_PROOF_BASELINE
+    - BEHAVIOR_PROOF_BASELINE
+    - FOUNDER_COMPETITOR_EXPERT_DISCOVERY
+  live_core_loop_status: proven_devnet
+  load_bearing_integration_status: proven_orca_pyth
+  real_consequence_status: proven_devnet_state_and_rollback
+  representative_scenario_depth_status: proven_for_first_slice
+  failure_recovery_status: proven_orca_rollback
+  external_user_or_operator_evidence_status: missing_validation_gap_preserved
+  time_to_first_value_status: missing_hosted_measurement
+  time_to_first_value_reason: "Surface code exists, but no hosted judge/operator run has been observed yet."
+  operational_economics_status: not_applicable_with_reason
+  operational_economics_reason: "No selected paid/core execution loop yet."
+  shared_product_core_status: proven_live
+  shared_product_core_reason: "The reusable server-side World’s Fair provider executed all seven canonical consequences live on Devnet; v0.3 API and Worker bundle tests pass."
+  reality_ledger_status: satisfied
+  post_vertical_slice_depth_gap_review_status: satisfied_active
+  post_vertical_slice_depth_gap_review_reason: "Triggered and recorded after first live slice."
+  observability_receipt_status: satisfied_for_shared_live_core
+  real_user_surface_status: build_proven_not_hosted
+  judge_or_operator_self_serve_status: missing_hosted_proof
+  unresolved_production_gap:
+    - "Public hosted World’s Fair Worker/API not yet bound to the proven head"
+    - "Public hosted /worlds-fair route not yet bound to the proven head"
+    - "Hosted UI→API→Solana critical path not yet observed"
+    - "Fresh-environment reproducibility/reset strategy not yet proven"
+    - "Direct operator validation remains missing"
+  claim_overreach:
+    - "Do not upgrade Stocklana baseline into World’s Fair LIVE."
+    - "Do not describe execution-bound capital authority as validated user value."
+
+engineering_quality:
+  triggered: true
+  owner_now: PBPD_or_authorized_implementation_owner
+  provider: GitHub_Actions_plus_live_runtime
+  provider_authority: EVIDENCE_ONLY
+  receipt_status: proven_bounded_v1
+  receipt: "evidence/engineering/WORLDS-FAIR-ORCA-V1-ENGINEERING-QUALITY-2026-10-02.md"
+  regression_status: pass_at_live_proof_head
+  protected_contracts_status: pass_for_bounded_v1
+  unresolved_material_findings:
+    - "Re-run quality assurance after each material Product Exploitation code change."
+  score_only_pass_attempted: false
+
+runtime_coordination:
+  coordinator: none
+  canonical_authority: NONE
+  required_repo_access: not_applicable
+  access_gaps: []
+
+duplicate_or_authority_conflicts: []
+
+next_handoff:
+  from: "PBPD / live-slice implementation owner"
+  to: "PBPD / Product Exploitation owner"
+  required_output: "Judge/operator-usable World’s Fair surface on the shared live core, plus self-serve/reproducibility evidence."
+
+protected_human_decision_required: true
+terminal_transition_allowed: false

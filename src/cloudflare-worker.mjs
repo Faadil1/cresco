@@ -1,7 +1,12 @@
 import { routeCrescoHttp } from './http-api.mjs';
 import { handleFamilyApi } from './cloudflare-family-api.mjs';
 import { FamilyState } from './cloudflare-family-state.mjs';
-import { configuredWorldFairOrcaProviderFromEnv } from './worlds-fair-orca-provider.mjs';
+import {
+  configuredWorldFairOrcaProviderFromEnv,
+  configuredWorldFairWorkspaceChainFactoryFromEnv
+} from './worlds-fair-orca-provider.mjs';
+import { createWorldFairWorkflow } from './worlds-fair-workflow.mjs';
+import { isWorkflowPath, workflowWriteScope } from './worlds-fair-workflow-http.mjs';
 export { FamilyState };
 
 const DEFAULT_CRESCO_ORIGINS = Object.freeze([
@@ -9,6 +14,41 @@ const DEFAULT_CRESCO_ORIGINS = Object.freeze([
   'https://cresco.faadil-casecraft.workers.dev'
 ]);
 const WORLD_FAIR_LOCK_NAME = 'cresco-worlds-fair-operator-lab-live-lock';
+const WORLD_FAIR_WORKFLOW_STORE = 'cresco-worlds-fair-workflow-store';
+
+function workflowStub(env = {}) {
+  if (!env.FAMILY_STATE) return null;
+  return env.FAMILY_STATE.get(env.FAMILY_STATE.idFromName(WORLD_FAIR_WORKFLOW_STORE));
+}
+
+async function workflowDoCall(stub, path, payload) {
+  const response = await stub.fetch('https://worlds-fair-workflow.internal' + path, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  let body = null;
+  try {
+    body = await response.json();
+  } catch {
+    body = null;
+  }
+  return { status: response.status, body };
+}
+
+export function durableWorkflowStore(stub) {
+  return {
+    async get(key) {
+      const result = await workflowDoCall(stub, '/wf-kv/get', { key });
+      if (result.status !== 200) throw new Error('WORKFLOW_STORE_READ_FAILED');
+      return result.body?.value ?? null;
+    },
+    async put(key, value) {
+      const result = await workflowDoCall(stub, '/wf-kv/put', { key, value });
+      if (result.status !== 200) throw new Error('WORKFLOW_STORE_WRITE_FAILED');
+    }
+  };
+}
 
 function worldFairLockStub(env = {}) {
   if (!env.FAMILY_STATE) return null;
@@ -109,6 +149,11 @@ export async function handleCrescoCloudflareRequest(request, env = {}, services 
     }
 
     const body = await readJsonBody(request);
+
+    if (isWorkflowPath(path)) {
+      return await handleWorkflowRequest({ request, env, services, path, body });
+    }
+
     const isWorldFairRun =
       request.method === 'POST' &&
       path === '/api/v0.3/worlds-fair/run';
@@ -217,6 +262,53 @@ export async function handleCrescoCloudflareRequest(request, env = {}, services 
         )
       }
     );
+  }
+}
+
+async function handleWorkflowRequest({ request, env, services, path, body }) {
+  const stub = workflowStub(env);
+  const workflow =
+    services.worldFairWorkflow ??
+    (stub
+      ? createWorldFairWorkflow({
+          store: durableWorkflowStore(stub),
+          chainFactory:
+            services.worldFairWorkspaceChainFactory ??
+            configuredWorldFairWorkspaceChainFactoryFromEnv(env),
+          options: env.WORLD_FAIR_CREATE_TOKEN ? { createToken: env.WORLD_FAIR_CREATE_TOKEN } : {}
+        })
+      : null);
+
+  const scope = workflowWriteScope(request.method, path);
+  const leaseRequestId = scope && stub ? crypto.randomUUID() : null;
+  if (leaseRequestId) {
+    const lease = await workflowDoCall(stub, '/lease/acquire', { name: 'wf:' + scope, requestId: leaseRequestId, ttlMs: 300000 });
+    if (lease.status !== 200 || lease.body?.acquired !== true) {
+      const retryAfterMs = Number(lease.body?.retryAfterMs || 5000);
+      return new Response(
+        JSON.stringify({ contractVersion: '0.4', error: 'BUSY', message: 'Another write is in progress for this workspace', retryAfterMs }),
+        { status: 409, headers: withCors({ 'content-type': 'application/json; charset=utf-8', 'retry-after': String(Math.ceil(retryAfterMs / 1000)) }, request, env) }
+      );
+    }
+  }
+
+  try {
+    const url = new URL(request.url);
+    const result = await routeCrescoHttp({
+      method: request.method,
+      path,
+      body,
+      headers: request.headers,
+      query: Object.fromEntries(url.searchParams),
+      services: { ...services, worldFairWorkflow: workflow }
+    });
+    const headers = withCors(result.headers, request, env);
+    headers.set('cache-control', 'no-store');
+    return new Response(result.body == null ? null : JSON.stringify(result.body), { status: result.status, headers });
+  } finally {
+    if (leaseRequestId) {
+      await workflowDoCall(stub, '/lease/release', { name: 'wf:' + scope, requestId: leaseRequestId }).catch(() => null);
+    }
   }
 }
 

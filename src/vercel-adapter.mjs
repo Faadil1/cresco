@@ -58,11 +58,15 @@ export async function handleCrescoVercelRequest({
 }) {
   try {
     const body = await readRequestBody(req);
+    const query = { ...(req.query ?? {}) };
+    delete query.path;
     const result = await routeCrescoHttp({
       method: req.method,
       path,
       body,
-      services
+      services,
+      headers: req.headers,
+      query
     });
 
     setResponseHeaders(res, result.headers);
