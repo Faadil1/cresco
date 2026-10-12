@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { OnboardingFrame } from "@/components/onboarding";
-import { KidBust } from "@/components/illustrations/people";
+import { StoryVignette } from "@/components/illustrations/family-story";
 import { ActionButton } from "@/components/ui/primitives";
 import { auth } from "@/services";
 import { useStore } from "@/state/store";
@@ -45,8 +45,8 @@ export default function StartPage() {
         </div>
       }
     >
-      <div className="flex justify-center">
-        <KidBust className="size-24" />
+      <div className="mx-auto max-w-[350px] overflow-hidden rounded-[22px] border border-line-soft">
+        <StoryVignette role="teen" className="block w-full" />
       </div>
       <label className="mt-6 block">
         <span className="text-[14px] font-semibold text-navy-strong">Email</span>
