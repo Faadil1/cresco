@@ -326,7 +326,7 @@ export function BoundaryMessage({
   const { title, body } = explainEvaluation(evaluation, mandate, companyName, mode);
   const ctx = learningContextFor(evaluation);
   return (
-    <div role="status" className={cn("rounded-[20px] border border-[#f3e0d8] bg-[#f5f6f8] p-4", className)}>
+    <div role="status" className={cn("rounded-[20px] border border-[#f1d9c8] bg-[#fff3e8] p-4", className)}>
       <div className="flex gap-3">
         <IconCircle tone="orange" size={40}>
           <SlidersHorizontal className="size-5" />
