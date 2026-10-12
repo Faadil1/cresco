@@ -68,7 +68,11 @@ function isTransientRpcReadError(error) {
     message.includes('Unable to fetch TokenAccountInfo for vault') ||
     message.includes('Unable to fetch MintInfo for mint') ||
     message.includes('Unable to fetch Whirlpool at address at') ||
-    message.includes('Invariant failed: Whirlpool data not found')
+    message.includes('Invariant failed: Whirlpool data not found') ||
+    // Production bundles (Cloudflare Workers) strip tiny-invariant details, so
+    // the same Orca null-read surfaces as the bare string. Reads only: this
+    // classifier is used by bounded read/quote retries, never by writes.
+    message.trim() === 'Invariant failed'
   );
 }
 

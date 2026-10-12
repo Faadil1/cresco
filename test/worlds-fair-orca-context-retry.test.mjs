@@ -622,3 +622,17 @@ test('Orca quote Whirlpool-null invariant retry remains bounded', async () => {
 
   assert.equal(calls, 3);
 });
+
+test('bare production-bundle "Invariant failed" from an Orca read is a bounded transient read', async () => {
+  let calls = 0;
+  const value = await withTransientRpcReadRetry(
+    async () => {
+      calls += 1;
+      if (calls < 2) throw new Error('Invariant failed');
+      return 'pool-ready';
+    },
+    { attempts: 4, baseDelayMs: 0 }
+  );
+  assert.equal(value, 'pool-ready');
+  assert.equal(calls, 2);
+});
