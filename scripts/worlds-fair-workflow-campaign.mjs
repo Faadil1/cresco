@@ -19,6 +19,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const args = process.argv.slice(2);
 const flag = (name, fallback = null) => {
@@ -195,7 +196,8 @@ async function main() {
   process.exit(report.thresholdMet ? 0 : 1);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// pathToFileURL keeps this entry check working on Windows (C:\\...) too.
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   main().catch((error) => {
     console.error(error.message);
     process.exit(1);
