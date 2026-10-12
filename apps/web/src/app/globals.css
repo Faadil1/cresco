@@ -2,52 +2,52 @@
 
 /*
  * Cresco design tokens — see docs/CRESCO-FRONTEND-DESIGN-SYSTEM.md.
- * Values come from the approved spec (§7). Cresco is light-only by design. Palette: Fog & Ink Blue (2026-10-12).
+ * Values come from the approved spec (§7). Cresco is light-only by design. Palette: CRESCO Warm Editorial (2026-10-12), complementary to the original consumer illustrations.
  */
 :root {
-  --cresco-bg: #e8ebee;
-  --cresco-surface: #f5f6f8;
-  --cresco-surface-soft: #eef0f3;
+  --cresco-bg: #fbf8f1;
+  --cresco-surface: #fffdfa;
+  --cresco-surface-soft: #f3efe6;
 
-  --cresco-blue: #1f3bcc;
-  --cresco-blue-strong: #172ea8;
-  --cresco-blue-soft: #dfe4f8;
+  --cresco-blue: #315e86;
+  --cresco-blue-strong: #244a70;
+  --cresco-blue-soft: #e7eff5;
 
-  --cresco-navy: #2a2f38;
-  --cresco-navy-strong: #14171c;
-  --cresco-text-secondary: #565d68;
-  --cresco-text-muted: #646b76;
+  --cresco-navy: #23334a;
+  --cresco-navy-strong: #10253d;
+  --cresco-text-secondary: #506070;
+  --cresco-text-muted: #637080;
 
-  --cresco-green: #2f7d5b;
-  --cresco-green-strong: #1f5e42;
-  --cresco-green-soft: #e2ece6;
+  --cresco-green: #367d56;
+  --cresco-green-strong: #195a3c;
+  --cresco-green-soft: #e7f0df;
 
-  --cresco-yellow: #c99a3c;
-  --cresco-orange: #c4674a;
-  --cresco-yellow-soft: #f1ead9;
+  --cresco-yellow: #d8a14f;
+  --cresco-orange: #dd895c;
+  --cresco-yellow-soft: #fff2d9;
   /* Text-safe variants (WCAG AA 4.5:1 on light surfaces). Fills keep the brand values. */
-  --cresco-orange-text: #8a5a12;
+  --cresco-orange-text: #995020;
 
-  --cresco-lavender: #6c78c9;
-  --cresco-lavender-soft: #e7e9f6;
+  --cresco-lavender: #8574b9;
+  --cresco-lavender-soft: #eee8f8;
 
-  --cresco-aqua: #4f8f8a;
-  --cresco-aqua-soft: #e1eeec;
+  --cresco-aqua: #51988c;
+  --cresco-aqua-soft: #e5f3ec;
 
-  --cresco-pink: #b5627a;
-  --cresco-pink-soft: #f3e4e8;
+  --cresco-pink: #c67892;
+  --cresco-pink-soft: #fbe8ee;
 
-  --cresco-loss: #c24a43;
-  --cresco-loss-soft: #f8e9e7;
-  --cresco-loss-text: #a8342e;
-  --cresco-warning: #b07a1e;
+  --cresco-loss: #c3473d;
+  --cresco-loss-soft: #fff0ea;
+  --cresco-loss-text: #a3322c;
+  --cresco-warning: #9c701d;
 
-  --cresco-border: #d5dae1;
-  --cresco-border-soft: #e1e5ea;
+  --cresco-border: #e0d9c8;
+  --cresco-border-soft: #ebe5d9;
 
-  --cresco-shadow-card: 0 1px 0 rgba(20, 23, 28, 0.04), 0 24px 48px -32px rgba(20, 40, 120, 0.28);
-  --cresco-shadow-soft: 0 1px 0 rgba(20, 23, 28, 0.04), 0 12px 32px -28px rgba(20, 40, 120, 0.3);
-  --cresco-shadow-button: 0 8px 20px -14px rgba(20, 23, 28, 0.45);
+  --cresco-shadow-card: 0 2px 0 rgba(32, 46, 42, 0.02), 0 26px 52px -32px rgba(89, 74, 51, 0.25);
+  --cresco-shadow-soft: 0 2px 0 rgba(35, 50, 42, 0.02), 0 14px 35px -26px rgba(99, 77, 54, 0.22);
+  --cresco-shadow-button: 0 12px 26px -17px rgba(26, 89, 57, 0.42);
 
   --nav-height: 72px;
   color-scheme: light;
@@ -146,13 +146,13 @@ body {
 }
 
 :focus-visible {
-  outline: 3px solid rgba(23, 105, 246, 0.45);
+  outline: 3px solid rgba(38, 114, 78, 0.65);
   outline-offset: 2px;
   border-radius: 10px;
 }
 
 .skeleton {
-  background: linear-gradient(90deg, #eef2f8 0px, #f7f9fc 80px, #eef2f8 160px);
+  background: linear-gradient(90deg, #efe9dd 0px, #fffdfa 80px, #efe9dd 160px);
   background-size: 480px 100%;
   animation: var(--animate-shimmer);
 }
@@ -187,4 +187,77 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Editorial illustration system: shared by public pages and role-specific app shells.
+   Marketing examples remain separate from live transaction and authority states. */
+.cresco-editorial-backdrop {
+  background:
+    radial-gradient(ellipse 42% 45% at 91% 9%, rgba(195, 219, 174, .26), transparent 76%),
+    radial-gradient(ellipse 36% 42% at 6% 78%, rgba(255, 218, 182, .19), transparent 80%),
+    var(--cresco-bg);
+}
+.cresco-editorial-panel {
+  border: 1px solid var(--cresco-border-soft);
+  border-radius: clamp(20px, 3vw, 36px);
+  background: var(--cresco-surface);
+  box-shadow: var(--cresco-shadow-card);
+}
+.cresco-story-stage {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: #f5f0df;
+  border: 1px solid rgba(163, 152, 119, .28);
+  border-radius: clamp(23px, 3vw, 36px);
+}
+.cresco-story-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 40%, rgba(255, 252, 242, .24) 100%);
+}
+.cresco-story-note {
+  font-family: var(--font-display);
+  font-style: italic;
+  letter-spacing: .015em;
+  color: var(--cresco-green-strong);
+}
+.cresco-demo-card {
+  position: relative;
+  border: 1px solid rgba(225, 215, 197, .86);
+  border-radius: 18px;
+  background: rgba(255, 253, 248, .97);
+  box-shadow: 0 15px 32px -22px rgba(30, 38, 28, .34);
+  backdrop-filter: blur(10px);
+}
+.cresco-step-card {
+  border: 1px solid var(--cresco-border-soft);
+  border-radius: 26px;
+  background: var(--cresco-surface);
+  overflow: hidden;
+}
+.cresco-section-kicker {
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--cresco-green-strong);
+}
+.cresco-rule-accent {
+  background: linear-gradient(90deg, var(--cresco-green), #b2bd7b 70%, transparent);
+  border-radius: 999px;
+  height: 4px;
+}
+.cresco-app-workspace {
+  background:
+    radial-gradient(circle at 88% 4%, rgba(214, 230, 196, .2), transparent 36%),
+    var(--cresco-bg);
+}
+.cresco-app-workspace :where(input:not([type="checkbox"]), textarea, select) {
+  accent-color: var(--cresco-green-strong);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cresco-demo-card, .cresco-story-stage { backdrop-filter: none; }
 }
