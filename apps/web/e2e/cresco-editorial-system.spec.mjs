@@ -24,6 +24,6 @@ test("Family illustration and product truth remain visible on the landing page",
 
 test("Family onboarding shows contextual people without removing demo disclosures", async ({ page }) => {
   await page.goto("/parent/sign-in");
-  await expect(page.getByRole("img", { name: /illustrated parent using CRESCO/i })).toBeVisible();
+  await expect(page.getByRole("img", { name: /illustrated parent reviewing a CRESCO request/i })).toBeVisible();
   await expect(page.getByText(/not identity verification/i)).toBeVisible();
 });
