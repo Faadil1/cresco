@@ -104,6 +104,8 @@ export function StoryVignette({ role, className, title }: ArtProps & { role: Sto
       <circle cx="280" cy="46" r="64" fill="#fffaf1" opacity=".68"/>
       <path d="M0 173c65-30 116-24 184-12s113-2 166-21v60H0z" fill="#d7cfb4" opacity=".45"/>
       <path d="M25 149V40m0 55C2 83 0 57 11 45c18 9 19 33 14 50zm0-18c9-33 29-37 39-30-8 23-20 27-39 30z" fill="#7f9e70"/>
+      {/* Shift the figure into frame; a portrait should not be cut off at the right edge. */}
+      <g transform="translate(-32 0)">
       <path d="M242 200c-2-54 28-87 73-87 42 0 67 29 70 87z" fill={shirt}/>
       <path d="M270 134c-14-16-16-45-12-60 6-30 19-47 49-47 34 0 54 29 50 63-3 24-13 46-31 57z" fill="#342b29"/>
       <ellipse cx="308" cy="91" rx="37" ry="45" fill={parent?"#dfa77f":"#e5ae82"}/>
@@ -116,6 +118,7 @@ export function StoryVignette({ role, className, title }: ArtProps & { role: Sto
       <path d="M261 177c13-10 27-11 40-2l5 23h-44z" fill="#e5ae82"/>
       <rect x="279" y="146" width="42" height="67" rx="7" fill="#343d45" transform="rotate(10 279 146)"/>
       <rect x="283" y="151" width="33" height="52" rx="3" fill="#5e7173" transform="rotate(10 283 151)"/>
+      </g>
       <path d="M0 188c140-11 242-4 350-13v25H0z" fill="#bf9472"/>
       <path d="M0 188c113-8 224-4 350-13" stroke="#e5bb90" strokeWidth="5" fill="none"/>
     </svg>
