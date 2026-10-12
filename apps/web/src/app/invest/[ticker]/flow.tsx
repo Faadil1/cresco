@@ -422,7 +422,7 @@ function Flow({ asset, mode, initialAmount }: { asset: MarketAsset; mode: Mode; 
           ) : (
             <>
               {moneyBlockedPreview && preview ? (
-                <p role="status" className="mt-3 flex items-start gap-2 rounded-[14px] bg-[#f5f6f8] px-3.5 py-3 text-[13px] font-semibold text-navy">
+                <p role="status" className="mt-3 flex items-start gap-2 rounded-[14px] bg-surface-soft px-3.5 py-3 text-[13px] font-semibold text-navy">
                   <Info aria-hidden className="mt-0.5 size-4 shrink-0 text-orange-text" />
                   {explainEvaluation(preview, mandate, asset.companyName, mode).body}
                 </p>

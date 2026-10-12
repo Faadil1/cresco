@@ -8,14 +8,16 @@ type SvgProps = { className?: string; title?: string };
 /* Brand mark                                                           */
 /* ------------------------------------------------------------------ */
 
-/** Cresco symbol: the line, one action under it, one ask above it. */
+/** Living Key mark: growth above a clear standing boundary. */
 export function CrescoMark({ className, title }: SvgProps) {
   return (
     <svg viewBox="0 0 40 40" className={className} {...a11y(title)}>
-      <rect width="40" height="40" rx="11" fill={P.ink} />
-      <path d="M9 21.5h22" stroke={P.white} strokeWidth="1.6" strokeLinecap="round" />
-      <circle cx="15" cy="27.5" r="2.6" fill={P.white} />
-      <circle cx="26" cy="14.5" r="3" fill="none" stroke={P.blueMid} strokeWidth="1.6" />
+      <circle cx="20" cy="20" r="19" fill={P.sageSoft} />
+      <path d="M20 32V13" fill="none" stroke={P.sage} strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M20 24C7 24 5 15 6 10c9-1 15 4 14 14z" fill={P.sage} />
+      <path d="M20 19c0-11 5-15 15-15 1 9-3 14-15 15z" fill="#8eb579" />
+      <path d="M11 34h18" stroke={P.ink} strokeWidth="1.7" strokeLinecap="round" />
+      <circle cx="20" cy="32" r="2.6" fill={P.ink} />
     </svg>
   );
 }

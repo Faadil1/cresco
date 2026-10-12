@@ -21,11 +21,11 @@ export const NAV_ITEMS: NavItem[] = [
 
 export function Wordmark({ className, size = "md" }: { className?: string; size?: "sm" | "md" | "lg" }) {
   const dims = { sm: "size-7", md: "size-8", lg: "size-11" }[size];
-  const text = { sm: "text-[23px]", md: "text-[27px]", lg: "text-[36px]" }[size];
+  const text = { sm: "text-[19px]", md: "text-[22px]", lg: "text-[31px]" }[size];
   return (
     <span className={cn("inline-flex items-center gap-2", className)}>
       <CrescoMark className={dims} />
-      <span className={cn("font-display font-normal leading-none tracking-[-0.01em] text-navy-strong", text)}>Cresco</span>
+      <span className={cn("font-sans font-extrabold uppercase leading-none tracking-[0.13em] text-navy-strong", text)}>Cresco</span>
     </span>
   );
 }
@@ -48,7 +48,7 @@ export function MobileBottomNavigation() {
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex h-full flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors duration-150",
-                  active ? "text-blue" : "text-ink-3 hover:text-navy",
+                  active ? "text-green-strong" : "text-ink-3 hover:text-navy",
                 )}
               >
                 <Icon aria-hidden className="size-[22px]" strokeWidth={active ? 2.6 : 2.1} />
@@ -66,7 +66,7 @@ export function DesktopNavigation() {
   const pathname = usePathname();
   const { state } = useStore();
   return (
-    <aside className="sticky top-0 hidden h-dvh shrink-0 flex-col border-r border-line-soft bg-surface px-3 py-6 md:flex md:w-[92px] lg:w-[248px] lg:px-5">
+    <aside className="sticky top-0 hidden h-dvh shrink-0 flex-col border-r border-line-soft bg-surface/90 px-3 py-6 md:flex md:w-[92px] lg:w-[248px] lg:px-5">
       <Link href="/home" className="mb-8 flex justify-center lg:justify-start" aria-label="Cresco home">
         <span className="lg:hidden">
           <CrescoMark className="size-9" />
@@ -87,7 +87,7 @@ export function DesktopNavigation() {
                   aria-current={active ? "page" : undefined}
                   className={cn(
                     "flex flex-col items-center gap-1 rounded-[14px] px-2 py-2.5 text-[11.5px] font-semibold transition-colors duration-150 lg:flex-row lg:gap-3 lg:px-3.5 lg:text-[15px]",
-                    active ? "bg-blue-soft text-blue" : "text-ink-2 hover:bg-surface-soft hover:text-navy",
+                    active ? "bg-green-soft text-green-strong" : "text-ink-2 hover:bg-surface-soft hover:text-navy",
                   )}
                 >
                   <Icon aria-hidden className="size-[22px]" strokeWidth={active ? 2.6 : 2.1} />
@@ -112,7 +112,7 @@ export function DesktopNavigation() {
 /** Child app shell: bottom nav on phones, side rail from 768px. */
 export function AppShell({ children, hideMobileNav }: { children: ReactNode; hideMobileNav?: boolean }) {
   return (
-    <div className="flex min-h-dvh">
+    <div className="cresco-app-workspace flex min-h-dvh">
       <DesktopNavigation />
       <div className="min-w-0 flex-1">
         <main id="main" className={cn("mx-auto w-full max-w-[1120px] px-5 pt-5 md:px-8 md:pt-8 lg:px-10", hideMobileNav ? "pb-10" : "pb-nav")}>

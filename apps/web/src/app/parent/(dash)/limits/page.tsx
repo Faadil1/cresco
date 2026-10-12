@@ -132,7 +132,7 @@ export default function ParentLimitsPage() {
         </Card>
       </section>
 
-      <div className="sticky bottom-0 mt-6 bg-gradient-to-t from-[#f5f6f8] via-[#f5f6f8] to-transparent pb-4 pt-4">
+      <div className="sticky bottom-0 mt-6 bg-gradient-to-t from-bg via-bg to-transparent pb-4 pt-4">
         <ActionButton disabled={!changed} onClick={() => setConfirm(true)}>
           Review changes
         </ActionButton>

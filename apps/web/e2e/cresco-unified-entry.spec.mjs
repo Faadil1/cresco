@@ -5,7 +5,7 @@ test.use({ ...devices["iPhone 13"] });
 
 test("CRESCO unifies Family and Delegated capital entry", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: /act alone inside the rules/i })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /grow independence.*keep the boundary/i })).toBeVisible();
   await expect(page.getByRole("heading", { name: /freedom inside a family key/i })).toBeVisible();
   await expect(page.getByRole("heading", { name: /authority for strategies and agents/i })).toBeVisible();
   await expect(page.getByRole("link", { name: "Enter Family" })).toHaveAttribute("href", "/start");

@@ -174,7 +174,7 @@ export function LessonPlayer({ lessonId }: { lessonId: string }) {
                     {step.correctExplanation}
                   </p>
                 ) : checked === "incorrect" ? (
-                  <p className="animate-rise mt-3 rounded-[12px] bg-[#f5f6f8] px-3 py-2.5 text-[14px] font-semibold text-navy">
+                  <p className="animate-rise mt-3 rounded-[12px] bg-surface-soft px-3 py-2.5 text-[14px] font-semibold text-navy">
                     <span className="font-semibold">Not quite. </span>
                     {step.retryHint}
                   </p>

@@ -198,7 +198,7 @@ export function QuizOption({
         correct
           ? "animate-bloom border-green bg-green-soft text-green-strong"
           : incorrect
-            ? "border-[#e3c9b8] bg-[#f5f6f8] text-navy"
+            ? "border-[#ebceb8] bg-[#fff4e8] text-navy"
             : selected
               ? "border-blue bg-blue-soft text-navy"
               : "border-line-soft bg-surface text-navy hover:border-line",

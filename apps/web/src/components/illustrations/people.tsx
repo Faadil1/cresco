@@ -2,8 +2,8 @@ import { P, STROKE, a11y } from "./palette";
 
 type SvgProps = { className?: string; title?: string };
 
-// People are drawn as calm silhouettes: a head, a hair shape, shoulders.
-// No faces, no skin-tone cartoon, so anyone can see themselves in them.
+// Small profile art has subtle expressions, layered hair and comfortable color.
+// Role illustrations depict characters, not actual CRESCO customers.
 
 function Teen({ x = 0, y = 0, s = 1, top = P.blue }: { x?: number; y?: number; s?: number; top?: string }) {
   return (
@@ -12,6 +12,10 @@ function Teen({ x = 0, y = 0, s = 1, top = P.blue }: { x?: number; y?: number; s
       <path d="M-4 24v-6h8v6c0 2.5-8 2.5-8 0z" fill={P.ochreSoft} />
       <ellipse cx="0" cy="2" rx="12" ry="13" fill={P.ochreSoft} />
       <path d="M-12.6 3.5C-14 -8 -7.5 -13 0.5 -13 8.5 -13 14 -7.5 12.6 1 10 -3 4 -5.5 -3 -5c-4 .3-7.5 3.5-9.6 8.5z" fill={P.ink} />
+      <path d="M-8 -4c5-5 11-6 17-2" fill="none" stroke={P.ink2} strokeWidth="1.1" strokeLinecap="round" />
+      <path d="M-7 5h3m8 0h3" stroke={P.ink2} strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M-3 11c2 2 5 2 7 0" fill="none" stroke="#bd7a63" strokeWidth="1.2" strokeLinecap="round" />
+
     </g>
   );
 }
@@ -23,6 +27,9 @@ function Adult({ x = 0, y = 0, s = 1, top = P.ink }: { x?: number; y?: number; s
       <path d="M-4.5 25v-7h9v7c0 3-9 3-9 0z" fill={P.claySoft} />
       <ellipse cx="0" cy="1" rx="12.5" ry="14" fill={P.claySoft} />
       <path d="M-13.5 6c-2-6-1-12 3-15.5 4-3.5 12-3.8 16.5-.5 4.5 3 6.5 8 5.5 13-1.5-4.5-5-7-9-7.5-1.5 2.8-6 4.5-10.5 4.5-2.5 0-4.5 2-5.5 6z" fill={P.ink2} />
+      <path d="M-8 3c2-1 4-1 6 0m5 0c2-1 4-1 6 0" stroke={P.ink2} strokeWidth="1.3" strokeLinecap="round" fill="none" />
+      <path d="M-4 11c3 2 6 2 9-1" fill="none" stroke="#b86d5c" strokeWidth="1.2" strokeLinecap="round" />
+
     </g>
   );
 }

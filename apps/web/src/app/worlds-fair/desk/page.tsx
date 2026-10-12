@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 
 import { Wordmark } from "@/components/shell";
+import { StoryVignette } from "@/components/illustrations/family-story";
 import { Avatar, EventRow, ExternalChip, GuardianBadge, MandateRail, railPoints } from "./desk-ui";
 import {
   devUsdc,
@@ -695,13 +696,13 @@ export default function WorldFairDeskPage() {
   const quickAmounts = [Math.max(50_000, Math.round(limitMicro * 0.6 / 10_000) * 10_000), Math.round(limitMicro * 1.5 / 10_000) * 10_000];
 
   return (
-    <main id="main" className="relative min-h-screen bg-bg">
+    <main id="main" className="cresco-app-workspace relative min-h-screen">
       <div className="relative mx-auto max-w-[1240px] px-5 pb-20 pt-6 md:px-10 md:pt-8">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <Wordmark size="md" />
           <nav aria-label="CRESCO product" className="flex flex-wrap gap-2">
-            <Link href="/" className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft hover:border-blue/35">CRESCO home</Link>
-            <Link href="/worlds-fair" className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft hover:border-blue/35">Technical proof</Link>
+            <Link href="/" className="rounded-full border border-line bg-surface/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft hover:border-green/35">CRESCO home</Link>
+            <Link href="/worlds-fair" className="rounded-full border border-line bg-surface/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft hover:border-green/35">Technical proof</Link>
             {id ? (
               <button type="button" onClick={() => { saveKeychain({ workspaceId: null, tokens: {} }); setKeychain({ workspaceId: null, tokens: {} }); setWs(null); setMandate(null); setRequests([]); setEvents([]); }} className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft">
                 Leave workspace
@@ -713,13 +714,23 @@ export default function WorldFairDeskPage() {
         {!id ? (
           <>
             <div className="mt-10"><JourneySteps current={0} /></div>
-            <section className="mt-10">
+            <section className="mt-10 grid items-center gap-6 lg:grid-cols-[1fr_0.78fr]">
+              <div>
               <h1 className="max-w-[18ch] font-display text-[44px] font-normal leading-[0.98] tracking-[-0.03em] text-navy-strong md:text-[64px]">
-                Set the line. <em className="text-blue">Everything else follows.</em>
+                Set the line. <em className="text-green-strong">Everything else follows.</em>
               </h1>
               <div className="mt-6 flex flex-wrap items-center gap-4">
                 <UseCaseToggle value={landingCase} onChange={setLandingCase} />
                 <Link href="/how-it-works" className="text-[14px] font-medium text-blue hover:underline">How it works</Link>
+              </div>
+              </div>
+              <div className="cresco-editorial-panel overflow-hidden">
+                <StoryVignette role={landingCase === "family" ? "parent" : "capital"} className="block w-full" />
+                <p className="p-4 text-[12px] leading-relaxed text-ink-2">
+                  {landingCase === "family"
+                    ? "Family workspace · Parent, teen and second-parent roles. Demo assets only."
+                    : "Delegated capital workspace · Operator, principal and risk-owner roles. Solana Devnet."}
+                </p>
               </div>
             </section>
 

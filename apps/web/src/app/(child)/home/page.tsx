@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChevronRight, ShieldCheck } from "lucide-react";
 import { GoalArt } from "@/components/illustrations/objects";
+import { StoryVignette } from "@/components/illustrations/family-story";
 import { BadgeArt } from "@/components/illustrations/badges";
 import { LessonCard, MissionCard } from "@/components/learning";
 import {
@@ -113,6 +114,10 @@ export default function HomePage() {
 
         {/* Desktop companion column */}
         <aside className="mt-6 hidden space-y-4 lg:mt-0 lg:block">
+          <Card className="overflow-hidden p-0">
+            <StoryVignette role="teen" className="block max-h-[160px] w-full object-cover" />
+            <div className="px-5 pb-4 pt-3"><p className="cresco-section-kicker">Your journey</p><p className="mt-1 font-display text-[25px] leading-tight text-navy-strong">A little more room to grow.</p><p className="mt-1 text-[12px] text-ink-2">Learning is yours. Changes to your Money Key still need your parent.</p></div>
+          </Card>
           {state.mode === "money" ? (
             <Card className="p-5">
               <p className="flex items-center gap-2 text-[15px] font-semibold text-navy-strong">
