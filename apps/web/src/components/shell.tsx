@@ -21,11 +21,11 @@ export const NAV_ITEMS: NavItem[] = [
 
 export function Wordmark({ className, size = "md" }: { className?: string; size?: "sm" | "md" | "lg" }) {
   const dims = { sm: "size-7", md: "size-8", lg: "size-11" }[size];
-  const text = { sm: "text-[20px]", md: "text-[23px]", lg: "text-[32px]" }[size];
+  const text = { sm: "text-[23px]", md: "text-[27px]", lg: "text-[36px]" }[size];
   return (
     <span className={cn("inline-flex items-center gap-2", className)}>
       <CrescoMark className={dims} />
-      <span className={cn("font-black tracking-[-0.02em] text-navy-strong", text)}>Cresco</span>
+      <span className={cn("font-display font-normal leading-none tracking-[-0.01em] text-navy-strong", text)}>Cresco</span>
     </span>
   );
 }

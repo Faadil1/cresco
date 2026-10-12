@@ -140,9 +140,9 @@ operator_principal_workflow_v0_4:
   live_verification_steps: docs/WORLDS-FAIR-OPERATOR-PRINCIPAL-WORKFLOW.md
 
 product_unification_2026_10_12:
-  decision: ONE_PRODUCT__FAMILY_AND_DELEGATED_CAPITAL_ENTER_THE_SAME_V0_4_WORKSPACE
-  root_entry: "/ -> /worlds-fair/desk?case=family | ?case=capital (PR #41 structure, follow-up in claude/integrations-and-ui-2026-10-12)"
-  legacy_family_app: "/start and /parent/sign-in remain reachable, labeled separate sign-in, demo lane; no identity or data migration"
+  decision: ONE_PRODUCT__FAMILY_APP_AND_DELEGATED_CAPITAL_WORKSPACE_FIRST_CLASS__SHARED_MANDATE_MECHANISM
+  root_entry: "/ -> Family: /start (Key, Learn, Explore, Portfolio, Profile) + /parent/sign-in + live family mandate /worlds-fair/desk?case=family; Delegated capital: /worlds-fair/desk?case=capital"
+  family_app: "first-class again (owner correction 2026-10-12); separate sessions from v0.4 workspace roles; no identity or data migration"
   identity_reality: SEPARATE_SESSIONS  # legacy demo-session auth vs v0.4 per-workspace role tokens; shared Solana program is not shared login
   audit: docs/worlds-fair/RECONCILIATION-2026-10-12-PM.md
 open_prs_merge_order: ["#38 campaign evidence", "#39 enforcement truth", "#40 principal-wallet guardian", "#41 unified entry", "integrations + UI (stacked on #40, contains #38/#39/#41)"]
