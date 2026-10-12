@@ -53,7 +53,7 @@ export default function WelcomePage() {
               <p className="text-[11px] font-black uppercase tracking-[0.11em] text-ink-3">CRESCO · Delegated capital</p>
               <h2 id="capital-title" className="mt-2 text-[25px] font-black text-navy-strong">Authority for strategies and agents</h2>
               <p className="mt-2 text-[14px] font-semibold leading-relaxed text-ink-2">
-                An operator works within an allocator's mandate. A principal can approve one exact exception, with a durable decision and execution receipt.
+                An operator works within an allocator&apos;s mandate. A principal can approve one exact exception, with a durable decision and execution receipt.
               </p>
               <div className="mt-4">
                 <ActionButton href="/worlds-fair/desk" arrow>Enter Delegated capital</ActionButton>
