@@ -38,7 +38,7 @@ jobs:
           mkdir -p art-preview
           (npm run dev >art-preview/next-dev.log 2>&1 & echo $! >art-preview/next-dev.pid)
           node --input-type=module <<'NODE'
-          import { chromium } from "@playwright/test";
+          import { chromium, expect } from "@playwright/test";
           import { mkdirSync, writeFileSync } from "node:fs";
           const origin="http://127.0.0.1:3000";
           let ready=false;
@@ -61,14 +61,9 @@ jobs:
             await page.waitForTimeout(500);
             if(name==="capital-desk-1440"){
               const selector=page.getByRole("radio",{name:"Delegated capital"});
-              await page.waitForTimeout(2200);
-              console.log("CRESCO_CAPITAL_BEFORE:"+await selector.getAttribute("aria-checked"));
-              await selector.click();
-              await page.waitForTimeout(1000);
+              await expect(selector).toHaveAttribute("aria-checked", "true", { timeout: 25000 });
               console.log("CRESCO_CAPITAL_SELECTED:"+await selector.getAttribute("aria-checked"));
-              console.log("CRESCO_CAPITAL_ILLUSTRATION:"+JSON.stringify(await page.locator('svg[role="img"]').allTextContents()));
-              const capitalSelected=await selector.getAttribute("aria-checked");
-              if(capitalSelected!=="true")process.exitCode=1;
+              console.log("CRESCO_CAPITAL_ILLUSTRATION:"+await page.locator('svg[aria-label*="delegated financial mandate"]').count());
             }
             const photo=await page.screenshot({type:"jpeg",quality:48,animations:"disabled"});
             writeFileSync(`art-preview/${name}.jpg`,photo);
