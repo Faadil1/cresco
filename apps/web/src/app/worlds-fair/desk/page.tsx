@@ -580,12 +580,13 @@ export default function WorldFairDeskPage() {
   const notReady = Boolean(ws && ws.chain.status !== "READY");
 
   return (
-    <main className="relative min-h-screen bg-bg">
+    <main id="main" className="relative min-h-screen bg-bg">
       <div className="relative mx-auto max-w-[1240px] px-5 pb-20 pt-6 md:px-10 md:pt-8">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <Wordmark size="md" />
-          <nav className="flex gap-2">
-            <Link href="/worlds-fair" className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-extrabold text-navy shadow-soft hover:border-blue/35">Judge lab (7/7)</Link>
+          <nav aria-label="CRESCO product" className="flex flex-wrap gap-2">
+            <Link href="/" className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-extrabold text-navy shadow-soft hover:border-blue/35">CRESCO home</Link>
+            <Link href="/worlds-fair" className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-extrabold text-navy shadow-soft hover:border-blue/35">Technical proof</Link>
             {id ? (
               <button type="button" onClick={() => { saveKeychain({ workspaceId: null, tokens: {} }); setKeychain({ workspaceId: null, tokens: {} }); setWs(null); setMandate(null); setRequests([]); setEvents([]); }} className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-extrabold text-navy shadow-soft">
                 Leave workspace
@@ -595,7 +596,7 @@ export default function WorldFairDeskPage() {
         </header>
 
         <section className="mt-10">
-          <p className="text-[12px] font-black uppercase tracking-[0.13em] text-blue">World’s Fair · CRESCO desk · {ws ? USE_CASES[caseOfWorkspace(ws)].label : "Family or delegated capital"}</p>
+          <p className="text-[12px] font-black uppercase tracking-[0.13em] text-blue">CRESCO · {ws ? USE_CASES[caseOfWorkspace(ws)].label : "Family or delegated capital"} · Solana Devnet</p>
           <h1 className="mt-3 max-w-[22ch] text-[40px] font-black leading-[1.02] tracking-[-0.04em] text-navy-strong md:text-[54px]">
             Act alone inside the rules. Ask once for the exception.
           </h1>
