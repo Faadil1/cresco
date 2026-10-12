@@ -1046,7 +1046,21 @@ export function createWorldFairOrcaProvider({
     const latest = await rpc.getLatestBlockhash('confirmed');
     const tx = new Transaction({ feePayer: guardianPk, recentBlockhash: latest.blockhash });
     for (const instruction of instructions) tx.add(instruction);
-    if (extraSigners.length) tx.partialSign(...extraSigners);
+    // Wallets (Phantom) may rewrite a transaction that nobody else has signed
+    // yet (priority fee, guard instructions), which changes the message and
+    // makes the server refuse it. A transaction that already carries another
+    // signature cannot be rewritten without breaking it, so when no server
+    // signer is otherwise needed the lab key co-signs a memo. That memo grants
+    // nothing: the program still requires the wallet as guardian.
+    const coSigners = extraSigners.length ? extraSigners : [guardian];
+    if (!extraSigners.length) {
+      tx.add(new TransactionInstruction({
+        programId: WORLD_FAIR_MEMO_PROGRAM_ID,
+        keys: [{ pubkey: guardian.publicKey, isSigner: true, isWritable: false }],
+        data: Buffer.from(`CRESCO wallet-guardian ${label}`, 'utf8')
+      }));
+    }
+    tx.partialSign(...coSigners);
     throw new WorldFairGuardianSignatureRequired({
       label,
       guardian: guardianPk.toBase58(),

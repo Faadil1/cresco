@@ -106,3 +106,22 @@ test('server-guardian workspaces cannot accept wallet submissions', async () => 
   assert.equal(chain.ids.guardian, guardian.publicKey.toBase58());
   await assert.rejects(chain.submitGuardianTransaction({ signedTransaction: 'x', expectedMessage: 'y' }), /NOT_A_WALLET_GUARDIAN/);
 });
+
+test('wallet-signed lifecycle and grant transactions carry a server co-signature so wallets cannot rewrite them', async () => {
+  const connection = fakeConnection();
+  const chain = walletChain(connection);
+  const out = await chain.setMandateStatus({ status: 'PAUSED', expectedNonce: 3 });
+  assert.equal(out.status, 'NEEDS_GUARDIAN_SIGNATURE');
+  const tx = Transaction.from(Buffer.from(out.guardianSignature.transaction, 'base64'));
+  assert.ok(tx.feePayer.equals(principal.publicKey));
+  const signed = tx.signatures.filter((s) => s.signature).map((s) => s.publicKey.toBase58());
+  assert.deepEqual(signed, [guardian.publicKey.toBase58()], 'only the lab memo co-signature is present');
+  assert.equal(tx.signatures.find((s) => s.publicKey.equals(principal.publicKey)).signature, null);
+  const memo = tx.instructions.at(-1);
+  assert.equal(memo.programId.toBase58(), 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
+  assert.match(memo.data.toString('utf8'), /set_mandate_status/);
+  // The wallet signs; the submit check still accepts the exact message.
+  tx.partialSign(principal);
+  const res = await chain.submitGuardianTransaction({ signedTransaction: tx.serialize().toString('base64'), expectedMessage: out.guardianSignature.message, lastValidBlockHeight: 1_000 });
+  assert.equal(res.status, 'CONFIRMED');
+});
