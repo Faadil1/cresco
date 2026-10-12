@@ -24,6 +24,7 @@ experience (Stocklana); the World's Fair work generalized its on-chain mechanism
 ## Start here
 
 - [CURRENT-STATE-2026-10-12.md](CURRENT-STATE-2026-10-12.md): what is live, with Devnet transaction receipts
+- [WHO-ENFORCES-WHAT.md](WHO-ENFORCES-WHAT.md): which guarantees the Solana program enforces and which the CRESCO server enforces today
 - [DECISIONS-2026-10-12.md](DECISIONS-2026-10-12.md): decisions taken on submission day
 - [../WORLDS-FAIR-OPERATOR-PRINCIPAL-WORKFLOW.md](../WORLDS-FAIR-OPERATOR-PRINCIPAL-WORKFLOW.md): how the workflow works, deploy and verification
 - [product/PRD.md](product/PRD.md) and [product/CONCEPT-LOCK-2026-10-01.md](product/CONCEPT-LOCK-2026-10-01.md): product definition

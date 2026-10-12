@@ -41,7 +41,8 @@ The current capital path moves a **demo SPL token**, not real securities. AAPL i
 - Desk for operator, principal and risk owner: `/worlds-fair/desk` (judge lab stays at `/worlds-fair`).
 - Strategy API: `GET /api/v0.4/worlds-fair/openapi`, example client `examples/worlds-fair-strategy-client.mjs`.
 - Design, truth boundary, deploy and LIVE verification: [`docs/WORLDS-FAIR-OPERATOR-PRINCIPAL-WORKFLOW.md`](docs/WORLDS-FAIR-OPERATOR-PRINCIPAL-WORKFLOW.md).
-- Status: implemented and tested locally; LIVE Devnet verification pending.
+- Status: live on Devnet; 5 of 5 repeatability campaign on the deployed API ([evidence](docs/worlds-fair/CURRENT-STATE-2026-10-12.md)).
+- Who enforces what today (program vs CRESCO server): [docs/worlds-fair/WHO-ENFORCES-WHAT.md](docs/worlds-fair/WHO-ENFORCES-WHAT.md).
 
 ## The product model
 

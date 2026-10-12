@@ -1,5 +1,7 @@
 # Demo
 
+> This is the original family demo (Stocklana baseline). The World's Fair demo of the same mechanism, in Family and Delegated capital modes, is in the desk at `/worlds-fair/desk`; status and receipts in [worlds-fair/CURRENT-STATE-2026-10-12.md](worlds-fair/CURRENT-STATE-2026-10-12.md).
+
 Target: about 60 seconds.
 
 The product mechanism should be understood before the technical proof appears.
