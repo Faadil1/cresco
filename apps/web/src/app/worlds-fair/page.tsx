@@ -282,10 +282,10 @@ export default function WorldsFairPage() {
   );
 
   return (
-    <main id="main" className="min-h-dvh overflow-hidden bg-bg">
+    <main id="main" className="cresco-editorial-backdrop min-h-dvh overflow-hidden">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-[540px] bg-[radial-gradient(circle_at_18%_8%,rgba(23,105,246,0.15),transparent_34%),radial-gradient(circle_at_82%_12%,rgba(139,117,247,0.15),transparent_30%),linear-gradient(180deg,#fff_0%,rgba(255,249,241,0)_100%)]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[540px] bg-[radial-gradient(circle_at_16%_12%,rgba(124,169,115,0.17),transparent_37%),radial-gradient(circle_at_82%_12%,rgba(220,171,111,0.13),transparent_32%),linear-gradient(180deg,#fffcf6_0%,rgba(251,248,241,0)_100%)]"
       />
 
       <div className="relative mx-auto max-w-[1240px] px-5 pb-20 pt-6 md:px-10 md:pt-8">
@@ -294,13 +294,13 @@ export default function WorldsFairPage() {
           <nav className="flex gap-2">
             <Link
               href="/worlds-fair/desk"
-              className="rounded-full bg-blue px-4 py-2 text-[13px] font-extrabold text-white shadow-button hover:bg-blue-strong"
+              className="rounded-full bg-green-strong px-4 py-2 text-[13px] font-semibold text-white shadow-button hover:bg-green"
             >
               Open the desk
             </Link>
             <Link
               href="/"
-              className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-extrabold text-navy shadow-soft hover:border-blue/35"
+              className="rounded-full border border-line bg-surface/90 px-4 py-2 text-[13px] font-semibold text-navy shadow-soft hover:border-green/35"
             >
               Product home
             </Link>
