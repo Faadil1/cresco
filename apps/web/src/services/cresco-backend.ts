@@ -392,8 +392,8 @@ export function fetchMoneyPortfolio() {
 export type BackendMarketQuote = {
   symbol: string;
   tokenizedSymbol?: string;
-  source: "PYTH_PRO";
-  feedId?: number;
+  source: "PYTH_PRO" | "PYTH_HERMES";
+  feedId?: number | string;
   status: "FRESH" | "STALE" | "UNAVAILABLE";
   price?: number | null;
   publishTime?: string | null;

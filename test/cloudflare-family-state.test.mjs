@@ -146,7 +146,7 @@ test("durable reservations enforce one family-wide period across asset labels an
   assert.equal(sixthBody.reasonCode, "PERIOD_LIMIT_EXCEEDED");
 });
 
-test("market universe never fabricates a live quote when Pyth is unavailable", async () => {
+test("market universe never fabricates a live quote when Pyth Pro and Hermes are unavailable", async () => {
   const previous = process.env.PYTH_PRO_API_KEY;
   delete process.env.PYTH_PRO_API_KEY;
 
@@ -155,7 +155,7 @@ test("market universe never fabricates a live quote when Pyth is unavailable", a
       new Request(
         "https://keys.example/api/v0.2/market/quotes?symbols=AAPL,NVDA"
       ),
-      {}
+      { HERMES_FETCH: async () => { throw new Error("offline"); } }
     );
     assert.equal(response.status, 200);
     const result = await body(response);
