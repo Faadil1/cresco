@@ -95,7 +95,7 @@ function Loaded({ asset }: { asset: MarketAsset }) {
             aria-label="Back to Explore"
             className="absolute left-4 top-4 grid size-11 place-items-center rounded-full bg-white/90 text-navy shadow-soft backdrop-blur"
           >
-            <ChevronLeft className="size-6" strokeWidth={2.6} />
+            <ChevronLeft className="size-6" strokeWidth={1.75} />
           </Link>
         </div>
 
@@ -104,16 +104,16 @@ function Loaded({ asset }: { asset: MarketAsset }) {
           <div className="flex items-start gap-3">
             <CompanyLogo asset={asset} size={52} />
             <div className="min-w-0 flex-1">
-              <h1 className="text-[22px] font-black leading-tight text-navy-strong">{asset.companyName}</h1>
-              <p className="text-[12.5px] font-bold text-ink-3">
+              <h1 className="text-[29px] font-display font-normal leading-[1.05] text-navy-strong">{asset.companyName}</h1>
+              <p className="text-[12.5px] text-ink-3">
                 {asset.ticker} · {asset.tokenizedTicker} on Solana
               </p>
             </div>
           </div>
           <div className="mt-3 flex flex-wrap items-end gap-x-2 gap-y-1">
-            <span className="text-[30px] font-black leading-none text-navy-strong tabular">{formatUsd(asset.price)}</span>
+            <span className="text-[30px] font-semibold leading-none text-navy-strong tabular">{formatUsd(asset.price)}</span>
             <PriceChange percent={asset.dayChangePercent} size="lg" className="mb-0.5" />
-            <span className="mb-1 text-[12px] font-bold text-ink-3">today</span>
+            <span className="mb-1 text-[12px] text-ink-3">today</span>
             <DataStatusTag status={asset.dataStatus} className="mb-1 ml-auto" />
           </div>
         </Card>
@@ -129,7 +129,7 @@ function Loaded({ asset }: { asset: MarketAsset }) {
               <Skeleton className="h-[130px] w-full" />
             )}
           </div>
-          <p className="text-[11.5px] font-semibold text-ink-3">Chart history uses Pyth when the configured feed is entitled; otherwise Cresco falls back to clearly labeled sample data.</p>
+          <p className="text-[11.5px] text-ink-3">Chart history uses Pyth when the configured feed is entitled; otherwise Cresco falls back to clearly labeled sample data.</p>
         </div>
       </div>
 
@@ -137,17 +137,17 @@ function Loaded({ asset }: { asset: MarketAsset }) {
         <section className="mt-6 lg:mt-0" aria-labelledby="about-title">
           <div className="flex items-start gap-2">
             <div className="flex-1">
-              <h2 id="about-title" className="text-[18px] font-extrabold text-navy-strong">
+              <h2 id="about-title" className="text-[18px] font-semibold text-navy-strong">
                 What does this company do?
               </h2>
-              <p className="mt-1.5 text-[14.5px] font-semibold leading-relaxed text-ink-2">{asset.about}</p>
+              <p className="mt-1.5 text-[14.5px] leading-relaxed text-ink-2">{asset.about}</p>
             </div>
             <ThinkingKid className="size-[92px] shrink-0" />
           </div>
         </section>
 
         <section className="mt-5" aria-labelledby="things-title">
-          <h2 id="things-title" className="text-[18px] font-extrabold text-navy-strong">
+          <h2 id="things-title" className="text-[18px] font-semibold text-navy-strong">
             Things to Know
           </h2>
           <ul className="mt-2 space-y-1">
@@ -172,21 +172,21 @@ function Loaded({ asset }: { asset: MarketAsset }) {
       </div>
 
       <BottomSheet open={learnOpen} onClose={() => setLearnOpen(false)} title={`Before you invest in ${asset.companyName}`}>
-        <ul className="space-y-3 text-[14px] font-semibold text-ink-2">
+        <ul className="space-y-3 text-[14px] text-ink-2">
           <li>
-            <span className="font-extrabold text-navy-strong">What you&apos;d own. </span>A share is a small piece of {asset.companyName}.
+            <span className="font-semibold text-navy-strong">What you&apos;d own. </span>A share is a small piece of {asset.companyName}.
             On Cresco it&apos;s represented by {asset.tokenizedTicker}, a tokenized version of {asset.ticker} on Solana.
           </li>
           <li>
-            <span className="font-extrabold text-navy-strong">Prices move. </span>It can be worth more or less later. Nobody knows for
+            <span className="font-semibold text-navy-strong">Prices move. </span>It can be worth more or less later. Nobody knows for
             sure.
           </li>
           <li>
-            <span className="font-extrabold text-navy-strong">Don&apos;t put it all in one place. </span>Owning a few different
+            <span className="font-semibold text-navy-strong">Don&apos;t put it all in one place. </span>Owning a few different
             companies means one bad day hurts less.
           </li>
           <li>
-            <span className="font-extrabold text-navy-strong">Know your why. </span>Can you explain in one line why you like this
+            <span className="font-semibold text-navy-strong">Know your why. </span>Can you explain in one line why you like this
             business?
           </li>
         </ul>
@@ -272,13 +272,13 @@ function MoneyLine({ note }: { asset: MarketAsset; note: string }) {
   return (
     <div className="mb-3 rounded-[16px] border border-line-soft bg-surface p-3">
       <div className="flex items-center justify-between">
-        <span className="text-[13px] font-bold text-ink-2">Available to invest</span>
+        <span className="text-[13px] text-ink-2">Available to invest</span>
         <span className="flex items-center gap-2">
           <DemoMoneyTag />
-          <span className="text-[16px] font-extrabold text-navy-strong tabular">{formatUsd(state.money.balance)}</span>
+          <span className="text-[16px] font-semibold text-navy-strong tabular">{formatUsd(state.money.balance)}</span>
         </span>
       </div>
-      <p className="mt-1.5 text-[13px] font-semibold text-ink-2">{note}</p>
+      <p className="mt-1.5 text-[13px] text-ink-2">{note}</p>
     </div>
   );
 }

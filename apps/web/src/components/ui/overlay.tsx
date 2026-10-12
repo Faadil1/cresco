@@ -82,10 +82,10 @@ export function BottomSheet({
         <div aria-hidden className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-line md:hidden" />
         <div className="mb-4 flex items-start gap-3">
           <div className="min-w-0 flex-1">
-            <h2 id={titleId} className="text-[20px] font-extrabold leading-tight text-navy-strong">
+            <h2 id={titleId} className="text-[26px] font-display font-normal leading-[1.05] text-navy-strong">
               {title}
             </h2>
-            {description ? <div className="mt-1 text-[14px] font-semibold text-ink-2">{description}</div> : null}
+            {description ? <div className="mt-1 text-[14px] text-ink-2">{description}</div> : null}
           </div>
           <button
             type="button"

@@ -94,9 +94,9 @@ export default function PortfolioPage() {
           <div className="mt-4 flex items-start justify-between gap-3">
             <div>
               {mode === "money" ? <DemoMoneyTag className="mb-1" /> : null}
-              <p className="text-[34px] font-black leading-none text-navy-strong tabular">{formatUsd(view.totalValue)}</p>
+              <p className="text-[34px] font-semibold leading-none text-navy-strong tabular">{formatUsd(view.totalValue)}</p>
               <PriceChange percent={change.percent} amount={change.amount} size="md" className="mt-2" />
-              <p className="mt-1 text-[12px] font-bold text-ink-3">{PERIOD_LABEL[period]}</p>
+              <p className="mt-1 text-[12px] text-ink-3">{PERIOD_LABEL[period]}</p>
             </div>
             <PlantPot className="-mt-2 size-[84px] shrink-0" />
           </div>
@@ -105,7 +105,7 @@ export default function PortfolioPage() {
             <AllocationChart holdings={view.holdings} />
             <ul className="min-w-0 flex-1 space-y-2">
               {view.holdings.map((h, i) => (
-                <li key={h.ticker} className="flex items-center gap-2 text-[13.5px] font-bold">
+                <li key={h.ticker} className="flex items-center gap-2 text-[13.5px] font-medium">
                   <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: allocationColor(i) }} />
                   <span className="flex-1 truncate text-navy">{h.asset.companyName}</span>
                   <span className="text-ink-2 tabular">{Math.round(h.weight * 100)}%</span>
@@ -123,7 +123,7 @@ export default function PortfolioPage() {
           <section className="mt-6 lg:mt-0" aria-labelledby="holdings-title">
             <SectionHeader title={<span id="holdings-title">My Holdings</span>} />
             <Card className="px-4 py-2">
-              <div className="grid grid-cols-[1fr_auto_auto] gap-3 border-b border-line-soft pb-2 pt-1 text-[11.5px] font-extrabold uppercase tracking-wide text-ink-3">
+              <div className="grid grid-cols-[1fr_auto_auto] gap-3 border-b border-line-soft pb-2 pt-1 text-[11.5px] font-semibold uppercase tracking-wide text-ink-3">
                 <span>Company</span>
                 <span className="w-[76px] text-right">Value</span>
                 <span className="w-[64px] text-right">Change</span>
@@ -137,8 +137,8 @@ export default function PortfolioPage() {
           </section>
 
           {mode === "practice" ? (
-            <p className="mt-3 text-[13px] font-semibold text-ink-2">
-              Practice balance: <span className="font-extrabold text-navy-strong tabular">{formatUsd(view.cash)}</span> virtual money to
+            <p className="mt-3 text-[13px] text-ink-2">
+              Practice balance: <span className="font-semibold text-navy-strong tabular">{formatUsd(view.cash)}</span> virtual money to
               invest.
             </p>
           ) : (
@@ -178,8 +178,8 @@ function MoneySummary({ balance }: { balance: number }) {
   return (
     <Card className="flex items-center justify-between p-4">
       <div>
-        <p className="text-[12.5px] font-bold text-ink-2">Available to invest</p>
-        <p className="text-[22px] font-extrabold text-navy-strong tabular">{formatUsd(balance)}</p>
+        <p className="text-[12.5px] text-ink-2">Available to invest</p>
+        <p className="text-[22px] font-semibold text-navy-strong tabular">{formatUsd(balance)}</p>
       </div>
       <DemoMoneyTag />
     </Card>

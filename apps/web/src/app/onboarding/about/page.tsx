@@ -35,17 +35,17 @@ export default function AboutStep() {
       }
     >
       <label className="block">
-        <span className="text-[14px] font-extrabold text-navy-strong">First name</span>
+        <span className="text-[14px] font-semibold text-navy-strong">First name</span>
         <input
           value={name}
           maxLength={24}
           onChange={(e) => setName(e.target.value)}
           autoComplete="given-name"
-          className="mt-1.5 h-[52px] w-full rounded-[15px] border border-line bg-surface px-4 text-[16px] font-bold text-navy focus:border-blue focus:outline-none focus:ring-2 focus:ring-blue/20"
+          className="mt-1.5 h-[52px] w-full rounded-[15px] border border-line bg-surface px-4 text-[16px] font-medium text-navy focus:border-blue focus:outline-none focus:ring-2 focus:ring-blue/20"
         />
       </label>
       <fieldset className="mt-6">
-        <legend className="text-[14px] font-extrabold text-navy-strong">How old are you?</legend>
+        <legend className="text-[14px] font-semibold text-navy-strong">How old are you?</legend>
         <div className="mt-2 grid grid-cols-6 gap-2">
           {AGES.map((a) => (
             <Chip key={a} selected={age === a} onClick={() => setAge(a)} className="h-12 px-0 text-[15px]">

@@ -41,9 +41,9 @@ export default function ProfilePage() {
       <Card className="mt-4 flex items-center gap-4 p-4">
         <Avatar size={64} />
         <div className="min-w-0 flex-1">
-          <p className="text-[20px] font-black text-navy-strong">{state.profile.childName}</p>
-          <p className="text-[13px] font-extrabold text-blue">Learning progress is separate from your Key.</p>
-          <p className="mt-1 text-[11.5px] font-bold text-ink-3">
+          <p className="text-[20px] font-semibold text-navy-strong">{state.profile.childName}</p>
+          <p className="text-[13px] font-semibold text-blue">Learning progress is separate from your Key.</p>
+          <p className="mt-1 text-[11.5px] text-ink-3">
             Lessons, streaks and results can inform decisions. They never widen authority automatically.
           </p>
         </div>
@@ -57,8 +57,8 @@ export default function ProfilePage() {
                 {r.icon}
               </IconCircle>
               <span className="min-w-0 flex-1">
-                <span className="block text-[15px] font-extrabold text-navy-strong">{r.title}</span>
-                <span className="block truncate text-[12.5px] font-semibold text-ink-2">{r.sub}</span>
+                <span className="block text-[15px] font-semibold text-navy-strong">{r.title}</span>
+                <span className="block truncate text-[12.5px] text-ink-2">{r.sub}</span>
               </span>
               <ChevronRight aria-hidden className="size-5 text-ink-3" />
             </Link>
@@ -73,7 +73,7 @@ export default function ProfilePage() {
           dispatch({ type: "signOut" });
           router.push("/");
         }}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-[16px] py-3 text-[14px] font-extrabold text-ink-2 hover:text-navy"
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-[16px] py-3 text-[14px] text-ink-2 hover:text-navy"
       >
         <LogOut aria-hidden className="size-4" /> Sign out
       </button>

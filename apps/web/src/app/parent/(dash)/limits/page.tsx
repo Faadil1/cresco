@@ -57,13 +57,13 @@ export default function ParentLimitsPage() {
 
       <Card className="mt-5 p-4">
         <div className="flex items-center justify-between">
-          <p className="text-[15px] font-extrabold text-navy-strong">Money Mode</p>
+          <p className="text-[15px] font-semibold text-navy-strong">Money Mode</p>
           <span className="flex items-center gap-3">
-            <span className="text-[13px] font-bold text-ink-2">{paused ? "Paused" : "Active"}</span>
+            <span className="text-[13px] text-ink-2">{paused ? "Paused" : "Active"}</span>
             <Toggle checked={!paused} onChange={(v) => setPaused(!v)} label="Money Mode active" />
           </span>
         </div>
-        <p className="mt-1 text-[13px] font-semibold text-ink-2">Pausing stops Money actions right away. Practice keeps working.</p>
+        <p className="mt-1 text-[13px] text-ink-2">Pausing stops Money actions right away. Practice keeps working.</p>
       </Card>
 
       <section className="mt-5">
@@ -90,23 +90,23 @@ export default function ParentLimitsPage() {
 
       <section className="mt-5">
         <SectionHeader title="Companies allowed" />
-        <p className="mb-3 text-[12.5px] font-semibold text-ink-3">
+        <p className="mb-3 text-[12.5px] text-ink-3">
           The current live Money proof lane is AAPL on Solana Devnet. Other companies stay available in Practice until their own execution representation and market evidence are connected.
         </p>
         <Card className="divide-y divide-line-soft px-4">
           {assets.map((a) => (
             <div key={a.ticker} className="flex items-center gap-3 py-2.5">
               <CompanyLogo asset={a} size={32} className="rounded-[10px]" />
-              <span className="flex-1 text-[14px] font-bold text-navy">
+              <span className="flex-1 text-[14px] font-medium text-navy">
                 {a.companyName} <span className="text-ink-3">{a.ticker}</span>
               </span>
               <div className="flex items-center gap-3">
                 {a.ticker === provenMoneyAsset ? (
-                  <span className="hidden text-[11px] font-extrabold text-green-strong sm:inline">
+                  <span className="hidden text-[11px] font-semibold text-green-strong sm:inline">
                     Devnet Money proof
                   </span>
                 ) : (
-                  <span className="hidden text-[11px] font-bold text-ink-3 sm:inline">
+                  <span className="hidden text-[11px] text-ink-3 sm:inline">
                     Practice only
                   </span>
                 )}
@@ -132,7 +132,7 @@ export default function ParentLimitsPage() {
         </Card>
       </section>
 
-      <div className="sticky bottom-0 mt-6 bg-gradient-to-t from-[#fbfcfe] via-[#fbfcfe] to-transparent pb-4 pt-4">
+      <div className="sticky bottom-0 mt-6 bg-gradient-to-t from-[#f5f6f8] via-[#f5f6f8] to-transparent pb-4 pt-4">
         <ActionButton disabled={!changed} onClick={() => setConfirm(true)}>
           Review changes
         </ActionButton>
@@ -146,7 +146,7 @@ export default function ParentLimitsPage() {
           {added.length ? <li className="text-green-strong">Adding: {added.map(name).join(", ")}</li> : null}
           {removed.length ? <li className="text-ink-2">Removing: {removed.map(name).join(", ")}</li> : null}
         </ul>
-        <p className="mt-3 text-[12.5px] font-semibold text-ink-3">
+        <p className="mt-3 text-[12.5px] text-ink-3">
           This creates a new version of {child}&apos;s limits (v{m.version + 1}). Anything prepared under the old limits gets checked again.
         </p>
         <ActionButton className="mt-4" onClick={save} disabled={saving} data-autofocus>
@@ -162,7 +162,7 @@ function Diff({ label, from, to }: { label: string; from: string; to: string }) 
   return (
     <li className="flex items-center justify-between gap-3">
       <span className="text-ink-2">{label}</span>
-      <span className="flex items-center gap-2 font-extrabold tabular">
+      <span className="flex items-center gap-2 font-semibold tabular">
         <span className={same ? "text-navy-strong" : "text-ink-3 line-through"}>{from}</span>
         {same ? null : (
           <>

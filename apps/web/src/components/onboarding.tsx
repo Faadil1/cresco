@@ -33,19 +33,19 @@ export function OnboardingFrame({
               aria-valuemin={1}
               aria-valuemax={total}
               aria-valuenow={step}
-              className="h-2 flex-1 overflow-hidden rounded-full bg-[#e7edf6]"
+              className="h-2 flex-1 overflow-hidden rounded-full bg-[#e1e5ea]"
             >
               <div className="h-full rounded-full bg-blue transition-[width] duration-500" style={{ width: `${(step / total) * 100}%` }} />
             </div>
-            <span className="w-12 text-right text-[12.5px] font-extrabold text-ink-3 tabular">
+            <span className="w-12 text-right text-[12.5px] text-ink-3 tabular">
               {step} of {total}
             </span>
           </>
         ) : null}
       </div>
       <div className="mt-6 text-center">
-        <h1 className="text-[28px] font-black leading-[1.12] tracking-[-0.015em] text-navy-strong">{title}</h1>
-        {subtitle ? <p className="mx-auto mt-2 max-w-[32ch] text-[14.5px] font-semibold text-ink-2">{subtitle}</p> : null}
+        <h1 className="text-[36px] font-display font-normal leading-[1.05] tracking-[-0.02em] text-navy-strong">{title}</h1>
+        {subtitle ? <p className="mx-auto mt-2 max-w-[32ch] text-[14.5px] text-ink-2">{subtitle}</p> : null}
       </div>
       <div className="mt-6 flex-1 md:flex-none">{children}</div>
       <div className="sticky bottom-0 mt-6 bg-gradient-to-t from-bg via-bg to-bg/0 pt-3 md:static md:mt-8">{footer}</div>

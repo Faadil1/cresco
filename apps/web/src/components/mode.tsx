@@ -52,13 +52,13 @@ export function ModeSwitch({ className }: { className?: string }) {
             choose("money");
           }
         }}
-        className={cn("relative grid h-10 grid-cols-2 rounded-[14px] bg-[#edf1f7] p-1", className)}
+        className={cn("relative grid h-10 grid-cols-2 rounded-full bg-surface-soft p-1", className)}
       >
         <span
           aria-hidden
           className={cn(
-            "absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-[11px] shadow-[0_3px_8px_rgba(16,43,99,0.12)] transition-transform duration-200 ease-out",
-            mode === "money" ? "translate-x-full bg-navy" : "translate-x-0 bg-blue",
+            "absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-full bg-navy-strong transition-transform duration-200 ease-out",
+            mode === "money" ? "translate-x-full" : "translate-x-0",
           )}
         />
         {(["practice", "money"] as const).map((m) => (
@@ -70,8 +70,8 @@ export function ModeSwitch({ className }: { className?: string }) {
             tabIndex={mode === m ? 0 : -1}
             onClick={() => choose(m)}
             className={cn(
-              "relative z-10 rounded-[11px] text-[13.5px] font-extrabold transition-colors duration-200",
-              mode === m ? "text-white" : "text-ink-2 hover:text-navy",
+              "relative z-10 rounded-full text-[13.5px] font-medium transition-colors duration-200",
+              mode === m ? "text-bg" : "text-ink-2 hover:text-navy",
             )}
           >
             {m === "practice" ? "Practice" : "Money"}
@@ -108,7 +108,7 @@ export function MoneyIntroSheet({ open, onClose }: { open: boolean; onClose: () 
               Try anything first with practice money.
             </IntroRow>
           </ul>
-          <div className="mt-4 rounded-[14px] bg-yellow-soft p-3 text-[13px] font-semibold text-[#7a5207]">
+          <div className="mt-4 rounded-[14px] bg-yellow-soft p-3 text-[13px] font-semibold text-[#6e5119]">
             <DemoMoneyTag className="mb-1.5" />
             <p>
               Money Mode uses Devnet test capital and a demo SPL token. It is not connected to a bank, broker or custodian, and it does not buy real securities.
@@ -120,7 +120,7 @@ export function MoneyIntroSheet({ open, onClose }: { open: boolean; onClose: () 
         </>
       ) : (
         <>
-          <p className="text-[14px] font-semibold text-ink-2">
+          <p className="text-[14px] text-ink-2">
             Money Mode needs a parent or guardian to set your limits first. Until then, you can keep practicing.
           </p>
           <ActionButton className="mt-5" href="/profile/parent" arrow>
@@ -139,8 +139,8 @@ function IntroRow({ icon, tone, title, children }: { icon: React.ReactNode; tone
         {icon}
       </IconCircle>
       <div>
-        <p className="text-[15px] font-extrabold text-navy-strong">{title}</p>
-        <p className="text-[13.5px] font-semibold text-ink-2">{children}</p>
+        <p className="text-[15px] font-semibold text-navy-strong">{title}</p>
+        <p className="text-[13.5px] text-ink-2">{children}</p>
       </div>
     </li>
   );
@@ -154,28 +154,28 @@ export function PracticeHeroCard({ view, href = "/portfolio" }: { view: Portfoli
   return (
     <Link
       href={href}
-      className="relative block overflow-hidden rounded-[24px] bg-gradient-to-br from-[#10864f] via-[#0d7d49] to-[#0b6e40] p-5 text-white shadow-[0_10px_24px_rgba(33,182,111,0.28)]"
+      className="relative block overflow-hidden rounded-[28px] border border-line-soft bg-surface p-6 text-navy-strong"
     >
-      <svg aria-hidden viewBox="0 0 300 90" preserveAspectRatio="none" className="absolute inset-x-0 bottom-0 h-[70px] w-full opacity-40">
-        <path d="M0 80 L40 64 L80 70 L120 46 L160 54 L200 30 L240 36 L300 8" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" />
-        <path d="M0 80 L40 64 L80 70 L120 46 L160 54 L200 30 L240 36 L300 8 V90 H0 Z" fill="#fff" opacity=".12" />
+      <svg aria-hidden viewBox="0 0 300 90" preserveAspectRatio="none" className="absolute inset-x-0 bottom-0 h-[70px] w-full">
+        <path d="M0 80 L40 64 L80 70 L120 46 L160 54 L200 30 L240 36 L300 8 V90 H0 Z" fill="#dcebe3" opacity=".7" />
+        <path d="M0 80 L40 64 L80 70 L120 46 L160 54 L200 30 L240 36 L300 8" fill="none" stroke="#2f7d5b" strokeWidth="1.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
       </svg>
-      <PlantPot className="absolute -bottom-1 right-2 size-[92px]" />
-      <p className="relative text-[15px] font-bold text-white">Practice Portfolio</p>
+      <PlantPot className="absolute right-4 top-4 size-[76px]" />
+      <p className="relative text-[12px] font-medium uppercase tracking-[0.14em] text-ink-3">Practice portfolio</p>
       {view ? (
         <>
-          <p className="relative mt-1 text-[34px] font-extrabold leading-none tracking-[-0.01em] tabular">{formatUsd(view.totalValue)}</p>
-          <p className="relative mt-2 inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[14px] font-extrabold tabular">
+          <p className="relative mt-3 text-[40px] font-medium leading-none tracking-[-0.03em] tabular">{formatUsd(view.totalValue)}</p>
+          <p className="relative mt-3 inline-flex items-center gap-1 rounded-full bg-green-soft px-2.5 py-0.5 text-[13px] font-medium text-green-strong tabular">
             {view.totalChange >= 0 ? "▲" : "▼"} {formatPercent(view.totalChangePercent)}
           </p>
         </>
       ) : (
         <div className="relative mt-2 space-y-2">
-          <div className="h-9 w-40 rounded-[10px] bg-white/25" />
-          <div className="h-5 w-16 rounded-full bg-white/25" />
+          <div className="h-9 w-40 rounded-[10px] bg-surface-soft" />
+          <div className="h-5 w-16 rounded-full bg-surface-soft" />
         </div>
       )}
-      <p className="relative mt-3 text-[11.5px] font-bold text-white">Virtual money · sample prices</p>
+      <p className="relative mt-10 text-[12px] text-ink-3">Virtual money · sample prices</p>
     </Link>
   );
 }
@@ -185,18 +185,18 @@ export function MoneyHeroCard({ view, mandate, balance }: { view: PortfolioView 
   return (
     <Link
       href="/portfolio"
-      className="relative block overflow-hidden rounded-[24px] bg-gradient-to-br from-[#16357a] via-[#102b63] to-[#0b2152] p-5 text-white shadow-[0_10px_24px_rgba(16,43,99,0.28)]"
+      className="relative block overflow-hidden rounded-[28px] bg-navy-strong p-6 text-bg"
     >
       <div className="flex items-center justify-between">
-        <p className="text-[15px] font-bold text-white">Money Portfolio</p>
+        <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-white/70">Money portfolio</p>
         <DemoMoneyTag />
       </div>
-      <p className="mt-1 text-[34px] font-extrabold leading-none tracking-[-0.01em] tabular">{formatUsd(invested + balance)}</p>
-      <p className="mt-1.5 text-[13px] font-semibold text-white">
+      <p className="mt-3 text-[40px] font-medium leading-none tracking-[-0.03em] tabular">{formatUsd(invested + balance)}</p>
+      <p className="mt-2 text-[13px] text-white/80">
         {formatUsd(balance)} available to invest · {formatUsd(invested)} invested
       </p>
-      <div className="mt-4 flex items-center gap-2 rounded-[14px] bg-white/10 px-3 py-2 text-[12.5px] font-bold">
-        <ShieldCheck aria-hidden className="size-4 text-[#7be49f]" />
+      <div className="mt-4 flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-2 text-[12.5px] font-medium">
+        <ShieldCheck aria-hidden className="size-4 text-[#9cc9b0]" />
         {mandate.status === "ACTIVE"
           ? `Up to ${formatAmount(mandate.maxActionNotional)} per action · ${formatAmount(remainingThisPeriod(mandate))} left ${mandate.periodLabel}`
           : "Money Mode is paused by your parent"}
@@ -206,7 +206,7 @@ export function MoneyHeroCard({ view, mandate, balance }: { view: PortfolioView 
 }
 
 export function HeroSkeleton() {
-  return <Skeleton className="h-[172px] w-full rounded-[24px]" />;
+  return <Skeleton className="h-[188px] w-full rounded-[28px]" />;
 }
 
 /* ------------------------------------------------------------------ */
@@ -221,12 +221,12 @@ export function MoneyBalanceCard({ balance, action, caption = "Available to inve
           <CircleDollarSign aria-hidden className="size-6" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="whitespace-nowrap text-[12.5px] font-bold text-ink-2">Money Mode balance</p>
-          <p className="text-[26px] font-extrabold leading-tight text-navy-strong tabular">{formatUsd(balance)}</p>
+          <p className="whitespace-nowrap text-[12.5px] text-ink-2">Money Mode balance</p>
+          <p className="text-[26px] font-semibold leading-tight text-navy-strong tabular">{formatUsd(balance)}</p>
         </div>
         {action}
       </div>
-      <p className="mt-2 flex flex-wrap items-center gap-2 text-[12.5px] font-semibold text-ink-2">
+      <p className="mt-2 flex flex-wrap items-center gap-2 text-[12.5px] text-ink-2">
         {caption} <DemoMoneyTag />
       </p>
     </Card>
@@ -237,8 +237,8 @@ export function LimitRow({ icon, label, value }: { icon: React.ReactNode; label:
   return (
     <li className="flex items-center gap-3 py-2">
       <span className="grid size-8 shrink-0 place-items-center rounded-full bg-blue-soft text-blue">{icon}</span>
-      <span className="flex-1 text-[14px] font-semibold text-ink-2">{label}</span>
-      <span className="text-right text-[14px] font-extrabold text-navy-strong tabular">{value}</span>
+      <span className="flex-1 text-[14px] text-ink-2">{label}</span>
+      <span className="text-right text-[14px] font-semibold text-navy-strong tabular">{value}</span>
     </li>
   );
 }
@@ -259,13 +259,13 @@ export function MandateSummaryCard({
     <Card className={cn("p-4", className)}>
       <div className="mb-1 flex items-start justify-between gap-2">
         <div>
-          <h3 className="text-[16px] font-extrabold text-navy-strong">{who}</h3>
-          <p className="mt-0.5 text-[12px] font-extrabold text-blue">Key v{mandate.version} · standing authority</p>
+          <h3 className="text-[16px] font-semibold text-navy-strong">{who}</h3>
+          <p className="mt-0.5 text-[12px] font-semibold text-blue">Key v{mandate.version} · standing authority</p>
         </div>
         <span
           className={cn(
-            "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-extrabold",
-            active ? "bg-green-soft text-green-strong" : "bg-yellow-soft text-[#8a5a07]",
+            "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold",
+            active ? "bg-green-soft text-green-strong" : "bg-yellow-soft text-[#7a5a1c]",
           )}
         >
           {active ? <CheckCircle2 aria-hidden className="size-3.5" /> : <PauseCircle aria-hidden className="size-3.5" />}
@@ -273,11 +273,11 @@ export function MandateSummaryCard({
         </span>
       </div>
       <div className="my-3 overflow-hidden rounded-[14px] border-2 border-blue/20 bg-blue-soft p-3">
-        <div className="flex items-center justify-between gap-3 text-[12.5px] font-extrabold">
+        <div className="flex items-center justify-between gap-3 text-[12.5px] font-semibold">
           <span className="text-blue-strong">Inside Key v{mandate.version}</span>
           <span className="text-green-strong">Act on your own</span>
         </div>
-        <div className="mt-2 border-t border-blue/20 pt-2 text-[12.5px] font-semibold text-ink-2">
+        <div className="mt-2 border-t border-blue/20 pt-2 text-[12.5px] text-ink-2">
           At the boundary: ask. A one-time permission can cross once without moving this boundary.
         </div>
       </div>
@@ -289,7 +289,7 @@ export function MandateSummaryCard({
           value={
             <>
               Up to {formatAmount(mandate.maxPeriodNotional)}
-              <span className="block text-[11.5px] font-bold text-ink-3">{formatAmount(remainingThisPeriod(mandate))} left</span>
+              <span className="block text-[11.5px] text-ink-3">{formatAmount(remainingThisPeriod(mandate))} left</span>
             </>
           }
         />
@@ -326,19 +326,19 @@ export function BoundaryMessage({
   const { title, body } = explainEvaluation(evaluation, mandate, companyName, mode);
   const ctx = learningContextFor(evaluation);
   return (
-    <div role="status" className={cn("rounded-[20px] border border-[#ffd9b8] bg-[#fff7ef] p-4", className)}>
+    <div role="status" className={cn("rounded-[20px] border border-[#f3e0d8] bg-[#f5f6f8] p-4", className)}>
       <div className="flex gap-3">
         <IconCircle tone="orange" size={40}>
           <SlidersHorizontal className="size-5" />
         </IconCircle>
         <div className="min-w-0 flex-1">
-          <p className="text-[15.5px] font-extrabold text-navy-strong">{title}</p>
-          <p className="mt-1 text-[14px] font-semibold text-ink-2">{body}</p>
+          <p className="text-[15.5px] font-semibold text-navy-strong">{title}</p>
+          <p className="mt-1 text-[14px] text-ink-2">{body}</p>
         </div>
       </div>
       {ctx ? (
-        <p className="mt-3 rounded-[12px] bg-white/80 px-3 py-2 text-[12.5px] font-semibold text-ink-2">
-          <span className="font-extrabold text-navy">{ctx.title}. </span>
+        <p className="mt-3 rounded-[12px] bg-white/80 px-3 py-2 text-[12.5px] text-ink-2">
+          <span className="font-semibold text-navy">{ctx.title}. </span>
           {ctx.body}
         </p>
       ) : null}
@@ -391,19 +391,19 @@ export function BoundaryRequestSheet({
   return (
     <BottomSheet open={open} onClose={onClose} title="Ask for more room" description={`${parentName} will see your request and decide.`}>
       <div className="rounded-[16px] bg-surface-soft p-3.5">
-        <div className="flex items-center justify-between text-[14px] font-semibold text-ink-2">
+        <div className="flex items-center justify-between text-[14px] text-ink-2">
           <span>You want to invest</span>
-          <span className="font-extrabold text-navy-strong tabular">
+          <span className="font-semibold text-navy-strong tabular">
             {formatAmount(amount)} in {companyName}
           </span>
         </div>
-        <div className="mt-1.5 flex items-center justify-between text-[14px] font-semibold text-ink-2">
+        <div className="mt-1.5 flex items-center justify-between text-[14px] text-ink-2">
           <span>{limitLabel}</span>
-          <span className="font-extrabold text-navy-strong tabular">{formatAmount(limit)}</span>
+          <span className="font-semibold text-navy-strong tabular">{formatAmount(limit)}</span>
         </div>
       </div>
       <label className="mt-4 block">
-        <span className="text-[14px] font-extrabold text-navy-strong">Why? (one line)</span>
+        <span className="text-[14px] font-semibold text-navy-strong">Why? (one line)</span>
         <textarea
           data-autofocus
           value={reason}
@@ -413,11 +413,11 @@ export function BoundaryRequestSheet({
           placeholder="I've learned about this company and want to own a bit more."
           className="mt-1.5 w-full resize-none rounded-[14px] border border-line bg-surface px-3.5 py-3 text-[15px] font-semibold text-navy placeholder:text-ink-3 focus:border-blue focus:outline-none focus:ring-2 focus:ring-blue/20"
         />
-        <span className="mt-1 block text-right text-[12px] font-bold text-ink-3 tabular">
+        <span className="mt-1 block text-right text-[12px] text-ink-3 tabular">
           {reason.length}/{max}
         </span>
       </label>
-      <p className="text-[12.5px] font-semibold text-ink-3">Your reason stays private to your family. It is never published on a blockchain.</p>
+      <p className="text-[12.5px] text-ink-3">Your reason stays private to your family. It is never published on a blockchain.</p>
       <ActionButton className="mt-4" disabled={!reason.trim() || submitting} onClick={() => onSubmit(reason)} arrow={!submitting}>
         {submitting ? "Sending…" : `Send to ${parentName}`}
       </ActionButton>
@@ -431,7 +431,7 @@ export function RequestStatusCard({ request, companyName }: { request: BoundaryR
   const map = stale
     ? { text: "Limits changed", tone: "bg-surface-soft text-ink-2" }
     : {
-    PENDING_HUMAN_DECISION: { text: "Waiting for your parent", tone: "bg-yellow-soft text-[#8a5a07]" },
+    PENDING_HUMAN_DECISION: { text: "Waiting for your parent", tone: "bg-yellow-soft text-[#7a5a1c]" },
     ALLOWED_ONCE: { text: "One-time ready", tone: "bg-green-soft text-green-strong" },
     ALLOWED_ONCE_USED: { text: "One-time used", tone: "bg-surface-soft text-ink-2" },
     WIDENED: { text: "New Key", tone: "bg-green-soft text-green-strong" },
@@ -443,10 +443,10 @@ export function RequestStatusCard({ request, companyName }: { request: BoundaryR
         <UserPlus className="size-[18px]" />
       </IconCircle>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[14px] font-extrabold text-navy-strong">
+        <p className="truncate text-[14px] font-semibold text-navy-strong">
           {formatAmount(request.requestedNotional)} in {companyName}
         </p>
-        <p className="truncate text-[12.5px] font-semibold text-ink-2">
+        <p className="truncate text-[12.5px] text-ink-2">
           {stale
             ? "Your limits changed. Check them and try again."
             : request.status === "ALLOWED_ONCE"
@@ -458,7 +458,7 @@ export function RequestStatusCard({ request, companyName }: { request: BoundaryR
               : `\u201c${request.reason}\u201d`}
         </p>
       </div>
-      <span className={cn("shrink-0 rounded-full px-2.5 py-1 text-[11.5px] font-extrabold", map.tone)}>{map.text}</span>
+      <span className={cn("shrink-0 rounded-full px-2.5 py-1 text-[11.5px] font-semibold", map.tone)}>{map.text}</span>
     </>
   );
   if (request.status === "ALLOWED_ONCE") {
@@ -480,10 +480,10 @@ export function MoneyModeUnavailable({ reason }: { reason: "parent" | "paused" }
       <IconCircle tone={reason === "paused" ? "yellow" : "blue"} size={52} className="mx-auto">
         {reason === "paused" ? <PauseCircle className="size-6" /> : <UserPlus className="size-6" />}
       </IconCircle>
-      <p className="mt-3 text-[17px] font-extrabold text-navy-strong">
+      <p className="mt-3 text-[17px] font-semibold text-navy-strong">
         {reason === "paused" ? "Money Mode is paused" : "Connect a parent or guardian"}
       </p>
-      <p className="mx-auto mt-1 max-w-[32ch] text-[14px] font-semibold text-ink-2">
+      <p className="mx-auto mt-1 max-w-[32ch] text-[14px] text-ink-2">
         {reason === "paused"
           ? "Your parent or guardian paused Money Mode for now. Your Practice portfolio still works."
           : "Money Mode uses family money, so a parent or guardian sets your limits first."}
@@ -499,7 +499,7 @@ export function MoneyModeUnavailable({ reason }: { reason: "parent" | "paused" }
 
 export function PriceTruthLine({ status, className }: { status: PortfolioView["dataStatus"]; className?: string }) {
   return (
-    <p className={cn("flex items-center gap-1.5 text-[12px] font-semibold text-ink-3", className)}>
+    <p className={cn("flex items-center gap-1.5 text-[12px] text-ink-3", className)}>
       <DataStatusTag status={status} />
       {status === "mock" ? "Prices are samples for learning, not live quotes." : null}
     </p>
@@ -508,7 +508,7 @@ export function PriceTruthLine({ status, className }: { status: PortfolioView["d
 
 export function ArrowLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <Link href={href} className="inline-flex items-center gap-1 text-[13px] font-extrabold text-blue">
+    <Link href={href} className="inline-flex items-center gap-1 text-[13px] font-semibold text-blue">
       {children} <ArrowRight aria-hidden className="size-3.5" />
     </Link>
   );

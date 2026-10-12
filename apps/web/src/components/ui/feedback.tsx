@@ -25,8 +25,8 @@ export function EmptyState({
   return (
     <div className={cn("flex flex-col items-center rounded-[20px] border border-dashed border-line bg-surface px-6 py-8 text-center", className)}>
       {art ? <div className="mb-3">{art}</div> : null}
-      <p className="text-[16px] font-extrabold text-navy-strong">{title}</p>
-      {body ? <p className="mt-1 max-w-[30ch] text-[14px] font-semibold text-ink-2">{body}</p> : null}
+      <p className="text-[16px] font-semibold text-navy-strong">{title}</p>
+      {body ? <p className="mt-1 max-w-[30ch] text-[14px] text-ink-2">{body}</p> : null}
       {action ? <div className="mt-4 w-full max-w-[260px]">{action}</div> : null}
     </div>
   );
@@ -49,8 +49,8 @@ export function ErrorState({
         <CloudOff aria-hidden className="size-5" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-[15px] font-extrabold text-navy-strong">{title}</p>
-        <p className="mt-0.5 text-[13px] font-semibold text-ink-2">{body}</p>
+        <p className="text-[15px] font-semibold text-navy-strong">{title}</p>
+        <p className="mt-0.5 text-[13px] text-ink-2">{body}</p>
         {onRetry ? (
           <ActionButton variant="ghost" size="sm" className="mt-3" onClick={onRetry}>
             <span className="inline-flex items-center gap-1.5">
@@ -77,7 +77,7 @@ export function OfflineState() {
   }, []);
   if (!offline) return null;
   return (
-    <div role="status" className="flex items-center gap-2 rounded-[14px] bg-navy px-4 py-2.5 text-[13px] font-bold text-white">
+    <div role="status" className="flex items-center gap-2 rounded-[14px] bg-navy px-4 py-2.5 text-[13px] font-medium text-white">
       <WifiOff aria-hidden className="size-4" /> You&apos;re offline. We&apos;ll catch up when you&apos;re back.
     </div>
   );
@@ -93,7 +93,7 @@ export function DataStatusTag({ status, className }: { status: DataStatus; class
     stale: { text: "Delayed", cls: "bg-yellow-soft text-warning" },
   }[status];
   return (
-    <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold", map.cls, className)}>
+    <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium", map.cls, className)}>
       {status === "live" ? <span aria-hidden className="size-1.5 rounded-full bg-green" /> : <Info aria-hidden className="size-3" />}
       {map.text}
     </span>
@@ -103,7 +103,7 @@ export function DataStatusTag({ status, className }: { status: DataStatus; class
 /** Truth label for Money Mode while no real funding/custody is integrated. */
 export function DemoMoneyTag({ className }: { className?: string }) {
   return (
-    <span className={cn("inline-flex items-center gap-1 rounded-full bg-yellow-soft px-2 py-0.5 text-[11px] font-extrabold text-[#8a5406]", className)}>
+    <span className={cn("inline-flex items-center gap-1 rounded-full bg-yellow-soft px-2 py-0.5 text-[11px] font-semibold text-[#7a5a1c]", className)}>
       <Info aria-hidden className="size-3" /> Demo money
     </span>
   );
@@ -129,8 +129,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div aria-live="polite" className="pointer-events-none fixed inset-x-0 top-4 z-[60] flex flex-col items-center gap-2 px-4">
         {items.map((t) => (
-          <div key={t.id} className="animate-rise flex max-w-sm items-center gap-2 rounded-[14px] bg-navy-strong px-4 py-3 text-[14px] font-bold text-white shadow-card">
-            <CheckCircle2 aria-hidden className="size-4 text-[#7be49f]" />
+          <div key={t.id} className="animate-rise flex max-w-sm items-center gap-2 rounded-[14px] bg-navy-strong px-4 py-3 text-[14px] font-medium text-white shadow-card">
+            <CheckCircle2 aria-hidden className="size-4 text-[#9cc9b0]" />
             {t.text}
           </div>
         ))}

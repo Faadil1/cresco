@@ -57,8 +57,8 @@ export function LessonPlayer({ lessonId }: { lessonId: string }) {
           <span className="mx-auto grid size-14 place-items-center rounded-full bg-surface-soft text-ink-3">
             <Lock className="size-6" />
           </span>
-          <h1 className="mt-4 text-[24px] font-black text-navy-strong">{mod.title} is up next</h1>
-          <p className="mx-auto mt-2 max-w-[30ch] text-[15px] font-semibold text-ink-2">Finish the module before it to unlock this one.</p>
+          <h1 className="mt-4 text-[31px] font-display font-normal text-navy-strong">{mod.title} is up next</h1>
+          <p className="mx-auto mt-2 max-w-[30ch] text-[15px] text-ink-2">Finish the module before it to unlock this one.</p>
           <ActionButton href="/learn" className="mx-auto mt-6 max-w-[280px]">
             Back to Learn
           </ActionButton>
@@ -75,12 +75,12 @@ export function LessonPlayer({ lessonId }: { lessonId: string }) {
             <ModuleIcon module={mod} size={96} />
             <Sparkles aria-hidden className="absolute -right-3 -top-2 size-7 text-yellow" />
           </div>
-          <h1 className="mt-6 text-[28px] font-black text-navy-strong">Lesson complete!</h1>
-          <p className="mt-1 text-[15px] font-semibold text-ink-2">{lesson.title}</p>
+          <h1 className="mt-6 text-[36px] font-display font-normal text-navy-strong">Lesson complete!</h1>
+          <p className="mt-1 text-[15px] text-ink-2">{lesson.title}</p>
           <XPBadge xp={alreadyDone ? 0 : lesson.xp} className="mt-3 rounded-full bg-yellow-soft px-3 py-1.5 text-[15px]" />
           <div className="mt-6 w-full rounded-[18px] border border-line-soft bg-surface p-4 text-left">
-            <p className="text-[14px] font-extrabold text-navy-strong">Put it into practice</p>
-            <p className="mt-1 text-[13.5px] font-semibold text-ink-2">
+            <p className="text-[14px] font-semibold text-navy-strong">Put it into practice</p>
+            <p className="mt-1 text-[13.5px] text-ink-2">
               Try a small practice investment in a company you know. Want more room in Money Mode someday? That&apos;s a
               conversation with {state.profile.parentName}. Lessons don&apos;t change your limits on their own.
             </p>
@@ -105,7 +105,7 @@ export function LessonPlayer({ lessonId }: { lessonId: string }) {
         <LessonProgress step={index + 1} total={lesson.steps.length} className="flex-1" />
       </div>
 
-      <h1 className="mt-5 text-[28px] font-black leading-tight tracking-[-0.01em] text-navy-strong">{step.title}</h1>
+      <h1 className="mt-5 text-[36px] font-display font-normal leading-[1.05] tracking-[-0.02em] text-navy-strong">{step.title}</h1>
 
       <div key={index} className="animate-rise">
         <div className="mt-4 overflow-hidden rounded-[22px] border border-line-soft">
@@ -122,16 +122,16 @@ export function LessonPlayer({ lessonId }: { lessonId: string }) {
             <p className="mt-5 text-[17px] font-semibold leading-relaxed text-navy">{step.body}</p>
             {step.realityCheck ? (
               <div className="mt-4 rounded-[18px] border border-blue/15 bg-blue-soft px-4 py-3.5">
-                <p className="text-[12px] font-black uppercase tracking-[0.08em] text-blue-strong">Reality check</p>
+                <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-blue-strong">Reality check</p>
                 <p className="mt-1.5 text-[13.5px] font-semibold leading-relaxed text-navy">{step.realityCheck}</p>
                 {step.source ? (
                   <>
-                    <a href={step.source.url} target="_blank" rel="noreferrer" className="mt-2.5 inline-flex items-center gap-1.5 text-[12.5px] font-extrabold text-blue hover:underline">
+                    <a href={step.source.url} target="_blank" rel="noreferrer" className="mt-2.5 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-blue hover:underline">
                       {step.source.organization} · {step.source.title}
                       <ExternalLink aria-hidden className="size-3.5" />
                       <span className="sr-only">opens in a new tab</span>
                     </a>
-                    <p className="mt-1 text-[11.5px] font-bold text-ink-3">Checked <time dateTime={step.source.verifiedAt}>{step.source.verifiedAt}</time></p>
+                    <p className="mt-1 text-[11.5px] text-ink-3">Checked <time dateTime={step.source.verifiedAt}>{step.source.verifiedAt}</time></p>
                   </>
                 ) : null}
               </div>
@@ -139,18 +139,18 @@ export function LessonPlayer({ lessonId }: { lessonId: string }) {
             {step.apply ? (
               <Link href={step.apply.href} className="mt-4 flex items-center gap-3 rounded-[18px] border border-line-soft bg-surface p-4 transition-transform active:scale-[0.99]">
                 <div className="min-w-0 flex-1">
-                  <p className="text-[12px] font-black uppercase tracking-[0.08em] text-green-strong">Try it in Cresco</p>
-                  <p className="mt-1 text-[13.5px] font-semibold leading-relaxed text-ink-2">{step.apply.body}</p>
+                  <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-green-strong">Try it in Cresco</p>
+                  <p className="mt-1 text-[13.5px] leading-relaxed text-ink-2">{step.apply.body}</p>
                 </div>
-                <span className="inline-flex shrink-0 items-center gap-1 text-[12.5px] font-extrabold text-blue">{step.apply.label}<ArrowRight aria-hidden className="size-4" /></span>
+                <span className="inline-flex shrink-0 items-center gap-1 text-[12.5px] font-semibold text-blue">{step.apply.label}<ArrowRight aria-hidden className="size-4" /></span>
               </Link>
             ) : null}
           </>
         ) : (
           <>
-            <p className="mt-4 text-[15px] font-semibold leading-relaxed text-ink-2">{step.prompt}</p>
+            <p className="mt-4 text-[15px] leading-relaxed text-ink-2">{step.prompt}</p>
             <div className="mt-4 rounded-[20px] border border-line-soft bg-surface p-4">
-              <p id="quiz-q" className="text-[16px] font-extrabold leading-snug text-navy-strong">
+              <p id="quiz-q" className="text-[16px] font-semibold leading-snug text-navy-strong">
                 {step.question}
               </p>
               <div role="radiogroup" aria-labelledby="quiz-q" className="mt-3 space-y-2.5">
@@ -170,12 +170,12 @@ export function LessonPlayer({ lessonId }: { lessonId: string }) {
               </div>
               <div aria-live="polite">
                 {checked === "correct" ? (
-                  <p className="animate-rise mt-3 rounded-[12px] bg-green-soft px-3 py-2.5 text-[14px] font-bold text-green-strong">
+                  <p className="animate-rise mt-3 rounded-[12px] bg-green-soft px-3 py-2.5 text-[14px] font-medium text-green-strong">
                     {step.correctExplanation}
                   </p>
                 ) : checked === "incorrect" ? (
-                  <p className="animate-rise mt-3 rounded-[12px] bg-[#fff6ee] px-3 py-2.5 text-[14px] font-semibold text-navy">
-                    <span className="font-extrabold">Not quite. </span>
+                  <p className="animate-rise mt-3 rounded-[12px] bg-[#f5f6f8] px-3 py-2.5 text-[14px] font-semibold text-navy">
+                    <span className="font-semibold">Not quite. </span>
                     {step.retryHint}
                   </p>
                 ) : null}

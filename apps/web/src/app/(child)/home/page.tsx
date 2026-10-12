@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { ChevronRight, ShieldCheck } from "lucide-react";
-import { Skyline } from "@/components/illustrations/objects";
 import { GoalArt } from "@/components/illustrations/objects";
 import { BadgeArt } from "@/components/illustrations/badges";
 import { LessonCard, MissionCard } from "@/components/learning";
@@ -64,10 +63,10 @@ export default function HomePage() {
           <Avatar size={54} label={`${state.profile.childName}'s avatar`} />
         </Link>
         <div className="min-w-0 flex-1">
-          <h1 className="text-[23px] font-black leading-tight tracking-[-0.01em] text-navy-strong">
-            Hey {state.profile.childName} <span aria-hidden>👋</span>
+          <h1 className="text-[30px] font-display font-normal leading-[1.05] tracking-[-0.02em] text-navy-strong">
+            Hey {state.profile.childName}
           </h1>
-          <Link href="/learn" className="mt-1 block text-[12.5px] font-extrabold text-blue" aria-label="Learning progress. Separate from your Key.">
+          <Link href="/learn" className="mt-1 block text-[12.5px] text-ink-3 hover:text-blue" aria-label="Learning progress. Separate from your Key.">
             Learning progress · separate from your Key
           </Link>
         </div>
@@ -110,17 +109,16 @@ export default function HomePage() {
             </div>
           </section>
 
-          <Skyline className="-mx-5 mt-6 h-16 w-[calc(100%+40px)] md:hidden" />
         </div>
 
         {/* Desktop companion column */}
         <aside className="mt-6 hidden space-y-4 lg:mt-0 lg:block">
           {state.mode === "money" ? (
             <Card className="p-5">
-              <p className="flex items-center gap-2 text-[15px] font-extrabold text-navy-strong">
+              <p className="flex items-center gap-2 text-[15px] font-semibold text-navy-strong">
                 <ShieldCheck aria-hidden className="size-5 text-green" /> My Key
               </p>
-              <p className="mt-2 text-[14px] font-semibold text-ink-2">
+              <p className="mt-2 text-[14px] text-ink-2">
                 Key v{state.mandate.version} · up to {formatAmount(state.mandate.maxActionNotional)} per action, {formatAmount(remainingThisPeriod(state.mandate))} left{" "}
                 {state.mandate.periodLabel}. Inside your Key, you act on your own.
               </p>
@@ -130,16 +128,16 @@ export default function HomePage() {
             </Card>
           ) : null}
           <Card className="p-5">
-            <p className="text-[13px] font-bold text-ink-2">Saving for</p>
+            <p className="text-[13px] text-ink-2">Saving for</p>
             <div className="mt-1 flex items-center gap-3">
               <GoalArt goal={goal.id} className="h-14 w-20" />
-              <p className="text-[18px] font-extrabold text-navy-strong">{goal.label}</p>
+              <p className="text-[18px] font-semibold text-navy-strong">{goal.label}</p>
             </div>
-            <p className="mt-2 text-[13px] font-semibold text-ink-2">Lessons and missions are picked with this goal in mind.</p>
+            <p className="mt-2 text-[13px] text-ink-2">Lessons and missions are picked with this goal in mind.</p>
           </Card>
           <Link href="/profile/wins" className="block rounded-[20px] border border-line-soft bg-surface p-5">
             <div className="flex items-center justify-between">
-              <p className="text-[15px] font-extrabold text-navy-strong">Your Wins</p>
+              <p className="text-[15px] font-semibold text-navy-strong">Your Wins</p>
               <ChevronRight aria-hidden className="size-5 text-ink-3" />
             </div>
             <div className="mt-3 flex gap-2">
@@ -147,7 +145,7 @@ export default function HomePage() {
                 <BadgeArt key={a.id} badge={a.id} earned={a.earned} className="size-12" />
               ))}
             </div>
-            <p className="mt-2 text-[13px] font-semibold text-ink-2">
+            <p className="mt-2 text-[13px] text-ink-2">
               {ACHIEVEMENTS.filter((a) => a.earned).length} badges earned for learning and curiosity.
             </p>
           </Link>

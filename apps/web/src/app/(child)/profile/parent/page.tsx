@@ -36,37 +36,37 @@ export default function ParentConnectPage() {
           <Card className="mt-4 flex items-center gap-3 p-4">
             <Avatar who="parent" size={52} />
             <div className="flex-1">
-              <p className="text-[17px] font-extrabold text-navy-strong">{state.profile.parentName}</p>
-              <p className="flex items-center gap-1 text-[13px] font-bold text-green-strong">
+              <p className="text-[17px] font-semibold text-navy-strong">{state.profile.parentName}</p>
+              <p className="flex items-center gap-1 text-[13px] font-medium text-green-strong">
                 <CheckCircle2 aria-hidden className="size-4" /> Connected
               </p>
             </div>
           </Card>
           <Card className="mt-4 p-4">
-            <p className="flex items-center gap-2 text-[15px] font-extrabold text-navy-strong">
+            <p className="flex items-center gap-2 text-[15px] font-semibold text-navy-strong">
               <Eye aria-hidden className="size-4 text-blue" /> {state.profile.parentName} can see
             </p>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-[14px] font-semibold text-ink-2">
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-[14px] text-ink-2">
               <li>Your learning progress and streak</li>
               <li>Your Money Mode balance, limits and requests</li>
               <li>A weekly summary</li>
             </ul>
-            <p className="mt-4 flex items-center gap-2 text-[15px] font-extrabold text-navy-strong">
+            <p className="mt-4 flex items-center gap-2 text-[15px] font-semibold text-navy-strong">
               <EyeOff aria-hidden className="size-4 text-ink-3" /> Not a feed of every tap
             </p>
-            <p className="mt-1 text-[14px] font-semibold text-ink-2">
+            <p className="mt-1 text-[14px] text-ink-2">
               {state.profile.parentName} sets the boundary. Inside it, your choices are yours.
             </p>
           </Card>
         </>
       ) : (
         <Card className="mt-4 p-5 text-center">
-          <p className="text-[15px] font-semibold text-ink-2">Show this code to your parent or guardian. They enter it in the parent view.</p>
-          <p className="mt-3 text-[32px] font-black tracking-[0.15em] text-navy-strong">CRES-4821</p>
-          <p className="mt-1 text-[12px] font-semibold text-ink-3">
+          <p className="text-[15px] text-ink-2">Show this code to your parent or guardian. They enter it in the parent view.</p>
+          <p className="mt-3 text-[32px] font-semibold tracking-[0.15em] text-navy-strong">CRES-4821</p>
+          <p className="mt-1 text-[12px] text-ink-3">
             Devnet demo family code. It syncs the child and guardian views through the CRESCO backend; it is not identity verification.
           </p>
-          {error ? <p className="mt-3 text-[13px] font-bold text-red-600">{error}</p> : null}
+          {error ? <p className="mt-3 text-[13px] font-medium text-red-600">{error}</p> : null}
           <ActionButton className="mt-5" onClick={connect} disabled={busy}>
             {busy ? "Connecting…" : "Connect demo family"}
           </ActionButton>

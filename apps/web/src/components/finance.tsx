@@ -23,7 +23,7 @@ export function CompanyLogo({ asset, size = 44, className }: { asset: Pick<Marke
   return (
     <span
       aria-hidden
-      className={cn("grid shrink-0 place-items-center rounded-[14px] font-black leading-none", light && "border border-line-soft", className)}
+      className={cn("grid shrink-0 place-items-center rounded-[14px] font-semibold leading-none", light && "border border-line-soft", className)}
       style={{
         width: size,
         height: size,
@@ -61,8 +61,8 @@ export function PriceChange({
   const Icon = t === "up" ? ArrowUpRight : t === "down" ? ArrowDownRight : Minus;
   const text = { sm: "text-[12.5px]", md: "text-[14px]", lg: "text-[16px]" }[size];
   return (
-    <span className={cn("inline-flex items-center gap-0.5 font-extrabold tabular", color, text, className)}>
-      {showIcon ? <Icon aria-hidden className={size === "lg" ? "size-4" : "size-3.5"} strokeWidth={2.8} /> : null}
+    <span className={cn("inline-flex items-center gap-0.5 font-semibold tabular", color, text, className)}>
+      {showIcon ? <Icon aria-hidden className={size === "lg" ? "size-4" : "size-3.5"} strokeWidth={1.75} /> : null}
       {amount != null ? `${formatUsd(amount, { sign: true })} (${formatPercent(percent)})` : formatPercent(percent)}
       <span className="sr-only">{t === "up" ? " up" : t === "down" ? " down" : " unchanged"}</span>
     </span>
@@ -142,7 +142,7 @@ export function PriceChart({
   );
 }
 
-const ALLOCATION_COLORS = ["#1769f6", "#21b66f", "#ff8a3d", "#e5484d", "#8b75f7", "#55cfc6", "#ffbc32", "#ff7aa8"];
+const ALLOCATION_COLORS = ["#1f3bcc", "#2f7d5b", "#c4674a", "#c24a43", "#6c78c9", "#4f8f8a", "#c99a3c", "#b5627a"];
 
 export function allocationColor(index: number) {
   return ALLOCATION_COLORS[index % ALLOCATION_COLORS.length];
@@ -156,7 +156,7 @@ export function AllocationChart({ holdings, className }: { holdings: HoldingView
   return (
     <div className={cn("relative size-[132px] shrink-0", className)}>
       <svg viewBox="0 0 120 120" className="size-full -rotate-90" role="img" aria-label={`Allocation across ${count} ${count === 1 ? "company" : "companies"}: ${holdings.map((h) => `${h.asset.companyName} ${Math.round(h.weight * 100)}%`).join(", ")}`}>
-        <circle cx="60" cy="60" r={r} fill="none" stroke="#eef2f8" strokeWidth="16" />
+        <circle cx="60" cy="60" r={r} fill="none" stroke="#eef0f3" strokeWidth="16" />
         {holdings.map((h, i) => {
           const len = Math.max(0, h.weight * c - (count > 1 ? 2 : 0));
           const el = (
@@ -177,8 +177,8 @@ export function AllocationChart({ holdings, className }: { holdings: HoldingView
       </svg>
       <div className="absolute inset-0 grid place-items-center text-center">
         <div>
-          <div className="text-[26px] font-extrabold leading-none text-navy-strong tabular">{count}</div>
-          <div className="mt-0.5 text-[12px] font-bold text-ink-2">{count === 1 ? "Stock" : "Stocks"}</div>
+          <div className="text-[26px] font-semibold leading-none text-navy-strong tabular">{count}</div>
+          <div className="mt-0.5 text-[12px] text-ink-2">{count === 1 ? "Stock" : "Stocks"}</div>
         </div>
       </div>
     </div>
@@ -192,10 +192,10 @@ export function WeeklyBars({ data, className }: { data: { day: string; minutes: 
       {data.map((d, i) => (
         <div key={d.day} className="flex flex-1 flex-col items-center gap-1.5">
           <div
-            className={cn("w-full max-w-[22px] rounded-[6px]", i === data.length - 1 ? "bg-blue" : "bg-[#b9d2ff]")}
+            className={cn("w-full max-w-[22px] rounded-[6px]", i === data.length - 1 ? "bg-blue" : "bg-[#9aa8ea]")}
             style={{ height: `${Math.max(8, (d.minutes / max) * 64)}px` }}
           />
-          <span className="text-[11px] font-bold text-ink-3">{d.day}</span>
+          <span className="text-[11px] text-ink-3">{d.day}</span>
         </div>
       ))}
     </div>
@@ -216,14 +216,14 @@ export function CompanyCard({ asset, series, href }: { asset: MarketAsset; serie
         <CompanyLogo asset={asset} size={44} />
         <div className="min-w-0 flex-1 leading-tight">
           <div className="flex items-baseline gap-1.5">
-            <span className="truncate text-[15.5px] font-extrabold text-navy-strong">{asset.companyName}</span>
+            <span className="truncate text-[15.5px] font-semibold text-navy-strong">{asset.companyName}</span>
           </div>
-          <div className="text-[12px] font-bold text-ink-3">{asset.ticker}</div>
+          <div className="text-[12px] text-ink-3">{asset.ticker}</div>
           <div className="mt-0.5 flex items-center gap-1.5">
-            <span className="text-[14px] font-extrabold text-navy tabular">{formatUsd(asset.price)}</span>
+            <span className="text-[14px] font-semibold text-navy tabular">{formatUsd(asset.price)}</span>
             <PriceChange percent={asset.dayChangePercent} showIcon={false} />
           </div>
-          <div className="truncate text-[12px] font-semibold text-ink-2">{asset.shortDescription}</div>
+          <div className="truncate text-[12px] text-ink-2">{asset.shortDescription}</div>
         </div>
         {series ? <MiniSparkline points={series} trend={asset.dayChangePercent} /> : <Skeleton className="h-7 w-[72px]" />}
       </Link>
@@ -251,9 +251,9 @@ export function HoldingRow({ holding, href }: { holding: HoldingView; href: stri
       <Link href={href} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 py-2.5">
         <span className="flex min-w-0 items-center gap-2.5">
           <CompanyLogo asset={holding.asset} size={30} className="rounded-[10px]" />
-          <span className="truncate text-[14px] font-bold text-navy-strong">{holding.asset.companyName}</span>
+          <span className="truncate text-[14px] font-medium text-navy-strong">{holding.asset.companyName}</span>
         </span>
-        <span className="w-[76px] text-right text-[14px] font-bold text-navy tabular">{formatUsd(holding.value)}</span>
+        <span className="w-[76px] text-right text-[14px] font-medium text-navy tabular">{formatUsd(holding.value)}</span>
         <span className="flex w-[64px] items-center justify-end gap-0.5">
           <PriceChange percent={holding.changePercent} showIcon={false} />
           <ChevronRight aria-hidden className="size-4 text-ink-3" />
@@ -267,14 +267,14 @@ export function InsightBanner({ children, tone = "green" }: { children: React.Re
   const cls = {
     green: "bg-green-soft text-green-strong",
     blue: "bg-blue-soft text-blue-strong",
-    yellow: "bg-yellow-soft text-[#8a5a07]",
+    yellow: "bg-yellow-soft text-[#7a5a1c]",
   }[tone];
   return (
     <div className={cn("flex items-center gap-3 rounded-[16px] px-4 py-3", cls)}>
       <span className="grid size-9 shrink-0 place-items-center rounded-full bg-white/80">
         <Sprout className="size-6" />
       </span>
-      <p className="text-[13.5px] font-bold leading-snug">{children}</p>
+      <p className="text-[13.5px] font-medium leading-snug">{children}</p>
     </div>
   );
 }
@@ -282,8 +282,8 @@ export function InsightBanner({ children, tone = "green" }: { children: React.Re
 export function StatPill({ label, value, className }: { label: string; value: string; className?: string }) {
   return (
     <Card className={cn("px-3 py-2.5", className)}>
-      <div className="text-[11.5px] font-bold text-ink-2">{label}</div>
-      <div className="text-[16px] font-extrabold text-navy-strong tabular">{value}</div>
+      <div className="text-[11.5px] text-ink-2">{label}</div>
+      <div className="text-[16px] font-semibold text-navy-strong tabular">{value}</div>
     </Card>
   );
 }

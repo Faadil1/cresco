@@ -18,7 +18,7 @@ export default function ParentSettingsPage() {
       <section id="learning" className="mt-6 scroll-mt-24">
         <SectionHeader title="Learning goals" />
         <Card className="p-4">
-          <p className="text-[14px] font-bold text-navy">Lessons per week</p>
+          <p className="text-[14px] font-medium text-navy">Lessons per week</p>
           <div className="mt-2 flex gap-2">
             {[3, 5, 7].map((n) => (
               <Chip key={n} selected={s.weeklyLessonGoal === n} onClick={() => set({ weeklyLessonGoal: n })} className="h-11 flex-1">
@@ -26,7 +26,7 @@ export default function ParentSettingsPage() {
               </Chip>
             ))}
           </div>
-          <p className="mt-2 text-[12.5px] font-semibold text-ink-2">Goals shape reminders only. They never change {child}&apos;s Money limits.</p>
+          <p className="mt-2 text-[12.5px] text-ink-2">Goals shape reminders only. They never change {child}&apos;s Money limits.</p>
         </Card>
       </section>
 
@@ -37,7 +37,7 @@ export default function ParentSettingsPage() {
           <Row label="Weekly summary" checked={s.notifyWeeklySummary} onChange={(v) => set({ notifyWeeklySummary: v })} />
           <Row label="Each finished lesson" checked={s.notifyLessons} onChange={(v) => set({ notifyLessons: v })} />
         </Card>
-        <p className="mt-2 px-1 text-[12.5px] font-semibold text-ink-3">
+        <p className="mt-2 px-1 text-[12.5px] text-ink-3">
           Cresco doesn&apos;t notify you about actions inside {child}&apos;s limits. Notification delivery isn&apos;t connected in this demo.
         </p>
       </section>
@@ -45,7 +45,7 @@ export default function ParentSettingsPage() {
       <section id="allowance" className="mt-6 scroll-mt-24">
         <SectionHeader title="Allowance" />
         <Card className="p-4">
-          <p className="text-[14px] font-bold text-navy">Monthly allowance to Money Mode</p>
+          <p className="text-[14px] font-medium text-navy">Monthly allowance to Money Mode</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {[0, 10, 20, 50].map((n) => (
               <Chip key={n} selected={s.allowanceAmount === n} onClick={() => set({ allowanceAmount: n })} className="h-11 px-4">
@@ -53,9 +53,9 @@ export default function ParentSettingsPage() {
               </Chip>
             ))}
           </div>
-          <p className="mt-2 text-[12.5px] font-semibold text-ink-2">
+          <p className="mt-2 text-[12.5px] text-ink-2">
             Saved as a preference. Recurring funding needs a payment provider, which isn&apos;t connected yet. Spending limits live in{" "}
-            <Link href="/parent/limits" className="font-extrabold text-blue">
+            <Link href="/parent/limits" className="font-semibold text-blue">
               Limits
             </Link>
             .
@@ -69,7 +69,7 @@ export default function ParentSettingsPage() {
 function Row({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <div className="flex items-center justify-between py-3.5">
-      <span className="text-[14px] font-bold text-navy">{label}</span>
+      <span className="text-[14px] font-medium text-navy">{label}</span>
       <Toggle checked={checked} onChange={onChange} label={label} />
     </div>
   );

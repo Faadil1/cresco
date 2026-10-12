@@ -1,37 +1,21 @@
-import { useId } from "react";
 import type { GoalId } from "@/domain/types";
 
-type SvgProps = { className?: string; title?: string };
+import { P, STROKE, a11y } from "./palette";
 
-function a11y(title?: string) {
-  return title ? { role: "img" as const, "aria-label": title } : { "aria-hidden": true as const };
-}
+type SvgProps = { className?: string; title?: string };
 
 /* ------------------------------------------------------------------ */
 /* Brand mark                                                           */
 /* ------------------------------------------------------------------ */
 
-/** Cresco symbol: three rising bars with a sprout — growth + ownership. */
+/** Cresco symbol: the line, one action under it, one ask above it. */
 export function CrescoMark({ className, title }: SvgProps) {
-  const id = useId();
   return (
     <svg viewBox="0 0 40 40" className={className} {...a11y(title)}>
-      <defs>
-        <linearGradient id={`${id}b`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#2a7bff" />
-          <stop offset="1" stopColor="#0f57e8" />
-        </linearGradient>
-        <linearGradient id={`${id}l`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#4fd98a" />
-          <stop offset="1" stopColor="#139459" />
-        </linearGradient>
-      </defs>
-      <rect x="3" y="24" width="9" height="13" rx="2.5" fill={`url(#${id}b)`} />
-      <rect x="15.5" y="17" width="9" height="20" rx="2.5" fill={`url(#${id}b)`} />
-      <rect x="28" y="12" width="9" height="25" rx="2.5" fill={`url(#${id}b)`} />
-      <path d="M32.5 12V7" stroke="#139459" strokeWidth="2" strokeLinecap="round" />
-      <path d="M32.5 8c-4.5.5-7.5-2-7.5-6 4.5 0 7.5 2.2 7.5 6z" fill={`url(#${id}l)`} />
-      <path d="M32.6 7.5c3.6-.3 5.6-2.8 5.4-5.8-3.6.2-5.8 2.6-5.4 5.8z" fill="#21b66f" />
+      <rect width="40" height="40" rx="11" fill={P.ink} />
+      <path d="M9 21.5h22" stroke={P.white} strokeWidth="1.6" strokeLinecap="round" />
+      <circle cx="15" cy="27.5" r="2.6" fill={P.white} />
+      <circle cx="26" cy="14.5" r="3" fill="none" stroke={P.blueMid} strokeWidth="1.6" />
     </svg>
   );
 }
@@ -41,27 +25,14 @@ export function CrescoMark({ className, title }: SvgProps) {
 /* ------------------------------------------------------------------ */
 
 export function PlantPot({ className, title }: SvgProps) {
-  const id = useId();
   return (
     <svg viewBox="0 0 96 96" className={className} {...a11y(title)}>
-      <defs>
-        <linearGradient id={`${id}pot`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#f39a63" />
-          <stop offset="1" stopColor="#d4683a" />
-        </linearGradient>
-        <linearGradient id={`${id}leaf`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#7be49f" />
-          <stop offset="1" stopColor="#18a35c" />
-        </linearGradient>
-      </defs>
-      <path d="M26 62h44l-6 30H32z" fill={`url(#${id}pot)`} />
-      <rect x="22" y="56" width="52" height="11" rx="4" fill="#f7a877" />
-      <ellipse cx="48" cy="57" rx="22" ry="3" fill="#8a4a2b" opacity=".45" />
-      <path d="M48 57c0-16 0-26 1-36" stroke="#16924f" strokeWidth="3.5" strokeLinecap="round" />
-      <path d="M48 42C30 42 22 30 22 18c16 0 26 10 26 24z" fill={`url(#${id}leaf)`} />
-      <path d="M49 34c16-2 26-16 24-30-14 2-26 12-24 30z" fill={`url(#${id}leaf)`} />
-      <path d="M48 42c-9-5-15-12-17-20" stroke="#e9fff1" strokeWidth="1.4" fill="none" opacity=".7" />
-      <path d="M49 34c8-6 14-14 17-24" stroke="#e9fff1" strokeWidth="1.4" fill="none" opacity=".7" />
+      <circle cx="48" cy="44" r="34" fill={P.sageSoft} />
+      <path d="M48 62V30" {...STROKE} />
+      <path d="M48 44c-9 0-15-6-15-15 9 0 15 6 15 15z" fill={P.sage} />
+      <path d="M48 36c7 0 12-5 12-12-7 0-12 5-12 12z" fill={P.white} stroke={P.ink} strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M33 62h30l-3.5 20a3 3 0 0 1-3 2.5H39.5a3 3 0 0 1-3-2.5z" fill={P.white} stroke={P.ink} strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M31 62h34" {...STROKE} />
     </svg>
   );
 }
@@ -69,9 +40,9 @@ export function PlantPot({ className, title }: SvgProps) {
 export function Sprout({ className, title }: SvgProps) {
   return (
     <svg viewBox="0 0 32 32" className={className} {...a11y(title)}>
-      <path d="M16 29V15" stroke="#139459" strokeWidth="2.5" strokeLinecap="round" />
-      <path d="M16 18C8 18 4 12 4 6c8 0 12 5 12 12z" fill="#21b66f" />
-      <path d="M16 15c7 0 11-6 11-12-7 0-11 5-11 12z" fill="#4fd98a" />
+      <path d="M16 28V14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M16 19c-6 0-9-3.5-9-9 6 0 9 3.5 9 9z" fill="currentColor" />
+      <path d="M16 15c4.5 0 7-2.8 7-7-4.5 0-7 2.8-7 7z" fill="currentColor" opacity=".55" />
     </svg>
   );
 }
@@ -79,127 +50,97 @@ export function Sprout({ className, title }: SvgProps) {
 export function Target({ className, title }: SvgProps) {
   return (
     <svg viewBox="0 0 64 64" className={className} {...a11y(title)}>
-      <ellipse cx="30" cy="58" rx="18" ry="3.5" fill="#102b63" opacity=".1" />
-      <circle cx="30" cy="32" r="24" fill="#ff5a4f" />
-      <circle cx="30" cy="32" r="18" fill="#fff" />
-      <circle cx="30" cy="32" r="12" fill="#ff5a4f" />
-      <circle cx="30" cy="32" r="6" fill="#fff" />
-      <circle cx="30" cy="32" r="2.5" fill="#ff5a4f" />
-      <path d="M31 31L52 10" stroke="#102b63" strokeWidth="3" strokeLinecap="round" />
-      <path d="M50 6l2 6 6 2-5 5-6-2-2-6z" fill="#1769f6" />
+      <circle cx="32" cy="32" r="26" fill={P.blueSoft} />
+      <circle cx="32" cy="32" r="18" {...STROKE} />
+      <circle cx="32" cy="32" r="10" {...STROKE} />
+      <circle cx="32" cy="32" r="3.5" fill={P.blue} />
+      <path d="M32 32l18-18M44 14h6v6" {...STROKE} />
     </svg>
   );
 }
 
-/** Low skyline strip used above the bottom nav on Home and Learn headers. */
+/** A quiet horizon of rising blocks, drawn as one line. */
 export function Skyline({ className, title }: SvgProps) {
+  const blocks: [number, number, number][] = [
+    [8, 30, 28], [40, 16, 30], [74, 36, 22], [100, 22, 34], [138, 10, 26],
+    [168, 28, 30], [202, 18, 24], [230, 34, 30], [264, 14, 28], [296, 26, 24], [324, 20, 30],
+  ];
   return (
     <svg viewBox="0 0 360 64" preserveAspectRatio="xMidYMax slice" className={className} {...a11y(title)}>
-      <g opacity=".95">
-        <rect x="8" y="26" width="28" height="38" rx="3" fill="#d7e5ff" />
-        <rect x="40" y="12" width="32" height="52" rx="3" fill="#e5deff" />
-        <rect x="76" y="30" width="24" height="34" rx="3" fill="#cfe9e6" />
-        <circle cx="116" cy="46" r="14" fill="#9fe0b4" />
-        <rect x="132" y="20" width="30" height="44" rx="3" fill="#d7e5ff" />
-        <rect x="166" y="34" width="46" height="30" rx="3" fill="#fff" />
-        <path d="M162 34h54l-4 9h-46z" fill="#ffbc32" />
-        <rect x="216" y="8" width="30" height="56" rx="3" fill="#e5deff" />
-        <rect x="250" y="28" width="26" height="36" rx="3" fill="#d7e5ff" />
-        <circle cx="292" cy="44" r="16" fill="#9fe0b4" />
-        <rect x="308" y="18" width="30" height="46" rx="3" fill="#cfe9e6" />
-        <circle cx="348" cy="48" r="12" fill="#b6e9c6" />
-      </g>
-      <g fill="#fff" opacity=".8">
-        <rect x="46" y="20" width="6" height="6" rx="1" />
-        <rect x="58" y="20" width="6" height="6" rx="1" />
-        <rect x="46" y="32" width="6" height="6" rx="1" />
-        <rect x="58" y="32" width="6" height="6" rx="1" />
-        <rect x="222" y="16" width="6" height="6" rx="1" />
-        <rect x="234" y="16" width="6" height="6" rx="1" />
-        <rect x="222" y="28" width="6" height="6" rx="1" />
-        <rect x="234" y="28" width="6" height="6" rx="1" />
-        <rect x="138" y="28" width="6" height="6" rx="1" />
-        <rect x="150" y="28" width="6" height="6" rx="1" />
-      </g>
+      {blocks.map(([x, y, w], i) => (
+        <rect key={x} x={x} y={y} width={w} height={64 - y} rx="2" fill={i === 4 ? P.blueSoft : P.fog} stroke={P.line} strokeWidth="1" />
+      ))}
+      <circle cx="152" cy="5" r="3" fill={P.blue} />
     </svg>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/* Goals                                                                */
+/* Goal art: one object on a tinted disc                                */
 /* ------------------------------------------------------------------ */
+
+function Disc({ fill }: { fill: string }) {
+  return <ellipse cx="60" cy="42" rx="38" ry="36" fill={fill} />;
+}
 
 function Bike() {
   return (
-    <g>
-      <circle cx="26" cy="58" r="17" fill="none" stroke="#102b63" strokeWidth="5" />
-      <circle cx="94" cy="58" r="17" fill="none" stroke="#102b63" strokeWidth="5" />
-      <circle cx="26" cy="58" r="3" fill="#102b63" />
-      <circle cx="94" cy="58" r="3" fill="#102b63" />
-      <path d="M26 58l20-30h34L94 58M46 28l14 30 20-30M60 58H26" stroke="#ff5a4f" strokeWidth="5" fill="none" strokeLinejoin="round" strokeLinecap="round" />
-      <path d="M40 20h14" stroke="#102b63" strokeWidth="5" strokeLinecap="round" />
-      <path d="M80 28l-4-12h10" stroke="#102b63" strokeWidth="4.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-    </g>
+    <>
+      <Disc fill={P.blueSoft} />
+      <circle cx="38" cy="54" r="13" {...STROKE} />
+      <circle cx="82" cy="54" r="13" {...STROKE} />
+      <path d="M38 54l14-22h22l8 22M52 32l12 22h-26M64 54l10-22M48 26h10M70 26h8" {...STROKE} />
+      <circle cx="64" cy="54" r="2.5" fill={P.blue} />
+    </>
   );
 }
 
 function Gamepad() {
   return (
-    <g>
-      <path d="M30 22h60c14 0 22 14 24 32 2 14-10 20-18 12l-10-10H34L24 66c-8 8-20 2-18-12 2-18 10-32 24-32z" fill="#5a4bd8" />
-      <path d="M30 22h60c14 0 22 14 24 32-4-12-12-20-24-20H30C18 34 10 42 6 54c2-18 10-32 24-32z" fill="#6d5ff0" />
-      <path d="M32 38v16M24 46h16" stroke="#fff" strokeWidth="5" strokeLinecap="round" />
-      <circle cx="84" cy="40" r="4.5" fill="#ffbc32" />
-      <circle cx="94" cy="48" r="4.5" fill="#ff5a4f" />
-      <circle cx="74" cy="48" r="4.5" fill="#21b66f" />
-      <circle cx="84" cy="56" r="4.5" fill="#55cfc6" />
-    </g>
+    <>
+      <Disc fill={P.claySoft} />
+      <path d="M34 34h52c8 0 13 8 13 18s-4 15-10 15c-5 0-8-4-12-8H43c-4 4-7 8-12 8-6 0-10-5-10-15s5-18 13-18z" fill={P.white} stroke={P.ink} strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M40 45v10M35 50h10" {...STROKE} />
+      <circle cx="78" cy="46" r="3" fill={P.clay} />
+      <circle cx="86" cy="53" r="3" {...STROKE} />
+    </>
   );
 }
 
 function GradCap() {
   return (
-    <g>
-      <path d="M36 44v16c0 8 48 8 48 0V44z" fill="#1d3f86" />
-      <path d="M60 14L8 36l52 22 52-22z" fill="#1769f6" />
-      <path d="M60 14l52 22-52 22z" fill="#0f57e8" />
-      <path d="M96 42v18" stroke="#ffbc32" strokeWidth="3.5" strokeLinecap="round" />
-      <path d="M92 60h8l2 10h-12z" fill="#ffbc32" />
-    </g>
+    <>
+      <Disc fill={P.sageSoft} />
+      <path d="M60 22l38 14-38 14-38-14z" fill={P.ink} />
+      <path d="M38 43v12c0 5 10 9 22 9s22-4 22-9V43" fill={P.white} stroke={P.ink} strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M94 37v16" {...STROKE} />
+      <circle cx="94" cy="56" r="3" fill={P.sage} />
+    </>
   );
 }
 
 function Island() {
   return (
-    <g>
-      <ellipse cx="60" cy="68" rx="52" ry="8" fill="#55cfc6" opacity=".6" />
-      <ellipse cx="54" cy="62" rx="34" ry="9" fill="#ffd27a" />
-      <path d="M58 60c2-16 4-30 12-42" stroke="#a0643a" strokeWidth="5" fill="none" strokeLinecap="round" />
-      <path d="M70 18c-12-4-24 0-30 8 10-2 20-2 30-8z" fill="#21b66f" />
-      <path d="M70 18c10-8 22-8 30 0-10 0-20 0-30 0z" fill="#21b66f" />
-      <path d="M70 18c-4 10-12 16-22 18 4-8 12-14 22-18z" fill="#4fd98a" />
-      <path d="M70 18c8 6 12 14 12 22-6-6-10-14-12-22z" fill="#4fd98a" />
-      <circle cx="98" cy="20" r="8" fill="#ffbc32" />
-    </g>
+    <>
+      <Disc fill={P.ochreSoft} />
+      <circle cx="82" cy="24" r="7" fill={P.ochre} />
+      <path d="M22 62c10-4 20-4 30 0s20 4 30 0 14-3 18-1" {...STROKE} />
+      <path d="M36 56c8-8 32-8 40 0" fill={P.white} stroke={P.ink} strokeWidth="1.5" />
+      <path d="M56 52c0-10 2-18 6-24" {...STROKE} />
+      <path d="M62 28c-6-4-14-3-18 2M62 28c5-5 13-5 17 0M62 28c0-6 4-10 9-11" {...STROKE} />
+    </>
   );
 }
 
 function Piggy() {
   return (
-    <g>
-      <ellipse cx="58" cy="44" rx="36" ry="28" fill="#ff8fb3" />
-      <ellipse cx="58" cy="40" rx="30" ry="20" fill="#ffa3c2" />
-      <path d="M36 22l-4-12 14 8z" fill="#ff7aa8" />
-      <ellipse cx="92" cy="46" rx="10" ry="8" fill="#ff7aa8" />
-      <circle cx="89" cy="45" r="1.8" fill="#b83d69" />
-      <circle cx="95" cy="45" r="1.8" fill="#b83d69" />
-      <circle cx="78" cy="34" r="3" fill="#3a2238" />
-      <rect x="36" y="66" width="10" height="12" rx="4" fill="#ff7aa8" />
-      <rect x="66" y="66" width="10" height="12" rx="4" fill="#ff7aa8" />
-      <rect x="48" y="16" width="18" height="4" rx="2" fill="#b83d69" />
-      <circle cx="57" cy="8" r="7" fill="#ffbc32" />
-      <circle cx="57" cy="8" r="4.5" fill="#ffd36b" />
-    </g>
+    <>
+      <Disc fill={P.blueSoft} />
+      <path d="M30 48c0-12 12-20 28-20 14 0 24 6 28 14h6v12h-6c-2 4-5 7-9 9v7h-9v-5c-4 1-10 1-14 0v5h-9v-8c-9-4-15-8-15-14z" fill={P.white} stroke={P.ink} strokeWidth="1.5" strokeLinejoin="round" />
+      <circle cx="76" cy="44" r="1.8" fill={P.ink} />
+      <path d="M50 34h14" {...STROKE} />
+      <circle cx="57" cy="20" r="6" fill={P.blue} />
+    </>
   );
 }
 

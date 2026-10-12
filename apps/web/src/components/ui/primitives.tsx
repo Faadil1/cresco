@@ -17,20 +17,20 @@ export function cn(...parts: (string | false | null | undefined)[]) {
 type ButtonVariant = "primary" | "secondary" | "ghost" | "quiet" | "success";
 
 const buttonBase =
-  "inline-flex items-center justify-center gap-2 font-extrabold transition-[transform,background-color,box-shadow,color] duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 select-none";
+  "inline-flex items-center justify-center gap-2 font-medium transition-[transform,background-color,box-shadow,color] duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 select-none";
 
 const buttonVariants: Record<ButtonVariant, string> = {
-  primary: "bg-blue text-white shadow-button hover:bg-blue-strong",
-  secondary: "bg-surface text-blue border-2 border-blue hover:bg-blue-soft",
-  ghost: "bg-blue-soft text-blue-strong hover:bg-[#dce9ff]",
+  primary: "bg-navy-strong text-bg hover:bg-navy",
+  secondary: "bg-transparent text-navy-strong border border-line hover:bg-surface",
+  ghost: "bg-blue-soft text-blue-strong hover:bg-[#d3daf5]",
   quiet: "bg-surface text-navy border border-line hover:bg-surface-soft",
-  success: "bg-green-strong text-white hover:bg-[#0a6a3d]",
+  success: "bg-green-strong text-white hover:bg-[#1f5e42]",
 };
 
 const buttonSizes = {
-  lg: "h-[52px] px-6 rounded-[15px] text-[15px] w-full",
-  md: "h-11 px-5 rounded-[14px] text-[14px]",
-  sm: "h-9 px-3.5 rounded-[11px] text-[13px]",
+  lg: "h-[52px] px-6 rounded-full text-[15px] w-full",
+  md: "h-11 px-5 rounded-full text-[14px]",
+  sm: "h-9 px-4 rounded-full text-[13px]",
 };
 
 type ActionButtonProps = {
@@ -47,7 +47,7 @@ export function ActionButton({ variant = "primary", size = "lg", arrow, href, ch
   const content = (
     <>
       <span>{children}</span>
-      {arrow ? <ArrowRight aria-hidden className="size-[18px]" strokeWidth={2.6} /> : null}
+      {arrow ? <ArrowRight aria-hidden className="size-[18px]" strokeWidth={1.75} /> : null}
     </>
   );
   if (href) {
@@ -77,13 +77,13 @@ export function BackButton({ href, label = "Back", className }: { href?: string;
   if (href) {
     return (
       <Link href={href} aria-label={label} className={classes}>
-        <ChevronLeft className="size-6" strokeWidth={2.6} />
+        <ChevronLeft className="size-6" strokeWidth={1.75} />
       </Link>
     );
   }
   return (
     <button type="button" aria-label={label} onClick={() => router.back()} className={classes}>
-      <ChevronLeft className="size-6" strokeWidth={2.6} />
+      <ChevronLeft className="size-6" strokeWidth={1.75} />
     </button>
   );
 }
@@ -99,7 +99,7 @@ export function Card({
   ...rest
 }: { children: ReactNode; className?: string; as?: "div" | "section" | "article" | "li" } & Record<string, unknown>) {
   return (
-    <Tag className={cn("rounded-[20px] border border-line-soft bg-surface", className)} {...rest}>
+    <Tag className={cn("rounded-[24px] border border-line-soft bg-surface", className)} {...rest}>
       {children}
     </Tag>
   );
@@ -122,8 +122,8 @@ export function PageHeader({
     <header className={cn("flex items-start gap-2", className)}>
       {back ? <BackButton href={back === true ? undefined : back} /> : null}
       <div className="min-w-0 flex-1">
-        <h1 className="text-[28px] font-extrabold leading-[1.15] tracking-[-0.01em] text-navy-strong md:text-[30px]">{title}</h1>
-        {subtitle ? <p className="mt-1 text-[14px] font-semibold text-ink-2">{subtitle}</p> : null}
+        <h1 className="text-[36px] font-display font-normal leading-[1.05] tracking-[-0.02em] text-navy-strong md:text-[39px]">{title}</h1>
+        {subtitle ? <p className="mt-1 text-[14px] text-ink-2">{subtitle}</p> : null}
       </div>
       {right}
     </header>
@@ -133,7 +133,7 @@ export function PageHeader({
 export function SectionHeader({ title, action, className }: { title: ReactNode; action?: ReactNode; className?: string }) {
   return (
     <div className={cn("mb-3 flex items-center justify-between gap-3", className)}>
-      <h2 className="text-[18px] font-extrabold leading-tight text-navy-strong">{title}</h2>
+      <h2 className="font-display text-[26px] font-normal leading-none tracking-[-0.01em] text-navy-strong">{title}</h2>
       {action}
     </div>
   );
@@ -141,7 +141,7 @@ export function SectionHeader({ title, action, className }: { title: ReactNode; 
 
 export function TextLink({ href, children, className }: { href: string; children: ReactNode; className?: string }) {
   return (
-    <Link href={href} className={cn("rounded-md text-[13px] font-bold text-blue hover:underline", className)}>
+    <Link href={href} className={cn("rounded-md text-[13px] font-medium text-blue hover:underline", className)}>
       {children}
     </Link>
   );
@@ -164,8 +164,8 @@ export function Chip({
       aria-pressed={selected}
       onClick={onClick}
       className={cn(
-        "h-9 shrink-0 rounded-[11px] px-3.5 text-[13px] font-bold transition-colors duration-150",
-        selected ? "bg-blue text-white" : "bg-surface text-ink-2 border border-line-soft hover:text-navy",
+        "h-9 shrink-0 rounded-full px-4 text-[13px] font-medium transition-colors duration-150",
+        selected ? "bg-navy-strong text-bg" : "bg-surface text-ink-2 border border-line-soft hover:text-navy",
         className,
       )}
       {...rest}
@@ -189,7 +189,7 @@ export function PeriodSelector<T extends string>({
   className?: string;
 }) {
   return (
-    <div role="radiogroup" aria-label={label} className={cn("flex items-center justify-between gap-1 rounded-[14px] bg-surface-soft p-1", className)}>
+    <div role="radiogroup" aria-label={label} className={cn("flex items-center justify-between gap-1 rounded-full bg-surface-soft p-1", className)}>
       {options.map((o) => (
         <button
           key={o}
@@ -198,8 +198,8 @@ export function PeriodSelector<T extends string>({
           aria-checked={o === value}
           onClick={() => onChange(o)}
           className={cn(
-            "h-8 flex-1 rounded-[10px] text-[12.5px] font-extrabold transition-colors duration-150",
-            o === value ? "bg-blue text-white shadow-[0_3px_8px_rgba(23,105,246,0.3)]" : "text-ink-2 hover:text-navy",
+            "h-8 flex-1 rounded-full text-[12.5px] font-semibold transition-colors duration-150",
+            o === value ? "bg-surface text-navy-strong shadow-[0_1px_2px_rgba(20,23,28,0.12)]" : "text-ink-2 hover:text-navy",
           )}
         >
           {o}
@@ -221,8 +221,8 @@ export function SearchInput({
   label: string;
 }) {
   return (
-    <label className="flex h-12 items-center gap-2.5 rounded-[15px] border border-line-soft bg-surface px-4 focus-within:border-blue focus-within:ring-2 focus-within:ring-blue/20">
-      <Search aria-hidden className="size-[18px] text-ink-3" strokeWidth={2.4} />
+    <label className="flex h-12 items-center gap-2.5 rounded-full border border-line-soft bg-surface px-4 focus-within:border-blue focus-within:ring-2 focus-within:ring-blue/20">
+      <Search aria-hidden className="size-[18px] text-ink-3" strokeWidth={1.75} />
       <span className="sr-only">{label}</span>
       <input
         type="search"
@@ -262,7 +262,7 @@ export function ProgressBar({
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={Math.round(pct)}
-      className={cn("w-full overflow-hidden rounded-full", tone === "white" ? "bg-white/30" : "bg-[#e7edf6]", className)}
+      className={cn("w-full overflow-hidden rounded-full", tone === "white" ? "bg-white/30" : "bg-[#e1e5ea]", className)}
       style={{ height }}
     >
       <div className={cn("h-full rounded-full transition-[width] duration-500 ease-out", fill)} style={{ width: `${pct}%` }} />
@@ -291,7 +291,7 @@ export function Toggle({
       onClick={() => onChange(!checked)}
       className={cn(
         "relative h-7 w-12 shrink-0 rounded-full transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-45",
-        checked ? "bg-blue" : "bg-[#d5dde9]",
+        checked ? "bg-blue" : "bg-[#cfd5dc]",
       )}
     >
       <span
@@ -311,7 +311,7 @@ export function Toggle({
 export function Avatar({ who = "child", size = 48, className, label }: { who?: "child" | "parent"; size?: number; className?: string; label?: string }) {
   const Art = who === "child" ? KidBust : ParentBust;
   return (
-    <span className={cn("inline-block shrink-0 rounded-full ring-2 ring-white", className)} style={{ width: size, height: size }}>
+    <span className={cn("inline-block shrink-0 rounded-full", className)} style={{ width: size, height: size }}>
       <Art className="size-full" title={label} />
     </span>
   );
@@ -319,8 +319,8 @@ export function Avatar({ who = "child", size = 48, className, label }: { who?: "
 
 export function XPBadge({ xp, className }: { xp: number; className?: string }) {
   return (
-    <span className={cn("inline-flex items-center gap-1 text-[13px] font-extrabold text-orange-text tabular", className)}>
-      <Star aria-hidden className="size-3.5 fill-yellow text-yellow" />+{xp} XP
+    <span className={cn("inline-flex items-center gap-1 text-[13px] font-semibold text-orange-text tabular", className)}>
+      <Star aria-hidden className="size-3.5 fill-yellow text-yellow" strokeWidth={0} />+{xp} XP
     </span>
   );
 }
@@ -328,13 +328,13 @@ export function XPBadge({ xp, className }: { xp: number; className?: string }) {
 export function StreakBadge({ days, className }: { days: number; className?: string }) {
   return (
     <div
-      className={cn("flex items-center gap-1.5 rounded-[16px] border border-line-soft bg-surface px-3 py-2", className)}
+      className={cn("flex items-center gap-1.5 rounded-full border border-line-soft bg-surface py-1.5 pl-2.5 pr-3.5", className)}
       aria-label={`${days}-day learning streak`}
     >
-      <Flame aria-hidden className="size-6 fill-orange text-[#ff5a2e]" />
+      <Flame aria-hidden className="size-5 text-orange" strokeWidth={1.75} />
       <div className="leading-none">
-        <div className="text-[18px] font-extrabold text-navy-strong tabular">{days}</div>
-        <div className="mt-0.5 text-[10.5px] font-bold text-ink-2">day streak</div>
+        <div className="text-[18px] font-semibold text-navy-strong tabular">{days}</div>
+        <div className="mt-0.5 text-[10.5px] text-ink-2">day streak</div>
       </div>
     </div>
   );
@@ -354,13 +354,13 @@ export function IconCircle({
   const tones = {
     blue: "bg-blue-soft text-blue",
     green: "bg-green-soft text-green-strong",
-    orange: "bg-[#fff0e6] text-orange-text",
+    orange: "bg-[#f3e0d8] text-orange-text",
     lavender: "bg-lavender-soft text-lavender",
-    aqua: "bg-aqua-soft text-[#1ea79c]",
-    pink: "bg-pink-soft text-[#e44f86]",
+    aqua: "bg-aqua-soft text-[#3d7a75]",
+    pink: "bg-pink-soft text-[#a24f67]",
     yellow: "bg-yellow-soft text-warning",
     loss: "bg-loss-soft text-loss-text",
-    navy: "bg-[#e8edf7] text-navy",
+    navy: "bg-[#e8ebee] text-navy",
   };
   return (
     <span className={cn("grid shrink-0 place-items-center rounded-full", tones[tone], className)} style={{ width: size, height: size }}>
