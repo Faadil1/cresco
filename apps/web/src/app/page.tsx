@@ -7,7 +7,7 @@ const button = "inline-flex min-h-12 items-center justify-center gap-2 rounded-f
 const moments = [
   { label: "1", title: "Parent sets the Key", body: "Choose a standing allowance and a clear limit for each investment.", role: "parent" as const, preview: "Standing limit", amount: "$0.50", state: "Key set" },
   { label: "2", title: "Teen acts independently", body: "Inside the Key, they practice making their own financial decisions.", role: "teen" as const, preview: "Within the Key", amount: "$0.30", state: "Allowed" },
-  { label: "3", title: "Ask at the boundary", body: "Above the limit, CRESCO refuses the action and creates one precise request.", role: "request" as const, preview: "Above the Key", amount: "$0.75", state: "Request" },
+  { label: "3", title: "Ask at the boundary", body: "Above the limit, CRESCO refuses the action and creates one precise request.", role: "request" as const, preview: "Above the Key", amount: "$0.75", state: "Request", pending: true },
   { label: "4", title: "Approve exactly once", body: "The parent can say yes to this one action without changing the standing Key.", role: "approved" as const, preview: "Exact exception", amount: "$0.75", state: "One use" },
 ];
 const benefits = [
@@ -82,7 +82,7 @@ export default function WelcomePage() {
                   <StoryVignette role={moment.role} className="block w-full" />
                   <div className="cresco-demo-card absolute bottom-3 right-3 w-[135px] p-2.5" aria-label={`Illustrative ${moment.preview.toLowerCase()} example`}>
                     <p className="text-[9px] font-semibold uppercase tracking-[.08em] text-ink-3">{moment.preview}</p>
-                    <div className="mt-1 flex items-center justify-between gap-1"><strong className="text-[17px] text-navy-strong">{moment.amount}</strong><span className="rounded-full bg-green-soft px-1.5 py-0.5 text-[9px] font-bold text-green-strong">{moment.state}</span></div>
+                    <div className="mt-1 flex items-center justify-between gap-1"><strong className="text-[17px] text-navy-strong">{moment.amount}</strong><span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${"pending" in moment && moment.pending ? "bg-yellow-soft text-orange-text" : "bg-green-soft text-green-strong"}`}>{moment.state}</span></div>
                   </div>
                 </div>
               </li>
