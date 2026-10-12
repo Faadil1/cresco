@@ -1,0 +1,115 @@
+{
+  "type": "CRESCO_WORLD_FAIR_WORKFLOW_CAMPAIGN",
+  "cycles": 5,
+  "passes": 5,
+  "passRate": 1,
+  "threshold": 0.8,
+  "thresholdMet": true,
+  "latencyMs": {
+    "standingIntent": {
+      "n": 5,
+      "p50": 2656,
+      "p95": 8624,
+      "max": 8624
+    },
+    "boundaryIntent": {
+      "n": 5,
+      "p50": 1030,
+      "p95": 1685,
+      "max": 1685
+    },
+    "approve": {
+      "n": 5,
+      "p50": 3647,
+      "p95": 4901,
+      "max": 4901
+    },
+    "replay": {
+      "n": 5,
+      "p50": 288,
+      "p95": 327,
+      "max": 327
+    }
+  },
+  "fees": null,
+  "results": [
+    {
+      "cycle": 1,
+      "steps": {
+        "standing": "ALLOW",
+        "boundary": "PENDING_PRINCIPAL",
+        "approve": "EXECUTED",
+        "replay": "REQUEST_ALREADY_DECIDED"
+      },
+      "pass": true,
+      "signatures": [
+        "tQLtS32ijDGx1kVZ4sUy4XkNaQ8chkJm6z1BX9LEfUqRYYSQHL5hZexMCXXZUijvrgbnhiCSKSxL2GWtWiCEgih",
+        "4JyQBWbhxMkJbY2JLVQjLbQP4UNjFfdUgyoCspHC9ddAcWjmdCjWXEBJr3XJ1hMFpvXH6NudHggSUtUvA9cT2bvF",
+        "5JGb5PZKSFRHz3sz2DDS8nmX6WP4S9vzMw1AmhLZFyc3i7kERBU6PUAQGRyCSqXMC6KZerynNcVJJMTjEZwjepyF"
+      ]
+    },
+    {
+      "cycle": 2,
+      "steps": {
+        "standing": "ALLOW",
+        "boundary": "PENDING_PRINCIPAL",
+        "approve": "EXECUTED",
+        "replay": "REQUEST_ALREADY_DECIDED"
+      },
+      "pass": true,
+      "signatures": [
+        "2nuw8gU6AfBwMEBYhu2y4Hcpcqv5bWXGDUdLLPtCXshFtXRnaZdaAYZcMtgEuhX7zm5KLew1jSKaizHb3nzNQnbw",
+        "7UcqasSeL3uvxW1TCVMaF4ZJVM4e1jHPVS3c2gZTakv7mB7C5oPmc3ALZSCbjAVGpx7V1UXtcWJLvwEZfCx77ww",
+        "55C4T5rUCAZ4vGCG47ngJX4iWp6pxtnBisbknjoAWMvmx81zNv1tn7aChp8XnrvYJDuseszaUC2QMYWa8h2yobsX"
+      ]
+    },
+    {
+      "cycle": 3,
+      "steps": {
+        "standing": "ALLOW",
+        "boundary": "PENDING_PRINCIPAL",
+        "approve": "EXECUTED",
+        "replay": "REQUEST_ALREADY_DECIDED"
+      },
+      "pass": true,
+      "signatures": [
+        "4rr5GwqDVUFfJ3BMMVfrVtLb2dhKk2xZ5ts5jVb6C6ttDX2N6pJH3BrkkjAA2KskZ7A19FrZDbrZLyviKoiQeu6x",
+        "5c9WvBwms4QKB5UovWVtHNmrmS4czwCqRdzwSSegn12GoKRFvVjVPCkgirkKpJTAzdZ4YSppBZ8D4ZUaiAHUgE8V",
+        "5akiFQJJQego4BTApvmH1jdLS9zeJoaoXTzcfWGEuPufw2pWVGRxkDEz9KswxnUYrtPhbb9jAcGznShcJ3wdtq2H"
+      ]
+    },
+    {
+      "cycle": 4,
+      "steps": {
+        "standing": "ALLOW",
+        "boundary": "PENDING_PRINCIPAL",
+        "approve": "EXECUTED",
+        "replay": "REQUEST_ALREADY_DECIDED"
+      },
+      "pass": true,
+      "signatures": [
+        "4dCtGen5i2eaYoumkyFAspJUq9FZKAPjdtSwnQ3P7btfoyRzWuGEJ6SjbWCJ7yNVBiRjnrVMyiQywgh7mP7yERkf",
+        "3DFSQBrBRj2CJphGJnUmQqwG75sYJB76CVUJuQBcNckR2inGAU9QCre7jV2ZgN87fttZMLx6XKzMn8hSJbRUcDYf",
+        "2D9rP66TNcQyVKCcy1y1uNkNgkMzGyPWnXPGnbiLqRX6u39H7jBphX7bQQuur6jJDbjerDHmL5688YKqXqnjXKcY"
+      ]
+    },
+    {
+      "cycle": 5,
+      "steps": {
+        "standing": "ALLOW",
+        "boundary": "PENDING_PRINCIPAL",
+        "approve": "EXECUTED",
+        "replay": "REQUEST_ALREADY_DECIDED"
+      },
+      "pass": true,
+      "signatures": [
+        "4Jcz4xgz6A229sJ3gBCUKKkxTHsHWiLPZG4m2ZZH4M6eVWc4iJMgzu4Zz68GfJR828zCJftxt3vFfoBCvW4dQGVP",
+        "k4hCwYDNb5aVmKgSNFR7eCKWfPhdRci4WzSv45SQsZBupge7tpvyrLX4PSXgM8Bnh6y8WcNvGBLecp4XXjpcFbn",
+        "5tywCSMkeJ4HgzwdamGfwZNpo6CiPZpDU36bqAqDJExtmr8d5sA48XCg6UV5WSxsQ9cAeHUSKeMSVTrtXnJ9e9D5"
+      ]
+    }
+  ],
+  "claimBoundary": "Devnet repeatability of the operator/principal loop only; not production reliability, adoption or WTP.",
+  "mode": "LIVE_DEVNET",
+  "observedAt": "2026-10-12T15:07:21.819Z"
+}
