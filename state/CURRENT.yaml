@@ -102,7 +102,7 @@ conditional_gateway_registry:
   NEGATIVE_PATHS: PROVEN
   FAILURE_RECOVERY: PROVEN
   PROTECTED_LIVE_WORKFLOW_TRIGGER_SAFETY: PROVEN_IN_THIS_CHANGESET_PENDING_MERGE
-  REAL_OPERATOR_PRINCIPAL_WORKFLOW: IMPLEMENTED_LOCAL__LIVE_DEVNET_VERIFICATION_PENDING
+  REAL_OPERATOR_PRINCIPAL_WORKFLOW: LIVE_DEVNET_VERIFIED__CAMPAIGN_5_OF_5
   EXTERNAL_TARGET_OPERATOR_EVIDENCE: BLOCKED_VALIDATION_GAP
   RUNTIME_COMMIT_BINDING: PARTIAL_PUBLIC_RUNTIME_BINDING_UNKNOWN_AFTER_PR29
   PUBLIC_RUNTIME_REDEPLOY: BLOCKED_MISSING_CLOUDFLARE_GITHUB_SECRETS
@@ -114,7 +114,7 @@ conditional_gateway_registry:
 
 operator_principal_workflow_v0_4:
   branch: claude/worlds-fair-operator-principal-workflow-2026-10-12
-  status: IMPLEMENTED_AND_TESTED_LOCALLY__NOT_LIVE_VERIFIED
+  status: LIVE_DEVNET_VERIFIED__CAMPAIGN_5_OF_5_2026-10-12
   reality: LOCAL
   reason_not_live: build environment had no Solana Devnet / Pyth network access; no deployment or Devnet write was performed
   design: one on-chain mandate per workspace (judge lab mandate untouched); authority stays in the CRESCO program
@@ -136,7 +136,7 @@ operator_principal_workflow_v0_4:
   remaining_gap_to_full_non_custodial: principal wallet as on-chain guardian (program already requires guardian signature on grant)
   live_verification_steps: docs/WORLDS-FAIR-OPERATOR-PRINCIPAL-WORKFLOW.md
 
-exact_next_gate: LIVE_DEVNET_VERIFICATION__OPERATOR_PRINCIPAL_WORKFLOW_V0_4
+exact_next_gate: SUBMISSION__PITCH_AND_DEMO_VIDEOS_THEN_COLOSSEUM_FINAL_SUBMIT
 exact_next_owner: HUMAN_FOR_DEPLOY_AND_DEVNET_WRITES__PBPD_FOR_ANY_REWORK
 exact_next_action: >-
   Review PR for branch claude/worlds-fair-operator-principal-workflow-2026-10-12. Deploy the Worker with
