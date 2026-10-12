@@ -7,7 +7,8 @@ const protectedWorkflows = [
   '.github/workflows/devnet-execution-bridge.yml',
   '.github/workflows/solana-devnet-authority-proof.yml',
   '.github/workflows/cloudflare-hosted-execution-smoke.yml',
-  '.github/workflows/devnet-funding-topup.yml'
+  '.github/workflows/devnet-funding-topup.yml',
+  '.github/workflows/devnet-fund-wallet.yml'
 ];
 
 for (const workflow of protectedWorkflows) {
