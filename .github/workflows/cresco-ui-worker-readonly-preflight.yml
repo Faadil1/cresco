@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - ops/cresco-ui-worker-readonly-preflight-20261012
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/cresco-ui-worker-readonly-preflight.yml
 
 permissions:
   contents: read
@@ -22,7 +27,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = "fdd90465cbe591ac8a9314de1e3176463c06b9a6"
+          git merge-base --is-ancestor "fdd90465cbe591ac8a9314de1e3176463c06b9a6" HEAD
+          git diff --quiet "fdd90465cbe591ac8a9314de1e3176463c06b9a6" HEAD -- apps/web
           echo "Underlying product source: fdd90465cbe591ac8a9314de1e3176463c06b9a6" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/setup-node@v4
         with:
