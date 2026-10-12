@@ -3,6 +3,9 @@ name: CRESCO post-PR53 hosted visual audit
 on:
   push:
     branches: [audit/cresco-live-after-pr53-20261012]
+  pull_request:
+    branches: [main]
+    paths: [.github/workflows/cresco-post-pr53-live-visual-audit.yml]
 
 permissions:
   contents: read
