@@ -30,6 +30,7 @@ import {
   newIdempotencyKey,
   parseShareFragment,
   saveKeychain,
+  setGuardianSigner,
   shareLink,
   toBase,
   usd,
@@ -38,6 +39,7 @@ import {
   type CreatedWorkspace,
   type DeskKeychain,
   type ExceptionRequest,
+  type GuardianSignatureRequest,
   type IntentResult,
   type MandateView,
   type WorkflowEvent,
@@ -124,6 +126,7 @@ type SolanaProvider = {
   publicKey?: { toString(): string };
   connect: () => Promise<{ publicKey: { toString(): string } }>;
   signMessage: (message: Uint8Array, display?: string) => Promise<{ signature: Uint8Array }>;
+  signTransaction?: <T>(transaction: T) => Promise<T>;
 };
 
 function solanaProvider(): SolanaProvider | null {
@@ -141,6 +144,37 @@ async function signWithWallet(message: string) {
   signature.forEach((b) => (binary += String.fromCharCode(b)));
   return { publicKey: connected.publicKey.toString(), signature: btoa(binary) };
 }
+
+function base64ToBytes(b64: string) {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i += 1) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+function bytesToBase64(bytes: Uint8Array) {
+  let binary = "";
+  bytes.forEach((b) => (binary += String.fromCharCode(b)));
+  return btoa(binary);
+}
+
+// Principal-wallet guardian: the wallet signs the exact transaction the server
+// prepared (bootstrap, one exact grant, pause/resume/revoke, limits). The server
+// verifies it is byte-for-byte the same message before sending it.
+async function signGuardianTransaction(request: GuardianSignatureRequest) {
+  const provider = solanaProvider();
+  if (!provider?.signTransaction) throw new Error("No Solana wallet that can sign transactions was found (Phantom, Solflare or Backpack).");
+  const connected = await provider.connect();
+  if (connected.publicKey.toString() !== request.guardian) {
+    throw new Error(`Connect the guardian wallet ${short(request.guardian)} to sign.`);
+  }
+  const { Transaction } = await import("@solana/web3.js");
+  const tx = Transaction.from(base64ToBytes(request.transaction));
+  const signed = await provider.signTransaction(tx);
+  return bytesToBase64(signed.serialize());
+}
+
+setGuardianSigner(signGuardianTransaction);
 
 function Pill({ children, tone }: { children: React.ReactNode; tone: string }) {
   return <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-black ${tone}`}>{children}</span>;
@@ -300,6 +334,7 @@ function CreateWorkspace({ onCreated }: { onCreated: (ws: CreatedWorkspace) => v
     setLimit(d.limit);
   }
   const [webhookUrl, setWebhookUrl] = useState("");
+  const [walletGuardian, setWalletGuardian] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -310,6 +345,7 @@ function CreateWorkspace({ onCreated }: { onCreated: (ws: CreatedWorkspace) => v
     try {
       const ws = await workflowApi.createWorkspace({
         useCase,
+        guardianMode: walletGuardian ? "principal-wallet" : "server",
         name,
         principalLabel,
         operatorLabel,
@@ -357,6 +393,13 @@ function CreateWorkspace({ onCreated }: { onCreated: (ws: CreatedWorkspace) => v
         <label className="text-[12px] font-black text-ink-2">{copy.operatorField}<input className={input} value={operatorLabel} onChange={(e) => setOperatorLabel(e.target.value)} /></label>
         <label className="text-[12px] font-black text-ink-2">{copy.roles.risk.title}<input className={input} value={riskLabel} onChange={(e) => setRiskLabel(e.target.value)} /></label>
         <label className="text-[12px] font-black text-ink-2">Webhook for exception requests (optional, https)<input className={input} value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)} placeholder="https://hooks.example.com/cresco" /></label>
+        <label className="flex items-start gap-3 rounded-[16px] border border-line bg-surface-soft p-3 text-[13px] font-semibold text-ink-2 md:col-span-2">
+          <input type="checkbox" className="mt-1 size-4" checked={walletGuardian} onChange={(e) => setWalletGuardian(e.target.checked)} />
+          <span>
+            <span className="block font-black text-navy-strong">My wallet is the on-chain guardian (non-custodial)</span>
+            The {copy.roles.principal.title.toLowerCase()}&apos;s wallet signs the mandate, every exact exception and every pause, resume or revoke. The server prepares transactions but holds no authority over the mandate. Needs a Solana wallet set to Devnet with a little Devnet SOL for account rent.
+          </span>
+        </label>
         <div className="md:col-span-2">
           <button type="submit" disabled={busy} className="flex min-h-12 items-center gap-2 rounded-[16px] bg-blue px-5 text-[14px] font-black text-white shadow-button hover:bg-blue-strong disabled:opacity-60">
             {busy ? <LoaderCircle className="size-4 animate-spin" /> : <KeyRound className="size-4" />} Create workspace
@@ -550,7 +593,7 @@ export default function WorldFairDeskPage() {
     const t = token(role);
     if (!id || !t) return;
     await run(`decide-${req.id}`, async () => {
-      if (decision === "APPROVE" && role === "principal" && ws?.roles.principal.wallet) {
+      if (decision === "APPROVE" && role === "principal" && ws?.roles.principal.wallet && ws.guardianMode !== "principal-wallet") {
         const issuedAt = new Date().toISOString();
         const { message } = await workflowApi.approvalMessage(id, req.id, issuedAt);
         const signed = await signWithWallet(message);
@@ -578,6 +621,7 @@ export default function WorldFairDeskPage() {
   const roleCopy = USE_CASES[caseOfWorkspace(ws)].roles;
   const mandateStatus = mandate?.mandate?.status ?? (ws?.chain.status === "REVOKED" ? "REVOKED" : null);
   const notReady = Boolean(ws && ws.chain.status !== "READY");
+  const walletGuardianWs = ws?.guardianMode === "principal-wallet";
 
   return (
     <main className="relative min-h-screen bg-bg">
@@ -644,10 +688,20 @@ export default function WorldFairDeskPage() {
                 {notReady && token("principal") && ws.chain.status === "NOT_BOOTSTRAPPED" ? (
                   <div className="mt-4 rounded-[18px] border border-blue/25 bg-blue-soft p-4">
                     <p className="text-[14px] font-black text-navy-strong">Create the mandate on Devnet</p>
-                    <p className="mt-1 text-[13px] font-semibold text-ink-2">Charter, mandate, asset rule, trade vaults and funding. Several transactions; safe to retry.</p>
-                    <button type="button" disabled={actionBusy === "bootstrap"} onClick={() => run("bootstrap", () => workflowApi.bootstrap(ws.id, token("principal")!))} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-[14px] bg-blue px-4 text-[13px] font-black text-white disabled:opacity-60">
-                      {actionBusy === "bootstrap" ? <LoaderCircle className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />} Bootstrap mandate
-                    </button>
+                    {walletGuardianWs ? (
+                      <p className="mt-1 text-[13px] font-semibold text-ink-2">Your wallet becomes the on-chain guardian: one transaction creates the charter, mandate, asset rule and trade vaults, and you sign it. The lab then funds the Devnet vault.</p>
+                    ) : (
+                      <p className="mt-1 text-[13px] font-semibold text-ink-2">Charter, mandate, asset rule, trade vaults and funding. Several transactions; safe to retry.</p>
+                    )}
+                    {walletGuardianWs && !ws.roles.principal.wallet ? (
+                      <button type="button" disabled={Boolean(actionBusy)} onClick={bindWallet} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-[14px] bg-blue px-4 text-[13px] font-black text-white disabled:opacity-60">
+                        {actionBusy === "wallet" ? <LoaderCircle className="size-4 animate-spin" /> : <Wallet className="size-4" />} Connect the guardian wallet
+                      </button>
+                    ) : (
+                      <button type="button" disabled={actionBusy === "bootstrap"} onClick={() => run("bootstrap", () => workflowApi.bootstrap(ws.id, token("principal")!))} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-[14px] bg-blue px-4 text-[13px] font-black text-white disabled:opacity-60">
+                        {actionBusy === "bootstrap" ? <LoaderCircle className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />} {walletGuardianWs ? "Sign and create the mandate" : "Bootstrap mandate"}
+                      </button>
+                    )}
                   </div>
                 ) : null}
                 {actionError ? <p role="alert" className="mt-4 rounded-[14px] border border-loss/25 bg-loss-soft p-3 text-[13px] font-bold text-loss-text">{actionError}</p> : null}
@@ -774,7 +828,9 @@ export default function WorldFairDeskPage() {
                         </form>
                         <p className="mt-2 text-[11px] font-bold text-ink-3">Every lifecycle change advances the mandate nonce: pending exceptions become stale automatically.</p>
                         <div className="mt-4 border-t border-line-soft pt-4">
-                          {ws.roles.principal.wallet ? (
+                          {walletGuardianWs && ws.roles.principal.wallet ? (
+                            <p className="flex items-center gap-2 text-[12px] font-bold text-green-strong"><Wallet className="size-4" /> On-chain guardian: {short(ws.roles.principal.wallet)}. Every exception and lifecycle change is a transaction this wallet signs.</p>
+                          ) : ws.roles.principal.wallet ? (
                             <p className="flex items-center gap-2 text-[12px] font-bold text-green-strong"><Wallet className="size-4" /> Approvals require a signature from {short(ws.roles.principal.wallet)}</p>
                           ) : (
                             <button type="button" disabled={Boolean(actionBusy)} onClick={bindWallet} className="inline-flex items-center gap-1.5 rounded-[12px] border border-line px-3 py-2 text-[12px] font-black text-navy"><Wallet className="size-4" /> Bind my wallet for approvals</button>

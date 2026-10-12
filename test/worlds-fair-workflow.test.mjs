@@ -532,3 +532,122 @@ test('a workspace carries its presentation (family or delegated capital); the me
   assert.equal((await wf.createWorkspace({ useCase: 'anything-else' })).body.useCase, 'capital');
   assert.equal((await wf.createWorkspace({})).body.useCase, 'capital');
 });
+
+// Principal-wallet guardian: the fake chain asks for the wallet signature
+// exactly where the real provider would, and only proceeds after submit.
+function walletGuardianChain() {
+  const chain = fakeChain();
+  const prepared = new Map();
+  let n = 0;
+  const ask = (label, onConfirm, extra = {}) => {
+    const message = `msg-${label}-${++n}`;
+    prepared.set(message, onConfirm);
+    return { status: 'NEEDS_GUARDIAN_SIGNATURE', guardianSignature: { label, guardian: 'PrincipalWallet', transaction: `tx-${message}`, message, lastValidBlockHeight: 1 }, ...extra };
+  };
+  let bootstrapped = false;
+  const base = { ...chain };
+  Object.assign(chain, {
+    walletGuardian: true,
+    async bootstrapWorkspace() {
+      if (!bootstrapped) return ask('bootstrap_mandate', () => { bootstrapped = true; });
+      return base.bootstrapWorkspace();
+    },
+    async approveAndExecuteException({ inputAmount, slippageBps, expectedNonce }) {
+      const q = { inputAmount, slippageBps, notionalMicroUsd: inputAmount };
+      if (q.notionalMicroUsd <= chain.st.maxAction) return { status: 'NOT_REQUIRED', code: 'ExceptionNotRequired', quote: q };
+      return ask('grant_allowance_once', () => {}, { pendingException: { inputAmount, expectedNonce, allowance: 'AllowancePda', requestHash: 'ab'.repeat(32), quote: q } });
+    },
+    async setMandateStatus({ status }) {
+      return ask('set_mandate_status', () => { chain.st.status = status; chain.st.nonce += 1; chain.st.version += 1; });
+    },
+    async submitGuardianTransaction({ signedTransaction, expectedMessage }) {
+      if (signedTransaction !== `signed:tx-${expectedMessage}`) throw new Error('WORLD_FAIR_GUARDIAN_TRANSACTION_ALTERED');
+      prepared.get(expectedMessage)();
+      return { status: 'CONFIRMED', signature: `walletSig-${expectedMessage}`.padEnd(64, 'w') };
+    },
+    async executeGrantedException({ pending, grantSignature }) {
+      chain.st.spent += pending.inputAmount;
+      return { status: 'EXECUTED', grant: { signature: grantSignature, allowance: pending.allowance }, executionSignature: 'execSig'.padEnd(64, 'e'), allowanceConsumed: true, quote: pending.quote, standingMandateVersionBefore: chain.st.version, standingMandateVersionAfter: chain.st.version, standingAuthorityChanged: false };
+    }
+  });
+  return chain;
+}
+
+test('principal-wallet guardian: bootstrap, approval and pause all wait for the wallet-signed transaction', async () => {
+  const now = Date.parse('2026-10-12T12:00:00Z');
+  const chain = walletGuardianChain();
+  const factoryCalls = [];
+  const wf = createWorldFairWorkflow({ store: createMemoryWorkflowStore(), chainFactory: (args) => { factoryCalls.push(args); return chain; }, clock: () => now });
+  const created = await wf.createWorkspace({ name: 'Family', useCase: 'family', guardianMode: 'principal-wallet' });
+  assert.equal(created.body.guardianMode, 'principal-wallet');
+  assert.equal(created.body.truthBoundary.onChainGuardian, 'PRINCIPAL_WALLET_NON_CUSTODIAL');
+  const id = created.body.id;
+  const bearer = (role) => `Bearer ${created.body.tokens[role]}`;
+
+  // No wallet yet: there is no guardian to sign.
+  await rejectsWith(() => wf.bootstrap(id, bearer('principal')), 409, 'PRINCIPAL_WALLET_REQUIRED');
+  const secret = ed25519.utils.randomPrivateKey();
+  const pub = new PublicKey(ed25519.getPublicKey(secret)).toBase58();
+  const issuedAt = new Date(now).toISOString();
+  const sign = (message) => Buffer.from(ed25519.sign(new TextEncoder().encode(message), secret)).toString('base64');
+  await wf.bindWallet(id, bearer('principal'), { publicKey: pub, issuedAt, signature: sign(walletBindingMessage({ workspaceId: id, issuedAt })) });
+
+  const boot = await wf.bootstrap(id, bearer('principal'));
+  assert.equal(boot.status, 202);
+  assert.equal(factoryCalls.at(-1).guardianWallet, pub);
+  const op = boot.body.needsGuardianSignature;
+  await rejectsWith(() => wf.submitGuardian(id, bearer('operator'), { opId: op.opId, signedTransaction: 'x' }), 403, 'ROLE_FORBIDDEN');
+  const ready = await wf.submitGuardian(id, bearer('principal'), { opId: op.opId, signedTransaction: `signed:${op.transaction}` });
+  assert.equal(ready.status, 200);
+  assert.equal(ready.body.chain.status, 'READY');
+  // One submission per prepared transaction.
+  await rejectsWith(() => wf.submitGuardian(id, bearer('principal'), { opId: op.opId, signedTransaction: `signed:${op.transaction}` }), 410, 'GUARDIAN_OP_EXPIRED');
+
+  const pending = await wf.submitIntent(id, bearer('operator'), { inputAmount: 700_000 });
+  const rid = pending.body.request.id;
+  await rejectsWith(() => wf.decide(id, rid, bearer('risk'), { decision: 'APPROVE' }), 403, 'PRINCIPAL_WALLET_APPROVAL_REQUIRED');
+  const grantOp = await wf.decide(id, rid, bearer('principal'), { decision: 'APPROVE' });
+  assert.equal(grantOp.status, 202);
+  assert.equal(grantOp.body.needsGuardianSignature.kind, 'GRANT');
+  // Until the wallet signs, nothing is granted: the request is still pending.
+  assert.equal((await wf.listRequests(id)).body.requests.find((r) => r.id === rid).status, 'PENDING');
+  const g = grantOp.body.needsGuardianSignature;
+  await rejectsWith(() => wf.submitGuardian(id, bearer('principal'), { opId: g.opId, signedTransaction: 'signed:tx-something-else' }), 400, 'GUARDIAN_TRANSACTION_ALTERED');
+
+  const grantOp2 = await wf.decide(id, rid, bearer('principal'), { decision: 'APPROVE' });
+  const g2 = grantOp2.body.needsGuardianSignature;
+  const done = await wf.submitGuardian(id, bearer('principal'), { opId: g2.opId, signedTransaction: `signed:${g2.transaction}` });
+  assert.equal(done.body.request.status, 'EXECUTED');
+  assert.equal(done.body.request.grant.signature.startsWith('walletSig-'), true);
+  assert.equal(done.body.request.decision.walletProof.grantTransactionSignedByGuardianWallet, true);
+
+  const pause = await wf.setStatus(id, bearer('principal'), { status: 'PAUSED' });
+  assert.equal(pause.status, 202);
+  assert.equal(chain.st.status, 'ACTIVE', 'not paused until the wallet signs');
+  const p = pause.body.needsGuardianSignature;
+  await wf.submitGuardian(id, bearer('principal'), { opId: p.opId, signedTransaction: `signed:${p.transaction}` });
+  assert.equal(chain.st.status, 'PAUSED');
+  const history = (await wf.history(id)).body.events.map((e) => e.type);
+  assert.ok(history.includes('MANDATE_STATUS_CHANGED'));
+  assert.ok(history.includes('EXCEPTION_EXECUTED'));
+});
+
+test('principal-wallet guardian: the guardian wallet cannot be swapped after bootstrap', async () => {
+  const now = Date.parse('2026-10-12T12:00:00Z');
+  const chain = walletGuardianChain();
+  const wf = createWorldFairWorkflow({ store: createMemoryWorkflowStore(), chainFactory: () => chain, clock: () => now });
+  const created = await wf.createWorkspace({ guardianMode: 'principal-wallet' });
+  const id = created.body.id;
+  const bearer = (role) => `Bearer ${created.body.tokens[role]}`;
+  const issuedAt = new Date(now).toISOString();
+  const bind = async () => {
+    const secret = ed25519.utils.randomPrivateKey();
+    const pub = new PublicKey(ed25519.getPublicKey(secret)).toBase58();
+    const signature = Buffer.from(ed25519.sign(new TextEncoder().encode(walletBindingMessage({ workspaceId: id, issuedAt })), secret)).toString('base64');
+    return wf.bindWallet(id, bearer('principal'), { publicKey: pub, issuedAt, signature });
+  };
+  await bind();
+  const op = (await wf.bootstrap(id, bearer('principal'))).body.needsGuardianSignature;
+  await wf.submitGuardian(id, bearer('principal'), { opId: op.opId, signedTransaction: `signed:${op.transaction}` });
+  await rejectsWith(bind, 409, 'GUARDIAN_WALLET_FIXED');
+});

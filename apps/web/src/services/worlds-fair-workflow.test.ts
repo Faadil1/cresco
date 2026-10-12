@@ -4,6 +4,7 @@ import { configureCrescoBackend } from "./cresco-backend";
 import {
   devUsdc,
   parseShareFragment,
+  setGuardianSigner,
   shareLink,
   toBase,
   usd,
@@ -13,6 +14,7 @@ import {
 
 afterEach(() => {
   configureCrescoBackend(null);
+  setGuardianSigner(null);
   vi.unstubAllGlobals();
 });
 
@@ -50,6 +52,30 @@ describe("World's Fair workflow client", () => {
     await expect(workflowApi.decide("ws-abcdef12", "req-1", "t", { decision: "APPROVE" })).rejects.toBeInstanceOf(WorkflowApiError);
     vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("Failed to fetch"); }));
     await expect(workflowApi.history("ws-abcdef12")).rejects.toMatchObject({ code: "NETWORK_UNAVAILABLE" });
+  });
+
+  it("principal-wallet guardian: a 202 signature request is signed by the wallet and submitted", async () => {
+    configureCrescoBackend({ url: "https://api.example.test", execution: "runtime" });
+    const request = { opId: "gop_1", kind: "LIFECYCLE", label: "set_mandate_status", guardian: "Wallet111", transaction: "dHg=", expiresAt: "2026-10-12T12:01:30Z", submitTo: "/workspaces/ws-abcdef12/guardian/submit" };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(json(202, { needsGuardianSignature: request }))
+      .mockResolvedValueOnce(json(200, { staleRequests: 0 }));
+    vi.stubGlobal("fetch", fetchMock);
+    // No signer: never pretend the action happened.
+    await expect(workflowApi.setStatus("ws-abcdef12", "wf_principal_x", "PAUSED")).rejects.toMatchObject({ code: "GUARDIAN_SIGNER_UNAVAILABLE" });
+
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValueOnce(json(202, { needsGuardianSignature: request })).mockResolvedValueOnce(json(200, { staleRequests: 2 }));
+    const signer = vi.fn(async () => "c2lnbmVk");
+    setGuardianSigner(signer);
+    const res = await workflowApi.setStatus("ws-abcdef12", "wf_principal_x", "PAUSED");
+    expect(res.staleRequests).toBe(2);
+    expect(signer).toHaveBeenCalledWith(request);
+    const [url, init] = fetchMock.mock.calls[1] as unknown as [string, RequestInit];
+    expect(url).toBe("https://api.example.test/api/v0.4/worlds-fair/workspaces/ws-abcdef12/guardian/submit");
+    expect((init.headers as Record<string, string>).authorization).toBe("Bearer wf_principal_x");
+    expect(JSON.parse(String(init.body))).toEqual({ opId: "gop_1", signedTransaction: "c2lnbmVk" });
   });
 
   it("refuses to call an unconfigured API", async () => {
