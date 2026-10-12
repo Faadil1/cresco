@@ -92,35 +92,160 @@ export type StoryRole = "parent" | "teen" | "request" | "approved" | "capital";
 
 export function StoryVignette({ role, className, title }: ArtProps & { role: StoryRole }) {
   const parent = role === "parent" || role === "approved";
-  const capital = role === "capital";
-  const tone = capital ? "#d7e8e4" : parent ? "#ead9c4" : "#e8e0f3";
-  const shirt = capital ? "#245669" : parent ? "#37684b" : "#a18bd0";
+  const teen = role === "teen" || role === "request";
+  const operator = role === "capital";
+  const shirt = parent ? "#386a50" : teen ? "#8f78bb" : "#31576c";
+  const skin = parent ? "#dfaa87" : teen ? "#e7b58d" : "#a97554";
+  const palette = parent ? "#f1e2cb" : teen ? "#e8dcf3" : "#dbe9e4";
+  const sceneId = `cresco-editorial-${role}`;
+  const label = title ?? (operator
+    ? "Illustrated professional reviewing a delegated financial mandate"
+    : parent
+      ? "Illustrated parent reviewing a CRESCO request at home"
+      : "Illustrated teenager learning to make a decision with CRESCO");
+
   return (
-    <svg viewBox="0 0 350 200" className={className} {...a11y(title ?? (capital ? "Illustrated capital operator at a desk" : parent ? "Illustrated parent using CRESCO" : "Illustrated teen using CRESCO"))}>
+    <svg
+      viewBox="0 0 350 200"
+      className={className}
+      {...a11y(label)}
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <defs>
-        <linearGradient id={`scene-warm-${role}`} x1="0" x2="1" y1="0" y2="1"><stop stopColor="#fffaf0"/><stop offset="1" stopColor={tone}/></linearGradient>
+        <linearGradient id={`${sceneId}-wall`} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop stopColor="#fffaf1" />
+          <stop offset="58%" stopColor={palette} />
+          <stop offset="100%" stopColor="#e6d4b9" />
+        </linearGradient>
+        <radialGradient id={`${sceneId}-light`}>
+          <stop stopColor="#fffdf0" stopOpacity=".96" />
+          <stop offset="100%" stopColor="#fff8ea" stopOpacity="0" />
+        </radialGradient>
+        <linearGradient id={`${sceneId}-skin`} x1="10%" y1="0%" x2="90%" y2="100%">
+          <stop stopColor="#f6cda7" />
+          <stop offset="46%" stopColor={skin} />
+          <stop offset="100%" stopColor={parent ? "#bc785e" : teen ? "#ce8d70" : "#845039"} />
+        </linearGradient>
+        <linearGradient id={`${sceneId}-cloth`} x1="0%" y1="0%" x2="95%" y2="100%">
+          <stop stopColor={parent ? "#56856b" : teen ? "#b6a4df" : "#547f90"} />
+          <stop offset="100%" stopColor={shirt} />
+        </linearGradient>
+        <linearGradient id={`${sceneId}-wood`} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop stopColor="#e9be94" />
+          <stop offset="100%" stopColor="#bc8662" />
+        </linearGradient>
+        <filter id={`${sceneId}-soft-shadow`} x="-35%" y="-35%" width="170%" height="190%">
+          <feDropShadow dx="0" dy="5" stdDeviation="5" floodColor="#564030" floodOpacity=".15" />
+        </filter>
       </defs>
-      <rect width="350" height="200" rx="24" fill={`url(#scene-warm-${role})`}/>
-      <circle cx="280" cy="46" r="64" fill="#fffaf1" opacity=".68"/>
-      <path d="M0 173c65-30 116-24 184-12s113-2 166-21v60H0z" fill="#d7cfb4" opacity=".45"/>
-      <path d="M25 149V40m0 55C2 83 0 57 11 45c18 9 19 33 14 50zm0-18c9-33 29-37 39-30-8 23-20 27-39 30z" fill="#7f9e70"/>
-      {/* Shift the figure into frame; a portrait should not be cut off at the right edge. */}
-      <g transform="translate(-32 0)">
-      <path d="M242 200c-2-54 28-87 73-87 42 0 67 29 70 87z" fill={shirt}/>
-      <path d="M270 134c-14-16-16-45-12-60 6-30 19-47 49-47 34 0 54 29 50 63-3 24-13 46-31 57z" fill="#342b29"/>
-      <ellipse cx="308" cy="91" rx="37" ry="45" fill={parent?"#dfa77f":"#e5ae82"}/>
-      <path d="M271 89c-3-36 13-59 44-60 31-1 49 23 45 58-9-12-14-24-21-34-18 14-42 10-57 25l-11 11z" fill="#382b2a"/>
-      {parent?<ellipse cx="347" cy="42" rx="15" ry="17" fill="#382b2a"/>:null}
-      <path d="M291 94c5-3 11-3 15 0m20 0c5-3 10-3 14 0" stroke="#5f3e35" strokeWidth="2" fill="none" strokeLinecap="round"/>
-      <circle cx="300" cy="99" r="2.5" fill="#3c302d"/><circle cx="331" cy="99" r="2.5" fill="#3c302d"/>
-      <path d="M314 102c-3 8-4 11 1 13m-12 9c7 5 17 6 24 0" stroke="#a16d56" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-      <path d="M233 200c1-26 18-41 43-56l21 21-16 35z" fill={shirt}/>
-      <path d="M261 177c13-10 27-11 40-2l5 23h-44z" fill="#e5ae82"/>
-      <rect x="279" y="146" width="42" height="67" rx="7" fill="#343d45" transform="rotate(10 279 146)"/>
-      <rect x="283" y="151" width="33" height="52" rx="3" fill="#5e7173" transform="rotate(10 283 151)"/>
+
+      <rect width="350" height="200" rx="24" fill={`url(#${sceneId}-wall)`} />
+      <ellipse cx="263" cy="49" rx="139" ry="93" fill={`url(#${sceneId}-light)`} />
+      <path d="M0 142c65-11 121-12 177-3 70 13 116-4 173-12v73H0z" fill="#dfd5bf" opacity=".55" />
+
+      {/* Familiar home details and a small sense of place, never mock financial evidence. */}
+      <rect x="197" y="11" width="135" height="120" rx="8" fill="#fffaf0" stroke="#dccbb5" strokeWidth="5" opacity=".65" />
+      <rect x="206" y="20" width="117" height="101" rx="3" fill="#f5f3da" opacity=".8" />
+      <path d="M264 20v101M206 70h117" stroke="#fff9ec" strokeWidth="5" opacity=".78" />
+      <path d="M206 97c32-20 60-20 117-36v60H206z" fill="#acd0ae" opacity=".45" />
+      <path d="M20 160V72m0 53C1 112-1 95 7 82c18 6 20 24 13 43zm1-23c7-24 23-29 33-25-4 18-14 25-33 25z" stroke="#5c845e" strokeWidth="2.5" fill="#789e72" strokeLinejoin="round" />
+      <rect x="4" y="156" width="31" height="27" rx="5" fill="#dca886" />
+      <ellipse cx="19" cy="182" rx="21" ry="4" fill="#8e705d" opacity=".15" />
+      <path d="M59 157h88" stroke="#9a9b87" strokeWidth="3" opacity=".4" />
+      <rect x="63" y="128" width="44" height="31" rx="4" fill="#d2bda2" opacity=".4" />
+      <path d="M71 135h30m-30 7h22m-22 7h18" stroke="#fffaf0" opacity=".7" strokeWidth="2.5" strokeLinecap="round" />
+
+      {/* Dimensional figure, with independent adult / adolescent / operator poses. */}
+      <ellipse cx="274" cy="189" rx="88" ry="10" fill="#82634d" opacity=".14" />
+      <g filter={`url(#${sceneId}-soft-shadow)`}>
+        <path d="M189 202c-2-24 4-47 22-62 13-11 32-16 58-16 26 0 47 7 60 23 11 14 17 33 17 55z" fill={`url(#${sceneId}-cloth)`} />
+        <path d="M208 149c7 15 10 33 10 52m110-50c-11 17-13 29-14 50" fill="none" stroke="#fff9eb" strokeWidth="2.5" strokeOpacity=".2" />
+        {teen ? (
+          <>
+            <path d="M237 136c13 10 41 15 69 0l-14-12-47-1z" fill="#d5c8ed" stroke="#ede5fa" strokeWidth="2" />
+            <path d="M241 150c5 9 16 14 27 15 15-1 26-6 32-15M270 162v41" fill="none" stroke="#e8dcfa" strokeWidth="2.5" opacity=".5" />
+            <path d="M248 158l-7 17m51-17 7 17" fill="none" stroke="#eee4fd" strokeWidth="2" strokeLinecap="round" />
+          </>
+        ) : operator ? (
+          <>
+            <path d="M236 132l30 28-13 37-27-54zm62-1l-33 29 15 38 30-56z" fill="#23445b" opacity=".7" />
+            <path d="M251 134l15 23 15-23-5-6h-22z" fill="#f0ede5" />
+            <path d="M264 158l-6 29 9 12 8-12-7-29z" fill="#aa9bc9" />
+          </>
+        ) : (
+          <>
+            <path d="M237 134c11 7 20 15 32 16 11-1 24-9 35-17" stroke="#9cbd9b" strokeWidth="3" fill="none" opacity=".6" />
+            <path d="M270 150c-3 15-1 31 1 51" stroke="#244c38" strokeWidth="2.5" fill="none" opacity=".35" />
+          </>
+        )}
       </g>
-      <path d="M0 188c140-11 242-4 350-13v25H0z" fill="#bf9472"/>
-      <path d="M0 188c113-8 224-4 350-13" stroke="#e5bb90" strokeWidth="5" fill="none"/>
+
+      {/* Hair behind face: material highlights create volume rather than a flat silhouette. */}
+      <path d="M223 80c-13-37 12-64 44-65 41-2 62 26 58 61-1 18-9 31-21 40l-61 2c-18-11-23-24-20-38z" fill={operator ? "#302826" : "#3d2a29"} />
+      {parent ? (
+        <>
+          <ellipse cx="317" cy="28" rx="22" ry="24" fill="#342829" />
+          <path d="M300 28c10-14 27-13 33 0" stroke="#6e4b40" strokeWidth="5" fill="none" strokeLinecap="round" />
+          <path d="M227 70c0-27 21-52 48-50" stroke="#725043" strokeWidth="6" fill="none" strokeLinecap="round" opacity=".8" />
+        </>
+      ) : teen ? (
+        <>
+          <path d="M227 60c-10-14 1-25 14-26 3-22 25-27 38-18 21-9 38 8 37 27 16 10 11 32 2 36-7-18-19-28-34-32-21 11-37 9-57 13z" fill="#342829" />
+          <path d="M235 46c11-13 22-14 34-11m12-8c13-5 24 1 29 14" stroke="#775145" strokeWidth="5" fill="none" strokeLinecap="round" />
+        </>
+      ) : (
+        <>
+          <path d="M225 69c-3-27 17-50 42-54 24-6 46 15 49 39-18-6-23-15-29-23-17 16-38 18-62 38z" fill="#292524" />
+          <path d="M236 44c14-21 35-25 51-20" stroke="#6e5147" strokeWidth="4" fill="none" strokeLinecap="round" />
+        </>
+      )}
+
+      {/* Face: shaped chin, cheek gradients, eyelids, brow, nose and natural smile. */}
+      <path d="M236 59c3-23 24-33 46-30 26 2 37 22 36 49l-3 23c-4 25-20 42-42 44-23 0-38-23-40-47z" fill={`url(#${sceneId}-skin)`} />
+      {teen ? (
+        <>
+          {/* A layered fringe reads as teenage hair rather than an uncovered adult forehead. */}
+          <path d="M235 55c3-19 20-27 36-28 18-2 38 8 41 25-10-7-20-9-31-9-8 9-19 12-29 10-5 5-11 7-17 8z" fill="#352829" />
+          <path d="M241 45c9-10 20-13 31-12m12 2c9 0 16 4 21 11" fill="none" stroke="#80604d" strokeWidth="3.8" strokeLinecap="round" opacity=".72" />
+          <path d="M247 57c10-6 18-6 26-11m5 5c6-4 13-7 23-4" fill="none" stroke="#4b3430" strokeWidth="3.6" strokeLinecap="round" />
+        </>
+      ) : null}
+      <path d="M239 74c2-20 18-33 34-36" stroke="#ffdfb9" strokeWidth="7" strokeLinecap="round" opacity=".28" fill="none" />
+      <path d="M307 79c2 22-8 39-19 47" stroke="#935d4e" strokeWidth="7" strokeLinecap="round" opacity=".16" fill="none" />
+      <ellipse cx="236" cy="99" rx="7" ry="13" fill={skin} />
+      <ellipse cx="316" cy="97" rx="6" ry="11" fill={skin} />
+      <ellipse cx="252" cy="102" rx="12" ry="8" fill="#c36e65" opacity=".1" />
+      <ellipse cx="303" cy="100" rx="10" ry="8" fill="#c36e65" opacity=".1" />
+      <path d="M244 83c6-5 13-5 19-2m27 0c6-4 13-4 18 1" stroke="#604237" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      <path d="M249 90c4-3 8-3 11 0m32 0c4-3 8-3 11 0" stroke="#66473e" strokeWidth="1.7" fill="none" strokeLinecap="round" />
+      <ellipse cx="255" cy="91" rx="2.3" ry="2.5" fill="#352b2b" />
+      <ellipse cx="298" cy="91" rx="2.3" ry="2.5" fill="#352b2b" />
+      <path d="M277 94c-3 8-5 15-1 17 2 2 6 2 8 0" stroke="#ab7260" strokeWidth="2.3" fill="none" strokeLinecap="round" />
+      <path d="M264 122c9 6 20 7 30-1" stroke="#925246" strokeWidth="2.8" fill="none" strokeLinecap="round" />
+      <path d="M268 127c8 3 15 3 22 0" stroke="#f4c5a6" strokeWidth="2" fill="none" opacity=".55" />
+      {operator ? (
+        <g fill="#e4f2ef" fillOpacity=".13" stroke="#354554" strokeWidth="2.4" strokeLinejoin="round">
+          <rect x="243" y="83" width="28" height="17" rx="5" />
+          <rect x="282" y="83" width="28" height="17" rx="5" />
+          <path d="M271 88c4-3 7-3 11 0M243 88l-7-3m74 3 6-3" fill="none" strokeLinecap="round" />
+          <path d="M249 87l5-2m34 2 5-2" stroke="#fffaf1" strokeOpacity=".4" strokeWidth="1.7" />
+        </g>
+      ) : null}
+      {parent ? <circle cx="315" cy="104" r="4" stroke="#d5b368" strokeWidth="2" fill="none" /> : null}
+
+      {/* Hand, sleeve, and tactile phone device — no simulated transaction state. */}
+      <path d="M301 160c13-12 27-11 43 7l6 33h-60z" fill={`url(#${sceneId}-cloth)`} />
+      <path d="M313 167c12-4 22-1 28 5" stroke="#e9e4cf" strokeWidth="2" opacity=".34" fill="none" />
+      <rect x="295" y="147" width="35" height="57" rx="6" fill="#2c3742" transform="rotate(8 295 147)" />
+      <rect x="299" y="151" width="27" height="47" rx="4" fill="#647b83" transform="rotate(8 299 151)" />
+      <circle cx="314" cy="156" r="2.5" fill="#adbbc0" />
+      <path d="M294 181c6-10 15-12 25-7l-1 19-26 6z" fill={`url(#${sceneId}-skin)`} />
+      <path d="M295 180c4-4 8-5 13-5" stroke="#f7d4b5" strokeWidth="2.4" opacity=".55" fill="none" strokeLinecap="round" />
+
+      {/* Warm foreground and grounding, soft grain implied through fine strokes. */}
+      <path d="M0 187c117-7 216-9 350-11v24H0z" fill={`url(#${sceneId}-wood)`} />
+      <path d="M0 187c118-10 218-9 350-11" stroke="#f4d3a9" strokeWidth="4" fill="none" />
+      <path d="M23 196c74-4 135-6 211-6" stroke="#956f54" strokeOpacity=".12" strokeWidth="2.5" fill="none" />
     </svg>
   );
 }
