@@ -6,6 +6,14 @@ CRESCO gives young people real room to make financial decisions inside family-se
 
 > **Learn in context. Act freely inside bounds. Ask for more freedom only at the boundary.**
 
+## For judges: CRESCO in 2 minutes
+
+1. **Try it:** https://cresco.faadil-casecraft.workers.dev (Family app, live family mandate, Delegated capital). Devnet only, demo tokens.
+2. **The mechanism:** under the limit the teen, strategy or AI agent acts alone; above it the Solana program refuses and creates one exact request; the principal approves that action once (with their own wallet in wallet mode); the limit never moves.
+3. **What is live, with receipts:** 5 of 5 repeatability cycles on the deployed API, median 2.7 s inside the mandate ([CURRENT-STATE](docs/worlds-fair/CURRENT-STATE-2026-10-12.md)); Phantom wallet as on-chain guardian: mandate, two exact approvals, pause, resume ([record](docs/worlds-fair/PRINCIPAL-WALLET-GUARDIAN.md#live-test-record-owner-phantom-solana-devnet-2026-10-12)).
+4. **What the program enforces vs the server:** [WHO-ENFORCES-WHAT](docs/worlds-fair/WHO-ENFORCES-WHAT.md).
+5. **Program:** `ABjE6V5q9VbD3CAHDXxvztY5kXQmDXHRcEP1kZ4KSSfk` on Solana Devnet. **Not claimed:** mainnet, custody, customers, revenue.
+
 ## Crypto World's Fair (Colosseum, October 2026)
 
 **Act alone inside the rules. Ask once for the exception.** The same Solana program now serves two cases: a teenager inside a parent's allowance, and a strategy or AI agent inside an allocator's mandate. Beyond the limit the program refuses, and the responsible person approves one exact action once, without widening the rules.
@@ -19,9 +27,8 @@ CRESCO gives young people real room to make financial decisions inside family-se
 
 ## Live product and proof
 
-- Product: https://cresco-lac.vercel.app
-- Demo video: https://www.youtube.com/watch?v=e8qMwzTrU4M
-- Technical video: https://youtu.be/hMjQcjsd-Ws
+- Product (current, World's Fair build): https://cresco.faadil-casecraft.workers.dev
+- Earlier Family-only build and videos (September, before the World's Fair work): https://cresco-lac.vercel.app · [demo video](https://www.youtube.com/watch?v=e8qMwzTrU4M) · [technical video](https://youtu.be/hMjQcjsd-Ws)
 - Current CRESCO API: https://keys-api-stocklana.faadil-casecraft.workers.dev
 - Repository: https://github.com/Faadil1/cresco
 - Network: Solana Devnet

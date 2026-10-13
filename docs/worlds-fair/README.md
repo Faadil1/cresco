@@ -1,6 +1,6 @@
 # CRESCO for the Crypto World's Fair
 
-Status on 2026-10-12: **live on Solana Devnet**, submitted to Colosseum's Crypto World's Fair.
+Status on 2026-10-12: **live on Solana Devnet**, entry for Colosseum's Crypto World's Fair.
 This folder is the single home of the World's Fair work. It replaces the separate
 `cresco-worlds-fair` repository, which is kept only as a pointer.
 
