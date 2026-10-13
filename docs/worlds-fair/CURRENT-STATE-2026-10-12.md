@@ -53,13 +53,18 @@ Each was reported as UNKNOWN or refused, never as success, then fixed:
 - workspace trade vault emptied (token program error 0x1); auto-refill added;
 - production bundle stripped an Orca read error message; retry fixed.
 
+## Verified live later the same day (owner, Phantom, Devnet)
+
+Recorded in [PRINCIPAL-WALLET-GUARDIAN.md](PRINCIPAL-WALLET-GUARDIAN.md#live-test-record-owner-phantom-solana-devnet-2026-10-12), workspace `ws-8431126ec17347e0`:
+- Family presentation on a fresh workspace.
+- Principal's own wallet as on-chain guardian: one wallet-signed bootstrap, two exact approvals executed once, standing limit unchanged.
+- Pause, then refusal by the program (`MandateNotActive`), then resume.
+
 ## Not yet verified live
 
-- Family presentation on a fresh workspace (code tested, same program path).
-- Wallet-bound principal approval with Phantom (Ed25519 verification in the grant transaction is unit-tested).
-- Pause then refusal path on the deployed API (unit-tested).
+- Revoke, limit revision and asset-rule edits in wallet mode (same code path as pause and resume).
 
 ## Known limits
 
-- Guardian and workspace delegates are server-held Devnet keys; the principal wallet signs approvals, the server signs the grant. Next step: principal wallet as on-chain guardian.
+- In the default mode the guardian and workspace delegates are server-held Devnet keys. The opt-in wallet-guardian mode (LIVE, above) makes the principal's wallet the on-chain guardian; the operator's delegate key stays server-side.
 - Customer demand and pricing are not validated; discovery so far is expert evidence (see `research/`).
