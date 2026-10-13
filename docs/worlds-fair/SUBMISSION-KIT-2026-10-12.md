@@ -3,7 +3,7 @@
 Deadline: **Oct 12, 11:59 pm PT = Oct 13, 2:59 am ET**. Target: submitted by **2:00 am ET**.
 Everything submitted must be in English. Colosseum asks for a 2 to 3 minute presentation video and a product demo video of 3 minutes or less.
 
-Deck: the "CRESCO pitch deck" artifact (14 slides). Team slide filled (Faadil, Ukachi Benita); confirm Benita's wording with her if you can. Share it from the deck's Share menu, or export it to PDF, before pasting a link in Arena.
+Deck: the "CRESCO pitch deck" artifact (14 slides). Team slide filled (Faadil, Benita Ukachi); confirm Benita's wording with her if you can. Share it from the deck's Share menu, or export it to PDF, before pasting a link in Arena.
 
 ---
 
@@ -49,7 +49,7 @@ Deck on screen, full screen. Speak slowly. Lines in quotes are what you say.
 "Next, we test a fee per active mandate or per approved exception with agent builders and small funds, and a family plan once regulated partners hold real money. In 90 days: user tests, the wallet guardian by default, design partners, then a security review before any mainnet step."
 
 **[Slide 13 · Team] 2:40 to 2:50**
-"I'm a business performance analyst with an MBA in business analytics and a finance background, and I built CRESCO end to end. Ukachi Benita is an AI engineer who builds trading agents on on-chain data: exactly the operator side of delegated capital."
+"I'm a business performance analyst with an MBA in business analytics and a finance background, and I built CRESCO end to end. Benita Ukachi is an AI engineer who builds trading agents on on-chain data: exactly the operator side of delegated capital."
 
 **[Slide 14 · Close] 2:50 to 2:58**
 "CRESCO: freedom inside the line, one exact yes above it. We're looking for design partners. Thanks."
@@ -116,7 +116,7 @@ Solana (Devnet), Anchor, Pyth (price verified on-chain; Hermes for learning pric
 
 **Team**
 - Faadil Boussari, founder. Business performance analyst in public transit (Gatineau). MBA in Business Analytics (Université Laval), B.Sc. in Finance (UQO). Designed and built CRESCO end to end: Solana program integration, API, web app, MCP server.
-- Ukachi Benita, AI engineer (agents and pitch). Builds agentic and on-chain tools: SpecterAI, a trading agent on on-chain data with Claude, and DealRoom, an AI-assisted trustless OTC escrow. GitHub: Benita2001.
+- Benita Ukachi, AI engineer (agents and pitch). Builds agentic and on-chain tools: SpecterAI, a trading agent on on-chain data with Claude, and DealRoom, an AI-assisted trustless OTC escrow. GitHub: Benita2001.
 
 **Location**
 Gatineau, Québec, Canada
@@ -148,5 +148,5 @@ Developer channels first: open-source repo, MCP server listing for agent framewo
 - [ ] GitHub repo is public (or hackathon@colosseum.com has access).
 - [ ] No role token, workspace link or private key in any video, screenshot or text.
 - [ ] Every claim matches: Devnet only, Phantom LIVE, 5 of 5, 2.7 s, no customers.
-- [ ] Team slide and Arena team field match (Faadil, Ukachi Benita).
+- [ ] Team slide and Arena team field match (Faadil, Benita Ukachi).
 - [ ] Submitted by the team leader, confirmation screenshot saved.
