@@ -14,7 +14,7 @@ CRESCO gives young people real room to make financial decisions inside family-se
 2. **The mechanism:** under the limit the teen, strategy or AI agent acts alone; above it the Solana program refuses and creates one exact request; the principal approves that action once (with their own wallet in wallet mode); the limit never moves.
 3. **What is live, with receipts:** 5 of 5 repeatability cycles on the deployed API, median 2.7 s inside the mandate ([CURRENT-STATE](docs/worlds-fair/CURRENT-STATE-2026-10-12.md)); Phantom wallet as on-chain guardian: mandate, two exact approvals, pause, resume ([record](docs/worlds-fair/PRINCIPAL-WALLET-GUARDIAN.md#live-test-record-owner-phantom-solana-devnet-2026-10-12)).
 4. **What the program enforces vs the server:** [WHO-ENFORCES-WHAT](docs/worlds-fair/WHO-ENFORCES-WHAT.md).
-5. **Program:** `ABjE6V5q9VbD3CAHDXxvztY5kXQmDXHRcEP1kZ4KSSfk` on Solana Devnet. **Not claimed:** mainnet, custody, customers, revenue.
+5. **Program (World's Fair build, runs the live desk):** `7pgPuPZSUUtFcvFtVGmS3piCE1bHY35kjb14vct9v45Z` on Solana Devnet ([REALITY-LEDGER](docs/worlds-fair/governance/REALITY-LEDGER.md)). The earlier September Family build used `ABjE6V5q9VbD3CAHDXxvztY5kXQmDXHRcEP1kZ4KSSfk`. **Not claimed:** mainnet, custody, customers, revenue.
 
 ## Crypto World's Fair (Colosseum, October 2026)
 
@@ -34,7 +34,8 @@ CRESCO gives young people real room to make financial decisions inside family-se
 - Current CRESCO API: https://keys-api-stocklana.faadil-casecraft.workers.dev
 - Repository: https://github.com/Faadil1/cresco
 - Network: Solana Devnet
-- Program: `ABjE6V5q9VbD3CAHDXxvztY5kXQmDXHRcEP1kZ4KSSfk`
+- Program (World's Fair build, live desk): `7pgPuPZSUUtFcvFtVGmS3piCE1bHY35kjb14vct9v45Z`
+- Program (earlier September Family build): `ABjE6V5q9VbD3CAHDXxvztY5kXQmDXHRcEP1kZ4KSSfk`
 - Canonical exact-action proof: https://github.com/Faadil1/cresco/actions/runs/36150024852
 - Verified Node/API quality proof: https://github.com/Faadil1/cresco/actions/runs/36178796069
 - Verified web CI: https://github.com/Faadil1/cresco/actions/runs/36178751111
