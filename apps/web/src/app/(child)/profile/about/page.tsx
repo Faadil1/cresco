@@ -13,7 +13,10 @@ import {
 } from "@/services/cresco-backend";
 import { useStore } from "@/state/store";
 
+// Two Devnet builds of the same program source. The Family proof lane below still runs on the
+// September build; the World's Fair desk (Family and Delegated capital) runs on the newer one.
 const PROGRAM_ID = "ABjE6V5q9VbD3CAHDXxvztY5kXQmDXHRcEP1kZ4KSSfk";
+const WORLDS_FAIR_PROGRAM_ID = "7pgPuPZSUUtFcvFtVGmS3piCE1bHY35kjb14vct9v45Z";
 
 export default function AboutPage() {
   const { state, dispatch } = useStore();
@@ -119,7 +122,8 @@ export default function AboutPage() {
         <dl className="mt-3 space-y-2 text-[13px]">
           <Detail k="Authority engine" v="CRESCO bounded-autonomy Mandate (contract v0.2, frozen)" />
           <Detail k="Backend" v={caps.backend === "none" ? "Not configured, using the local policy preview" : `CRESCO API at ${crescoApiUrl()}`} />
-          <Detail k="Solana program (devnet)" v={PROGRAM_ID} mono />
+          <Detail k="Solana program, World's Fair desk (devnet)" v={WORLDS_FAIR_PROGRAM_ID} mono />
+          <Detail k="Solana program, Family proof lane below (devnet)" v={PROGRAM_ID} mono />
           <Detail
             k="Money execution from this app"
             v={caps.execution === "cresco-runtime" ? "AAPL Money lane executes on Solana Devnet with demo-token capital" : "Not connected (demo only)"}
@@ -127,14 +131,24 @@ export default function AboutPage() {
           <Detail k="Mandate version" v={`v${state.mandate.version} · nonce ${state.mandate.nonce}`} />
           <Detail k="Proven live market feed" v="Pyth Pro Equity.US.AAPL/USD (server-side only)" />
         </dl>
-        <a
-          className="mt-3 inline-block text-[13px] font-semibold text-blue hover:underline"
-          href={`https://explorer.solana.com/address/${PROGRAM_ID}?cluster=devnet`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          View program on Solana Explorer
-        </a>
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+          <a
+            className="inline-block text-[13px] font-semibold text-blue hover:underline"
+            href={`https://explorer.solana.com/address/${WORLDS_FAIR_PROGRAM_ID}?cluster=devnet`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            View World&apos;s Fair program on Solana Explorer
+          </a>
+          <a
+            className="inline-block text-[13px] font-semibold text-blue hover:underline"
+            href={`https://explorer.solana.com/address/${PROGRAM_ID}?cluster=devnet`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            View Family proof-lane program
+          </a>
+        </div>
 
         <div className="mt-4 rounded-[16px] border border-line-soft bg-surface-soft p-3.5">
           <p className="text-[13px] font-semibold text-navy-strong">Live Solana proof lane</p>

@@ -1,60 +1,61 @@
 # CRESCO
 
-**Act alone inside the rules, ask once above them.** One Solana program for money that is not fully yours: a teenager's allowance, or capital handed to a strategy or an AI agent.
+**Act alone inside the rules. Ask once for the exception.**
 
-**Financial independence should not happen all at once.**
+CRESCO is one Solana program for money that is not fully yours: a teenager's allowance, or capital handed to a strategy or an AI agent. The principal sets a standing limit (the **Key**, a versioned Mandate). Inside it, the teen, strategy or agent acts alone, with no approval queue. At the limit, the program refuses and creates one exact request. The principal approves that single action once, and the limit never moves.
 
-CRESCO gives young people real room to make financial decisions inside family-set boundaries. A guardian defines a standing **Key**, represented technically by a versioned Mandate. Inside that Key, the young person can act without asking for permission every time. At the boundary, CRESCO refuses, explains why, and lets the family decide what should happen next.
+> **The exception moved. The boundary did not.**
 
-> **Learn in context. Act freely inside bounds. Ask for more freedom only at the boundary.**
+Built for the Colosseum Crypto World's Fair (October 2026). Solana Devnet, demo tokens only.
 
-## For judges: CRESCO in 2 minutes
+## Try it in two minutes
 
-1. **Try it:** https://cresco.faadil-casecraft.workers.dev (Family app, live family mandate, Delegated capital). Devnet only, demo tokens.
-2. **The mechanism:** under the limit the teen, strategy or AI agent acts alone; above it the Solana program refuses and creates one exact request; the principal approves that action once (with their own wallet in wallet mode); the limit never moves.
-3. **What is live, with receipts:** 5 of 5 repeatability cycles on the deployed API, median 2.7 s inside the mandate ([CURRENT-STATE](docs/worlds-fair/CURRENT-STATE-2026-10-12.md)); Phantom wallet as on-chain guardian: mandate, two exact approvals, pause, resume ([record](docs/worlds-fair/PRINCIPAL-WALLET-GUARDIAN.md#live-test-record-owner-phantom-solana-devnet-2026-10-12)).
-4. **What the program enforces vs the server:** [WHO-ENFORCES-WHAT](docs/worlds-fair/WHO-ENFORCES-WHAT.md).
-5. **Program (World's Fair build, runs the live desk):** `7pgPuPZSUUtFcvFtVGmS3piCE1bHY35kjb14vct9v45Z` on Solana Devnet ([REALITY-LEDGER](docs/worlds-fair/governance/REALITY-LEDGER.md)). The earlier September Family build used `ABjE6V5q9VbD3CAHDXxvztY5kXQmDXHRcEP1kZ4KSSfk`. **Not claimed:** mainnet, custody, customers, revenue.
+| Step | What to do | What you should see |
+| --- | --- | --- |
+| 1 | Open the [live desk](https://cresco.faadil-casecraft.workers.dev/worlds-fair/desk), pick **Family** or **Delegated capital** | A live mandate with its limit |
+| 2 | Act inside the limit | ALLOW, executed on Devnet, no approval asked |
+| 3 | Act above the limit | REFUSE, with the program's reason code, and one exact request created |
+| 4 | Approve that request once as the principal | The single action executes; the standing limit is unchanged |
+| 5 | Replay or change the approved action | REFUSE (`AllowanceAlreadyUsed`, `AllowanceActionMismatch`) |
 
-## Crypto World's Fair (Colosseum, October 2026)
+Product entry: https://cresco.faadil-casecraft.workers.dev. Principal-wallet mode lets the parent's or allocator's own Phantom wallet sign the mandate, every exact exception, pause and resume.
 
-**Act alone inside the rules. Ask once for the exception.** The same Solana program now serves two cases: a teenager inside a parent's allowance, and a strategy or AI agent inside an allocator's mandate. Beyond the limit the program refuses, and the responsible person approves one exact action once, without widening the rules.
+## What is real, with receipts
 
-- Live desk (Family or Delegated capital): https://cresco.faadil-casecraft.workers.dev/worlds-fair/desk
-- What is live, with Devnet receipts and the 5 of 5 repeatability campaign: [docs/worlds-fair/CURRENT-STATE-2026-10-12.md](docs/worlds-fair/CURRENT-STATE-2026-10-12.md)
-- Everything about the World's Fair work (product, discovery, evidence): [docs/worlds-fair/](docs/worlds-fair/README.md)
+| Claim | Evidence |
+| --- | --- |
+| Exact exception executed on Devnet by the program | [Explorer transaction `5QH3cn...otFE3`](https://explorer.solana.com/tx/5QH3cn1ReQTaK4bvSc2wiwmXhzi8jFKJkKzoLWNndJTbgNS1cSDTKMf8sU8B7FXazu5nHhc1ubAP7ZpYBe9otFE3?cluster=devnet): instruction `ExecuteSwapOnceWithPyth`, log `CRESCO_ORCA_EXCEPTION_SWAP` with `input_amount=750000`, `min_output=742497`, `nonce=3`, `consumed=true` |
+| Repeatable on the deployed API | 5 of 5 full cycles, median 2.7 s inside the mandate ([CURRENT-STATE](docs/worlds-fair/CURRENT-STATE-2026-10-12.md)) |
+| Parent wallet as on-chain guardian | Phantom on Devnet: mandate, two exact approvals, pause, resume ([record](docs/worlds-fair/PRINCIPAL-WALLET-GUARDIAN.md#live-test-record-owner-phantom-solana-devnet-2026-10-12)) |
+| Pause stops the agent | Live refusal with `MandateNotActive` after pause |
+| Program vs server responsibilities | [WHO-ENFORCES-WHAT](docs/worlds-fair/WHO-ENFORCES-WHAT.md) |
+| Reality ledger (what is live, what is not) | [REALITY-LEDGER](docs/worlds-fair/governance/REALITY-LEDGER.md) |
+
+**Programs on Solana Devnet**
+
+- World's Fair desk (live product): [`7pgPuPZSUUtFcvFtVGmS3piCE1bHY35kjb14vct9v45Z`](https://explorer.solana.com/address/7pgPuPZSUUtFcvFtVGmS3piCE1bHY35kjb14vct9v45Z?cluster=devnet)
+- September Family build (still behind the Family proof lane): [`ABjE6V5q9VbD3CAHDXxvztY5kXQmDXHRcEP1kZ4KSSfk`](https://explorer.solana.com/address/ABjE6V5q9VbD3CAHDXxvztY5kXQmDXHRcEP1kZ4KSSfk?cluster=devnet)
+
+**Not claimed:** mainnet, custody, brokerage, real securities, customers, revenue. Revoke in wallet mode is not shown live yet.
 
 > "What I find exciting about CRESCO is the ability to approve one exact exception without widening the agent's standing mandate. Through my work on Sanction, I recognize how much that boundary matters, and I'm excited about CRESCO's opportunity to carry that control all the way through to execution."
-> Eric Lovold, founder of Sanction (quoted with permission)
+> Eric Lovold, founder of Sanction (expert testimony, quoted with permission)
 
-## Live product and proof
+## One program, two settings
 
-- Product (current, World's Fair build): https://cresco.faadil-casecraft.workers.dev
-- Earlier Family-only build and videos (September, before the World's Fair work): https://cresco-lac.vercel.app · [demo video](https://www.youtube.com/watch?v=e8qMwzTrU4M) · [technical video](https://youtu.be/hMjQcjsd-Ws)
-- Current CRESCO API: https://keys-api-stocklana.faadil-casecraft.workers.dev
-- Repository: https://github.com/Faadil1/cresco
-- Network: Solana Devnet
-- Program (World's Fair build, live desk): `7pgPuPZSUUtFcvFtVGmS3piCE1bHY35kjb14vct9v45Z`
-- Program (earlier September Family build): `ABjE6V5q9VbD3CAHDXxvztY5kXQmDXHRcEP1kZ4KSSfk`
-- Canonical exact-action proof: https://github.com/Faadil1/cresco/actions/runs/36150024852
-- Verified Node/API quality proof: https://github.com/Faadil1/cresco/actions/runs/36178796069
-- Verified web CI: https://github.com/Faadil1/cresco/actions/runs/36178751111
-- Verified WebKit mobile CI: https://github.com/Faadil1/cresco/actions/runs/36178751051
-- Hosted market-discovery smoke: https://github.com/Faadil1/cresco/actions/runs/36178796222
-
-The current API URL keeps its original Cloudflare worker hostname so the already-deployed runtime stays reachable. It serves CRESCO and is treated only as a legacy infrastructure identifier.
-
-The current capital path moves a **demo SPL token**, not real securities. AAPL is the current proven Money lane with live Pyth market evidence. CRESCO does not claim brokerage, custody, mainnet execution, or real minor securities execution.
-
-## World's Fair: Family and Delegated capital workspace (v0.4, Devnet)
-
-- One entry for both settings at `/`; the shared workspace is `/worlds-fair/desk` (judge lab stays at `/worlds-fair`).
-- Opt-in **principal-wallet guardian**: the parent's or allocator's own wallet signs the mandate, every exact exception, pause and resume. LIVE on Devnet with Phantom on 2026-10-12 ([record](docs/worlds-fair/PRINCIPAL-WALLET-GUARDIAN.md#live-test-record-owner-phantom-solana-devnet-2026-10-12)).
-- AI agents as operator through MCP, with no tool to approve or widen their own limit: [`integrations/mcp`](integrations/mcp/README.md).
+- **Family:** a guardian sets a standing Key. The teenager acts freely inside it and asks for more room only at the boundary.
+- **Delegated capital:** an allocator sets a mandate for a strategy or AI agent. Agents reach CRESCO through MCP and have no tool to approve or widen their own limit ([`integrations/mcp`](integrations/mcp/README.md)).
 - Strategy API: `GET /api/v0.4/worlds-fair/openapi`, example client `examples/worlds-fair-strategy-client.mjs`.
-- Design, truth boundary, deploy and LIVE verification: [`docs/WORLDS-FAIR-OPERATOR-PRINCIPAL-WORKFLOW.md`](docs/WORLDS-FAIR-OPERATOR-PRINCIPAL-WORKFLOW.md).
-- Status: live on Devnet; 5 of 5 repeatability campaign on the deployed API ([evidence](docs/worlds-fair/CURRENT-STATE-2026-10-12.md)).
-- Who enforces what today (program vs CRESCO server): [docs/worlds-fair/WHO-ENFORCES-WHAT.md](docs/worlds-fair/WHO-ENFORCES-WHAT.md).
+- Design, truth boundary, deploy and verification: [`docs/WORLDS-FAIR-OPERATOR-PRINCIPAL-WORKFLOW.md`](docs/WORLDS-FAIR-OPERATOR-PRINCIPAL-WORKFLOW.md). Everything about the World's Fair work: [docs/worlds-fair/](docs/worlds-fair/README.md).
+
+## Links
+
+- Product: https://cresco.faadil-casecraft.workers.dev
+- API: https://keys-api-stocklana.faadil-casecraft.workers.dev (the hostname is a legacy Cloudflare identifier kept so the deployed runtime stays reachable)
+- Earlier September Family build and videos: https://cresco-lac.vercel.app · [demo](https://www.youtube.com/watch?v=e8qMwzTrU4M) · [technical](https://youtu.be/hMjQcjsd-Ws)
+- CI proofs: [exact-action proof](https://github.com/Faadil1/cresco/actions/runs/36150024852) · [Node/API](https://github.com/Faadil1/cresco/actions/runs/36178796069) · [web](https://github.com/Faadil1/cresco/actions/runs/36178751111) · [WebKit mobile](https://github.com/Faadil1/cresco/actions/runs/36178751051) · [hosted smoke](https://github.com/Faadil1/cresco/actions/runs/36178796222)
+
+The capital path moves a **demo SPL token**, not real securities. AAPL is the proven Money lane with live Pyth market evidence.
 
 ## The product model
 
