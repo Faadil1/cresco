@@ -109,7 +109,7 @@ export default function WelcomePage() {
             </section>
           </div>
         </section>
-        <footer className="mt-12 flex flex-wrap justify-between gap-3 border-t border-line pt-6 text-[12px] text-ink-2"><span>Solana Devnet · demo tokens only · no real funds or custody</span><Link href="/worlds-fair" className="font-semibold text-blue hover:underline">Inspect technical evidence →</Link></footer>
+        <footer className="mt-12 flex flex-wrap justify-between gap-3 border-t border-line pt-6 text-[12px] text-ink-2"><span>Solana Devnet · demo tokens only · no real funds or custody · <span className="font-mono" title="Commit this page was built from">build {(process.env.NEXT_PUBLIC_CRESCO_BUILD_SHA || "unknown").slice(0, 7)}</span></span><Link href="/worlds-fair" className="font-semibold text-blue hover:underline">Inspect technical evidence →</Link></footer>
       </div>
     </main>
   );

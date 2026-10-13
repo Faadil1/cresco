@@ -1,16 +1,16 @@
 version: 0.1.0
 project_id: cresco
-date: 2026-10-12
+date: 2026-10-12  # reconciled 2026-10-12 evening against main 2689c23
 status: ACTIVE
-lifecycle_state: POST_SLICE_LIVE_PRODUCT__WORLD_FAIR_DEVNET_PROVEN__PUBLIC_RUNTIME_BINDING_PENDING_PROTECTED_ACTION
+lifecycle_state: POST_SLICE_LIVE_PRODUCT__WORLD_FAIR_DEVNET_PROVEN__RUNTIME_BUILT_FROM_MAIN__ACTIVE_VERSION_CONFIRMATION_PENDING__EXTERNAL_VALIDATION_NOT_STARTED
 
 source_of_truth:
   repository: Faadil1/cresco
   branch: main
-  current_main_commit: 43e62dfb2f699772e2471a7456b0af67bfa61536  # re-resolve at every touch
+  current_main_commit: 2689c23a910ebd7ef8f56b9ea6b418dbd346af46  # PR #55 merge, 2026-10-12T23:35Z; re-resolve at every touch
   baseline_family_prd: product/PRD.md
   worlds_fair_living_prd: docs/worlds-fair/product/PRD.md  # consolidated into this repo 2026-10-12; cresco-worlds-fair is a pointer only
-  public_product: https://cresco.faadil-casecraft.workers.dev  # owner-deployed Worker 2026-10-12; exact deployed commit UNKNOWN until bound
+  public_product: https://cresco.faadil-casecraft.workers.dev  # Cloudflare Workers Builds deploys main; see release_binding
   public_product_previous: https://cresco-lac.vercel.app  # earlier host, not re-verified
   noncanonical_preview: cloudflare-pages:cresco-visual-lab  # build fails on every main commit since >=2026-10-03; not the runtime
   public_api: https://keys-api-stocklana.faadil-casecraft.workers.dev
@@ -103,13 +103,13 @@ conditional_gateway_registry:
   WORLD_FAIR_7_OF_7_DEVNET: PROVEN
   NEGATIVE_PATHS: PROVEN
   FAILURE_RECOVERY: PROVEN
-  PROTECTED_LIVE_WORKFLOW_TRIGGER_SAFETY: PROVEN_IN_THIS_CHANGESET_PENDING_MERGE
+  PROTECTED_LIVE_WORKFLOW_TRIGGER_SAFETY: PROVEN_ON_MAIN  # test/protected-workflow-boundary.test.mjs
   REAL_OPERATOR_PRINCIPAL_WORKFLOW: LIVE_DEVNET_VERIFIED__CAMPAIGN_5_OF_5
-  EXTERNAL_TARGET_OPERATOR_EVIDENCE: BLOCKED_VALIDATION_GAP
-  RUNTIME_COMMIT_BINDING: PARTIAL_PUBLIC_RUNTIME_BINDING_UNKNOWN_AFTER_PR29
-  PUBLIC_RUNTIME_REDEPLOY: BLOCKED_MISSING_CLOUDFLARE_GITHUB_SECRETS
-  POST_DEPLOY_CRITICAL_PATH: BLOCKED_BY_PUBLIC_RUNTIME_REDEPLOY
-  POST_DEPLOY_REPEATABILITY: BLOCKED_BY_PUBLIC_RUNTIME_REDEPLOY
+  EXTERNAL_TARGET_OPERATOR_EVIDENCE: NOT_STARTED__TESTER_KIT_READY  # docs/worlds-fair/USER-TEST-KIT-2026-10-12.md
+  RUNTIME_COMMIT_BINDING: PARTIAL__WORKERS_BUILDS_SUCCESS_ON_2689c23__ACTIVE_VERSION_AND_LIVE_RESPONSE_UNCONFIRMED
+  PUBLIC_RUNTIME_REDEPLOY: AUTOMATED__CLOUDFLARE_WORKERS_BUILDS_ON_MAIN
+  POST_DEPLOY_CRITICAL_PATH: PENDING_OWNER_VISUAL_AND_FLOW_CHECK_ON_2689c23
+  POST_DEPLOY_REPEATABILITY: NOT_RERUN_SINCE_CAMPAIGN_5_OF_5
   MAINNET: N_A_NOT_AUTHORIZED
   REAL_SECURITIES_EXECUTION: N_A_NOT_CLAIMED
   SUBMISSION_OR_RELEASE_READINESS: BLOCKED_BY_PRODUCT_DEPTH_AND_RUNTIME_BINDING
@@ -129,7 +129,7 @@ operator_principal_workflow_v0_4:
     CAP-06_venue_or_evidence_failure_rollback: PROVEN_LIVE_IN_LAB__REUSED_BUILDERS
     CAP-07_pause_resume_revoke_revise_with_stale_invalidation: IMPLEMENTED_LOCAL
     CAP-08_durable_history_with_receipts: IMPLEMENTED_LOCAL__DURABLE_OBJECT_STORE
-    CAP-09_public_self_serve_runtime: OWNER_DEPLOYED_2026-10-12__COMMIT_BINDING_UNKNOWN
+    CAP-09_public_self_serve_runtime: WORKERS_BUILDS_DEPLOYED_2689c23__ACTIVE_VERSION_UNCONFIRMED
     CAP-10_asset_rule_and_period_consumption: IMPLEMENTED_LOCAL
     CAP-11_notifications_poll_and_webhook: IMPLEMENTED_LOCAL
     CAP-12_strategy_api_openapi_example_client: IMPLEMENTED_LOCAL
@@ -139,18 +139,46 @@ operator_principal_workflow_v0_4:
   ai_operator_mcp: LOCAL  # integrations/mcp, tested via real workflow + router with fake chain
   live_verification_steps: docs/WORLDS-FAIR-OPERATOR-PRINCIPAL-WORKFLOW.md
 
+release_binding:
+  commit: 2689c23a910ebd7ef8f56b9ea6b418dbd346af46
+  source: GitHub check-runs on the commit, read 2026-10-12 evening
+  workers_builds:
+    cresco: {status: success, completed_at: "2026-10-12T23:36:41Z", version_id: 04b59fda-2e6c-444f-9df1-7b99417dcb82, build_id: a79d4331-51ee-40ce-b304-bdadd01c8283}
+    keys-api-stocklana: {status: success, completed_at: "2026-10-12T23:36:51Z", version_id: ced3ef0d-3f84-4abb-9310-54422304b904, build_id: 52437d07-774a-4c3b-9eaf-edd90db2d595}
+  github_ci: {node: success, cresco-web: success, webkit-iphone: success}
+  later_commits_on_main: none_at_read_time
+  reality: PARTIAL
+  not_yet_observed: >-
+    Nobody in this record fetched the public URL and saw it serve this version. Confirm in the Cloudflare dashboard that
+    the active deployment of each Worker is the version_id above, then do the visual check in
+    docs/worlds-fair/RELEASE-LOCK-2026-10-12.md. From the next deploy on, the home footer shows "build <sha7>".
+  record: docs/worlds-fair/RELEASE-LOCK-2026-10-12.md
+
+phantom_wallet_guardian:
+  status: LIVE_DEVNET_2026-10-12  # PR #46, docs/worlds-fair/PRINCIPAL-WALLET-GUARDIAN.md; do not redo the initial validation
+  exercised_live: [wallet_bootstrap, grant_x2, pause, resume, paused_refusal_MandateNotActive]
+  not_exercised_live: [revoke_in_wallet_mode, revise_mandate_in_wallet_mode]
+
+family_market_prices:
+  status: HERMES_FALLBACK_MERGED_PR50__LIVE_RESPONSE_UNVERIFIED
+  truth: Live means published within 60 s; Delayed means last real price; otherwise Sample prices. Charts and daily change stay sample.
+
 product_unification_2026_10_12:
   decision: ONE_PRODUCT__FAMILY_APP_AND_DELEGATED_CAPITAL_WORKSPACE_FIRST_CLASS__SHARED_MANDATE_MECHANISM
   root_entry: "/ -> Family: /start (Key, Learn, Explore, Portfolio, Profile) + /parent/sign-in + live family mandate /worlds-fair/desk?case=family; Delegated capital: /worlds-fair/desk?case=capital"
   family_app: "first-class again (owner correction 2026-10-12); separate sessions from v0.4 workspace roles; no identity or data migration"
   identity_reality: SEPARATE_SESSIONS  # legacy demo-session auth vs v0.4 per-workspace role tokens; shared Solana program is not shared login
   audit: docs/worlds-fair/RECONCILIATION-2026-10-12-PM.md
-merged_2026_10_12: ["#38", "#39", "#40", "#41 (via #42)", "#42", "#43", "#44", "#45"]  # main 434482e at the Phantom run
+merged_2026_10_12: ["#38", "#39", "#40", "#41", "#42", "#43", "#44", "#45", "#46", "#47", "#48", "#49", "#50", "#51", "#53", "#55"]  # main 434482e at the Phantom run; 2689c23 after #55
 
-exact_next_gate: SUBMISSION__PITCH_AND_DEMO_VIDEOS_THEN_COLOSSEUM_FINAL_SUBMIT
-exact_next_owner: HUMAN_FOR_DEPLOY_AND_DEVNET_WRITES__PBPD_FOR_ANY_REWORK
+exact_next_gate: RELEASE_LOCK_CONFIRMATION_THEN_EXTERNAL_USER_VALIDATION_ROUND_1
+exact_next_owner: HUMAN_OWNER_FOR_DASHBOARD_CHECK_AND_TESTER_RECRUITMENT__PBPD_FOR_ANY_REWORK
 exact_next_action: >-
-  Review PR for branch claude/worlds-fair-operator-principal-workflow-2026-10-12. Deploy the Worker with
+  (2026-10-12 evening) 1. Confirm active Worker versions match release_binding and run the visual check in
+  docs/worlds-fair/RELEASE-LOCK-2026-10-12.md. 2. Run tester round 1 with docs/worlds-fair/USER-TEST-KIT-2026-10-12.md
+  (Benita plus 5 to 8 people, some strangers). 3. Only then the final illustration pass and deeper Parent/Teen and Capital
+  journeys. Earlier instruction, kept for provenance:
+    Review PR for branch claude/worlds-fair-operator-principal-workflow-2026-10-12. Deploy the Worker with
   `wrangler deploy --name keys-api-stocklana` (human-authorized), bootstrap one workspace on /worlds-fair/desk, run the
   manual LIVE checks and `npm run campaign:worlds-fair -- --cycles 5 --threshold 0.8`, then promote capability reality
   from LOCAL to LIVE only for what the campaign receipts prove. Previous instruction, kept for provenance:

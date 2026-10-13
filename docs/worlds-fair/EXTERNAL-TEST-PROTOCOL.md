@@ -1,5 +1,7 @@
 # External test: CRESCO in 5 to 10 minutes
 
+> Superseded for round 1 by `USER-TEST-KIT-2026-10-12.md` (tracks, measures, Google Form script). The owner checklist below still applies.
+
 For Benita, friends and unknown testers. **No Phantom, no private key, no funds.** Every tester creates their own workspace, so no role token is ever shared publicly.
 
 ## Before sending the link (owner)
