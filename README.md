@@ -1,5 +1,7 @@
 # CRESCO
 
+**Act alone inside the rules, ask once above them.** One Solana program for money that is not fully yours: a teenager's allowance, or capital handed to a strategy or an AI agent.
+
 **Financial independence should not happen all at once.**
 
 CRESCO gives young people real room to make financial decisions inside family-set boundaries. A guardian defines a standing **Key**, represented technically by a versioned Mandate. Inside that Key, the young person can act without asking for permission every time. At the boundary, CRESCO refuses, explains why, and lets the family decide what should happen next.
