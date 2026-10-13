@@ -3,7 +3,7 @@
 Deadline: **Oct 12, 11:59 pm PT = Oct 13, 2:59 am ET**. Target: submitted by **2:00 am ET**.
 Everything submitted must be in English. Colosseum asks for a 2 to 3 minute presentation video and a product demo video of 3 minutes or less.
 
-Deck: the "CRESCO pitch deck" artifact (14 slides). Team slide filled (Faadil, Benita Ukachi); confirm Benita's wording with her if you can. Share it from the deck's Share menu, or export it to PDF, before pasting a link in Arena.
+Deck: the "CRESCO pitch deck" artifact (14 slides). Team slide filled (Faadil, Benita Ukachi); Benita could not be reached tonight to confirm the wording. Share it from the deck's Share menu, or export it to PDF, before pasting a link in Arena.
 
 ---
 
@@ -116,7 +116,7 @@ Solana (Devnet), Anchor, Pyth (price verified on-chain; Hermes for learning pric
 
 **Team**
 - Faadil Boussari, founder. Business performance analyst in public transit (Gatineau). MBA in Business Analytics (Université Laval), B.Sc. in Finance (UQO). Designed and built CRESCO end to end: Solana program integration, API, web app, MCP server.
-- Benita Ukachi, AI engineer (agents and pitch). Builds agentic and on-chain tools: SpecterAI, a trading agent on on-chain data with Claude, and DealRoom, an AI-assisted trustless OTC escrow. GitHub: Benita2001.
+- Benita Ukachi, AI engineer (agent use case). Builds agentic and on-chain tools: SpecterAI, a trading agent on on-chain data with Claude, and DealRoom, an AI-assisted trustless OTC escrow. GitHub: Benita2001.
 
 **Location**
 Gatineau, Québec, Canada
