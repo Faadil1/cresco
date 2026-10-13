@@ -8,6 +8,8 @@ CRESCO is one Solana program for money that is not fully yours: a teenager's all
 
 Built for the Colosseum Crypto World's Fair (October 2026). Solana Devnet, demo tokens only.
 
+**Watch:** [Pitch, 2:47](https://youtu.be/uBMRdPh6ggw) · [Live demo, 2:21](https://youtu.be/QeIzBfRx-bA)
+
 ## Try it in two minutes
 
 | Step | What to do | What you should see |
