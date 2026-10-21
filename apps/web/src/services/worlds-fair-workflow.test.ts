@@ -51,7 +51,7 @@ describe("World's Fair workflow client", () => {
     vi.stubGlobal("fetch", vi.fn(async () => json(403, { error: "ROLE_FORBIDDEN", message: "nope" })));
     await expect(workflowApi.decide("ws-abcdef12", "req-1", "t", { decision: "APPROVE" })).rejects.toBeInstanceOf(WorkflowApiError);
     vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("Failed to fetch"); }));
-    await expect(workflowApi.history("ws-abcdef12")).rejects.toMatchObject({ code: "NETWORK_UNAVAILABLE" });
+    await expect(workflowApi.history("ws-abcdef12", "wf_operator_x")).rejects.toMatchObject({ code: "NETWORK_UNAVAILABLE" });
   });
 
   it("principal-wallet guardian: a 202 signature request is signed by the wallet and submitted", async () => {
@@ -80,7 +80,28 @@ describe("World's Fair workflow client", () => {
 
   it("refuses to call an unconfigured API", async () => {
     configureCrescoBackend({ url: "", execution: "demo" });
-    await expect(workflowApi.getWorkspace("ws-abcdef12")).rejects.toMatchObject({ code: "API_NOT_CONFIGURED" });
+    await expect(workflowApi.getWorkspace("ws-abcdef12", "wf_operator_x")).rejects.toMatchObject({ code: "API_NOT_CONFIGURED" });
+  });
+
+  it("includes role bearer tokens for every private read request", async () => {
+    configureCrescoBackend({ url: "https://api.example.test", execution: "runtime" });
+    const calls: Array<[string, RequestInit]> = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init: RequestInit) => {
+      calls.push([url, init]);
+      return json(200, { requests: [], events: [], roles: {}, message: "test", chain: {}, contractVersion: "0.4" });
+    }));
+    await workflowApi.getWorkspace("ws-abcdef12", "wf_operator_x");
+    await workflowApi.listRequests("ws-abcdef12", "wf_operator_x", "PENDING");
+    await workflowApi.history("ws-abcdef12", "wf_risk_x", 20);
+    await workflowApi.approvalMessage("ws-abcdef12", "wf_principal_x", "req-42", "2026-10-12T12:00:00Z");
+    await workflowApi.walletMessage("ws-abcdef12", "wf_principal_x", "2026-10-12T12:00:00Z");
+    for (const [url, init] of calls) {
+      const token = url.includes("/approval-message") || url.includes("/wallet-message")
+        ? "wf_principal_x"
+        : url.includes("/history") ? "wf_risk_x" : "wf_operator_x";
+      expect((init.headers as Record<string, string>).authorization).toBe("Bearer " + token);
+    }
+    expect(calls).toHaveLength(5);
   });
 
   it("round-trips share links and rejects malformed fragments", () => {
