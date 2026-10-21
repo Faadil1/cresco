@@ -206,4 +206,6 @@ test('worker options: create token and bounded workspace capacity come from env'
   assert.deepEqual(worldFairWorkflowOptionsFromEnv({ WORLD_FAIR_CREATE_TOKEN: 't', WORLD_FAIR_MAX_WORKSPACES: '60' }), { createToken: 't', maxWorkspaces: 60 });
   assert.deepEqual(worldFairWorkflowOptionsFromEnv({ WORLD_FAIR_MAX_WORKSPACES: '5000' }), {});
   assert.deepEqual(worldFairWorkflowOptionsFromEnv({ WORLD_FAIR_MAX_WORKSPACES: 'abc' }), {});
+  assert.deepEqual(worldFairWorkflowOptionsFromEnv({ WORLD_FAIR_WORKSPACE_CREATION_DISABLED: 'true' }), { creationDisabled: true });
+  assert.deepEqual(worldFairWorkflowOptionsFromEnv({ WORLD_FAIR_WORKSPACE_CREATION_DISABLED: 'false' }), {});
 });
