@@ -510,13 +510,13 @@ function TokenHandoff({ ws, onDone }: { ws: CreatedWorkspace; onDone: () => void
   );
 }
 
-async function loadDesk(id: string) {
-  const ws = await workflowApi.getWorkspace(id);
-  const [requests, events] = await Promise.all([workflowApi.listRequests(id), workflowApi.history(id, 60)]);
+async function loadDesk(id: string, bearer: string) {
+  const ws = await workflowApi.getWorkspace(id, bearer);
+  const [requests, events] = await Promise.all([workflowApi.listRequests(id, bearer), workflowApi.history(id, bearer, 60)]);
   let mandate: MandateView | null = null;
   if (ws.chain.status === "READY") {
     try {
-      mandate = await workflowApi.mandate(id);
+      mandate = await workflowApi.mandate(id, bearer);
     } catch {
       mandate = null; // chain read can fail transiently; the desk still renders product state
     }
@@ -572,14 +572,17 @@ export default function WorldFairDeskPage() {
   const id = keychain.workspaceId;
   const roles = useMemo(() => (["operator", "principal", "risk"] as WorkflowRole[]).filter((r) => keychain.tokens[r]), [keychain]);
   const token = (role: WorkflowRole) => keychain.tokens[role] ?? null;
+  // The workspace id is not a credential: never fetch its state without a
+  // bearer belonging to this workspace. Owner's demo browser may hold all roles.
+  const readToken = keychain.tokens[tab] ?? keychain.tokens.operator ?? keychain.tokens.principal ?? keychain.tokens.risk ?? null;
 
   const [version, setVersion] = useState(0);
   const refresh = useCallback(() => setVersion((v) => v + 1), []);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !readToken) return;
     let cancelled = false;
-    void loadDesk(id)
+    void loadDesk(id, readToken)
       .then((data) => {
         if (cancelled) return;
         setWs(data.ws);
@@ -594,7 +597,7 @@ export default function WorldFairDeskPage() {
     return () => {
       cancelled = true;
     };
-  }, [id, version]);
+  }, [id, readToken, version]);
 
   // CAP-11: approvers are notified of pending exception requests while the desk is open.
   useEffect(() => {
@@ -655,7 +658,7 @@ export default function WorldFairDeskPage() {
     await run(`decide-${req.id}`, async () => {
       if (decision === "APPROVE" && role === "principal" && ws?.roles.principal.wallet && ws.guardianMode !== "principal-wallet") {
         const issuedAt = new Date().toISOString();
-        const { message } = await workflowApi.approvalMessage(id, req.id, issuedAt);
+        const { message } = await workflowApi.approvalMessage(id, t, req.id, issuedAt);
         const signed = await signWithWallet(message);
         if (signed.publicKey !== ws.roles.principal.wallet) throw new Error(`Connect the bound wallet ${short(ws.roles.principal.wallet)} to approve.`);
         await workflowApi.decide(id, req.id, t, { decision, note: note || undefined, issuedAt, walletSignature: signed.signature });
@@ -671,7 +674,7 @@ export default function WorldFairDeskPage() {
     if (!id || !t) return;
     await run("wallet", async () => {
       const issuedAt = new Date().toISOString();
-      const { message } = await workflowApi.walletMessage(id, issuedAt);
+      const { message } = await workflowApi.walletMessage(id, t, issuedAt);
       const signed = await signWithWallet(message);
       await workflowApi.bindWallet(id, t, { publicKey: signed.publicKey, signature: signed.signature, issuedAt });
     });
