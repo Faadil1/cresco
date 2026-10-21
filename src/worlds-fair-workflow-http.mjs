@@ -143,7 +143,7 @@ export async function routeWorldFairWorkflow({ method, path, body, headers, quer
       const role = identity.body.role;
       if (
         (sub === '/principal/wallet-message' ||
-          /^\\/requests\\/[a-z0-9-]+\\/approval-message$/.test(sub)) &&
+          (sub.startsWith('/requests/') && sub.endsWith('/approval-message'))) &&
         role !== 'principal'
       ) {
         throw new WorkflowError(403, 'ROLE_FORBIDDEN', 'This message requires the principal role');
