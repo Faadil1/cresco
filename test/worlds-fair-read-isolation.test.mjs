@@ -66,3 +66,14 @@ test('all workspace reads refuse missing or cross-workspace role credentials', a
   assert.match(signedMessage.body.message, /principal wallet binding/);
   assert.equal((await call(wf, 'GET', P + '/openapi')).status, 200);
 });
+
+test('zero-budget emergency switch blocks new Devnet workspace creation without side effects', async () => {
+  const store = createMemoryWorkflowStore();
+  const wf = createWorldFairWorkflow({ store, chainFactory: noChain, options: { creationDisabled: true } });
+  const denied = await call(wf, 'POST', P + '/workspaces', null, { name: 'Should not exist' });
+  assert.equal(denied.status, 503);
+  assert.equal(denied.body.error, 'WORKSPACE_CREATION_DISABLED');
+  assert.equal(await store.get('wf:index'), null);
+  // OpenAPI is still available; no secrets, actor or Solana dependencies touched.
+  assert.equal((await call(wf, 'GET', P + '/openapi')).status, 200);
+});
