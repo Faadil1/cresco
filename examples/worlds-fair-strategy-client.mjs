@@ -84,7 +84,11 @@ async function submit() {
       const deadline = Date.now() + waitSeconds * 1000;
       while (Date.now() < deadline) {
         await sleep(5000);
-        const list = await call('GET', `/workspaces/${workspaceId}/requests`);
+        const list = await call('GET', `/workspaces/${workspaceId}/requests`, { token });
+        if (list.status !== 200) {
+          console.error(`Cannot read request status (${list.status}); no execution is claimed. ${list.body.error ?? 'UNKNOWN'}`);
+          return 7;
+        }
         const req = (list.body.requests ?? []).find((r) => r.id === rid);
         if (req && !['PENDING', 'EXECUTING'].includes(req.status)) {
           console.log(`${req.status}${req.execution?.signature ? `  https://explorer.solana.com/tx/${req.execution.signature}?cluster=devnet` : ''}`);
