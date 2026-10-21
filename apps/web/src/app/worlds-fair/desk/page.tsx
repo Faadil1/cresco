@@ -574,7 +574,7 @@ export default function WorldFairDeskPage() {
   const token = (role: WorkflowRole) => keychain.tokens[role] ?? null;
   // The workspace id is not a credential: never fetch its state without a
   // bearer belonging to this workspace. Owner's demo browser may hold all roles.
-  const readToken = keychain.tokens[tab] ?? keychain.tokens.operator ?? keychain.tokens.principal ?? keychain.tokens.risk ?? null;
+  const readToken = keychain.tokens.operator ?? keychain.tokens.principal ?? keychain.tokens.risk ?? null;
 
   const [version, setVersion] = useState(0);
   const refresh = useCallback(() => setVersion((v) => v + 1), []);
