@@ -1,0 +1,6 @@
+---
+description: Cresco automatic Canon to PBPD to Finisher project routing, without authority escalation
+alwaysApply: true
+---
+
+Read `AGENTS.md`, existing `CLAUDE.md`, `state/CURRENT.yaml`, `state/HANDOVER.yaml`, and `docs/worlds-fair/product/PRD.md`. Keep Cresco World's Fair separate from Cresco Key. Apply every applicable existing Canon gate and PBPD product-depth rule, not a parallel or replacement policy. Real user actions, persisted state, negative paths and recovery have priority over demo polish. No automatic live Solana execution or deploy. No Finisher terminal intake without independent authorizer signature. The instructions are advisory; host permissions and external validations remain separate.
