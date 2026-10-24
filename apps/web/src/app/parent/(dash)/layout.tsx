@@ -11,7 +11,7 @@ import { useStore } from "@/state/store";
 const LINKS = [
   { href: "/parent", label: "Overview" },
   { href: "/parent/limits", label: "Limits" },
-  { href: "/parent/add-money", label: "Add money" },
+  { href: "/parent/add-money", label: "Demo credit" },
   { href: "/parent/settings", label: "Settings" },
 ];
 
