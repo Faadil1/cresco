@@ -13,6 +13,7 @@ import { isWorkflowPath, workflowWriteScope } from './worlds-fair-workflow-http.
 // bounded to 1..200 because every workspace spends lab Devnet funds).
 export function worldFairWorkflowOptionsFromEnv(env = {}) {
   const options = {};
+  if (String(env.WORLD_FAIR_WORKSPACE_CREATION_DISABLED ?? '').toLowerCase() === 'true') options.creationDisabled = true;
   if (env.WORLD_FAIR_CREATE_TOKEN) options.createToken = env.WORLD_FAIR_CREATE_TOKEN;
   const max = Number(env.WORLD_FAIR_MAX_WORKSPACES);
   if (Number.isSafeInteger(max) && max >= 1 && max <= 200) options.maxWorkspaces = max;

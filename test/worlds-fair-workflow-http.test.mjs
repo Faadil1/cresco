@@ -59,7 +59,7 @@ test('HTTP v0.4: full operator -> principal loop through the shared router', asy
   assert.equal(pending.status, 202);
   const rid = pending.body.request.id;
 
-  const msg = await call(wf, 'GET', `${P}/workspaces/${id}/requests/${rid}/approval-message`, null, null, { issuedAt: '2026-10-12T12:00:00.000Z' });
+  const msg = await call(wf, 'GET', `${P}/workspaces/${id}/requests/${rid}/approval-message`, null, tokens.principal, { issuedAt: '2026-10-12T12:00:00.000Z' });
   assert.match(msg.body.message, /decision:APPROVE/);
   assert.match(msg.body.message, new RegExp(`request:${rid}`));
 
@@ -70,9 +70,9 @@ test('HTTP v0.4: full operator -> principal loop through the shared router', asy
   const approved = await call(wf, 'POST', `${P}/workspaces/${id}/requests/${rid}/decision`, { decision: 'APPROVE' }, tokens.principal);
   assert.equal(approved.body.request.status, 'EXECUTED');
 
-  const history = await call(wf, 'GET', `${P}/workspaces/${id}/history`);
+  const history = await call(wf, 'GET', `${P}/workspaces/${id}/history`, null, tokens.risk);
   assert.equal(history.body.events[0].type, 'EXCEPTION_EXECUTED');
-  const mandate = await call(wf, 'GET', `${P}/workspaces/${id}/mandate`);
+  const mandate = await call(wf, 'GET', `${P}/workspaces/${id}/mandate`, null, tokens.operator);
   assert.equal(mandate.body.consumption.spentAmount, 100_000);
   const notes = await call(wf, 'GET', `${P}/workspaces/${id}/notifications`, null, tokens.operator);
   assert.ok(notes.body.notifications.some((n) => n.type === 'EXCEPTION_EXECUTED'));
@@ -160,9 +160,9 @@ test('Worker v0.4: state persists in the Durable Object across isolates (fresh w
   const pending = await (await workerCall(env, services, 'POST', `${P}/workspaces/${id}/intents`, { inputAmount: 800_000 }, tokens.operator)).json();
   assert.equal(pending.decision, 'PENDING_PRINCIPAL');
 
-  const listed = await (await workerCall(env, services, 'GET', `${P}/workspaces/${id}/requests?status=PENDING`)).json();
+  const listed = await (await workerCall(env, services, 'GET', `${P}/workspaces/${id}/requests?status=PENDING`, null, tokens.principal)).json();
   assert.equal(listed.requests.length, 1);
-  const res = await workerCall(env, services, 'GET', `${P}/workspaces/${id}/history`);
+  const res = await workerCall(env, services, 'GET', `${P}/workspaces/${id}/history`, null, tokens.risk);
   assert.equal(res.headers.get('access-control-allow-origin'), 'https://cresco-lac.vercel.app');
   assert.equal(res.headers.get('cache-control'), 'no-store');
 });
@@ -184,7 +184,7 @@ test('Worker v0.4: concurrent writes on one workspace are serialized (BUSY), oth
   assert.equal((await second.json()).error, 'BUSY');
   assert.ok(Number(second.headers.get('retry-after')) >= 1);
 
-  const read = await workerCall(env, services, 'GET', `${P}/workspaces/${a.id}/history`);
+  const read = await workerCall(env, services, 'GET', `${P}/workspaces/${a.id}/history`, null, a.tokens.operator);
   assert.equal(read.status, 200);
 
   release();
@@ -206,4 +206,6 @@ test('worker options: create token and bounded workspace capacity come from env'
   assert.deepEqual(worldFairWorkflowOptionsFromEnv({ WORLD_FAIR_CREATE_TOKEN: 't', WORLD_FAIR_MAX_WORKSPACES: '60' }), { createToken: 't', maxWorkspaces: 60 });
   assert.deepEqual(worldFairWorkflowOptionsFromEnv({ WORLD_FAIR_MAX_WORKSPACES: '5000' }), {});
   assert.deepEqual(worldFairWorkflowOptionsFromEnv({ WORLD_FAIR_MAX_WORKSPACES: 'abc' }), {});
+  assert.deepEqual(worldFairWorkflowOptionsFromEnv({ WORLD_FAIR_WORKSPACE_CREATION_DISABLED: 'true' }), { creationDisabled: true });
+  assert.deepEqual(worldFairWorkflowOptionsFromEnv({ WORLD_FAIR_WORKSPACE_CREATION_DISABLED: 'false' }), {});
 });

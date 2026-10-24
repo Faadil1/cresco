@@ -234,18 +234,18 @@ export function newIdempotencyKey(prefix = "intent") {
 export const workflowApi = {
   createWorkspace: (input: { useCase?: UseCase; guardianMode?: GuardianMode; name?: string; principalLabel?: string; operatorLabel?: string; riskLabel?: string; policy?: Partial<WorkspacePolicy>; webhookUrl?: string }) =>
     call<CreatedWorkspace>("POST", "/workspaces", { body: input }).then((r) => r.body),
-  getWorkspace: (id: string) => call<Workspace>("GET", `/workspaces/${id}`).then((r) => r.body),
+  getWorkspace: (id: string, token: string) => call<Workspace>("GET", `/workspaces/${id}`, { token }).then((r) => r.body),
   whoami: (id: string, token: string) => call<{ role: WorkflowRole }>("GET", `/workspaces/${id}/whoami`, { token }).then((r) => r.body),
   bootstrap: (id: string, token: string) => call<Workspace>("POST", `/workspaces/${id}/bootstrap`, { token, body: {} }).then((r) => r.body),
   submitIntent: (id: string, token: string, input: { inputAmount: number; maxSlippageBps: number; clientReference?: string }, idempotencyKey: string) =>
     call<IntentResult>("POST", `/workspaces/${id}/intents`, { token, body: { action: "SWAP_EXACT_IN", ...input }, idempotencyKey }),
-  listRequests: (id: string, status?: string) =>
-    call<{ requests: ExceptionRequest[] }>("GET", `/workspaces/${id}/requests${status ? `?status=${status}` : ""}`).then((r) => r.body.requests),
-  approvalMessage: (id: string, requestId: string, issuedAt: string) =>
-    call<{ message: string; issuedAt: string }>("GET", `/workspaces/${id}/requests/${requestId}/approval-message?issuedAt=${encodeURIComponent(issuedAt)}`).then((r) => r.body),
+  listRequests: (id: string, token: string, status?: string) =>
+    call<{ requests: ExceptionRequest[] }>("GET", `/workspaces/${id}/requests${status ? `?status=${status}` : ""}`, { token }).then((r) => r.body.requests),
+  approvalMessage: (id: string, token: string, requestId: string, issuedAt: string) =>
+    call<{ message: string; issuedAt: string }>("GET", `/workspaces/${id}/requests/${requestId}/approval-message?issuedAt=${encodeURIComponent(issuedAt)}`, { token }).then((r) => r.body),
   decide: (id: string, requestId: string, token: string, input: { decision: "APPROVE" | "REFUSE"; note?: string; issuedAt?: string; walletSignature?: string }) =>
     call<{ request: ExceptionRequest; retryPolicy?: string }>("POST", `/workspaces/${id}/requests/${requestId}/decision`, { token, body: input }),
-  mandate: (id: string) => call<MandateView>("GET", `/workspaces/${id}/mandate`).then((r) => r.body),
+  mandate: (id: string, token: string) => call<MandateView>("GET", `/workspaces/${id}/mandate`, { token }).then((r) => r.body),
   setStatus: (id: string, token: string, status: "ACTIVE" | "PAUSED" | "REVOKED", confirm?: string) =>
     call<{ staleRequests: number }>("POST", `/workspaces/${id}/mandate/status`, { token, body: { status, ...(confirm ? { confirm } : {}) } }).then((r) => r.body),
   revisePolicy: (id: string, token: string, input: { maxActionNotionalMicroUsd?: number; maxPeriodNotionalMicroUsd?: number }) =>
@@ -253,10 +253,10 @@ export const workflowApi = {
   updateAssetRule: (id: string, token: string, input: { maxActionAmount?: number; maxPeriodAmount?: number; enabled?: boolean }) =>
     call<{ policy: WorkspacePolicy; staleRequests: number }>("POST", `/workspaces/${id}/asset-rule`, { token, body: input }).then((r) => r.body),
   topUpVault: (id: string, token: string) => call<{ effects: number }>("POST", `/workspaces/${id}/vault/topup`, { token, body: {} }).then((r) => r.body),
-  history: (id: string, limit = 100) => call<{ events: WorkflowEvent[] }>("GET", `/workspaces/${id}/history?limit=${limit}`).then((r) => r.body.events),
+  history: (id: string, token: string, limit = 100) => call<{ events: WorkflowEvent[] }>("GET", `/workspaces/${id}/history?limit=${limit}`, { token }).then((r) => r.body.events),
   notifications: (id: string, token: string, since = 0) => call<NotificationsView>("GET", `/workspaces/${id}/notifications?since=${since}`, { token }).then((r) => r.body),
-  walletMessage: (id: string, issuedAt: string) =>
-    call<{ message: string; issuedAt: string }>("GET", `/workspaces/${id}/principal/wallet-message?issuedAt=${encodeURIComponent(issuedAt)}`).then((r) => r.body),
+  walletMessage: (id: string, token: string, issuedAt: string) =>
+    call<{ message: string; issuedAt: string }>("GET", `/workspaces/${id}/principal/wallet-message?issuedAt=${encodeURIComponent(issuedAt)}`, { token }).then((r) => r.body),
   bindWallet: (id: string, token: string, input: { publicKey: string; signature: string; issuedAt: string }) =>
     call<{ wallet: { publicKey: string } }>("POST", `/workspaces/${id}/principal/wallet`, { token, body: input }).then((r) => r.body),
   reconcile: (id: string, token: string) =>

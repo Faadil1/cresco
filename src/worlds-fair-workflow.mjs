@@ -29,6 +29,8 @@ const DEFAULTS = Object.freeze({
   webhookTimeoutMs: 3000,
   // Optional shared secret: when set, POST /workspaces needs it (x-cresco-create-token).
   createToken: null,
+  // Emergency zero-spend switch; blocks new lab workspaces without touching existing ones.
+  creationDisabled: false,
   // Each top-up spends shared guardian SOL; rate-limit it per workspace.
   topUpCooldownSeconds: 10 * 60,
   // A transaction prepared for the principal's wallet must be signed quickly:
@@ -415,6 +417,9 @@ export function createWorldFairWorkflow({
   }
 
   async function createWorkspace(body = {}, createToken = null) {
+    if (cfg.creationDisabled) {
+      fail(503, 'WORKSPACE_CREATION_DISABLED', 'New Devnet workspaces are paused while lab resources are checked');
+    }
     if (cfg.createToken && String(createToken ?? '') !== String(cfg.createToken)) {
       fail(401, 'CREATE_TOKEN_REQUIRED', 'Creating a workspace requires the lab create token (x-cresco-create-token)');
     }
