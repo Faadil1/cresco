@@ -53,7 +53,7 @@ export default function StartPage() {
       </div>
       <div className="mt-6 rounded-[14px] bg-surface-soft px-4 py-4 text-[13px] leading-relaxed text-ink-2">
         <p className="font-semibold text-navy-strong">Sample profile: Alex</p>
-        <p className="mt-1">This is a shared demonstration, not a private household. Please do not enter a real child's information or financial details.</p>
+        <p className="mt-1">This is a shared demonstration, not a private household. Please do not enter a real child&apos;s information or financial details.</p>
         <p className="mt-2">The sample balance is not cash, and demo stock examples are not real investments. Anyone can explore these demo roles.</p>
       </div>
       {error ? (
