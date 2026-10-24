@@ -17,6 +17,7 @@ Work type: Source code and negative-path tests. No merge or deploy authorized. N
 | `/parent/sign-in` asks for parent email but calls unverified demo guardian endpoint | Remove misleading email collection; explicit shared/unverified guardian access using fixed alias Sam | Unit tests proposed; any person can still obtain demo parent role |
 | `/onboarding/about` asks for first name and age 10–15 | Use fictional learner profile; no real minor personal information requested in that onboarding step | Unit tests proposed; older localStorage records may still hold previous demo data |
 | `/parent/add-money` has transparent small-print disclaimer, but heading suggests actual money, and rejection can strand `busy=true` | Heading and nav use demo credit; only confirmed matching funding response mutates client balance; error resets busy and allows retry | Unit tests proposed; backend state is still shared Devnet test balance |
+| `signOut` clears role but leaves localStorage demo profile, learning and balance snapshot on shared browser | Clear local demo reducer state on sign-out; parent view gets Exit demo, clearing browser tokens | Unit tests proposed; server-side tokens are **NOT revoked** and sessions may remain live until expiry |
 
 **Truth boundary:** This is a better-marked DEMO, NOT real parent/child authentication, account isolation, legal parental consent or secure real funding. Displayed simulation / demo token assets have no real purchase/ownership value. These changes must not be described as family readiness.
 
@@ -56,6 +57,7 @@ Work type: Source code and negative-path tests. No merge or deploy authorized. N
 - [x] Add explicit shared/unverified guardian role warnings in source.
 - [x] Make demo-funding error fail closed in UI, retryable without false local credit.
 - [x] Add proposed tests covering above.
+- [x] Clear shared browser local data on exit and add a parent Exit demo control in source; does not claim server-side revocation.
 - [ ] CI passing at exact HEAD and human review (not yet proven).
 - [ ] Real adult identity and tenant isolation (not implemented).
 - [ ] Safe authenticated funding and reconciliation for a real-money service (not implemented).
