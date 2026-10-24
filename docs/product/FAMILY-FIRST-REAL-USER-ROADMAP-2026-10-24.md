@@ -8,7 +8,7 @@ The founders' discussion on 2026-10-24 highlighted why the original Stocklana Fa
 This is a proposed priority shift, not proof that Stocklana judges won because of wording, a business-market selection, or consent to replace a frozen submitted build.
 
 ## Source and evidence boundaries
-- Public original Vercel landing: https://cresco-lac.vercel.app/ ; observed HTML copy: “Learn investing together. Grow with confidence.”, Practice Mode, Money Mode, parent sign-in and **Devnet demo only** disclaimer. **The landing was fetched; authenticated click-throughs were not browser-verified here.**
+- Public original Vercel landing: https://cresco-lac.vercel.app/ ; observed HTML copy: “Learn investing together. Grow with confidence.”, Practice Mode, Money Mode, parent sign-in and **Devnet demo only** disclaimer. **The Vercel and Cloudflare landing and multiple Family/technical public pages were fetched on 2026-10-24. Authenticated click-throughs and browser visual QA were not run.**
 - Current product GitHub: https://github.com/Faadil1/cresco ; direct code review from `main` on 2026-10-24.
 - [Family baseline product/PRD.md](../../product/PRD.md), [world-fair PRD](../worlds-fair/product/PRD.md), [source state](../../state/CURRENT.yaml) / [handover](../../state/HANDOVER.yaml), [reconciliation](../worlds-fair/RECONCILIATION-2026-10-12-PM.md), [release lock](../worlds-fair/RELEASE-LOCK-2026-10-12.md).
 - In Cloudflare, original Family app `/start`, `/home`, `/learn`, `/explore`, `/portfolio`, `/profile`, `/parent` and Workspace Family `/worlds-fair/desk?case=family` remain **distinct identity/state environments**, without account migration.
@@ -19,9 +19,9 @@ This is a proposed priority shift, not proof that Stocklana judges won because o
 - `apps/web/src/services/cresco-backend.ts`: distinct child/guardian demo tokens currently stored in browser `localStorage`; **not a production identity/session security model**.
 - `docs/worlds-fair/WHO-ENFORCES-WHAT.md`: default Devnet server-held guardian vs opt-in wallet-signed principal; scope must stay explicit.
 - `programs/keys/src/lib.rs`: legacy token transfer-path concerns found during independent review (no full action hash recomputation and omitted caps), rule revision resets period counts, recovery paths not established; swap proof is narrower and different. All real-fund release claims BLOCKED.
-- Live Cloudflare site was not retrievable through current web browser fetch tool. Code and historic release evidence are not a verified current hosted walkthrough.
+- Public Cloudflare HTML was independently retrieved via external extractors on 2026-10-24. The homepage footer showed `build 6464dd2`, matching the top recent GitHub commit, but client hydration/interactive navigation and API/chain binary binding have not been independently replayed. See [complete public-site audit](FAMILY-LIVE-SITE-AUDIT-2026-10-24.md).
 
-## Proposed experience principles
+## Correction: restoration is DONE\nOn 2026-10-24 the founders clarified that the Cloudflare site already contains the restored simple Family language and warm UI. **Do not carry out a new restoration redesign**; audit specific confusion, test with parents and isolate future auth/real-user implementation on a separate branch based on current product main.\n\n## Proposed experience principles
 1. **Start with the parent or young person's situation, not the blockchain primitive.** A young person learns and practices; their parent sets clear boundaries; requests are exceptional.
 2. **Use the original Family language as a comprehension benchmark**, not a pixel-by-pixel rollback. Preserve warm visual treatment, accessibility, responsive layouts, real interactions and the latest correct fixes.
 3. **Three honest modes, never conflated:** (a) Practice = simulation, no funds; (b) Devnet demo = real testnet transfers of demo tokens, no bank payment or real securities; (c) Real money = NOT_AVAILABLE until partner, custody, permission, eligibility, money rail and legal gates proven. Consider whether the public label “Money Mode” creates confusion until real.
@@ -112,7 +112,7 @@ FROZEN_COLOSSEUM_SUBMISSION: PRESERVED
 CONCEPT_LOCK_REAL_MONEY: BLOCKED
 DEPLOYMENT: NOT_AUTHORIZED
 
-## Compliance context (primary official sources, retrieved 2026-10-24)
+## Compliance context (primary official sources, retrieved 2026-10-24)\n- **[Focused regulatory decision matrix](FAMILY-REGULATORY-FUNDING-GATES-2026-10-24.md)** tracks Québec Law 25 / CAI, Canada's new Children's Privacy Code, AMF/CSA tokenization, FINTRAC service classification and available funding/eligibility without treating a financing program as guaranteed.
 - Québec AMF: https://lautorite.qc.ca/en/general-public/investments/crypto/how-to-buy-and-sell-cryptoassets — registration, KYC and rules can apply to cryptoasset trading platforms.
 - Canadian Securities Administrators: https://www.securities-administrators.ca/investor-tools/crypto-assets/regulation-of-crypto-assets/ — asset characterization and custody/trading platform model determine securities-law applicability.
 - FINTRAC MSB test: https://fintrac-canafe.canada.ca/msb-esm/questions/2-eng — **activity-based** registration assessment; avoid claiming registration universally required for all architectures or unnecessary for a non-custodial solution.
