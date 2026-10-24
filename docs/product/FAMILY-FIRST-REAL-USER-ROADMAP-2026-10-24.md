@@ -112,7 +112,7 @@ FROZEN_COLOSSEUM_SUBMISSION: PRESERVED
 CONCEPT_LOCK_REAL_MONEY: BLOCKED
 DEPLOYMENT: NOT_AUTHORIZED
 
-## Compliance context (primary official sources, retrieved 2026-10-24)\n- **[Focused regulatory decision matrix](FAMILY-REGULATORY-FUNDING-GATES-2026-10-24.md)** tracks Québec Law 25 / CAI, Canada's new Children's Privacy Code, AMF/CSA tokenization, FINTRAC service classification and available funding/eligibility without treating a financing program as guaranteed.
+## Compliance context (primary official sources, retrieved 2026-10-24)\n- **[Focused regulatory decision matrix](FAMILY-REGULATORY-GATES-2026-10-24.md)** tracks Québec Law 25 / CAI, Canada's new Children's Privacy Code, AMF/CSA tokenization, FINTRAC service classification and available funding/eligibility without treating a financing program as guaranteed.
 - Québec AMF: https://lautorite.qc.ca/en/general-public/investments/crypto/how-to-buy-and-sell-cryptoassets — registration, KYC and rules can apply to cryptoasset trading platforms.
 - Canadian Securities Administrators: https://www.securities-administrators.ca/investor-tools/crypto-assets/regulation-of-crypto-assets/ — asset characterization and custody/trading platform model determine securities-law applicability.
 - FINTRAC MSB test: https://fintrac-canafe.canada.ca/msb-esm/questions/2-eng — **activity-based** registration assessment; avoid claiming registration universally required for all architectures or unnecessary for a non-custodial solution.
