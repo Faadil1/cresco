@@ -69,3 +69,19 @@ describe("execution idempotency in state", () => {
     expect(s.pendingExecutions).toHaveLength(0);
   });
 });
+
+describe("shared browser demo exit", () => {
+  it("drops the prior demo visitor's profile, financial state and session", () => {
+    const visited: typeof initialState = {
+      ...initialState,
+      session: { role: "child", kind: "demo", displayName: "Private name" },
+      profile: { ...initialState.profile, childName: "Private name", age: 12 },
+      money: { ...initialState.money, balance: 888 },
+      practice: { ...initialState.practice, cash: 333 },
+      xp: 10000,
+    };
+    const exited = reducer(visited, { type: "signOut" });
+    expect(exited).toEqual(initialState);
+    expect(exited.session).toBeNull();
+  });
+});

@@ -8,18 +8,21 @@ import { ActionButton } from "@/components/ui/primitives";
 import { auth } from "@/services";
 import { useStore } from "@/state/store";
 
+const DEMO_CHILD_NAME = "Alex";
+
 export default function StartPage() {
   const router = useRouter();
-  const { state, dispatch } = useStore();
-  const [email, setEmail] = useState("");
-  const [busy, setBusy] = useState<"email" | "demo" | null>(null);
+  const { dispatch } = useStore();
+  const [busy, setBusy] = useState<"onboarding" | "demo" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const go = async (kind: "email" | "demo") => {
+  const go = async (kind: "onboarding" | "demo") => {
     setBusy(kind);
     setError(null);
     try {
-      const session = await auth.signInDemo("child", state.profile.childName);
+      // No real name, child email or age is requested or sent in demo entry.
+      const session = await auth.signInDemo("child", DEMO_CHILD_NAME);
+      dispatch({ type: "setProfile", profile: { childName: DEMO_CHILD_NAME, age: null } });
       dispatch({ type: "signIn", session });
       router.push(kind === "demo" ? "/home" : "/onboarding/about");
     } catch {
@@ -32,15 +35,15 @@ export default function StartPage() {
   return (
     <OnboardingFrame
       back="/"
-      title="Let's get you started"
-      subtitle="Learning comes first. You won't need a wallet or any money to begin."
+      title="Start with a practice family"
+      subtitle="See how a young person learns within family-set limits. No real money or account required."
       footer={
         <div className="space-y-3">
-          <ActionButton onClick={() => go("email")} disabled={busy !== null || !/.+@.+\..+/.test(email)} arrow>
-            {busy === "email" ? "Setting up…" : "Continue"}
+          <ActionButton onClick={() => go("onboarding")} disabled={busy !== null} arrow>
+            {busy === "onboarding" ? "Opening…" : "Explore step by step"}
           </ActionButton>
           <ActionButton variant="secondary" onClick={() => go("demo")} disabled={busy !== null}>
-            {busy === "demo" ? "Opening demo…" : `Try the demo as ${state.profile.childName}`}
+            {busy === "demo" ? "Opening demo…" : `Try the demo as ${DEMO_CHILD_NAME}`}
           </ActionButton>
         </div>
       }
@@ -48,26 +51,13 @@ export default function StartPage() {
       <div className="mx-auto max-w-[350px] overflow-hidden rounded-[22px] border border-line-soft">
         <StoryVignette role="teen" className="block w-full" />
       </div>
-      <label className="mt-6 block">
-        <span className="text-[14px] font-semibold text-navy-strong">Email</span>
-        <input
-          type="email"
-          inputMode="email"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
-          className="mt-1.5 h-[52px] w-full rounded-[15px] border border-line bg-surface px-4 text-[15px] font-semibold text-navy placeholder:text-ink-3 focus:border-blue focus:outline-none focus:ring-2 focus:ring-blue/20"
-        />
-      </label>
-      <p className="mt-3 rounded-[14px] bg-surface-soft px-3.5 py-3 text-[12.5px] text-ink-2">
-        Demo sign-in: no email is sent and no production account is created. When the CRESCO backend is available, family progress and requests sync through the demo backend.
-      </p>
+      <div className="mt-6 rounded-[14px] bg-surface-soft px-4 py-4 text-[13px] leading-relaxed text-ink-2">
+        <p className="font-semibold text-navy-strong">Sample profile: Alex</p>
+        <p className="mt-1">This is a shared demonstration, not a private household. Please do not enter a real child&apos;s information or financial details.</p>
+        <p className="mt-2">The sample balance is not cash, and demo stock examples are not real investments. Anyone can explore these demo roles.</p>
+      </div>
       {error ? (
-        <p
-          role="alert"
-          className="mt-3 rounded-[14px] border border-loss/25 bg-loss-soft px-3.5 py-3 text-[12.5px] font-medium text-loss-text"
-        >
+        <p role="alert" className="mt-3 rounded-[14px] border border-loss/25 bg-loss-soft px-3.5 py-3 text-[12.5px] font-medium text-loss-text">
           {error}
         </p>
       ) : null}

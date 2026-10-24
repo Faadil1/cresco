@@ -180,7 +180,10 @@ export function reducer(state: AppState, action: Action): AppState {
     case "signIn":
       return { ...state, session: action.session };
     case "signOut":
-      return { ...state, session: null };
+      // Clear the previous visitor\'s local demo profile, sample balances and
+      // activity on a shared browser. Backend demo tokens require separate
+      // server revocation and are not claimed to be revoked here.
+      return { ...initialState, session: null };
     case "setProfile":
       return { ...state, profile: { ...state.profile, ...action.profile } };
     case "setMode":

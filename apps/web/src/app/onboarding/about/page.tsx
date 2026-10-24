@@ -1,59 +1,42 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { OnboardingFrame } from "@/components/onboarding";
-import { ActionButton, Chip } from "@/components/ui/primitives";
+import { ActionButton } from "@/components/ui/primitives";
 import { useStore } from "@/state/store";
-
-const AGES = [10, 11, 12, 13, 14, 15];
 
 export default function AboutStep() {
   const router = useRouter();
-  const { state, dispatch } = useStore();
-  const [name, setName] = useState(state.profile.childName);
-  const [age, setAge] = useState<number | null>(state.profile.age);
+  const { dispatch } = useStore();
 
   return (
     <OnboardingFrame
       step={1}
       total={4}
       back="/start"
-      title="What should we call you?"
-      subtitle="We use this to personalize your lessons. Only your family sees it."
+      title="Meet Alex"
+      subtitle="A sample learner for exploring CRESCO safely."
       footer={
         <ActionButton
           arrow
-          disabled={!name.trim() || age == null}
           onClick={() => {
-            dispatch({ type: "setProfile", profile: { childName: name.trim(), age } });
+            dispatch({ type: "setProfile", profile: { childName: "Alex", age: null } });
             router.push("/onboarding/goal");
           }}
         >
-          Next
+          Next: choose a practice goal
         </ActionButton>
       }
     >
-      <label className="block">
-        <span className="text-[14px] font-semibold text-navy-strong">First name</span>
-        <input
-          value={name}
-          maxLength={24}
-          onChange={(e) => setName(e.target.value)}
-          autoComplete="given-name"
-          className="mt-1.5 h-[52px] w-full rounded-[15px] border border-line bg-surface px-4 text-[16px] font-medium text-navy focus:border-blue focus:outline-none focus:ring-2 focus:ring-blue/20"
-        />
-      </label>
-      <fieldset className="mt-6">
-        <legend className="text-[14px] font-semibold text-navy-strong">How old are you?</legend>
-        <div className="mt-2 grid grid-cols-6 gap-2">
-          {AGES.map((a) => (
-            <Chip key={a} selected={age === a} onClick={() => setAge(a)} className="h-12 px-0 text-[15px]">
-              {a}
-            </Chip>
-          ))}
-        </div>
-      </fieldset>
+      <div className="rounded-[18px] border border-line-soft bg-surface-soft px-5 py-6">
+        <p className="text-[17px] font-semibold text-navy-strong">Your learner is Alex (demo)</p>
+        <p className="mt-3 text-[14px] leading-relaxed text-ink-2">
+          You can try lessons and family decisions without providing a real child&apos;s name, age or email.
+        </p>
+        <p className="mt-3 text-[14px] leading-relaxed text-ink-2">
+          This shared practice family is not a personal account. Keep all information fictional. Real family accounts and verified parental permissions are not available yet.
+        </p>
+      </div>
     </OnboardingFrame>
   );
 }
