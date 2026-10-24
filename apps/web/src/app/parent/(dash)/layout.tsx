@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Wordmark } from "@/components/shell";
 import { cn } from "@/components/ui/primitives";
 import { auth } from "@/services";
+import { clearBackendSessionToken } from "@/services/cresco-backend";
 import { useStore } from "@/state/store";
 
 const LINKS = [
@@ -60,14 +61,28 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
               </Link>
             ))}
           </nav>
-          <button
-            type="button"
-            onClick={switchToChild}
-            disabled={switching}
-            className="ml-auto text-[13px] font-semibold text-green-strong hover:underline disabled:opacity-60 md:ml-2"
-          >
-            {switching ? "Switching…" : `${state.profile.childName}'s view`}
-          </button>
+          <div className="ml-auto flex shrink-0 items-center gap-3 md:ml-2">
+            <button
+              type="button"
+              onClick={switchToChild}
+              disabled={switching}
+              className="text-[12px] font-semibold text-green-strong hover:underline disabled:opacity-60 md:text-[13px]"
+            >
+              {switching ? "Switching…" : "Learner view"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                clearBackendSessionToken();
+                dispatch({ type: "signOut" });
+                router.push("/");
+              }}
+              className="text-[12px] font-semibold text-ink-2 hover:text-navy md:text-[13px]"
+              aria-label="Exit shared demo"
+            >
+              Exit demo
+            </button>
+          </div>
         </div>
       </header>
       <main id="main" className="mx-auto max-w-[1120px] px-5 pb-16 pt-5 md:px-8 md:pt-8">
