@@ -384,3 +384,63 @@ test("World’s Fair durable lease serializes one live run at a time", async () 
   assert.equal(acquireBAfterRelease.status, 200);
   assert.equal(b.acquired, true);
 });
+
+test("Family state API does not expose stored bearer sessions, reservation internals or executable tokens", async () => {
+  const env = familyEnv();
+  const url = "https://keys.example/api/v0.2";
+  const login = async (role) => {
+    const response = await handleFamilyApi(
+      new Request(url + "/auth/demo-session", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ role, displayName: role === "guardian" ? "Sam" : "Alex" })
+      }),
+      env
+    );
+    assert.equal(response.status, 200);
+    return body(response);
+  };
+
+  const guardian = await login("guardian");
+  const child = await login("child");
+
+  const anonymous = await handleFamilyApi(new Request(url + "/family/state"), env);
+  assert.equal(anonymous.status, 401);
+
+  const response = await handleFamilyApi(
+    new Request(url + "/family/state", {
+      headers: { authorization: `Bearer ${child.token}` }
+    }),
+    env
+  );
+  assert.equal(response.status, 200);
+  const snapshot = await body(response);
+  assert.deepEqual(
+    Object.keys(snapshot).sort(),
+    ["profile", "mandate", "balances", "moneyHoldings", "requests", "learning"].sort(),
+  );
+  assert.equal(typeof snapshot.profile.childName, "string");
+  assert.equal(typeof snapshot.balances.money, "number");
+
+  for (const privateKey of ["sessions", "reservations", "executionResults", "familyCode", "familyId", "activity"]) {
+    assert.equal(Object.hasOwn(snapshot, privateKey), false, `Public state leaked ${privateKey}`);
+  }
+  const wire = JSON.stringify(snapshot);
+  assert.equal(wire.includes(child.token), false, "caller token exposed");
+  assert.equal(wire.includes(guardian.token), false, "guardian bearer token exposed");
+
+  // The guardian session is still stored server-side; it simply must not be
+  // serialized into the learner-facing state API.
+  const funded = await handleFamilyApi(
+    new Request(url + "/funding/deposits", {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${guardian.token}`,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({ amount: 2 })
+    }),
+    env
+  );
+  assert.equal(funded.status, 200);
+});

@@ -632,7 +632,19 @@ export async function handleFamilyApi(request, env) {
     const denied = await requireFamilySession(env, request);
     if (denied) return denied;
     const out = await familyJson(env, "/state");
-    return json(out.body, out.status);
+    if (out.status !== 200) return json({ error: "FAMILY_STATE_UNAVAILABLE" }, out.status);
+    // Internal Durable Object state includes bearer sessions and pending
+    // reservations. Never send the raw backing document to a browser.
+    // Family demo users are still NOT authenticated real households.
+    const family = out.body;
+    return json({
+      profile: family.profile,
+      mandate: family.mandate,
+      balances: family.balances,
+      moneyHoldings: family.moneyHoldings,
+      requests: family.requests,
+      learning: family.learning
+    });
   }
 
   if (method === "POST" && path === "/api/v0.2/auth/demo-session") {
