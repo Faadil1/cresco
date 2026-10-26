@@ -34,10 +34,18 @@ async function expectRefusal(label, action, codes) {
   console.log("PROOF " + label + "=REFUSED code=" + actual.split("\n")[0]);
 }
 
+if (process.env.CRESCO_V1_EPHEMERAL_LOCALNET !== "1") {
+  throw new Error("BLOCKED: only the ephemeral scripts/run-v1-local-refusal.sh runner may invoke this proof");
+}
+
 describe("CRESCO V1 — isolated local-validator refusal proof (no Pyth CPI)", function () {
   this.timeout(120000);
 
   const provider = anchor.AnchorProvider.env();
+  const rpcEndpoint = new URL(provider.connection.rpcEndpoint);
+  assert.equal(rpcEndpoint.protocol, "http:", "BLOCKED: no public-network RPC for this proof");
+  assert.equal(rpcEndpoint.hostname, "127.0.0.1", "BLOCKED: only loopback RPC is allowed");
+  assert.equal(rpcEndpoint.port, "18899", "BLOCKED: wrong ephemeral local validator port");
   anchor.setProvider(provider);
   const idl = JSON.parse(readFileSync(resolve(__dirname, "../target/idl/keys.json"), "utf8"));
   assert.equal(idl.address, EXPECTED_PROGRAM_ID, "IDL address must match Rust declare_id / preloaded SBF");
