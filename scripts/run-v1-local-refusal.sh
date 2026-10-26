@@ -98,7 +98,7 @@ if [[ "$READY" != "1" ]]; then
 fi
 
 solana airdrop 20 "$LOCAL_PUBKEY" --url "$RPC_URL" >/dev/null
-solana program show "$PROGRAM_ID" --url "$RPC_URL" >/dev/null || {
+solana --url "$RPC_URL" --keypair "$TMP/local-payer.json" program show "$PROGRAM_ID" >/dev/null || {
   echo "BLOCKED: expected program not loaded in local ledger." >&2
   exit 3
 }
