@@ -37,7 +37,14 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends pkg-config libudev-dev libusb-1.0-0-dev libssl-dev
+      - name: Restore pinned Anchor binary
+        id: anchor-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/anchor
+          key: anchor-cli-0.32.1-ubuntu-x64-v1
       - name: Install pinned Anchor CLI
+        if: steps.anchor-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
           cargo install --git https://github.com/coral-xyz/anchor --tag v0.32.1 anchor-cli --locked
