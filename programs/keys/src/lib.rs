@@ -456,18 +456,16 @@ pub mod keys {
             expected_nonce
         );
 
-        let next_spent_amount = ctx
-            .accounts
-            .asset_rule
-            .spent_this_period
-            .checked_add(amount)
-            .ok_or(KeysError::Overflow)?;
-        let next_spent_notional = ctx
-            .accounts
-            .asset_rule
-            .spent_this_period_notional
-            .checked_add(requested_notional_micro_usd)
-            .ok_or(KeysError::Overflow)?;
+        // ALLOW_ONCE overrides an action boundary, never the hard period budget.
+        // Both counters are checked before moving assets or consuming the receipt.
+        let (next_spent_amount, next_spent_notional) = checked_period_spend(
+            ctx.accounts.asset_rule.spent_this_period,
+            amount,
+            ctx.accounts.asset_rule.max_period_amount,
+            ctx.accounts.asset_rule.spent_this_period_notional,
+            requested_notional_micro_usd,
+            ctx.accounts.mandate.max_period_notional,
+        )?;
 
         transfer_from_vault(
             &ctx.accounts.mandate,
@@ -1194,6 +1192,29 @@ fn invoke_orca_exact_in_swap<'info>(
     })?;
 
     Ok(())
+}
+
+// Shared fail-closed period arithmetic for the historical one-use transfer path.
+// Zero disables the mandate USD-period ceiling, not the per-asset token ceiling.
+fn checked_period_spend(
+    spent_amount: u64,
+    amount: u64,
+    max_period_amount: u64,
+    spent_notional: u64,
+    notional: u64,
+    max_period_notional: u64,
+) -> Result<(u64, u64)> {
+    let next_amount = spent_amount.checked_add(amount).ok_or(KeysError::Overflow)?;
+    require!(next_amount <= max_period_amount, KeysError::PeriodAmountExceeded);
+
+    let next_notional = spent_notional
+        .checked_add(notional)
+        .ok_or(KeysError::Overflow)?;
+    require!(
+        max_period_notional == 0 || next_notional <= max_period_notional,
+        KeysError::PythPeriodNotionalExceeded
+    );
+    Ok((next_amount, next_notional))
 }
 
 fn reset_period_if_needed(rule: &mut AssetRule, now: i64) {
@@ -2605,6 +2626,36 @@ mod tests {
         assert!(amount_is_within_rule(100, 250, 0, 1000));
         assert!(!amount_is_within_rule(500, 250, 0, 1000));
         assert!(!amount_is_within_rule(200, 250, 900, 1000));
+    }
+
+    #[test]
+    fn one_use_transfer_obeys_both_period_caps() {
+        // 600 already spent in a 1000-token, 10m micro-USD window.
+        assert_eq!(
+            checked_period_spend(600, 400, 1000, 6_000_000, 4_000_000, 10_000_000).unwrap(),
+            (1000, 10_000_000),
+        );
+        assert!(
+            checked_period_spend(600, 401, 1000, 6_000_000, 4_000_000, 10_000_000)
+                .is_err(),
+            "exception may not exceed the remaining token period budget"
+        );
+        assert!(
+            checked_period_spend(600, 400, 1000, 6_000_000, 4_000_001, 10_000_000)
+                .is_err(),
+            "exception may not exceed the remaining USD period budget"
+        );
+    }
+
+    #[test]
+    fn one_use_transfer_respects_optional_usd_cap_and_counter_overflow() {
+        // Zero is the documented unrestricted USD-period configuration.
+        assert_eq!(
+            checked_period_spend(600, 400, 1000, 6_000_000, 4_000_001, 0).unwrap(),
+            (1000, 10_000_001),
+        );
+        assert!(checked_period_spend(u64::MAX, 1, u64::MAX, 0, 1, 0).is_err());
+        assert!(checked_period_spend(0, 1, 1000, u64::MAX, 1, 0).is_err());
     }
 
     #[test]
