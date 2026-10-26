@@ -2933,6 +2933,45 @@ mod tests {
     use super::*;
 
     #[test]
+    fn v1_exact_action_predicate_refuses_changed_amount_destination_and_nonce() {
+        let program_id = Pubkey::new_from_array([1; 32]);
+        let mandate = Pubkey::new_from_array([2; 32]);
+        let mint = Pubkey::new_from_array([3; 32]);
+        let beneficiary = Pubkey::new_from_array([4; 32]);
+        let destination = Pubkey::new_from_array([5; 32]);
+        let guardian = Pubkey::new_from_array([6; 32]);
+        let digest = canonical_allow_once_v1_hash(
+            &program_id, &mandate, 7, &mint, &beneficiary,
+            &destination, 500, 1000, 1234, &guardian,
+        );
+        let allowance = AllowanceReceiptV1 {
+            mandate, guardian, beneficiary, mint,
+            destination_token_account: destination,
+            action_digest: digest,
+            amount: 500,
+            max_notional_micro_usd: 1000,
+            mandate_nonce: 7,
+            expires_at: 1234,
+            used: false,
+            used_at: 0,
+            bump: 255,
+        };
+        let check = |nonce, destination_key, amount, guardian_key, supplied_digest| {
+            require_v1_exact_action(
+                &allowance, &program_id, &mandate, nonce, &mint,
+                &beneficiary, destination_key, amount, guardian_key, supplied_digest,
+            )
+        };
+        assert!(check(7, &destination, 500, &guardian, digest).is_ok());
+        assert!(check(7, &destination, 501, &guardian, digest).is_err());
+        assert!(check(7, &Pubkey::new_from_array([9; 32]), 500, &guardian, digest).is_err());
+        assert!(check(8, &destination, 500, &guardian, digest).is_err());
+        assert!(check(7, &destination, 500, &Pubkey::new_from_array([10; 32]), digest).is_err());
+        assert!(check(7, &destination, 500, &guardian, [0u8; 32]).is_err());
+    }
+
+
+    #[test]
     fn v1_hash_binds_every_material_action_field() {
         let p = Pubkey::new_from_array([1; 32]);
         let mandate = Pubkey::new_from_array([2; 32]);
