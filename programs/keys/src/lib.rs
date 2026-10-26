@@ -556,6 +556,171 @@ pub mod keys {
         Ok(())
     }
 
+    pub fn execute_once_with_pyth_v1(
+        ctx: Context<ExecuteOnceWithPythV1>,
+        pyth_message: Vec<u8>,
+        amount: u64,
+        expected_nonce: u64,
+        action_digest: [u8; 32],
+    ) -> Result<()> {
+        require!(amount > 0, KeysError::InvalidAmount);
+        require!(!pyth_message.is_empty(), KeysError::PythMessageInvalid);
+
+        let now = Clock::get()?.unix_timestamp;
+        validate_execution_authority(
+            &ctx.accounts.mandate,
+            &ctx.accounts.asset_rule,
+            expected_nonce,
+            now,
+        )?;
+
+        let allowance = &ctx.accounts.allowance_v1;
+        require!(!allowance.used, KeysError::AllowanceAlreadyUsed);
+        require_eq!(
+            allowance.mandate_nonce,
+            expected_nonce,
+            KeysError::StaleAllowance
+        );
+        require!(
+            allowance.expires_at == 0 || now <= allowance.expires_at,
+            KeysError::AllowanceExpired
+        );
+        require_eq!(
+            allowance.amount,
+            amount,
+            KeysError::AllowanceActionMismatch
+        );
+        require_keys_eq!(
+            allowance.guardian,
+            ctx.accounts.charter.guardian,
+            KeysError::Unauthorized
+        );
+        let expected_digest = canonical_allow_once_v1_hash(
+            &crate::ID,
+            &ctx.accounts.mandate.key(),
+            expected_nonce,
+            &ctx.accounts.mint.key(),
+            &ctx.accounts.beneficiary.key(),
+            &ctx.accounts.delegate_token_account.key(),
+            amount,
+            allowance.max_notional_micro_usd,
+            allowance.expires_at,
+            &ctx.accounts.charter.guardian,
+        );
+        require!(
+            allowance.action_digest == action_digest
+                && action_digest == expected_digest,
+            KeysError::AllowanceActionMismatch
+        );
+
+        require_keys_eq!(
+            ctx.accounts.pyth_program.key(),
+            PYTH_LAZER_PROGRAM_ID,
+            KeysError::InvalidPythProgram
+        );
+        require_keys_eq!(
+            ctx.accounts.pyth_storage.key(),
+            PYTH_LAZER_STORAGE_ID,
+            KeysError::InvalidPythStorage
+        );
+        require_keys_eq!(
+            ctx.accounts.instructions_sysvar.key(),
+            sysvar::instructions::ID,
+            KeysError::InvalidInstructionsSysvar
+        );
+
+        verify_pyth_message_via_lazer(
+            &ctx.accounts.beneficiary.to_account_info(),
+            &ctx.accounts.pyth_program,
+            &ctx.accounts.pyth_storage,
+            &ctx.accounts.pyth_treasury,
+            &ctx.accounts.system_program.to_account_info(),
+            &ctx.accounts.instructions_sysvar,
+            &pyth_message,
+        )?;
+
+        let market = parse_verified_market_evidence(
+            &pyth_message,
+            ctx.accounts.asset_rule.pyth_feed_id,
+            now,
+            ctx.accounts.mandate.max_market_age_seconds,
+            ctx.accounts.mandate.max_confidence_bps,
+        )?;
+
+        require!(
+            ctx.accounts.asset_rule.max_unit_price_micro_usd == 0
+                || market.unit_price_micro_usd
+                    <= ctx.accounts.asset_rule.max_unit_price_micro_usd,
+            KeysError::MarketConditionInvalidated
+        );
+
+        reset_period_if_needed(&mut ctx.accounts.asset_rule, now);
+
+        let requested_notional_micro_usd = compute_notional_micro_usd(
+            amount,
+            ctx.accounts.mint.decimals,
+            market.unit_price_micro_usd,
+        )?;
+        require_allowance_exact_notional(
+            ctx.accounts.allowance_v1.max_notional_micro_usd,
+            requested_notional_micro_usd,
+            ctx.accounts.mint.decimals,
+            market.unit_price_micro_usd,
+        )?;
+
+        msg!(
+            "ALLOW_ONCE_V1_EXACT_ACTION approved_notional_micro_usd={} actual_notional_micro_usd={} nonce={}",
+            ctx.accounts.allowance_v1.max_notional_micro_usd,
+            requested_notional_micro_usd,
+            expected_nonce
+        );
+
+        let next_spent_amount = ctx
+            .accounts
+            .asset_rule
+            .spent_this_period
+            .checked_add(amount)
+            .ok_or(KeysError::Overflow)?;
+        let next_spent_notional = ctx
+            .accounts
+            .asset_rule
+            .spent_this_period_notional
+            .checked_add(requested_notional_micro_usd)
+            .ok_or(KeysError::Overflow)?;
+        require!(
+            next_spent_amount <= ctx.accounts.asset_rule.max_period_amount,
+            KeysError::PeriodAmountExceeded
+        );
+        require!(
+            ctx.accounts.mandate.max_period_notional == 0
+                || next_spent_notional <= ctx.accounts.mandate.max_period_notional,
+            KeysError::PythPeriodNotionalExceeded
+        );
+
+        transfer_from_vault(
+            &ctx.accounts.mandate,
+            &ctx.accounts.mint,
+            &ctx.accounts.vault_token_account,
+            &ctx.accounts.delegate_token_account,
+            &ctx.accounts.token_program,
+            ctx.bumps.vault_token_account,
+            amount,
+        )?;
+
+        ctx.accounts.asset_rule.spent_this_period = next_spent_amount;
+        ctx.accounts.asset_rule.spent_this_period_notional = next_spent_notional;
+        ctx.accounts.allowance_v1.used = true;
+        ctx.accounts.allowance_v1.used_at = now;
+
+        msg!(
+            "ALLOW_ONCE_V1_CONSUMED feed={} notional_micro_usd={} nonce={}",
+            ctx.accounts.asset_rule.pyth_feed_id,
+            requested_notional_micro_usd,
+            expected_nonce
+        );
+        Ok(())
+    }
+
     pub fn execute_within_mandate(
         ctx: Context<ExecuteWithinMandate>,
         amount: u64,
@@ -2029,6 +2194,85 @@ pub struct ExecuteOnceWithPyth<'info> {
         constraint = allowance.mint == mint.key() @ KeysError::AllowanceMintMismatch
     )]
     pub allowance: Box<Account<'info, AllowanceReceipt>>,
+    #[account(
+        mut,
+        seeds = [b"vault", mandate.key().as_ref(), mint.key().as_ref()],
+        bump,
+        token::mint = mint,
+        token::authority = vault_token_account,
+        token::token_program = token_program
+    )]
+    pub vault_token_account: InterfaceAccount<'info, TokenAccount>,
+    pub mint: InterfaceAccount<'info, Mint>,
+    #[account(mut)]
+    pub beneficiary: Signer<'info>,
+    #[account(
+        mut,
+        token::mint = mint,
+        token::authority = beneficiary,
+        token::token_program = token_program
+    )]
+    pub delegate_token_account: InterfaceAccount<'info, TokenAccount>,
+
+    /// CHECK: address is validated in the instruction.
+    pub pyth_program: AccountInfo<'info>,
+    /// CHECK: address is validated in the instruction; Pyth validates its data.
+    pub pyth_storage: AccountInfo<'info>,
+    /// CHECK: Pyth storage has_one treasury is enforced by Pyth during CPI.
+    #[account(mut)]
+    pub pyth_treasury: AccountInfo<'info>,
+    /// CHECK: address is validated against the instructions sysvar id.
+    pub instructions_sysvar: AccountInfo<'info>,
+
+    pub token_program: Interface<'info, TokenInterface>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(
+    pyth_message: Vec<u8>,
+    amount: u64,
+    expected_nonce: u64,
+    action_digest: [u8; 32]
+)]
+pub struct ExecuteOnceWithPythV1<'info> {
+    #[account(
+        seeds = [b"charter", charter.beneficiary.as_ref()],
+        bump = charter.bump,
+        has_one = beneficiary
+    )]
+    pub charter: Box<Account<'info, Charter>>,
+    #[account(
+        mut,
+        seeds = [b"mandate", charter.key().as_ref()],
+        bump = mandate.bump,
+        has_one = charter
+    )]
+    pub mandate: Box<Account<'info, Mandate>>,
+    #[account(
+        mut,
+        seeds = [b"asset-rule", mandate.key().as_ref(), mint.key().as_ref()],
+        bump = asset_rule.bump,
+        constraint = asset_rule.mandate == mandate.key() @ KeysError::AssetRuleMandateMismatch,
+        constraint = asset_rule.mint == mint.key() @ KeysError::AssetRuleMintMismatch
+    )]
+    pub asset_rule: Box<Account<'info, AssetRule>>,
+    #[account(
+        mut,
+        seeds = [
+            b"allowance-v1",
+            mandate.key().as_ref(),
+            mint.key().as_ref(),
+            action_digest.as_ref()
+        ],
+        bump = allowance_v1.bump,
+        constraint = allowance_v1.mandate == mandate.key() @ KeysError::AllowanceMandateMismatch,
+        constraint = allowance_v1.beneficiary == beneficiary.key() @ KeysError::AllowanceBeneficiaryMismatch,
+        constraint = allowance_v1.mint == mint.key() @ KeysError::AllowanceMintMismatch,
+        constraint = allowance_v1.guardian == charter.guardian @ KeysError::Unauthorized,
+        constraint = allowance_v1.destination_token_account == delegate_token_account.key() @ KeysError::AllowanceActionMismatch
+    )]
+    pub allowance_v1: Box<Account<'info, AllowanceReceiptV1>>,
     #[account(
         mut,
         seeds = [b"vault", mandate.key().as_ref(), mint.key().as_ref()],
