@@ -35,11 +35,13 @@ cargo update -p zeroize --precise 1.8.2
 # Pin transitive proc-macro-crate to its toml_edit 0.22 dependency, avoiding
 # toml_parser 1.1.5 that requires Cargo edition2024 unsupported by SBF Cargo 1.84.
 cargo update -p proc-macro-crate@3.5.0 --precise 3.3.0
+cargo update -p indexmap@2.14.2 --precise 2.13.1
+cargo update -p zeroize_derive@1.5.0 --precise 1.4.2
 if ! grep -A1 -F 'name = "zeroize"' Cargo.lock | grep -Fq 'version = "1.8.2"'; then
   echo "BLOCKED: incompatible zeroize version selected for Solana 2.3.0" >&2
   exit 2
 fi
-echo "Compiling SBF with temporary Cargo pins: zeroize 1.8.2 / proc-macro-crate 3.3.0"
+echo "Compiling SBF with temporary Cargo pins: zeroize 1.8.2 / zeroize_derive 1.4.2 / proc-macro-crate 3.3.0 / indexmap 2.13.1"
 anchor build
 
 if [[ ! -s target/deploy/keys.so || ! -s target/idl/keys.json ]]; then
