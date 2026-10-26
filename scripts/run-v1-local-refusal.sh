@@ -65,6 +65,21 @@ for(const method of ["grant_allowance_once_v1","execute_once_with_pyth_v1"]){
 TMP="$(mktemp -d)"
 PID=""
 cleanup() {
+  local result=$?
+  if [[ "$result" -ne 0 ]]; then
+    echo "LOCALNET VALIDATION FAILED: exit=$result; examining ephemeral validator" >&2
+    if [[ -n "${PID:-}" ]] && kill -0 "$PID" 2>/dev/null; then
+      echo "Validator process: alive" >&2
+    else
+      echo "Validator process: not alive" >&2
+    fi
+    solana --url "$RPC_URL" --keypair "$TMP/local-payer.json" slot >&2 || true
+    solana --url "$RPC_URL" --keypair "$TMP/local-payer.json" block-height >&2 || true
+    if [[ -f "$TMP/local-validator.log" ]]; then
+      echo "Last 100 local validator log lines:" >&2
+      tail -n 100 "$TMP/local-validator.log" >&2
+    fi
+  fi
   if [[ -n "$PID" ]]; then
     kill "$PID" 2>/dev/null || true
     wait "$PID" 2>/dev/null || true
