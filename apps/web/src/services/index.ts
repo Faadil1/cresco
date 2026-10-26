@@ -441,7 +441,7 @@ export const funding: FundingService = {
       return addDevnetTestFunds(amount);
     }
     await latency(500);
-    return { status: "DEMO_CREDITED", amount };
+    return { status: "DEMO_CREDITED", amount, realPaymentTaken: false as const };
   },
 };
 
