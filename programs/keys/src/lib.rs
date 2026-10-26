@@ -278,16 +278,15 @@ pub mod keys {
             KeysError::MandateRevoked
         );
 
-        let now = Clock::get()?.unix_timestamp;
         let rule = &mut ctx.accounts.asset_rule;
         rule.enabled = enabled;
         rule.action_mask = action_mask;
         rule.max_action_amount = max_action_amount;
         rule.max_period_amount = max_period_amount;
         rule.period_seconds = period_seconds;
-        rule.period_started_at = now;
-        rule.spent_this_period = 0;
-        rule.spent_this_period_notional = 0;
+        // A guardian policy edit must not silently mint a fresh spending window.
+        // Preserve period_started_at and both cumulative counters; the next
+        // execution performs an actual rollover through reset_period_if_needed.
         rule.max_unit_price_micro_usd = max_unit_price_micro_usd;
         rule.pyth_feed_id = pyth_feed_id;
 
