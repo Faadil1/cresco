@@ -20,21 +20,31 @@ export default function AddMoneyPage() {
   const [custom, setCustom] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const value = amount === "custom" ? Number(custom) : amount;
   const valid = Number.isFinite(value) && value > 0 && value <= 500;
 
   const add = guard(async () => {
     setBusy(true);
-    const res = await funding.addMoney({ amount: value });
-    dispatch({ type: "addFunds", amount: res.amount });
-    setBusy(false);
-    setDone(res.amount);
-    toast(`${formatAmount(res.amount)} demo money added`);
+    setError(null);
+    try {
+      const res = await funding.addMoney({ amount: value });
+      if ((res.status !== "DEMO_CREDITED" && res.status !== "DEVNET_TEST_CREDITED") || res.realPaymentTaken !== false || !Number.isFinite(res.amount) || res.amount !== value) {
+        throw new Error("Unverified practice-credit result");
+      }
+      dispatch({ type: "addFunds", amount: res.amount });
+      setDone(res.amount);
+      toast(`${formatAmount(res.amount)} practice funds added`);
+    } catch {
+      setError("We could not confirm this practice credit. Your displayed balance was not updated. Check the balance before trying again.");
+    } finally {
+      setBusy(false);
+    }
   });
 
   return (
     <div className="animate-rise mx-auto max-w-[560px]">
-      <PageHeader title="Add money" subtitle={`To ${state.profile.childName}'s Money Mode balance`} back="/parent" />
+      <PageHeader title="Add practice funds" subtitle={`Simulated funds for ${state.profile.childName}'s demo balance`} back="/parent" />
       <div className="mt-5">
         <MoneyBalanceCard balance={state.money.balance} />
       </div>
@@ -42,7 +52,7 @@ export default function AddMoneyPage() {
       {done != null ? (
         <Card className="mt-5 p-5 text-center">
           <CheckCircle2 aria-hidden className="animate-bloom mx-auto size-12 text-green" />
-          <p className="mt-2 text-[18px] font-semibold text-navy-strong">{formatAmount(done)} added</p>
+          <p className="mt-2 text-[18px] font-semibold text-navy-strong">{formatAmount(done)} in practice funds added</p>
           <p className="mt-1 text-[13.5px] text-ink-2">Demo funds only. No payment was taken.</p>
           <ActionButton className="mt-4" href="/parent" variant="secondary">
             Back to overview
@@ -73,10 +83,11 @@ export default function AddMoneyPage() {
             </label>
           ) : null}
           <p className="mt-4 rounded-[14px] bg-yellow-soft px-3.5 py-3 text-[13px] font-semibold text-[#6e5119]">
-            Demo mode: no bank or card is connected, and no payment is taken. This adds demo money so you can try Money Mode.
+            Practice only. No bank or card is connected, no payment is taken, and the balance cannot be withdrawn or spent outside this demo.
           </p>
+          {error ? <p role="alert" className="mt-3 text-[13px] font-semibold text-loss-text">{error}</p> : null}
           <ActionButton className="mt-5" disabled={!valid || busy} onClick={add}>
-            {busy ? "Adding…" : `Add ${valid ? formatAmount(value) : ""} demo money`}
+            {busy ? "Adding…" : `Add ${valid ? formatAmount(value) : ""} practice funds`}
           </ActionButton>
         </>
       )}

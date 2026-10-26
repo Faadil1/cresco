@@ -71,6 +71,8 @@ describe("CRESCO parent sign-in recovery", () => {
     signInDemo.mockRejectedValueOnce(new Error("CORS blocked"));
 
     render(<ParentSignIn />);
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(screen.getByText(/not verified parental authority/i)).toBeInTheDocument();
 
     await userEvent.click(
       screen.getByRole("button", { name: "Continue as Alex (demo)" }),

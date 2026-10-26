@@ -107,7 +107,7 @@ export default function ParentDashboard() {
   }, [rangeDays, state.learningMinutes]);
 
   const settings = [
-    { href: "/parent/limits", icon: <CircleDollarSign className="size-5" />, tone: "blue" as const, title: "Funding & investment limits", sub: "Add money and set limits" },
+    { href: "/parent/limits", icon: <CircleDollarSign className="size-5" />, tone: "blue" as const, title: "Practice funding & limits", sub: "Add demo funds and set boundaries" },
     { href: "/parent/settings#learning", icon: <MapPin className="size-5" />, tone: "green" as const, title: "Learning goals", sub: "Set and update goals" },
     { href: "/parent/settings#notifications", icon: <Bell className="size-5" />, tone: "orange" as const, title: "Notifications", sub: "Learning activity updates" },
     { href: "/parent/settings#allowance", icon: <Wallet className="size-5" />, tone: "green" as const, title: "Allowance / spending limits", sub: "Set monthly limits" },
