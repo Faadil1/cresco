@@ -133,6 +133,7 @@ export async function revokeAndClearBackendDemoSessions(): Promise<{
   }
 
   let remoteRevoked = tokens.length === 0;
+  let localCleared = false;
   try {
     const config = crescoConfig();
     if (tokens.length && config.url) {
@@ -150,9 +151,9 @@ export async function revokeAndClearBackendDemoSessions(): Promise<{
       remoteRevoked = results.every((result) => result.status === "fulfilled" && result.value);
     }
   } finally {
-    const localCleared = clearBackendSessionToken();
-    return { localCleared, remoteRevoked };
+    localCleared = clearBackendSessionToken();
   }
+  return { localCleared, remoteRevoked };
 }
 
 /** Test hook: override env-derived config. Pass null to reset. */
