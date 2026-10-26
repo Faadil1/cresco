@@ -2,17 +2,19 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { ChevronRight, Info, LogOut, ShieldCheck, Target, Trophy, UserRound, Users } from "lucide-react";
 import { Avatar, Card, IconCircle, PageHeader } from "@/components/ui/primitives";
 import { formatAmount } from "@/domain/format";
 import { GOALS } from "@/mocks/family";
 import { useStore } from "@/state/store";
-import { clearBackendSessionToken } from "@/services/cresco-backend";
+import { revokeAndClearBackendDemoSessions } from "@/services/cresco-backend";
 
 export default function ProfilePage() {
   const router = useRouter();
   const { state, dispatch } = useStore();
   const goal = GOALS.find((g) => g.id === state.profile.goalId);
+  const [signingOut, setSigningOut] = useState(false);
 
   const rows = [
     { href: "/profile/wins", icon: <Trophy className="size-5" />, tone: "yellow" as const, title: "Your Wins", sub: "Badges and challenges" },
@@ -68,14 +70,19 @@ export default function ProfilePage() {
 
       <button
         type="button"
-        onClick={() => {
-          clearBackendSessionToken();
-          dispatch({ type: "signOut" });
-          router.push("/");
+        disabled={signingOut}
+        onClick={async () => {
+          setSigningOut(true);
+          try {
+            await revokeAndClearBackendDemoSessions();
+          } finally {
+            dispatch({ type: "signOut" });
+            router.push("/");
+          }
         }}
         className="mt-4 flex w-full items-center justify-center gap-2 rounded-[16px] py-3 text-[14px] text-ink-2 hover:text-navy"
       >
-        <LogOut aria-hidden className="size-4" /> Sign out
+        <LogOut aria-hidden className="size-4" /> {signingOut ? "Exiting demo…" : "Sign out"}
       </button>
     </div>
   );

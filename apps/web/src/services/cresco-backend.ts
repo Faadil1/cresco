@@ -93,17 +93,67 @@ function requiredRoleForRequest(path: string, method = "GET"): BackendRole | nul
   return null;
 }
 
-export function clearBackendSessionToken() {
-  if (typeof window === "undefined") return;
+export function clearBackendSessionToken(): boolean {
+  if (typeof window === "undefined") return false;
   try {
     window.localStorage.removeItem(BACKEND_SESSION_CRESCO.child);
     window.localStorage.removeItem(BACKEND_SESSION_CRESCO.guardian);
     window.localStorage.removeItem(BACKEND_ACTIVE_ROLE_KEY);
     // Clean up the pre-role-split key if it exists from an older deployment.
     window.localStorage.removeItem("cresco-session-v1");
+    return true;
   } catch {
     // Demo session cleanup is best-effort.
+    return false;
   }
+}
+
+/**
+ * Expire every locally stored demo role token at the demo API before clearing
+ * this device. The server may be offline: in that case remote revocation is
+ * unconfirmed, even though local tokens are still cleared.
+ *
+ * Demo only. This is NOT verified household sign-out or production auth.
+ */
+export async function revokeAndClearBackendDemoSessions(): Promise<{
+  localCleared: boolean;
+  remoteRevoked: boolean;
+}> {
+  if (typeof window === "undefined") return { localCleared: false, remoteRevoked: false };
+  let tokens: string[] = [];
+  try {
+    const candidateTokens = [
+      window.localStorage.getItem(BACKEND_SESSION_CRESCO.child),
+      window.localStorage.getItem(BACKEND_SESSION_CRESCO.guardian),
+      window.localStorage.getItem("cresco-session-v1"),
+    ];
+    tokens = [...new Set(candidateTokens.filter((token): token is string => Boolean(token)))];
+  } catch {
+    // Continue with local clear attempt even if storage is unavailable.
+  }
+
+  let remoteRevoked = tokens.length === 0;
+  let localCleared = false;
+  try {
+    const config = crescoConfig();
+    if (tokens.length && config.url) {
+      const results = await Promise.allSettled(tokens.map(async (token) => {
+        const response = await fetch(`${config.url}/api/v0.2/auth/logout`, {
+          method: "POST",
+          headers: { authorization: `Bearer ${token}` },
+          signal: AbortSignal.timeout(config.timeoutMs),
+        });
+        if (!response.ok) return false;
+        const body: unknown = await response.json();
+        return typeof body === "object" && body !== null &&
+          "revoked" in body && body.revoked === true;
+      }));
+      remoteRevoked = results.every((result) => result.status === "fulfilled" && result.value);
+    }
+  } finally {
+    localCleared = clearBackendSessionToken();
+  }
+  return { localCleared, remoteRevoked };
 }
 
 /** Test hook: override env-derived config. Pass null to reset. */
