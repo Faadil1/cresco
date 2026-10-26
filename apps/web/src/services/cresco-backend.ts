@@ -93,16 +93,18 @@ function requiredRoleForRequest(path: string, method = "GET"): BackendRole | nul
   return null;
 }
 
-export function clearBackendSessionToken() {
-  if (typeof window === "undefined") return;
+export function clearBackendSessionToken(): boolean {
+  if (typeof window === "undefined") return false;
   try {
     window.localStorage.removeItem(BACKEND_SESSION_CRESCO.child);
     window.localStorage.removeItem(BACKEND_SESSION_CRESCO.guardian);
     window.localStorage.removeItem(BACKEND_ACTIVE_ROLE_KEY);
     // Clean up the pre-role-split key if it exists from an older deployment.
     window.localStorage.removeItem("cresco-session-v1");
+    return true;
   } catch {
     // Demo session cleanup is best-effort.
+    return false;
   }
 }
 
@@ -148,10 +150,9 @@ export async function revokeAndClearBackendDemoSessions(): Promise<{
       remoteRevoked = results.every((result) => result.status === "fulfilled" && result.value);
     }
   } finally {
-    clearBackendSessionToken();
+    const localCleared = clearBackendSessionToken();
+    return { localCleared, remoteRevoked };
   }
-
-  return { localCleared: true, remoteRevoked };
 }
 
 /** Test hook: override env-derived config. Pass null to reset. */
