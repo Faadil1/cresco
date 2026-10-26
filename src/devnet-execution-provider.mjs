@@ -877,6 +877,12 @@ export function createDevnetExecutionProvider({
         ) {
           throw new Error('ALLOW_ONCE_RECEIPT_BINDING_MISMATCH');
         }
+        if (!receipt.guardian.equals(signer.publicKey)) {
+          throw new Error('ALLOW_ONCE_GUARDIAN_MISMATCH');
+        }
+        if (receipt.maxNotionalMicroUsd <= 0) {
+          throw new Error('ALLOW_ONCE_INVALID_NOTIONAL');
+        }
         if (receipt.used) {
           throw new Error('AllowanceAlreadyUsed');
         }
