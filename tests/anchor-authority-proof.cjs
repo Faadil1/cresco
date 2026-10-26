@@ -686,14 +686,9 @@ describe("KEYS Solana authority + bounded-capital proof", () => {
   });
 
   it("refuses a zero-amount historical one-use transfer without consuming the allowance", async function () {
-    if (!process.env.PYTH_PRO_API_KEY) {
-      console.log("PROOF legacy_once_zero_amount=SKIP reason=PYTH_PRO_API_KEY_NOT_INJECTED");
-      this.skip();
-    }
-
     const currentMandate = await program.account.mandate.fetch(mandate);
     const nonce = currentMandate.nonce.toNumber();
-    const requestHash = hash32(`cresco-local-validator-expired-once-${nonce}`);
+    const requestHash = hash32(`cresco-local-validator-zero-amount-once-${nonce}`);
     const [allowance] = PublicKey.findProgramAddressSync(
       [Buffer.from("allowance"), mandate.toBuffer(), mockStockMint.toBuffer(), Buffer.from(requestHash)],
       program.programId
@@ -722,11 +717,11 @@ describe("KEYS Solana authority + bounded-capital proof", () => {
     const vaultBefore = await getAccount(provider.connection, vaultTokenAccount);
     const ruleBefore = await program.account.assetRule.fetch(assetRule);
 
+    // The amount guard executes before Pyth account validation/CPI.
+    // Do not depend on a live Pyth storage account for this local negative path.
     const pythProgram = new PublicKey("pytd2yyk641x7ak7mkaasSJVXh6YYZnC7wTmtgAyxPt");
     const pythStorage = new PublicKey("3rdJbqfnagQ4yx9HXJViD4zc4xpiSqmFsKpPuSCQVyQL");
-    const storageInfo = await provider.connection.getAccountInfo(pythStorage);
-    assert(storageInfo, "Pyth storage must exist on the validator");
-    const pythTreasury = new PublicKey(storageInfo.data.subarray(40, 72));
+    const pythTreasury = provider.wallet.publicKey;
 
     await expectRefusal(
       "legacy_once_zero_amount",
