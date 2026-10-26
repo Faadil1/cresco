@@ -1,0 +1,216 @@
+"use strict";
+
+// Dedicated local-validator negative-path proof. Runs only when explicitly invoked.
+// No Pyth CPI is required: each execution is deliberately rejected BEFORE the CPI.
+const anchor = require("@coral-xyz/anchor");
+const spl = require("@solana/spl-token");
+const { readFileSync } = require("node:fs");
+const { resolve } = require("node:path");
+const { createHash } = require("node:crypto");
+const { strict: assert } = require("node:assert");
+const {
+  Keypair, PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL,
+  SYSVAR_INSTRUCTIONS_PUBKEY,
+} = anchor.web3;
+const {
+  TOKEN_PROGRAM_ID, createMint, createAccount,
+  getOrCreateAssociatedTokenAccount, getAccount, mintTo,
+} = spl;
+// NOTE: This file is CommonJS; ESM helper is loaded via dynamic import below.
+
+const PYTH_PROGRAM = new PublicKey("pytd2yyk641x7ak7mkaasSJVXh6YYZnC7wTmtgAyxPt");
+const PYTH_STORAGE = new PublicKey("3rdJbqfnagQ4yx9HXJViD4zc4xpiSqmFsKpPuSCQVyQL");
+const EXPECTED_PROGRAM_ID = "ABjE6V5q9VbD3CAHDXxvztY5kXQmDXHRcEP1kZ4KSSfk";
+const hash32 = (x) => Array.from(createHash("sha256").update(x).digest());
+const bn = (v) => new anchor.BN(v.toString());
+const u64 = (v) => { const b = Buffer.alloc(8); b.writeBigUInt64LE(BigInt(v)); return b; };
+
+async function expectRefusal(label, action, codes) {
+  let err;
+  try { await action(); } catch (e) { err = e; }
+  assert(err, label + " unexpectedly succeeded");
+  const actual = String(err?.error?.errorCode?.code ?? err?.error?.errorMessage ?? err?.message ?? "");
+  assert(codes.some((code) => actual.includes(code)), label + ": unexpected error " + actual);
+  console.log("PROOF " + label + "=REFUSED code=" + actual.split("\n")[0]);
+}
+
+describe("CRESCO V1 — isolated local-validator refusal proof (no Pyth CPI)", function () {
+  this.timeout(120000);
+
+  const provider = anchor.AnchorProvider.env();
+  anchor.setProvider(provider);
+  const idl = JSON.parse(readFileSync(resolve(__dirname, "../target/idl/keys.json"), "utf8"));
+  assert.equal(idl.address, EXPECTED_PROGRAM_ID, "IDL address must match Rust declare_id / preloaded SBF");
+  const program = new anchor.Program(idl, provider);
+  assert.equal(program.programId.toBase58(), EXPECTED_PROGRAM_ID);
+
+  const beneficiary = Keypair.generate();
+  const guardian = provider.wallet.publicKey;
+  let mint, destination, alternateDestination, assetRule, vault, charter, mandate;
+  let allowanceV1, actionDigest, canonicalAllowOnceV1Hash;
+  const amount = 400n, maxNotionalMicroUsd = 1000n, expiry = 0n;
+  const nonce = 2n;
+
+  const pda = (seeds) => PublicKey.findProgramAddressSync(seeds, program.programId)[0];
+  const allowanceAddress = (digest) => pda([
+    Buffer.from("allowance-v1"), mandate.toBuffer(), mint.toBuffer(), digest,
+  ]);
+  const digestFor = (values = {}) => canonicalAllowOnceV1Hash({
+    programId: program.programId,
+    mandate,
+    mandateNonce: nonce,
+    mint,
+    beneficiary: beneficiary.publicKey,
+    destinationTokenAccount: destination,
+    amount,
+    maxNotionalMicroUsd,
+    expiry,
+    guardian,
+    ...values,
+  });
+  const grant = (digest, targetPda, approvedAmount = amount, approvedDestination = destination) =>
+    program.methods.grantAllowanceOnceV1(
+      bn(approvedAmount), bn(nonce), bn(maxNotionalMicroUsd), bn(expiry), [...digest],
+    ).accountsStrict({
+      charter, mandate, mint,
+      beneficiary: beneficiary.publicKey,
+      destinationTokenAccount: approvedDestination,
+      allowanceV1: targetPda,
+      guardian, tokenProgram: TOKEN_PROGRAM_ID,
+      systemProgram: SystemProgram.programId,
+    }).rpc();
+
+  const attemptExecute = (requestedAmount, destinationAccount, requestedNonce = nonce, digest = actionDigest) =>
+    program.methods.executeOnceWithPythV1(
+      [1], bn(requestedAmount), bn(requestedNonce), [...digest],
+    ).accountsStrict({
+      charter, mandate, assetRule, allowanceV1, vault, mint,
+      beneficiary: beneficiary.publicKey, delegateTokenAccount: destinationAccount,
+      pythProgram: PYTH_PROGRAM, pythStorage: PYTH_STORAGE,
+      pythTreasury: guardian,
+      instructionsSysvar: SYSVAR_INSTRUCTIONS_PUBKEY,
+      tokenProgram: TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId,
+    }).signers([beneficiary]).rpc();
+
+  const snapshot = async () => ({
+    vaultAmount: (await getAccount(provider.connection, vault)).amount.toString(),
+    destinationAmount: (await getAccount(provider.connection, destination)).amount.toString(),
+    alternateAmount: (await getAccount(provider.connection, alternateDestination)).amount.toString(),
+    spent: (await program.account.assetRule.fetch(assetRule)).spentThisPeriod.toString(),
+    spentNotional: (await program.account.assetRule.fetch(assetRule)).spentThisPeriodNotional.toString(),
+    used: (await program.account.allowanceReceiptV1.fetch(allowanceV1)).used,
+  });
+  const remainsUnchanged = async (before) => assert.deepEqual(await snapshot(), before);
+
+  before(async () => {
+    ({ canonicalAllowOnceV1Hash } = await import("../src/allow-once-v1-hash.mjs"));
+    const payer = provider.wallet.payer;
+    assert(payer, "This test needs a local generated payer, never a production key");
+    const cluster = await provider.connection.getGenesisHash();
+    assert(cluster, "Local validator must be reachable");
+    const id = await provider.connection.getAccountInfo(program.programId);
+    assert(id && id.executable, "V1 SBF program was not preloaded on the local validator");
+
+    await provider.sendAndConfirm(new Transaction().add(SystemProgram.transfer({
+      fromPubkey: guardian, toPubkey: beneficiary.publicKey,
+      lamports: Math.floor(0.1 * LAMPORTS_PER_SOL),
+    })));
+    mint = await createMint(provider.connection, payer, guardian, null, 0);
+    destination = (await getOrCreateAssociatedTokenAccount(
+      provider.connection, payer, mint, beneficiary.publicKey,
+    )).address;
+    alternateDestination = await createAccount(
+      provider.connection, payer, mint, beneficiary.publicKey,
+    );
+    charter = pda([Buffer.from("charter"), beneficiary.publicKey.toBuffer()]);
+    mandate = pda([Buffer.from("mandate"), charter.toBuffer()]);
+    const review0 = pda([Buffer.from("review"), mandate.toBuffer(), u64(0)]);
+    assetRule = pda([Buffer.from("asset-rule"), mandate.toBuffer(), mint.toBuffer()]);
+    vault = pda([Buffer.from("vault"), mandate.toBuffer(), mint.toBuffer()]);
+
+    await program.methods.initializeCharter(hash32("CA-QC"), bn(10000), bn(5000))
+      .accountsStrict({
+        charter, guardian, beneficiary: beneficiary.publicKey,
+        systemProgram: SystemProgram.programId,
+      }).signers([beneficiary]).rpc();
+    await program.methods.initializeMandate().accountsStrict({
+      charter, mandate, guardian, systemProgram: SystemProgram.programId,
+    }).rpc();
+    await program.methods.recordReview(hash32("v1-isolated-review"), true)
+      .accountsStrict({
+        charter, mandate, reviewReceipt: review0, guardian,
+        systemProgram: SystemProgram.programId,
+      }).rpc();
+    await program.methods.transitionMandate(3, bn(0)).accountsStrict({
+      charter, mandate, reviewReceipt: review0, guardian,
+    }).rpc();
+    await program.methods.initializeAssetRule(
+      bn(1), 1, bn(500), bn(1000), bn(3600), bn(0), 1435,
+    ).accountsStrict({
+      charter, mandate, assetRule, vaultTokenAccount: vault, mint, guardian,
+      tokenProgram: TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId,
+    }).rpc();
+    await mintTo(provider.connection, payer, mint, vault, payer, 2000);
+    const state = await program.account.mandate.fetch(mandate);
+    assert.equal(state.nonce.toString(), nonce.toString());
+  });
+
+  it("creates a guardian-signed V1 allowance bound to the exact action", async () => {
+    actionDigest = digestFor();
+    allowanceV1 = allowanceAddress(actionDigest);
+    const tx = await grant(actionDigest, allowanceV1);
+    const receipt = await program.account.allowanceReceiptV1.fetch(allowanceV1);
+    assert.equal(receipt.amount.toString(), amount.toString());
+    assert.equal(receipt.used, false);
+    assert.equal(receipt.destinationTokenAccount.toBase58(), destination.toBase58());
+    assert.equal(Buffer.from(receipt.actionDigest).toString("hex"), actionDigest.toString("hex"));
+    console.log("PROOF v1_exact_guardian_grant=SUCCESS tx=" + tx);
+  });
+
+  it("rejects a forged approval digest without creating a receipt", async () => {
+    const forged = digestFor({ amount: amount + 1n });
+    const forgedPda = allowanceAddress(forged);
+    await expectRefusal("v1_grant_forged_digest",
+      () => grant(forged, forgedPda),
+      ["AllowanceActionMismatch"]);
+    assert.equal(await provider.connection.getAccountInfo(forgedPda), null);
+  });
+
+  it("rejects modified amount before Pyth CPI, preserving all balances and counters", async () => {
+    const before = await snapshot();
+    await expectRefusal("v1_execute_changed_amount",
+      () => attemptExecute(amount + 1n, destination),
+      ["AllowanceActionMismatch"]);
+    await remainsUnchanged(before);
+  });
+
+  it("rejects changed destination even when its token owner and mint are valid", async () => {
+    const before = await snapshot();
+    await expectRefusal("v1_execute_changed_destination",
+      () => attemptExecute(amount, alternateDestination),
+      ["AllowanceActionMismatch"]);
+    await remainsUnchanged(before);
+  });
+
+  it("rejects mismatched request nonce without using the allowance", async () => {
+    const before = await snapshot();
+    await expectRefusal("v1_execute_changed_nonce",
+      () => attemptExecute(amount, destination, nonce + 1n),
+      ["StaleNonce", "StaleAllowance"]);
+    await remainsUnchanged(before);
+  });
+
+  it("refuses execution after guardian pauses the mandate, with zero spend", async () => {
+    const state = await program.account.mandate.fetch(mandate);
+    await program.methods.setMandateStatus(bn(state.nonce), 1).accountsStrict({
+      charter, mandate, guardian,
+    }).rpc();
+    const nextNonce = (await program.account.mandate.fetch(mandate)).nonce;
+    const before = await snapshot();
+    await expectRefusal("v1_paused_mandate",
+      () => attemptExecute(amount, destination, BigInt(nextNonce.toString())),
+      ["MandateNotActive"]);
+    await remainsUnchanged(before);
+    console.log("PROOF v1_local_negative_suite=COMPLETE_NO_PYTH_CPI");
+  });
+});
