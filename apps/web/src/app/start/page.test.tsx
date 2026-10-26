@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -71,6 +71,7 @@ describe("CRESCO child sign-in recovery", () => {
     signInDemo.mockRejectedValueOnce(new Error("CORS blocked"));
 
     render(<StartPage />);
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
 
     await userEvent.click(
       screen.getByRole("button", { name: "Try the demo as Jordan" }),
@@ -87,4 +88,15 @@ describe("CRESCO child sign-in recovery", () => {
     expect(dispatch).not.toHaveBeenCalled();
     expect(push).not.toHaveBeenCalled();
   });
+  it("runs guided practice with a demo child session, never a fake email sign-in", async () => {
+    signInDemo.mockResolvedValueOnce({ role: "child", displayName: "Jordan", kind: "demo" });
+    render(<StartPage />);
+
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Start guided practice (demo)" }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/onboarding/about"));
+    expect(signInDemo).toHaveBeenCalledWith("child", "Jordan");
+  });
+
 });
