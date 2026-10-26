@@ -193,6 +193,17 @@ export class FamilyState {
       });
     }
 
+    // Internal-only demo token revocation; the public API supplies the bearer
+    // token from the Authorization header, never from a caller-controlled body.
+    if (method === "POST" && path === "/session/revoke") {
+      const token = typeof body.token === "string" ? body.token : "";
+      const present = Object.prototype.hasOwnProperty.call(state.sessions || {}, token);
+      if (!token || !present) return json({ revoked: false }, 401);
+      delete state.sessions[token];
+      await this.save(state);
+      return json({ revoked: true });
+    }
+
     if (method === "POST" && path === "/session/validate") {
       const token = String(body.token || "");
       const session = state.sessions?.[token] || null;
