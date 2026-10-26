@@ -123,9 +123,9 @@ solana --url "$RPC_URL" --keypair "$TMP/local-payer.json" program show "$PROGRAM
 # validator is running. Previous Solana 2.3.0 localnet runs froze at slot 31,
 # after which SPL's blockhash polling timed out despite a live RPC process.
 # This checks actual chain liveness, not merely whether RPC responds.
-PRE_SLOT="$(solana --url "$RPC_URL" --keypair "$TMP/local-payer.json" slot --commitment confirmed)"
+PRE_SLOT="$(solana --url "$RPC_URL" --keypair "$TMP/local-payer.json" --commitment confirmed slot)"
 sleep 2
-POST_SLOT="$(solana --url "$RPC_URL" --keypair "$TMP/local-payer.json" slot --commitment confirmed)"
+POST_SLOT="$(solana --url "$RPC_URL" --keypair "$TMP/local-payer.json" --commitment confirmed slot)"
 echo "LOCALNET liveness confirmed_slot_before=$PRE_SLOT after=$POST_SLOT"
 if [[ "$POST_SLOT" -le "$PRE_SLOT" ]]; then
   echo "BLOCKED: validator is alive but confirmed slots are not advancing." >&2
