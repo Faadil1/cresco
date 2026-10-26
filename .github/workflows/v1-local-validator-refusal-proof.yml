@@ -1,0 +1,48 @@
+name: v1-local-validator-refusal-proof
+
+on:
+  pull_request:
+    branches:
+      - security/allow-once-v1-hash-fixture
+    paths:
+      - "programs/keys/**"
+      - "tests/anchor-v1-refusal-proof.cjs"
+      - "scripts/run-v1-local-refusal.sh"
+      - "src/allow-once-v1-hash.mjs"
+      - ".github/workflows/v1-local-validator-refusal-proof.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  ephemeral-localnet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: programs/keys
+      - name: Install pinned Solana CLI
+        shell: bash
+        run: |
+          sh -c "$(curl --fail --silent --show-error --location https://release.anza.xyz/v2.3.0/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+      - name: Install pinned Anchor CLI
+        shell: bash
+        run: |
+          cargo install --git https://github.com/coral-xyz/anchor --tag v0.32.1 anchor-cli --locked
+      - name: Install JS dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify pinned toolchain
+        run: |
+          solana --version
+          anchor --version
+          node --version
+      - name: Run SBF-backed localnet V1 refusal proof
+        run: npm run test:anchor:v1:local
