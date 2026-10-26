@@ -11,11 +11,10 @@ import { useStore } from "@/state/store";
 export default function StartPage() {
   const router = useRouter();
   const { state, dispatch } = useStore();
-  const [email, setEmail] = useState("");
-  const [busy, setBusy] = useState<"email" | "demo" | null>(null);
+  const [busy, setBusy] = useState<"guided" | "demo" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const go = async (kind: "email" | "demo") => {
+  const go = async (kind: "guided" | "demo") => {
     setBusy(kind);
     setError(null);
     try {
@@ -36,8 +35,8 @@ export default function StartPage() {
       subtitle="Learning comes first. You won't need a wallet or any money to begin."
       footer={
         <div className="space-y-3">
-          <ActionButton onClick={() => go("email")} disabled={busy !== null || !/.+@.+\..+/.test(email)} arrow>
-            {busy === "email" ? "Setting up…" : "Continue"}
+          <ActionButton onClick={() => go("guided")} disabled={busy !== null} arrow>
+            {busy === "guided" ? "Opening practice…" : "Start guided practice (demo)"}
           </ActionButton>
           <ActionButton variant="secondary" onClick={() => go("demo")} disabled={busy !== null}>
             {busy === "demo" ? "Opening demo…" : `Try the demo as ${state.profile.childName}`}
@@ -48,20 +47,8 @@ export default function StartPage() {
       <div className="mx-auto max-w-[350px] overflow-hidden rounded-[22px] border border-line-soft">
         <StoryVignette role="teen" className="block w-full" />
       </div>
-      <label className="mt-6 block">
-        <span className="text-[14px] font-semibold text-navy-strong">Email</span>
-        <input
-          type="email"
-          inputMode="email"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
-          className="mt-1.5 h-[52px] w-full rounded-[15px] border border-line bg-surface px-4 text-[15px] font-semibold text-navy placeholder:text-ink-3 focus:border-blue focus:outline-none focus:ring-2 focus:ring-blue/20"
-        />
-      </label>
       <p className="mt-3 rounded-[14px] bg-surface-soft px-3.5 py-3 text-[12.5px] text-ink-2">
-        Demo sign-in: no email is sent and no production account is created. When the CRESCO backend is available, family progress and requests sync through the demo backend.
+        Demo only: no verified family account is created. Please do not enter a real child’s personal information. Practice progress and requests may be stored by the demo backend.
       </p>
       {error ? (
         <p
