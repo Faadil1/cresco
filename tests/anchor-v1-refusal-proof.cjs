@@ -184,6 +184,44 @@ describe("CRESCO V1 — isolated local-validator refusal proof (no Pyth CPI)", f
     assert.equal(await provider.connection.getAccountInfo(forgedPda), null);
   });
 
+  it("refuses a non-guardian trying to create V1 allowance", async () => {
+    const imposter = Keypair.generate();
+    const imposterDigest = digestFor({ amount: amount + 2n });
+    const imposterReceipt = allowanceAddress(imposterDigest);
+    await expectRefusal("v1_non_guardian_grant", () =>
+      program.methods.grantAllowanceOnceV1(
+        bn(amount + 2n), bn(nonce), bn(maxNotionalMicroUsd), bn(expiry),
+        [...imposterDigest],
+      ).accountsStrict({
+        charter, mandate, mint, beneficiary: beneficiary.publicKey,
+        destinationTokenAccount: destination,
+        allowanceV1: imposterReceipt, guardian: imposter.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      }).signers([imposter]).rpc(),
+      ["ConstraintHasOne", "has one"]);
+    assert.equal(await provider.connection.getAccountInfo(imposterReceipt), null);
+  });
+
+  it("refuses already-expired V1 grants with no receipt created", async () => {
+    const expiredAt = 1n;
+    const expiredDigest = digestFor({ expiry: expiredAt });
+    const expiredReceipt = allowanceAddress(expiredDigest);
+    await expectRefusal("v1_expired_at_grant", () =>
+      program.methods.grantAllowanceOnceV1(
+        bn(amount), bn(nonce), bn(maxNotionalMicroUsd), bn(expiredAt),
+        [...expiredDigest],
+      ).accountsStrict({
+        charter, mandate, mint, beneficiary: beneficiary.publicKey,
+        destinationTokenAccount: destination,
+        allowanceV1: expiredReceipt, guardian,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      }).rpc(),
+      ["InvalidExpiry"]);
+    assert.equal(await provider.connection.getAccountInfo(expiredReceipt), null);
+  });
+
   it("rejects modified amount before Pyth CPI, preserving all balances and counters", async () => {
     const before = await snapshot();
     await expectRefusal("v1_execute_changed_amount",
