@@ -119,6 +119,7 @@ describe("CRESCO V1 — isolated local-validator refusal proof (no Pyth CPI)", f
     const id = await provider.connection.getAccountInfo(program.programId);
     assert(id && id.executable, "V1 SBF program was not preloaded on the local validator");
 
+    console.log('LOCALNET setup=beneficiary_funding');
     await provider.sendAndConfirm(new Transaction().add(SystemProgram.transfer({
       fromPubkey: guardian, toPubkey: beneficiary.publicKey,
       lamports: Math.floor(0.1 * LAMPORTS_PER_SOL),
@@ -126,11 +127,14 @@ describe("CRESCO V1 — isolated local-validator refusal proof (no Pyth CPI)", f
     // Localnet-only, unfunded Pyth accounts would cause an RPC account-loading
     // failure before our onchain *pre-CPI* rejection is evaluated. These tiny
     // system-owned placeholders are NEVER treated as real Pyth price evidence.
+    console.log('LOCALNET setup=pre_cpi_placeholder_accounts');
     await provider.sendAndConfirm(new Transaction().add(
       SystemProgram.transfer({ fromPubkey: guardian, toPubkey: PYTH_PROGRAM, lamports: 1000000 }),
       SystemProgram.transfer({ fromPubkey: guardian, toPubkey: PYTH_STORAGE, lamports: 1000000 }),
     ));
+    console.log('LOCALNET setup=mint_creation');
     mint = await createMint(provider.connection, payer, guardian, null, 0);
+    console.log('LOCALNET setup=beneficiary_associated_account');
     destination = (await getOrCreateAssociatedTokenAccount(
       provider.connection, payer, mint, beneficiary.publicKey,
     )).address;
@@ -143,6 +147,7 @@ describe("CRESCO V1 — isolated local-validator refusal proof (no Pyth CPI)", f
     assetRule = pda([Buffer.from("asset-rule"), mandate.toBuffer(), mint.toBuffer()]);
     vault = pda([Buffer.from("vault"), mandate.toBuffer(), mint.toBuffer()]);
 
+    console.log('LOCALNET setup=charter_creation');
     await program.methods.initializeCharter(hash32("CA-QC"), bn(10000), bn(5000))
       .accountsStrict({
         charter, guardian, beneficiary: beneficiary.publicKey,
@@ -165,6 +170,7 @@ describe("CRESCO V1 — isolated local-validator refusal proof (no Pyth CPI)", f
       charter, mandate, assetRule, vaultTokenAccount: vault, mint, guardian,
       tokenProgram: TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId,
     }).rpc();
+    console.log('LOCALNET setup=vault_funding');
     await mintTo(provider.connection, payer, mint, vault, payer, 2000);
     const state = await program.account.mandate.fetch(mandate);
     assert.equal(state.nonce.toString(), nonce.toString());
