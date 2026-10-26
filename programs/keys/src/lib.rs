@@ -2503,7 +2503,7 @@ fn canonical_allow_once_v1_hash(
     guardian: &Pubkey,
 ) -> [u8; 32] {
     hashv(&[
-        b"CRESCO_ALLOW_ONCE_V1\\0",
+        b"CRESCO_ALLOW_ONCE_V1\0",
         program_id.as_ref(),
         mandate.as_ref(),
         &mandate_nonce.to_le_bytes(),
