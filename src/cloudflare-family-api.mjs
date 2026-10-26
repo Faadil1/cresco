@@ -640,6 +640,21 @@ export async function handleFamilyApi(request, env) {
     return json(out.body, out.status);
   }
 
+  if (method === "POST" && path === "/api/v0.2/auth/logout") {
+    // Only the token presented in the Authorization header can be revoked.
+    // Never accept a target token from the JSON request body.
+    const token = bearerToken(request);
+    if (!token) return json({ error: "FAMILY_SESSION_REQUIRED" }, 401);
+    const out = await familyJson(env, "/session/revoke", {
+      method: "POST",
+      body: { token }
+    });
+    if (out.status !== 200 || out.body?.revoked !== true) {
+      return json({ error: "FAMILY_SESSION_REQUIRED" }, 401);
+    }
+    return json({ revoked: true });
+  }
+
   if (method === "POST" && path === "/api/v0.2/family/link") {
     const denied = await requireFamilySession(env, request, ["child"]);
     if (denied) return denied;
