@@ -13,6 +13,8 @@ const action = {
 test('V1 canonical action digest is deterministic and binds each field', () => {
   const baseline = canonicalAllowOnceV1Hash(action);
   assert.equal(baseline.length, 32);
+  // Independently computed canonical wire bytes, also pinned in Rust.
+  assert.equal(baseline.toString('hex'), 'b0de98f1aaef73deac26c7da714b9979e6bc70756ad91a0e6360e56d6efd69b6');
   assert.deepEqual(baseline, canonicalAllowOnceV1Hash(action));
   const mutations = {
     programId: key(11), mandate: key(12), mandateNonce: 8n,
@@ -28,4 +30,9 @@ test('V1 digest rejects unsigned overflow and negative token amounts', () => {
   assert.throws(() => canonicalAllowOnceV1Hash({ ...action, amount: -1n }), /V1_U64_OUT_OF_RANGE/);
   assert.throws(() => canonicalAllowOnceV1Hash({ ...action, amount: 1n << 64n }), /V1_U64_OUT_OF_RANGE/);
   assert.throws(() => canonicalAllowOnceV1Hash({ ...action, expiry: 1n << 63n }), /V1_I64_OUT_OF_RANGE/);
+  assert.throws(() => canonicalAllowOnceV1Hash({ ...action, amount: Number.MAX_SAFE_INTEGER + 1 }), /V1_UNSAFE_JS_INTEGER_USE_BIGINT/);
+  assert.throws(() => canonicalAllowOnceV1Hash({ ...action, amount: 0.5 }), /V1_UNSAFE_JS_INTEGER_USE_BIGINT/);
+  assert.throws(() => canonicalAllowOnceV1Hash({ ...action, mandateNonce: 7.1 }), /V1_UNSAFE_JS_INTEGER_USE_BIGINT/);
+  assert.throws(() => canonicalAllowOnceV1Hash({ ...action, expiry: NaN }), /V1_UNSAFE_JS_INTEGER_USE_BIGINT/);
+  assert.throws(() => canonicalAllowOnceV1Hash({ ...action, expiry: '1e5' }), /V1_INTEGER_REQUIRED/);
 });
