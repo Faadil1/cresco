@@ -1,6 +1,6 @@
 # ALLOW_ONCE V1 — implementation/evidence register (draft)
 
-**Status: SOURCE IMPLEMENTED / CI PENDING / LOCAL VALIDATOR NOT PROVEN / NOT DEPLOYED**
+**Status: SOURCE IMPLEMENTED / RUST AND JS CI SEEN GREEN ON AN EARLIER HEAD / LATEST HEAD PENDING / LOCAL VALIDATOR NOT PROVEN / NOT DEPLOYED**
 
 This PR is stacked on the V1 digest fixture PR #77. Its target is the fixture branch, **not** `main`. Neither PR is merged.
 
@@ -20,6 +20,10 @@ This PR is stacked on the V1 digest fixture PR #77. Its target is the fixture br
 4. The `mandate.max_period_notional` accounting currently uses the **per-asset rule**'s notional counter; it is not a mathematically verified household-wide aggregate across multiple mints.
 5. Existing V0 authorizations are **not migrated or invalidated** here. A V0 sunset requires explicit inventory, compatibility planning and approval.
 6. Pending security review: policy around duplicate identical V1 grants, expiry semantics, amount+market-value consistency, PDA access rights, Token-2022 compatibility and Pyth failure behavior.
+
+## Anchor negative scenario added, not executed
+
+The scenario in `tests/anchor-authority-proof.cjs` attempts a real local-validator V1 guardian grant, a mismatched supplied digest at grant, and a modified-amount execution refusal **before** Pyth CPI. It asserts receipt status, vault/beneficiary balances and period counters remain unchanged on refusal. CI checks the JavaScript syntax only; it does **not** execute the Anchor test or provide onchain proof. Actual validator execution and runtime logs are still required.
 
 ## Mandatory validator tests before READY
 
