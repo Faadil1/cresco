@@ -685,6 +685,85 @@ describe("KEYS Solana authority + bounded-capital proof", () => {
     );
   });
 
+  it("refuses an expired historical one-use transfer without consuming the allowance", async function () {
+    if (!process.env.PYTH_PRO_API_KEY) {
+      console.log("PROOF legacy_once_expired=SKIP reason=PYTH_PRO_API_KEY_NOT_INJECTED");
+      this.skip();
+    }
+
+    const currentMandate = await program.account.mandate.fetch(mandate);
+    const nonce = currentMandate.nonce.toNumber();
+    const requestHash = hash32(`cresco-local-validator-expired-once-${nonce}`);
+    const [allowance] = PublicKey.findProgramAddressSync(
+      [Buffer.from("allowance"), mandate.toBuffer(), mockStockMint.toBuffer(), Buffer.from(requestHash)],
+      program.programId
+    );
+
+    // An expired receipt must be rejected before Pyth CPI or token movement.
+    // This uses the already-proven guardian signer and the existing family fixture.
+    const grantTx = await program.methods
+      .grantAllowanceOnce(
+        requestHash,
+        new anchor.BN(nonce),
+        new anchor.BN(1_000_000),
+        new anchor.BN(1)
+      )
+      .accountsStrict({
+        charter,
+        mandate,
+        mint: mockStockMint,
+        allowance,
+        guardian: provider.wallet.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+
+    const before = await program.account.allowanceReceipt.fetch(allowance);
+    const vaultBefore = await getAccount(provider.connection, vaultTokenAccount);
+    const ruleBefore = await program.account.assetRule.fetch(assetRule);
+
+    const pythProgram = new PublicKey("pytd2yyk641x7ak7mkaasSJVXh6YYZnC7wTmtgAyxPt");
+    const pythStorage = new PublicKey("3rdJbqfnagQ4yx9HXJViD4zc4xpiSqmFsKpPuSCQVyQL");
+    const storageInfo = await provider.connection.getAccountInfo(pythStorage);
+    assert(storageInfo, "Pyth storage must exist on the validator");
+    const pythTreasury = new PublicKey(storageInfo.data.subarray(40, 72));
+
+    await expectRefusal(
+      "legacy_once_expired",
+      () => program.methods
+        .executeOnceWithPyth(Buffer.from([1]), new anchor.BN(1), new anchor.BN(nonce), requestHash)
+        .accountsStrict({
+          charter,
+          mandate,
+          assetRule,
+          allowance,
+          vaultTokenAccount,
+          mint: mockStockMint,
+          beneficiary: beneficiary.publicKey,
+          delegateTokenAccount: beneficiaryTokenAccount.address,
+          pythProgram,
+          pythStorage,
+          pythTreasury,
+          instructionsSysvar: SYSVAR_INSTRUCTIONS_PUBKEY,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([beneficiary])
+        .rpc(),
+      ["AllowanceExpired", "one-time allowance has expired"]
+    );
+
+    const after = await program.account.allowanceReceipt.fetch(allowance);
+    const vaultAfter = await getAccount(provider.connection, vaultTokenAccount);
+    const ruleAfter = await program.account.assetRule.fetch(assetRule);
+    assert.equal(before.used, false);
+    assert.equal(after.used, false, "refusal must not consume receipt");
+    assert.equal(vaultAfter.amount.toString(), vaultBefore.amount.toString(), "refusal must not move vault funds");
+    assert.equal(ruleAfter.spentThisPeriod.toString(), ruleBefore.spentThisPeriod.toString(), "refusal must preserve token counter");
+    assert.equal(ruleAfter.spentThisPeriodNotional.toString(), ruleBefore.spentThisPeriodNotional.toString(), "refusal must preserve USD counter");
+    console.log(`PROOF legacy_once_expired=REFUSE grant_tx=${grantTx} vault_unchanged=true allowance_unused=true`);
+  });
+
   it("guardian can pause the mandate and the capital path fails closed", async () => {
     const beforePause = await program.account.mandate.fetch(mandate);
     const pauseExpectedNonce = beforePause.nonce.toNumber();
