@@ -64,7 +64,7 @@ describe("CRESCO practice-only funding", () => {
     const button = screen.getByRole("button", { name: /Add .* practice funds/i });
     await userEvent.click(button);
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Practice funds were not confirmed");
+    expect(await screen.findByRole("alert")).toHaveTextContent("We could not confirm this practice credit");
     expect(button).toBeEnabled();
     expect(dispatch).not.toHaveBeenCalled();
     expect(toast).not.toHaveBeenCalled();
@@ -76,7 +76,7 @@ describe("CRESCO practice-only funding", () => {
 
     await userEvent.click(screen.getByRole("button", { name: /Add .* practice funds/i }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Practice funds were not confirmed");
+    expect(await screen.findByRole("alert")).toHaveTextContent("We could not confirm this practice credit");
     expect(dispatch).not.toHaveBeenCalled();
   });
 
@@ -93,6 +93,18 @@ describe("CRESCO practice-only funding", () => {
     expect(toast).toHaveBeenCalledTimes(1);
   });
 
+  it("refuses an unknown funding response status even when it claims no payment", async () => {
+    addMoney.mockResolvedValueOnce({
+      status: "UNRECOGNIZED", amount: 25, realPaymentTaken: false,
+    });
+    render(<AddMoneyPage />);
+
+    await userEvent.click(screen.getByRole("button", { name: /Add .* practice funds/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("We could not confirm this practice credit");
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+
   it("refuses a response credit amount different from the selected practice amount", async () => {
     addMoney.mockResolvedValueOnce({
       status: "DEMO_CREDITED", amount: 50, realPaymentTaken: false,
@@ -101,7 +113,7 @@ describe("CRESCO practice-only funding", () => {
 
     await userEvent.click(screen.getByRole("button", { name: /Add .* practice funds/i }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Practice funds were not confirmed");
+    expect(await screen.findByRole("alert")).toHaveTextContent("We could not confirm this practice credit");
     expect(dispatch).not.toHaveBeenCalled();
   });
 });
