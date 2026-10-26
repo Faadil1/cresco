@@ -25,5 +25,15 @@ test("Family illustration and product truth remain visible on the landing page",
 test("Family onboarding shows contextual people without removing demo disclosures", async ({ page }) => {
   await page.goto("/parent/sign-in");
   await expect(page.getByRole("img", { name: /illustrated parent reviewing a CRESCO request/i })).toBeVisible();
-  await expect(page.getByText(/not identity verification/i)).toBeVisible();
+  await expect(page.getByText(/not verified parental authority/i)).toBeVisible();
+  await expect(page.getByRole("textbox")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /continue as .*demo/i })).toBeVisible();
+});
+
+test("Child practice onboarding discloses demo identity without asking for an email", async ({ page }) => {
+  await page.goto("/start");
+  await expect(page.getByText(/no verified family account is created/i)).toBeVisible();
+  await expect(page.getByRole("textbox")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Start guided practice (demo)" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /try the demo as/i })).toBeVisible();
 });
