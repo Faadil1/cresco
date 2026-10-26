@@ -862,6 +862,31 @@ export function createDevnetExecutionProvider({
           DEVNET_KEYS_PROGRAM_ID
         );
 
+        // Refuse a missing, spent, expired, or stale guardian receipt before
+        // submitting a transaction. Onchain constraints remain authoritative.
+        const receiptInfo = await rpc.getAccountInfo(allowanceReceipt, 'confirmed');
+        if (!receiptInfo) {
+          throw new Error('ALLOW_ONCE_RECEIPT_NOT_FOUND');
+        }
+        const receipt = parseAllowanceReceiptAccount(Buffer.from(receiptInfo.data));
+        if (
+          !receipt.mandate.equals(runtime.mandateAddress) ||
+          !receipt.mint.equals(rule.mint) ||
+          !receipt.requestHash.equals(requestHash) ||
+          !receipt.beneficiary.equals(signer.publicKey)
+        ) {
+          throw new Error('ALLOW_ONCE_RECEIPT_BINDING_MISMATCH');
+        }
+        if (receipt.used) {
+          throw new Error('AllowanceAlreadyUsed');
+        }
+        if (receipt.mandateNonce !== mandate.nonce) {
+          throw new Error('StaleAllowance');
+        }
+        if (receipt.expiresAt > 0 && receipt.expiresAt <= Math.floor(Date.now() / 1000)) {
+          throw new Error('AllowanceExpired');
+        }
+
         data = Buffer.concat([
           discriminator('execute_once_with_pyth'),
           vecLength,
