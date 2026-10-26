@@ -2488,9 +2488,74 @@ pub enum KeysError {
     OrcaSwapFailed,
 }
 
+// V1 design fixture only. No production instruction calls this helper yet.
+#[allow(clippy::too_many_arguments)]
+fn canonical_allow_once_v1_hash(
+    program_id: &Pubkey,
+    mandate: &Pubkey,
+    mandate_nonce: u64,
+    mint: &Pubkey,
+    beneficiary: &Pubkey,
+    destination_token_account: &Pubkey,
+    amount: u64,
+    max_notional_micro_usd: u64,
+    expiry: i64,
+    guardian: &Pubkey,
+) -> [u8; 32] {
+    hashv(&[
+        b"CRESCO_ALLOW_ONCE_V1\0",
+        program_id.as_ref(),
+        mandate.as_ref(),
+        &mandate_nonce.to_le_bytes(),
+        mint.as_ref(),
+        beneficiary.as_ref(),
+        destination_token_account.as_ref(),
+        &amount.to_le_bytes(),
+        &max_notional_micro_usd.to_le_bytes(),
+        &expiry.to_le_bytes(),
+        guardian.as_ref(),
+    ])
+    .to_bytes()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn v1_hash_binds_every_material_action_field() {
+        let p = Pubkey::new_from_array([1; 32]);
+        let mandate = Pubkey::new_from_array([2; 32]);
+        let mint = Pubkey::new_from_array([3; 32]);
+        let beneficiary = Pubkey::new_from_array([4; 32]);
+        let destination = Pubkey::new_from_array([5; 32]);
+        let guardian = Pubkey::new_from_array([6; 32]);
+        let baseline = canonical_allow_once_v1_hash(&p, &mandate, 7, &mint, &beneficiary, &destination, 500, 1000, 1234, &guardian);
+        // Independently computed SHA-256 reference vector for the shared JS/Rust wire contract.
+        assert_eq!(baseline, [
+            0xb0, 0xde, 0x98, 0xf1, 0xaa, 0xef, 0x73, 0xde,
+            0xac, 0x26, 0xc7, 0xda, 0x71, 0x4b, 0x99, 0x79,
+            0xe6, 0xbc, 0x70, 0x75, 0x6a, 0xd9, 0x1a, 0x0e,
+            0x63, 0x60, 0xe5, 0x6d, 0x6e, 0xfd, 0x69, 0xb6
+        ]);
+        let changed = [
+            canonical_allow_once_v1_hash(&Pubkey::new_unique(), &mandate, 7, &mint, &beneficiary, &destination, 500, 1000, 1234, &guardian),
+            canonical_allow_once_v1_hash(&p, &Pubkey::new_unique(), 7, &mint, &beneficiary, &destination, 500, 1000, 1234, &guardian),
+            canonical_allow_once_v1_hash(&p, &mandate, 8, &mint, &beneficiary, &destination, 500, 1000, 1234, &guardian),
+            canonical_allow_once_v1_hash(&p, &mandate, 7, &Pubkey::new_unique(), &beneficiary, &destination, 500, 1000, 1234, &guardian),
+            canonical_allow_once_v1_hash(&p, &mandate, 7, &mint, &Pubkey::new_unique(), &destination, 500, 1000, 1234, &guardian),
+            canonical_allow_once_v1_hash(&p, &mandate, 7, &mint, &beneficiary, &Pubkey::new_unique(), 500, 1000, 1234, &guardian),
+            canonical_allow_once_v1_hash(&p, &mandate, 7, &mint, &beneficiary, &destination, 501, 1000, 1234, &guardian),
+            canonical_allow_once_v1_hash(&p, &mandate, 7, &mint, &beneficiary, &destination, 500, 1001, 1234, &guardian),
+            canonical_allow_once_v1_hash(&p, &mandate, 7, &mint, &beneficiary, &destination, 500, 1000, 1235, &guardian),
+            canonical_allow_once_v1_hash(&p, &mandate, 7, &mint, &beneficiary, &destination, 500, 1000, 1234, &Pubkey::new_unique()),
+        ];
+        for candidate in changed {
+            assert_ne!(baseline, candidate);
+        }
+        assert_eq!(baseline, canonical_allow_once_v1_hash(&p, &mandate, 7, &mint, &beneficiary, &destination, 500, 1000, 1234, &guardian));
+    }
+
 
     fn transition_is_valid(
         current_stage: u8,
