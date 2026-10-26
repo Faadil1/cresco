@@ -685,9 +685,9 @@ describe("KEYS Solana authority + bounded-capital proof", () => {
     );
   });
 
-  it("refuses an expired historical one-use transfer without consuming the allowance", async function () {
+  it("refuses a zero-amount historical one-use transfer without consuming the allowance", async function () {
     if (!process.env.PYTH_PRO_API_KEY) {
-      console.log("PROOF legacy_once_expired=SKIP reason=PYTH_PRO_API_KEY_NOT_INJECTED");
+      console.log("PROOF legacy_once_zero_amount=SKIP reason=PYTH_PRO_API_KEY_NOT_INJECTED");
       this.skip();
     }
 
@@ -699,14 +699,14 @@ describe("KEYS Solana authority + bounded-capital proof", () => {
       program.programId
     );
 
-    // An expired receipt must be rejected before Pyth CPI or token movement.
+    // A zero-amount execution must be rejected before Pyth CPI or token movement.
     // This uses the already-proven guardian signer and the existing family fixture.
     const grantTx = await program.methods
       .grantAllowanceOnce(
         requestHash,
         new anchor.BN(nonce),
         new anchor.BN(1_000_000),
-        new anchor.BN(1)
+        new anchor.BN(0)
       )
       .accountsStrict({
         charter,
@@ -729,9 +729,9 @@ describe("KEYS Solana authority + bounded-capital proof", () => {
     const pythTreasury = new PublicKey(storageInfo.data.subarray(40, 72));
 
     await expectRefusal(
-      "legacy_once_expired",
+      "legacy_once_zero_amount",
       () => program.methods
-        .executeOnceWithPyth(Buffer.from([1]), new anchor.BN(1), new anchor.BN(nonce), requestHash)
+        .executeOnceWithPyth(Buffer.from([1]), new anchor.BN(0), new anchor.BN(nonce), requestHash)
         .accountsStrict({
           charter,
           mandate,
@@ -750,7 +750,7 @@ describe("KEYS Solana authority + bounded-capital proof", () => {
         })
         .signers([beneficiary])
         .rpc(),
-      ["AllowanceExpired", "one-time allowance has expired"]
+      ["InvalidAmount", "Invalid amount"]
     );
 
     const after = await program.account.allowanceReceipt.fetch(allowance);
@@ -761,7 +761,7 @@ describe("KEYS Solana authority + bounded-capital proof", () => {
     assert.equal(vaultAfter.amount.toString(), vaultBefore.amount.toString(), "refusal must not move vault funds");
     assert.equal(ruleAfter.spentThisPeriod.toString(), ruleBefore.spentThisPeriod.toString(), "refusal must preserve token counter");
     assert.equal(ruleAfter.spentThisPeriodNotional.toString(), ruleBefore.spentThisPeriodNotional.toString(), "refusal must preserve USD counter");
-    console.log(`PROOF legacy_once_expired=REFUSE grant_tx=${grantTx} vault_unchanged=true allowance_unused=true`);
+    console.log(`PROOF legacy_once_zero_amount=REFUSE grant_tx=${grantTx} vault_unchanged=true allowance_unused=true`);
   });
 
   it("guardian can pause the mandate and the capital path fails closed", async () => {
