@@ -87,6 +87,7 @@ solana program show "$PROGRAM_ID" --url "$RPC_URL" >/dev/null || {
 }
 
 echo "Running negative-path assertions against the isolated local validator..."
+CRESCO_V1_EPHEMERAL_LOCALNET="1" \
 ANCHOR_PROVIDER_URL="$RPC_URL" \
 ANCHOR_WALLET="$TMP/local-payer.json" \
   ./node_modules/.bin/mocha --timeout 120000 tests/anchor-v1-refusal-proof.cjs
