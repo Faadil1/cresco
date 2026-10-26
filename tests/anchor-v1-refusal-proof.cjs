@@ -41,7 +41,15 @@ if (process.env.CRESCO_V1_EPHEMERAL_LOCALNET !== "1") {
 describe("CRESCO V1 — isolated local-validator refusal proof (no Pyth CPI)", function () {
   this.timeout(120000);
 
-  const provider = anchor.AnchorProvider.env();
+  // Local validator confirms slots immediately, but does not finalize early slots.
+  // SPL helper defaults can otherwise poll for a *new finalized* blockhash and
+  // time out before testing any V1 instruction. Use confirmed consistently.
+  const envProvider = anchor.AnchorProvider.env();
+  const provider = new anchor.AnchorProvider(
+    new anchor.web3.Connection(envProvider.connection.rpcEndpoint, "confirmed"),
+    envProvider.wallet,
+    { commitment: "confirmed", preflightCommitment: "confirmed" },
+  );
   const rpcEndpoint = new URL(provider.connection.rpcEndpoint);
   assert.equal(rpcEndpoint.protocol, "http:", "BLOCKED: no public-network RPC for this proof");
   assert.equal(rpcEndpoint.hostname, "127.0.0.1", "BLOCKED: only loopback RPC is allowed");
@@ -133,13 +141,16 @@ describe("CRESCO V1 — isolated local-validator refusal proof (no Pyth CPI)", f
       SystemProgram.transfer({ fromPubkey: guardian, toPubkey: PYTH_STORAGE, lamports: 1000000 }),
     ));
     console.log('LOCALNET setup=mint_creation');
-    mint = await createMint(provider.connection, payer, guardian, null, 0);
+    mint = await createMint(provider.connection, payer, guardian, null, 0,
+      undefined, { commitment: 'confirmed', preflightCommitment: 'confirmed' });
     console.log('LOCALNET setup=beneficiary_associated_account');
     destination = (await getOrCreateAssociatedTokenAccount(
       provider.connection, payer, mint, beneficiary.publicKey,
+      false, 'confirmed', { commitment: 'confirmed', preflightCommitment: 'confirmed' },
     )).address;
     alternateDestination = await createAccount(
       provider.connection, payer, mint, beneficiary.publicKey,
+      undefined, { commitment: 'confirmed', preflightCommitment: 'confirmed' },
     );
     charter = pda([Buffer.from("charter"), beneficiary.publicKey.toBuffer()]);
     mandate = pda([Buffer.from("mandate"), charter.toBuffer()]);
@@ -171,7 +182,8 @@ describe("CRESCO V1 — isolated local-validator refusal proof (no Pyth CPI)", f
       tokenProgram: TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId,
     }).rpc();
     console.log('LOCALNET setup=vault_funding');
-    await mintTo(provider.connection, payer, mint, vault, payer, 2000);
+    await mintTo(provider.connection, payer, mint, vault, payer, 2000,
+      [], { commitment: 'confirmed', preflightCommitment: 'confirmed' });
     const state = await program.account.mandate.fetch(mandate);
     assert.equal(state.nonce.toString(), nonce.toString());
   });
