@@ -2956,6 +2956,8 @@ mod tests {
             used_at: 0,
             bump: 255,
         };
+        let other_destination = Pubkey::new_from_array([9; 32]);
+        let other_guardian = Pubkey::new_from_array([10; 32]);
         let check = |nonce, destination_key, amount, guardian_key, supplied_digest| {
             require_v1_exact_action(
                 &allowance, &program_id, &mandate, nonce, &mint,
@@ -2964,9 +2966,9 @@ mod tests {
         };
         assert!(check(7, &destination, 500, &guardian, digest).is_ok());
         assert!(check(7, &destination, 501, &guardian, digest).is_err());
-        assert!(check(7, &Pubkey::new_from_array([9; 32]), 500, &guardian, digest).is_err());
+        assert!(check(7, &other_destination, 500, &guardian, digest).is_err());
         assert!(check(8, &destination, 500, &guardian, digest).is_err());
-        assert!(check(7, &destination, 500, &Pubkey::new_from_array([10; 32]), digest).is_err());
+        assert!(check(7, &destination, 500, &other_guardian, digest).is_err());
         assert!(check(7, &destination, 500, &guardian, [0u8; 32]).is_err());
     }
 
