@@ -585,17 +585,8 @@ pub mod keys {
             allowance.expires_at == 0 || now <= allowance.expires_at,
             KeysError::AllowanceExpired
         );
-        require_eq!(
-            allowance.amount,
-            amount,
-            KeysError::AllowanceActionMismatch
-        );
-        require_keys_eq!(
-            allowance.guardian,
-            ctx.accounts.charter.guardian,
-            KeysError::Unauthorized
-        );
-        let expected_digest = canonical_allow_once_v1_hash(
+        require_v1_exact_action(
+            allowance,
             &crate::ID,
             &ctx.accounts.mandate.key(),
             expected_nonce,
@@ -603,15 +594,9 @@ pub mod keys {
             &ctx.accounts.beneficiary.key(),
             &ctx.accounts.delegate_token_account.key(),
             amount,
-            allowance.max_notional_micro_usd,
-            allowance.expires_at,
             &ctx.accounts.charter.guardian,
-        );
-        require!(
-            allowance.action_digest == action_digest
-                && action_digest == expected_digest,
-            KeysError::AllowanceActionMismatch
-        );
+            action_digest,
+        )?;
 
         require_keys_eq!(
             ctx.accounts.pyth_program.key(),
@@ -2893,6 +2878,54 @@ fn canonical_allow_once_v1_hash(
         guardian.as_ref(),
     ])
     .to_bytes()
+}
+
+// This predicate is called in the capital path; tests exercise actual refusal logic.
+#[allow(clippy::too_many_arguments)]
+fn require_v1_exact_action(
+    allowance: &AllowanceReceiptV1,
+    program_id: &Pubkey,
+    mandate: &Pubkey,
+    expected_nonce: u64,
+    mint: &Pubkey,
+    beneficiary: &Pubkey,
+    destination: &Pubkey,
+    amount: u64,
+    guardian: &Pubkey,
+    action_digest: [u8; 32],
+) -> Result<()> {
+    require_eq!(allowance.amount, amount, KeysError::AllowanceActionMismatch);
+    require_eq!(allowance.mandate_nonce, expected_nonce, KeysError::StaleAllowance);
+    require_keys_eq!(allowance.mandate, *mandate, KeysError::AllowanceMandateMismatch);
+    require_keys_eq!(allowance.mint, *mint, KeysError::AllowanceMintMismatch);
+    require_keys_eq!(
+        allowance.beneficiary,
+        *beneficiary,
+        KeysError::AllowanceBeneficiaryMismatch
+    );
+    require_keys_eq!(allowance.guardian, *guardian, KeysError::Unauthorized);
+    require_keys_eq!(
+        allowance.destination_token_account,
+        *destination,
+        KeysError::AllowanceActionMismatch
+    );
+    let expected_digest = canonical_allow_once_v1_hash(
+        program_id,
+        mandate,
+        expected_nonce,
+        mint,
+        beneficiary,
+        destination,
+        amount,
+        allowance.max_notional_micro_usd,
+        allowance.expires_at,
+        guardian,
+    );
+    require!(
+        allowance.action_digest == action_digest && action_digest == expected_digest,
+        KeysError::AllowanceActionMismatch
+    );
+    Ok(())
 }
 
 #[cfg(test)]
