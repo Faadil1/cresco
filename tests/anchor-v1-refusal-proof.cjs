@@ -127,8 +127,8 @@ describe("CRESCO V1 — isolated local-validator refusal proof (no Pyth CPI)", f
     // failure before our onchain *pre-CPI* rejection is evaluated. These tiny
     // system-owned placeholders are NEVER treated as real Pyth price evidence.
     await provider.sendAndConfirm(new Transaction().add(
-      SystemProgram.transfer({ fromPubkey: guardian, toPubkey: PYTH_PROGRAM, lamports: 10000 }),
-      SystemProgram.transfer({ fromPubkey: guardian, toPubkey: PYTH_STORAGE, lamports: 10000 }),
+      SystemProgram.transfer({ fromPubkey: guardian, toPubkey: PYTH_PROGRAM, lamports: 1000000 }),
+      SystemProgram.transfer({ fromPubkey: guardian, toPubkey: PYTH_STORAGE, lamports: 1000000 }),
     ));
     mint = await createMint(provider.connection, payer, guardian, null, 0);
     destination = (await getOrCreateAssociatedTokenAccount(
