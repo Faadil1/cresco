@@ -415,6 +415,9 @@ describe("KEYS Solana authority + bounded-capital proof", () => {
   });
 
   it("guardian widens the asset boundary through an explicit nonce-bound transition", async () => {
+    const previousRule = await program.account.assetRule.fetch(assetRule);
+    assert.equal(previousRule.spentThisPeriod.toNumber(), 100, "first spend must remain accounted");
+
     const tx = await program.methods
       .updateAssetRule(
         new anchor.BN(2),
@@ -438,6 +441,9 @@ describe("KEYS Solana authority + bounded-capital proof", () => {
     const mandateState = await program.account.mandate.fetch(mandate);
 
     assert.equal(rule.maxActionAmount.toNumber(), 500);
+    assert.equal(rule.periodStartedAt.toString(), previousRule.periodStartedAt.toString(), "policy edit cannot restart accounting window");
+    assert.equal(rule.spentThisPeriod.toString(), previousRule.spentThisPeriod.toString(), "policy edit cannot erase period token spend");
+    assert.equal(rule.spentThisPeriodNotional.toString(), previousRule.spentThisPeriodNotional.toString(), "policy edit cannot erase period USD spend");
     assert.equal(mandateState.version.toNumber(), 4);
     assert.equal(mandateState.nonce.toNumber(), 3);
 
@@ -490,6 +496,36 @@ describe("KEYS Solana authority + bounded-capital proof", () => {
 
     console.log(`PROOF widened_execution_tx=${tx}`);
     console.log("PROOF same_action_after_human_widen=ALLOW amount=500 nonce=3");
+  });
+
+  it("refuses a spend that crosses the original period cap after the guardian edits the rule", async () => {
+    const beforeRule = await program.account.assetRule.fetch(assetRule);
+    assert.equal(beforeRule.spentThisPeriod.toNumber(), 600, "100 before edit + 500 after edit must accumulate");
+    const beforeVault = await getAccount(provider.connection, vaultTokenAccount);
+
+    await expectRefusal(
+      "counter_reset_by_rule_edit",
+      () => program.methods
+        .executeWithinMandate(new anchor.BN(500), new anchor.BN(3))
+        .accountsStrict({
+          charter,
+          mandate,
+          assetRule,
+          vaultTokenAccount,
+          mint: mockStockMint,
+          beneficiary: beneficiary.publicKey,
+          delegateTokenAccount: beneficiaryTokenAccount.address,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .signers([beneficiary])
+        .rpc(),
+      ["PeriodAmountExceeded", "current period boundary"],
+    );
+
+    const afterVault = await getAccount(provider.connection, vaultTokenAccount);
+    const afterRule = await program.account.assetRule.fetch(assetRule);
+    assert.equal(Number(afterVault.amount), Number(beforeVault.amount), "refusal cannot move funds");
+    assert.equal(afterRule.spentThisPeriod.toString(), beforeRule.spentThisPeriod.toString(), "refusal cannot change counters");
   });
 
   it("verifies signed Pyth evidence inside the Solana execution path and enforces USD notional", async function () {
