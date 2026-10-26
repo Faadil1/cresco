@@ -32,7 +32,7 @@ describe("Family demo sign-out server revocation", () => {
       remoteRevoked: true,
     });
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(fetchMock.mock.calls.map(([, init]) => init.headers.authorization).sort())
+    expect(fetchMock.mock.calls.map(([, init]) => (init.headers as Record<string, string>).authorization).sort())
       .toEqual(["Bearer child-token", "Bearer guardian-token"]);
     expect(window.localStorage.getItem("cresco-session-child-v1")).toBeNull();
     expect(window.localStorage.getItem("cresco-session-guardian-v1")).toBeNull();
