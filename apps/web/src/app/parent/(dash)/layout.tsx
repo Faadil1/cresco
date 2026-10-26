@@ -11,7 +11,7 @@ import { useStore } from "@/state/store";
 const LINKS = [
   { href: "/parent", label: "Overview" },
   { href: "/parent/limits", label: "Limits" },
-  { href: "/parent/add-money", label: "Add money" },
+  { href: "/parent/add-money", label: "Practice funds" },
   { href: "/parent/settings", label: "Settings" },
 ];
 
@@ -71,7 +71,14 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
         </div>
       </header>
       <main id="main" className="mx-auto max-w-[1120px] px-5 pb-16 pt-5 md:px-8 md:pt-8">
-        {hydrated && allowed ? children : null}
+        {hydrated && allowed ? (
+          <>
+            <p className="mb-4 rounded-[12px] border border-line-soft bg-surface-soft px-3 py-2 text-[12.5px] text-ink-2" role="status">
+              Demo parent view · Guardian identity is not verified · No real funds
+            </p>
+            {children}
+          </>
+        ) : null}
       </main>
     </div>
   );
