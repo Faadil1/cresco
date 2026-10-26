@@ -2531,6 +2531,13 @@ mod tests {
         let destination = Pubkey::new_from_array([5; 32]);
         let guardian = Pubkey::new_from_array([6; 32]);
         let baseline = canonical_allow_once_v1_hash(&p, &mandate, 7, &mint, &beneficiary, &destination, 500, 1000, 1234, &guardian);
+        // Independently computed SHA-256 reference vector for the shared JS/Rust wire contract.
+        assert_eq!(baseline, [
+            0xb0, 0xde, 0x98, 0xf1, 0xaa, 0xef, 0x73, 0xde,
+            0xac, 0x26, 0xc7, 0xda, 0x71, 0x4b, 0x99, 0x79,
+            0xe6, 0xbc, 0x70, 0x75, 0x6a, 0xd9, 0x1a, 0x0e,
+            0x63, 0x60, 0xe5, 0x6d, 0x6e, 0xfd, 0x69, 0xb6
+        ]);
         let changed = [
             canonical_allow_once_v1_hash(&Pubkey::new_unique(), &mandate, 7, &mint, &beneficiary, &destination, 500, 1000, 1234, &guardian),
             canonical_allow_once_v1_hash(&p, &Pubkey::new_unique(), 7, &mint, &beneficiary, &destination, 500, 1000, 1234, &guardian),
