@@ -123,6 +123,13 @@ describe("CRESCO V1 — isolated local-validator refusal proof (no Pyth CPI)", f
       fromPubkey: guardian, toPubkey: beneficiary.publicKey,
       lamports: Math.floor(0.1 * LAMPORTS_PER_SOL),
     })));
+    // Localnet-only, unfunded Pyth accounts would cause an RPC account-loading
+    // failure before our onchain *pre-CPI* rejection is evaluated. These tiny
+    // system-owned placeholders are NEVER treated as real Pyth price evidence.
+    await provider.sendAndConfirm(new Transaction().add(
+      SystemProgram.transfer({ fromPubkey: guardian, toPubkey: PYTH_PROGRAM, lamports: 10000 }),
+      SystemProgram.transfer({ fromPubkey: guardian, toPubkey: PYTH_STORAGE, lamports: 10000 }),
+    ));
     mint = await createMint(provider.connection, payer, guardian, null, 0);
     destination = (await getOrCreateAssociatedTokenAccount(
       provider.connection, payer, mint, beneficiary.publicKey,
@@ -186,6 +193,11 @@ describe("CRESCO V1 — isolated local-validator refusal proof (no Pyth CPI)", f
 
   it("refuses a non-guardian trying to create V1 allowance", async () => {
     const imposter = Keypair.generate();
+    // Funding the imposter on this ephemeral validator isolates *authorization*
+    // failure rather than an unrelated missing-fee-payer error.
+    await provider.sendAndConfirm(new Transaction().add(SystemProgram.transfer({
+      fromPubkey: guardian, toPubkey: imposter.publicKey, lamports: 10000000,
+    })));
     const imposterDigest = digestFor({ amount: amount + 2n });
     const imposterReceipt = allowanceAddress(imposterDigest);
     await expectRefusal("v1_non_guardian_grant", () =>
