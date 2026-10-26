@@ -278,16 +278,14 @@ pub mod keys {
             KeysError::MandateRevoked
         );
 
-        let now = Clock::get()?.unix_timestamp;
         let rule = &mut ctx.accounts.asset_rule;
         rule.enabled = enabled;
         rule.action_mask = action_mask;
         rule.max_action_amount = max_action_amount;
         rule.max_period_amount = max_period_amount;
         rule.period_seconds = period_seconds;
-        rule.period_started_at = now;
-        rule.spent_this_period = 0;
-        rule.spent_this_period_notional = 0;
+        // Guardian policy edits must NOT reset accumulated period spending.
+        // The next execution resets counters only at the actual period boundary.
         rule.max_unit_price_micro_usd = max_unit_price_micro_usd;
         rule.pyth_feed_id = pyth_feed_id;
 
@@ -519,18 +517,14 @@ pub mod keys {
             expected_nonce
         );
 
-        let next_spent_amount = ctx
-            .accounts
-            .asset_rule
-            .spent_this_period
-            .checked_add(amount)
-            .ok_or(KeysError::Overflow)?;
-        let next_spent_notional = ctx
-            .accounts
-            .asset_rule
-            .spent_this_period_notional
-            .checked_add(requested_notional_micro_usd)
-            .ok_or(KeysError::Overflow)?;
+        let (next_spent_amount, next_spent_notional) = checked_period_spend(
+            ctx.accounts.asset_rule.spent_this_period,
+            amount,
+            ctx.accounts.asset_rule.max_period_amount,
+            ctx.accounts.asset_rule.spent_this_period_notional,
+            requested_notional_micro_usd,
+            ctx.accounts.mandate.max_period_notional,
+        )?;
 
         transfer_from_vault(
             &ctx.accounts.mandate,
@@ -660,27 +654,14 @@ pub mod keys {
             expected_nonce
         );
 
-        let next_spent_amount = ctx
-            .accounts
-            .asset_rule
-            .spent_this_period
-            .checked_add(amount)
-            .ok_or(KeysError::Overflow)?;
-        let next_spent_notional = ctx
-            .accounts
-            .asset_rule
-            .spent_this_period_notional
-            .checked_add(requested_notional_micro_usd)
-            .ok_or(KeysError::Overflow)?;
-        require!(
-            next_spent_amount <= ctx.accounts.asset_rule.max_period_amount,
-            KeysError::PeriodAmountExceeded
-        );
-        require!(
-            ctx.accounts.mandate.max_period_notional == 0
-                || next_spent_notional <= ctx.accounts.mandate.max_period_notional,
-            KeysError::PythPeriodNotionalExceeded
-        );
+        let (next_spent_amount, next_spent_notional) = checked_period_spend(
+            ctx.accounts.asset_rule.spent_this_period,
+            amount,
+            ctx.accounts.asset_rule.max_period_amount,
+            ctx.accounts.asset_rule.spent_this_period_notional,
+            requested_notional_micro_usd,
+            ctx.accounts.mandate.max_period_notional,
+        )?;
 
         transfer_from_vault(
             &ctx.accounts.mandate,
@@ -1407,6 +1388,28 @@ fn invoke_orca_exact_in_swap<'info>(
     })?;
 
     Ok(())
+}
+
+// The V0 and V1 exceptional paths override per-action approval only, never the hard period budget.
+fn checked_period_spend(
+    spent_amount: u64,
+    amount: u64,
+    max_period_amount: u64,
+    spent_notional: u64,
+    notional: u64,
+    max_period_notional: u64,
+) -> Result<(u64, u64)> {
+    let next_amount = spent_amount.checked_add(amount).ok_or(KeysError::Overflow)?;
+    require!(next_amount <= max_period_amount, KeysError::PeriodAmountExceeded);
+
+    let next_notional = spent_notional
+        .checked_add(notional)
+        .ok_or(KeysError::Overflow)?;
+    require!(
+        max_period_notional == 0 || next_notional <= max_period_notional,
+        KeysError::PythPeriodNotionalExceeded
+    );
+    Ok((next_amount, next_notional))
 }
 
 fn reset_period_if_needed(rule: &mut AssetRule, now: i64) {
@@ -3035,6 +3038,24 @@ mod tests {
                 .checked_add(amount)
                 .map(|next| next <= max_period)
                 .unwrap_or(false)
+    }
+
+    #[test]
+    fn v0_and_v1_period_spend_enforces_remaining_tokens_and_usd() {
+        assert_eq!(
+            checked_period_spend(600, 400, 1000, 6_000_000, 4_000_000, 10_000_000).unwrap(),
+            (1000, 10_000_000)
+        );
+        assert!(checked_period_spend(600, 401, 1000, 6_000_000, 4_000_000, 10_000_000).is_err());
+        assert!(checked_period_spend(600, 400, 1000, 6_000_000, 4_000_001, 10_000_000).is_err());
+        assert!(checked_period_spend(u64::MAX, 1, u64::MAX, 0, 1, 0).is_err());
+        assert!(checked_period_spend(0, 1, 1000, u64::MAX, 1, 0).is_err());
+    }
+
+    #[test]
+    fn v0_and_v1_optional_usd_period_cap_still_checks_token_limit() {
+        assert_eq!(checked_period_spend(600, 400, 1000, 5, 7, 0).unwrap(), (1000, 12));
+        assert!(checked_period_spend(600, 401, 1000, 5, 7, 0).is_err());
     }
 
     #[test]
