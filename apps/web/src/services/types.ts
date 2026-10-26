@@ -89,7 +89,7 @@ export interface FundingService {
     status: "DEMO_CREDITED" | "DEVNET_TEST_CREDITED";
     amount: number;
     availableBalance?: number;
-    realPaymentTaken?: false;
+    realPaymentTaken: false;
   }>;
 }
 
