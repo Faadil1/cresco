@@ -96,6 +96,7 @@ solana-test-validator \
   --reset \
   --rpc-port 18899 \
   --faucet-port 19900 \
+  --slots-per-epoch 8192 \
   --bpf-program "$PROGRAM_ID" "$ROOT/target/deploy/keys.so" \
   >"$TMP/local-validator.log" 2>&1 &
 PID=$!
@@ -117,6 +118,19 @@ solana --url "$RPC_URL" --keypair "$TMP/local-payer.json" program show "$PROGRAM
   echo "BLOCKED: expected program not loaded in local ledger." >&2
   exit 3
 }
+
+# At least two distinct confirmed blockhashes must be available while the
+# validator is running. Previous Solana 2.3.0 localnet runs froze at slot 31,
+# after which SPL's blockhash polling timed out despite a live RPC process.
+# This checks actual chain liveness, not merely whether RPC responds.
+PRE_SLOT="$(solana --url "$RPC_URL" --keypair "$TMP/local-payer.json" slot --commitment confirmed)"
+sleep 2
+POST_SLOT="$(solana --url "$RPC_URL" --keypair "$TMP/local-payer.json" slot --commitment confirmed)"
+echo "LOCALNET liveness confirmed_slot_before=$PRE_SLOT after=$POST_SLOT"
+if [[ "$POST_SLOT" -le "$PRE_SLOT" ]]; then
+  echo "BLOCKED: validator is alive but confirmed slots are not advancing." >&2
+  exit 3
+fi
 
 echo "Running negative-path assertions against the isolated local validator..."
 CRESCO_V1_EPHEMERAL_LOCALNET="1" \
