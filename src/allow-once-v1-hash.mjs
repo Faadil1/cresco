@@ -7,8 +7,19 @@ function keyBytes(value) {
   return new PublicKey(value).toBuffer();
 }
 
+function exactInteger(value) {
+  if (typeof value === 'number' && !Number.isSafeInteger(value)) {
+    throw new RangeError('V1_UNSAFE_JS_INTEGER_USE_BIGINT');
+  }
+  if (typeof value !== 'bigint' && typeof value !== 'number' &&
+      !(typeof value === 'string' && /^-?[0-9]+$/.test(value))) {
+    throw new TypeError('V1_INTEGER_REQUIRED');
+  }
+  return BigInt(value);
+}
+
 function u64(value) {
-  const n = BigInt(value);
+  const n = exactInteger(value);
   if (n < 0n || n > 0xffffffffffffffffn) throw new RangeError('V1_U64_OUT_OF_RANGE');
   const b = Buffer.alloc(8);
   b.writeBigUInt64LE(n);
@@ -16,7 +27,7 @@ function u64(value) {
 }
 
 function i64(value) {
-  const n = BigInt(value);
+  const n = exactInteger(value);
   if (n < -(1n << 63n) || n > (1n << 63n) - 1n) throw new RangeError('V1_I64_OUT_OF_RANGE');
   const b = Buffer.alloc(8);
   b.writeBigInt64LE(n);
