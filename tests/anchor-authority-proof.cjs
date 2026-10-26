@@ -415,6 +415,9 @@ describe("KEYS Solana authority + bounded-capital proof", () => {
   });
 
   it("guardian widens the asset boundary through an explicit nonce-bound transition", async () => {
+    const previousRule = await program.account.assetRule.fetch(assetRule);
+    assert.equal(previousRule.spentThisPeriod.toNumber(), 100, "first spend must remain accounted");
+
     const tx = await program.methods
       .updateAssetRule(
         new anchor.BN(2),
@@ -438,6 +441,9 @@ describe("KEYS Solana authority + bounded-capital proof", () => {
     const mandateState = await program.account.mandate.fetch(mandate);
 
     assert.equal(rule.maxActionAmount.toNumber(), 500);
+    assert.equal(rule.periodStartedAt.toString(), previousRule.periodStartedAt.toString(), "policy edit cannot restart accounting window");
+    assert.equal(rule.spentThisPeriod.toString(), previousRule.spentThisPeriod.toString(), "policy edit cannot erase period token spend");
+    assert.equal(rule.spentThisPeriodNotional.toString(), previousRule.spentThisPeriodNotional.toString(), "policy edit cannot erase period USD spend");
     assert.equal(mandateState.version.toNumber(), 4);
     assert.equal(mandateState.nonce.toNumber(), 3);
 
@@ -490,6 +496,36 @@ describe("KEYS Solana authority + bounded-capital proof", () => {
 
     console.log(`PROOF widened_execution_tx=${tx}`);
     console.log("PROOF same_action_after_human_widen=ALLOW amount=500 nonce=3");
+  });
+
+  it("refuses a spend that crosses the original period cap after the guardian edits the rule", async () => {
+    const beforeRule = await program.account.assetRule.fetch(assetRule);
+    assert.equal(beforeRule.spentThisPeriod.toNumber(), 600, "100 before edit + 500 after edit must accumulate");
+    const beforeVault = await getAccount(provider.connection, vaultTokenAccount);
+
+    await expectRefusal(
+      "counter_reset_by_rule_edit",
+      () => program.methods
+        .executeWithinMandate(new anchor.BN(500), new anchor.BN(3))
+        .accountsStrict({
+          charter,
+          mandate,
+          assetRule,
+          vaultTokenAccount,
+          mint: mockStockMint,
+          beneficiary: beneficiary.publicKey,
+          delegateTokenAccount: beneficiaryTokenAccount.address,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .signers([beneficiary])
+        .rpc(),
+      ["PeriodAmountExceeded", "current period boundary"],
+    );
+
+    const afterVault = await getAccount(provider.connection, vaultTokenAccount);
+    const afterRule = await program.account.assetRule.fetch(assetRule);
+    assert.equal(Number(afterVault.amount), Number(beforeVault.amount), "refusal cannot move funds");
+    assert.equal(afterRule.spentThisPeriod.toString(), beforeRule.spentThisPeriod.toString(), "refusal cannot change counters");
   });
 
   it("verifies signed Pyth evidence inside the Solana execution path and enforces USD notional", async function () {
@@ -647,6 +683,80 @@ describe("KEYS Solana authority + bounded-capital proof", () => {
     console.log(
       `PROOF pyth_market_condition=REFUSE verified_price=${third.snapshot.price} max_price_micro_usd=${lowPriceCeiling} authority_effect=NONE`
     );
+  });
+
+  it("refuses a zero-amount historical one-use transfer without consuming the allowance", async function () {
+    const currentMandate = await program.account.mandate.fetch(mandate);
+    const nonce = currentMandate.nonce.toNumber();
+    const requestHash = hash32(`cresco-local-validator-zero-amount-once-${nonce}`);
+    const [allowance] = PublicKey.findProgramAddressSync(
+      [Buffer.from("allowance"), mandate.toBuffer(), mockStockMint.toBuffer(), Buffer.from(requestHash)],
+      program.programId
+    );
+
+    // A zero-amount execution must be rejected before Pyth CPI or token movement.
+    // This uses the already-proven guardian signer and the existing family fixture.
+    const grantTx = await program.methods
+      .grantAllowanceOnce(
+        requestHash,
+        new anchor.BN(nonce),
+        new anchor.BN(1_000_000),
+        new anchor.BN(0)
+      )
+      .accountsStrict({
+        charter,
+        mandate,
+        mint: mockStockMint,
+        allowance,
+        guardian: provider.wallet.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+
+    const before = await program.account.allowanceReceipt.fetch(allowance);
+    const vaultBefore = await getAccount(provider.connection, vaultTokenAccount);
+    const ruleBefore = await program.account.assetRule.fetch(assetRule);
+
+    // The amount guard executes before Pyth account validation/CPI.
+    // Do not depend on a live Pyth storage account for this local negative path.
+    const pythProgram = new PublicKey("pytd2yyk641x7ak7mkaasSJVXh6YYZnC7wTmtgAyxPt");
+    const pythStorage = new PublicKey("3rdJbqfnagQ4yx9HXJViD4zc4xpiSqmFsKpPuSCQVyQL");
+    const pythTreasury = provider.wallet.publicKey;
+
+    await expectRefusal(
+      "legacy_once_zero_amount",
+      () => program.methods
+        .executeOnceWithPyth(Buffer.from([1]), new anchor.BN(0), new anchor.BN(nonce), requestHash)
+        .accountsStrict({
+          charter,
+          mandate,
+          assetRule,
+          allowance,
+          vaultTokenAccount,
+          mint: mockStockMint,
+          beneficiary: beneficiary.publicKey,
+          delegateTokenAccount: beneficiaryTokenAccount.address,
+          pythProgram,
+          pythStorage,
+          pythTreasury,
+          instructionsSysvar: SYSVAR_INSTRUCTIONS_PUBKEY,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([beneficiary])
+        .rpc(),
+      ["InvalidAmount", "Invalid amount"]
+    );
+
+    const after = await program.account.allowanceReceipt.fetch(allowance);
+    const vaultAfter = await getAccount(provider.connection, vaultTokenAccount);
+    const ruleAfter = await program.account.assetRule.fetch(assetRule);
+    assert.equal(before.used, false);
+    assert.equal(after.used, false, "refusal must not consume receipt");
+    assert.equal(vaultAfter.amount.toString(), vaultBefore.amount.toString(), "refusal must not move vault funds");
+    assert.equal(ruleAfter.spentThisPeriod.toString(), ruleBefore.spentThisPeriod.toString(), "refusal must preserve token counter");
+    assert.equal(ruleAfter.spentThisPeriodNotional.toString(), ruleBefore.spentThisPeriodNotional.toString(), "refusal must preserve USD counter");
+    console.log(`PROOF legacy_once_zero_amount=REFUSE grant_tx=${grantTx} vault_unchanged=true allowance_unused=true`);
   });
 
   it("guardian can pause the mandate and the capital path fails closed", async () => {
