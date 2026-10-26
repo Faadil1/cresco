@@ -32,11 +32,12 @@ echo "We will load the exact SBF into a fresh ephemeral validator at the Rust de
 # production dependency migration through this isolated validation run.
 cargo generate-lockfile
 cargo update -p zeroize --precise 1.8.2
+cargo update -p toml_parser --precise 1.0.4
 if ! grep -A1 -F 'name = "zeroize"' Cargo.lock | grep -Fq 'version = "1.8.2"'; then
   echo "BLOCKED: incompatible zeroize version selected for Solana 2.3.0" >&2
   exit 2
 fi
-echo "Compiling SBF with ephemeral zeroize 1.8.2 dependency pin"
+echo "Compiling SBF with temporary Cargo pins: zeroize 1.8.2 / toml_parser 1.0.4"
 anchor build
 
 if [[ ! -s target/deploy/keys.so || ! -s target/idl/keys.json ]]; then
