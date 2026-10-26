@@ -29,14 +29,14 @@ export default function AddMoneyPage() {
     setError(null);
     try {
       const res = await funding.addMoney({ amount: value });
-      if (res.realPaymentTaken !== false || !Number.isFinite(res.amount) || res.amount !== value) {
+      if ((res.status !== "DEMO_CREDITED" && res.status !== "DEVNET_TEST_CREDITED") || res.realPaymentTaken !== false || !Number.isFinite(res.amount) || res.amount !== value) {
         throw new Error("Unverified practice-credit result");
       }
       dispatch({ type: "addFunds", amount: res.amount });
       setDone(res.amount);
       toast(`${formatAmount(res.amount)} practice funds added`);
     } catch {
-      setError("Practice funds were not confirmed. No balance change was recorded. Please retry.");
+      setError("We could not confirm this practice credit. Your displayed balance was not updated. Check the balance before trying again.");
     } finally {
       setBusy(false);
     }
