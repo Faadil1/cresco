@@ -351,6 +351,89 @@ describe("KEYS Solana authority + bounded-capital proof", () => {
     console.log("PROOF bounded_vault=READY max_action_amount=250 max_period_amount=1000 nonce=2");
   });
 
+  it("V1 guardian grant binds exact action and changed execution refuses before Pyth CPI", async () => {
+    const { canonicalAllowOnceV1Hash } = await import("../src/allow-once-v1-hash.mjs");
+    const nonce = 2n, amount = 400n, notional = 1000n, expiry = 0n;
+    const guardian = provider.wallet.publicKey;
+    const destination = beneficiaryTokenAccount.address;
+    const digestFor = (a) => canonicalAllowOnceV1Hash({
+      programId: program.programId, mandate, mandateNonce: nonce,
+      mint: mockStockMint, beneficiary: beneficiary.publicKey,
+      destinationTokenAccount: destination, amount: a,
+      maxNotionalMicroUsd: notional, expiry, guardian,
+    });
+    const pdaFor = (digest) => PublicKey.findProgramAddressSync([
+      Buffer.from("allowance-v1"), mandate.toBuffer(), mockStockMint.toBuffer(), digest,
+    ], program.programId)[0];
+    const grant = (a, digest, pda) => program.methods
+      .grantAllowanceOnceV1(
+        new anchor.BN(a.toString()), new anchor.BN(nonce.toString()),
+        new anchor.BN(notional.toString()), new anchor.BN(expiry.toString()),
+        [...digest]
+      )
+      .accountsStrict({
+        charter, mandate, mint: mockStockMint,
+        beneficiary: beneficiary.publicKey,
+        destinationTokenAccount: destination,
+        allowanceV1: pda, guardian, tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      }).rpc();
+
+    const digest = digestFor(amount);
+    const allowanceV1 = pdaFor(digest);
+    const grantTx = await grant(amount, digest, allowanceV1);
+    const granted = await program.account.allowanceReceiptV1.fetch(allowanceV1);
+    assert.equal(granted.amount.toString(), amount.toString());
+    assert.equal(granted.destinationTokenAccount.toBase58(), destination.toBase58());
+    assert.equal(granted.used, false);
+    assert.equal(Buffer.from(granted.actionDigest).toString("hex"), digest.toString("hex"));
+
+    const wrongDigest = digestFor(amount + 1n);
+    const wrongAllowance = pdaFor(wrongDigest);
+    await expectRefusal("v1_grant_digest_mismatch",
+      () => grant(amount, wrongDigest, wrongAllowance),
+      ["AllowanceActionMismatch", "one-time notional"]
+    );
+    assert.equal(await provider.connection.getAccountInfo(wrongAllowance), null);
+
+    const beforeVault = await getAccount(provider.connection, vaultTokenAccount);
+    const beforeDest = await getAccount(provider.connection, destination);
+    const beforeRule = await program.account.assetRule.fetch(assetRule);
+
+    // Refusal happens before Pyth CPI; intentionally invalid Pyth bytes
+    // must never mask the earlier exact-action rejection.
+    await expectRefusal(
+      "v1_execute_changed_amount",
+      () => program.methods.executeOnceWithPythV1(
+        [1], new anchor.BN((amount + 1n).toString()),
+        new anchor.BN(nonce.toString()), [...digest]
+      ).accountsStrict({
+        charter, mandate, assetRule, allowanceV1, vaultTokenAccount,
+        mint: mockStockMint, beneficiary: beneficiary.publicKey,
+        delegateTokenAccount: destination,
+        pythProgram: new PublicKey("pytd2yyk641x7ak7mkaasSJVXh6YYZnC7wTmtgAyxPt"),
+        pythStorage: new PublicKey("3rdJbqfnagQ4yx9HXJViD4zc4xpiSqmFsKpPuSCQVyQL"),
+        pythTreasury: provider.wallet.publicKey,
+        instructionsSysvar: SYSVAR_INSTRUCTIONS_PUBKEY,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      }).signers([beneficiary]).rpc(),
+      ["AllowanceActionMismatch", "one-time notional"]
+    );
+
+    const afterVault = await getAccount(provider.connection, vaultTokenAccount);
+    const afterDest = await getAccount(provider.connection, destination);
+    const afterRule = await program.account.assetRule.fetch(assetRule);
+    const receiptAfter = await program.account.allowanceReceiptV1.fetch(allowanceV1);
+    assert.equal(afterVault.amount.toString(), beforeVault.amount.toString());
+    assert.equal(afterDest.amount.toString(), beforeDest.amount.toString());
+    assert.equal(afterRule.spentThisPeriod.toString(), beforeRule.spentThisPeriod.toString());
+    assert.equal(afterRule.spentThisPeriodNotional.toString(), beforeRule.spentThisPeriodNotional.toString());
+    assert.equal(receiptAfter.used, false);
+    console.log("PROOF v1_guardian_grant_tx=" + grantTx);
+    console.log("PROOF v1_action_binding=REFUSE_CHANGED_AMOUNT receipt_unused=true vault_unchanged=true");
+  });
+
   it("allows an in-bounds capital action without guardian approval", async () => {
     const beforeVault = await getAccount(provider.connection, vaultTokenAccount);
     const beforeDelegate = await getAccount(
