@@ -83,7 +83,7 @@ export function FamilyWorkspaceEntry({
             <p className="text-[13px] font-semibold text-navy-strong">No Family workspace saved on this browser.</p>
             {audience === "parent" ? (
               <>
-                <p className="mt-1 text-[12px] leading-relaxed text-ink-2">Create a new Family mandate, then privately share each person's role link. Setup uses separate role credentials and Devnet demo tokens.</p>
+                <p className="mt-1 text-[12px] leading-relaxed text-ink-2">Create a new Family mandate, then privately share each person&apos;s role link. Setup uses separate role credentials and Devnet demo tokens.</p>
                 <Link href="/worlds-fair/desk?case=family" className={`${linkClass} mt-3`}>
                   Set up Family mandate <ArrowRight aria-hidden className="size-4" />
                 </Link>
@@ -100,7 +100,7 @@ export function FamilyWorkspaceEntry({
         ) : view.kind === "shared-device-risk" ? (
           <>
             <p className="flex items-center gap-2 text-[13px] font-semibold text-navy-strong"><ShieldAlert aria-hidden className="size-4" /> Parent permissions are saved on this device.</p>
-            <p className="mt-1 text-[12px] leading-relaxed text-ink-2">Don't open a Teen workspace on a browser that can also approve as Parent. Use the Teen-only role link in a separate browser profile or device.</p>
+            <p className="mt-1 text-[12px] leading-relaxed text-ink-2">Do not open a Teen workspace on a browser that can also approve as Parent. Use the Teen-only role link in a separate browser profile or device.</p>
           </>
         ) : view.kind === "missing-role" ? (
           <>
