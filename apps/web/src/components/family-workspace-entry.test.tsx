@@ -19,7 +19,7 @@ describe("Family Devnet workspace continuity entry", () => {
   it("lets a parent create a new Family workspace only when no other workspace is saved", async () => {
     render(<FamilyWorkspaceEntry audience="parent" />);
     expect(await screen.findByRole("link", { name: /set up family mandate/i })).toHaveAttribute("href", "/worlds-fair/desk?case=family");
-    expect(screen.getByText(/no email/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/no email/i)).not.toBeInTheDocument();
     expect(screen.getByText(/different demo session/i)).toBeInTheDocument();
   });
 
