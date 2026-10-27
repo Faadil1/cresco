@@ -13,6 +13,22 @@ type View = FamilyWorkspaceConnection | { kind: "checking" };
 
 const roleName = { principal: "Parent", risk: "Second parent", operator: "Teen" } as const;
 
+// Never display unreviewed event summaries or raw activity payloads here.
+// Unknown events stay unknown, rather than looking like financial success.
+const eventLabels: Record<string, string> = {
+  EXCEPTION_REQUESTED: "A request was submitted",
+  EXCEPTION_EXECUTED: "A request was marked executed — inspect the Devnet receipt",
+  EXCEPTION_REFUSED: "A request was refused",
+  EXCEPTION_REFUSED_BY_PROGRAM: "The program refused a request",
+  EXCEPTION_STALE: "A request became stale",
+  EXCEPTION_EXPIRED: "A request expired",
+  EXCEPTION_ROLLED_BACK: "A request was rolled back",
+  EXCEPTION_NOT_REQUIRED: "A request no longer required an exception",
+  MANDATE_STATUS_CHANGED: "The mandate status changed",
+  POLICY_REVISED: "The mandate policy changed",
+  ASSET_RULE_UPDATED: "An asset rule changed",
+};
+
 export function FamilyWorkspaceEntry({
   audience,
   compact = false,
@@ -72,6 +88,24 @@ export function FamilyWorkspaceEntry({
               <ShieldCheck aria-hidden className="size-4" /> Verified {roleName[view.role]} role · {view.mandateReady ? "Devnet mandate ready" : "Workspace needs mandate setup"}
             </p>
             <p className="mt-1 break-words text-[13px] text-ink-2">{view.workspaceName}</p>
+            <div className="mt-3 rounded-[12px] border border-line-soft bg-surface px-3 py-2.5">
+              {view.activity.kind === "unavailable" ? (
+                <p className="text-[12px] leading-relaxed text-ink-2">Request activity could not be checked. Do not assume there are no pending decisions; open the workspace to verify.</p>
+              ) : audience === "parent" ? (
+                <p className="text-[12px] font-semibold text-navy-strong">
+                  {view.activity.pendingDecisions === 0
+                    ? "No requests awaiting guardian review at last check."
+                    : `${view.activity.pendingDecisions} ${view.activity.pendingDecisions === 1 ? "request" : "requests"} awaiting guardian review at last check.`}
+                </p>
+              ) : (
+                <p className="text-[12px] leading-relaxed text-navy-strong">
+                  {view.activity.latestEventType
+                    ? `Latest role-specific update: ${eventLabels[view.activity.latestEventType] ?? "An event needs review in the workspace"}.`
+                    : "No recent role-specific decision updates returned."}
+                </p>
+              )}
+              <p className="mt-1 text-[11px] text-ink-3">Read-only snapshot. Check the Devnet desk for current request status and receipts before acting.</p>
+            </div>
             <div className="mt-3">
               <Link href="/worlds-fair/desk?case=family" className={linkClass}>
                 Resume Family workspace <ArrowRight aria-hidden className="size-4" />
