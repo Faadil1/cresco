@@ -143,16 +143,19 @@ describe("CRESCO V1 — isolated local-validator refusal proof (no Pyth CPI)", f
     mint = await createMint(provider.connection, payer, guardian, null, 0,
       undefined, { commitment: 'confirmed', preflightCommitment: 'confirmed' });
     // Use explicit SPL token accounts for this V1 exact-destination test.
-    // ATA compatibility is a separate unproven gate; the ATA helper rejected
-    // setup on isolated Solana 2.3.0 before any CRESCO instruction was invoked.
+    // Passing an explicit account Keypair is mandatory: the SPL helper
+    // otherwise defaults to associated-token-account creation. ATA coverage
+    // is a separate gate and is not implied by this negative-path proof.
     console.log('LOCALNET setup=beneficiary_token_account_non_ata');
+    const destinationKeypair = Keypair.generate();
     destination = await createAccount(
       provider.connection, payer, mint, beneficiary.publicKey,
-      undefined, { commitment: 'confirmed', preflightCommitment: 'confirmed' },
+      destinationKeypair, { commitment: 'confirmed', preflightCommitment: 'confirmed' },
     );
+    const alternateKeypair = Keypair.generate();
     alternateDestination = await createAccount(
       provider.connection, payer, mint, beneficiary.publicKey,
-      undefined, { commitment: 'confirmed', preflightCommitment: 'confirmed' },
+      alternateKeypair, { commitment: 'confirmed', preflightCommitment: 'confirmed' },
     );
     charter = pda([Buffer.from("charter"), beneficiary.publicKey.toBuffer()]);
     mandate = pda([Buffer.from("mandate"), charter.toBuffer()]);
