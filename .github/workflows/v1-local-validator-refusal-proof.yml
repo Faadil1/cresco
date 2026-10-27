@@ -48,6 +48,15 @@ jobs:
         shell: bash
         run: |
           cargo install --git https://github.com/coral-xyz/anchor --tag v0.32.1 anchor-cli --locked
+      # Persist successful Anchor installation even if a later validator test
+      # fails; the ordinary cache post-job hook may not save failed runs.
+      - name: Save pinned Anchor binary immediately
+        if: steps.anchor-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cargo/bin/anchor
+          key: anchor-cli-0.32.1-ubuntu-x64-v1
       - name: Install JS dependencies
         run: npm ci --no-audit --no-fund
       - name: Verify pinned toolchain
