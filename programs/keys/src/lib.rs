@@ -360,6 +360,69 @@ pub mod keys {
         Ok(())
     }
 
+    // New receipt namespace: V0 receipts and their request-id semantics are unchanged.
+    pub fn grant_allowance_once_v1(
+        ctx: Context<GrantAllowanceOnceV1>,
+        amount: u64,
+        expected_nonce: u64,
+        max_notional_micro_usd: u64,
+        expires_at: i64,
+        action_digest: [u8; 32],
+    ) -> Result<()> {
+        require!(amount > 0, KeysError::InvalidAmount);
+        require!(max_notional_micro_usd > 0, KeysError::InvalidCap);
+
+        let now = Clock::get()?.unix_timestamp;
+        let mandate = &ctx.accounts.mandate;
+        require_eq!(mandate.nonce, expected_nonce, KeysError::StaleNonce);
+        require_eq!(mandate.status, MANDATE_ACTIVE, KeysError::MandateNotActive);
+        require!(
+            mandate.expires_at == 0 || now <= mandate.expires_at,
+            KeysError::MandateExpired
+        );
+        require!(expires_at == 0 || expires_at > now, KeysError::InvalidExpiry);
+
+        let expected_digest = canonical_allow_once_v1_hash(
+            &crate::ID,
+            &mandate.key(),
+            expected_nonce,
+            &ctx.accounts.mint.key(),
+            &ctx.accounts.beneficiary.key(),
+            &ctx.accounts.destination_token_account.key(),
+            amount,
+            max_notional_micro_usd,
+            expires_at,
+            &ctx.accounts.guardian.key(),
+        );
+        require!(
+            expected_digest == action_digest,
+            KeysError::AllowanceActionMismatch
+        );
+
+        let allowance = &mut ctx.accounts.allowance_v1;
+        allowance.mandate = mandate.key();
+        allowance.guardian = ctx.accounts.guardian.key();
+        allowance.beneficiary = ctx.accounts.beneficiary.key();
+        allowance.mint = ctx.accounts.mint.key();
+        allowance.destination_token_account = ctx.accounts.destination_token_account.key();
+        allowance.action_digest = action_digest;
+        allowance.amount = amount;
+        allowance.max_notional_micro_usd = max_notional_micro_usd;
+        allowance.mandate_nonce = expected_nonce;
+        allowance.expires_at = expires_at;
+        allowance.used = false;
+        allowance.used_at = 0;
+        allowance.bump = ctx.bumps.allowance_v1;
+
+        msg!(
+            "ALLOW_ONCE_V1_GRANTED amount={} nonce={} max_notional_micro_usd={}",
+            amount,
+            expected_nonce,
+            max_notional_micro_usd
+        );
+        Ok(())
+    }
+
     pub fn execute_once_with_pyth(
         ctx: Context<ExecuteOnceWithPyth>,
         pyth_message: Vec<u8>,
@@ -486,6 +549,156 @@ pub mod keys {
 
         msg!(
             "ALLOW_ONCE_CONSUMED feed={} notional_micro_usd={} nonce={}",
+            ctx.accounts.asset_rule.pyth_feed_id,
+            requested_notional_micro_usd,
+            expected_nonce
+        );
+        Ok(())
+    }
+
+    pub fn execute_once_with_pyth_v1(
+        ctx: Context<ExecuteOnceWithPythV1>,
+        pyth_message: Vec<u8>,
+        amount: u64,
+        expected_nonce: u64,
+        action_digest: [u8; 32],
+    ) -> Result<()> {
+        require!(amount > 0, KeysError::InvalidAmount);
+        require!(!pyth_message.is_empty(), KeysError::PythMessageInvalid);
+
+        let now = Clock::get()?.unix_timestamp;
+        validate_execution_authority(
+            &ctx.accounts.mandate,
+            &ctx.accounts.asset_rule,
+            expected_nonce,
+            now,
+        )?;
+
+        let allowance = &ctx.accounts.allowance_v1;
+        require!(!allowance.used, KeysError::AllowanceAlreadyUsed);
+        require_eq!(
+            allowance.mandate_nonce,
+            expected_nonce,
+            KeysError::StaleAllowance
+        );
+        require!(
+            allowance.expires_at == 0 || now <= allowance.expires_at,
+            KeysError::AllowanceExpired
+        );
+        require_v1_exact_action(
+            allowance,
+            &crate::ID,
+            &ctx.accounts.mandate.key(),
+            expected_nonce,
+            &ctx.accounts.mint.key(),
+            &ctx.accounts.beneficiary.key(),
+            &ctx.accounts.delegate_token_account.key(),
+            amount,
+            &ctx.accounts.charter.guardian,
+            action_digest,
+        )?;
+
+        require_keys_eq!(
+            ctx.accounts.pyth_program.key(),
+            PYTH_LAZER_PROGRAM_ID,
+            KeysError::InvalidPythProgram
+        );
+        require_keys_eq!(
+            ctx.accounts.pyth_storage.key(),
+            PYTH_LAZER_STORAGE_ID,
+            KeysError::InvalidPythStorage
+        );
+        require_keys_eq!(
+            ctx.accounts.instructions_sysvar.key(),
+            sysvar::instructions::ID,
+            KeysError::InvalidInstructionsSysvar
+        );
+
+        verify_pyth_message_via_lazer(
+            &ctx.accounts.beneficiary.to_account_info(),
+            &ctx.accounts.pyth_program,
+            &ctx.accounts.pyth_storage,
+            &ctx.accounts.pyth_treasury,
+            &ctx.accounts.system_program.to_account_info(),
+            &ctx.accounts.instructions_sysvar,
+            &pyth_message,
+        )?;
+
+        let market = parse_verified_market_evidence(
+            &pyth_message,
+            ctx.accounts.asset_rule.pyth_feed_id,
+            now,
+            ctx.accounts.mandate.max_market_age_seconds,
+            ctx.accounts.mandate.max_confidence_bps,
+        )?;
+
+        require!(
+            ctx.accounts.asset_rule.max_unit_price_micro_usd == 0
+                || market.unit_price_micro_usd
+                    <= ctx.accounts.asset_rule.max_unit_price_micro_usd,
+            KeysError::MarketConditionInvalidated
+        );
+
+        reset_period_if_needed(&mut ctx.accounts.asset_rule, now);
+
+        let requested_notional_micro_usd = compute_notional_micro_usd(
+            amount,
+            ctx.accounts.mint.decimals,
+            market.unit_price_micro_usd,
+        )?;
+        require_allowance_exact_notional(
+            ctx.accounts.allowance_v1.max_notional_micro_usd,
+            requested_notional_micro_usd,
+            ctx.accounts.mint.decimals,
+            market.unit_price_micro_usd,
+        )?;
+
+        msg!(
+            "ALLOW_ONCE_V1_EXACT_ACTION approved_notional_micro_usd={} actual_notional_micro_usd={} nonce={}",
+            ctx.accounts.allowance_v1.max_notional_micro_usd,
+            requested_notional_micro_usd,
+            expected_nonce
+        );
+
+        let next_spent_amount = ctx
+            .accounts
+            .asset_rule
+            .spent_this_period
+            .checked_add(amount)
+            .ok_or(KeysError::Overflow)?;
+        let next_spent_notional = ctx
+            .accounts
+            .asset_rule
+            .spent_this_period_notional
+            .checked_add(requested_notional_micro_usd)
+            .ok_or(KeysError::Overflow)?;
+        require!(
+            next_spent_amount <= ctx.accounts.asset_rule.max_period_amount,
+            KeysError::PeriodAmountExceeded
+        );
+        require!(
+            ctx.accounts.mandate.max_period_notional == 0
+                || next_spent_notional <= ctx.accounts.mandate.max_period_notional,
+            KeysError::PythPeriodNotionalExceeded
+        );
+
+        transfer_from_vault(
+            &ctx.accounts.mandate,
+            &ctx.accounts.mint,
+            &ctx.accounts.vault_token_account,
+            &ctx.accounts.delegate_token_account,
+            &ctx.accounts.token_program,
+            ctx.bumps.vault_token_account,
+            amount,
+        )?;
+
+        ctx.accounts.asset_rule.spent_this_period = next_spent_amount;
+        ctx.accounts.asset_rule.spent_this_period_notional = next_spent_notional;
+        ctx.accounts.allowance_v1.used = true;
+        ctx.accounts.allowance_v1.used_at = now;
+
+        msg!(
+            "ALLOW_ONCE_V1_CONSUMED feed={} notional_micro_usd={} nonce={}",
             ctx.accounts.asset_rule.pyth_feed_id,
             requested_notional_micro_usd,
             expected_nonce
@@ -1875,6 +2088,56 @@ pub struct GrantAllowanceOnce<'info> {
 
 #[derive(Accounts)]
 #[instruction(
+    amount: u64,
+    expected_nonce: u64,
+    max_notional_micro_usd: u64,
+    expires_at: i64,
+    action_digest: [u8; 32]
+)]
+pub struct GrantAllowanceOnceV1<'info> {
+    #[account(
+        seeds = [b"charter", charter.beneficiary.as_ref()],
+        bump = charter.bump,
+        has_one = guardian
+    )]
+    pub charter: Account<'info, Charter>,
+    #[account(
+        seeds = [b"mandate", charter.key().as_ref()],
+        bump = mandate.bump,
+        has_one = charter
+    )]
+    pub mandate: Account<'info, Mandate>,
+    pub mint: InterfaceAccount<'info, Mint>,
+    /// CHECK: The charter's beneficiary public key is checked by the constraint.
+    #[account(constraint = beneficiary.key() == charter.beneficiary @ KeysError::Unauthorized)]
+    pub beneficiary: UncheckedAccount<'info>,
+    #[account(
+        token::mint = mint,
+        token::authority = beneficiary,
+        token::token_program = token_program
+    )]
+    pub destination_token_account: InterfaceAccount<'info, TokenAccount>,
+    #[account(
+        init,
+        payer = guardian,
+        space = AllowanceReceiptV1::SPACE,
+        seeds = [
+            b"allowance-v1",
+            mandate.key().as_ref(),
+            mint.key().as_ref(),
+            action_digest.as_ref()
+        ],
+        bump
+    )]
+    pub allowance_v1: Account<'info, AllowanceReceiptV1>,
+    #[account(mut)]
+    pub guardian: Signer<'info>,
+    pub token_program: Interface<'info, TokenInterface>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(
     pyth_message: Vec<u8>,
     amount: u64,
     expected_nonce: u64,
@@ -1916,6 +2179,85 @@ pub struct ExecuteOnceWithPyth<'info> {
         constraint = allowance.mint == mint.key() @ KeysError::AllowanceMintMismatch
     )]
     pub allowance: Box<Account<'info, AllowanceReceipt>>,
+    #[account(
+        mut,
+        seeds = [b"vault", mandate.key().as_ref(), mint.key().as_ref()],
+        bump,
+        token::mint = mint,
+        token::authority = vault_token_account,
+        token::token_program = token_program
+    )]
+    pub vault_token_account: InterfaceAccount<'info, TokenAccount>,
+    pub mint: InterfaceAccount<'info, Mint>,
+    #[account(mut)]
+    pub beneficiary: Signer<'info>,
+    #[account(
+        mut,
+        token::mint = mint,
+        token::authority = beneficiary,
+        token::token_program = token_program
+    )]
+    pub delegate_token_account: InterfaceAccount<'info, TokenAccount>,
+
+    /// CHECK: address is validated in the instruction.
+    pub pyth_program: AccountInfo<'info>,
+    /// CHECK: address is validated in the instruction; Pyth validates its data.
+    pub pyth_storage: AccountInfo<'info>,
+    /// CHECK: Pyth storage has_one treasury is enforced by Pyth during CPI.
+    #[account(mut)]
+    pub pyth_treasury: AccountInfo<'info>,
+    /// CHECK: address is validated against the instructions sysvar id.
+    pub instructions_sysvar: AccountInfo<'info>,
+
+    pub token_program: Interface<'info, TokenInterface>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(
+    pyth_message: Vec<u8>,
+    amount: u64,
+    expected_nonce: u64,
+    action_digest: [u8; 32]
+)]
+pub struct ExecuteOnceWithPythV1<'info> {
+    #[account(
+        seeds = [b"charter", charter.beneficiary.as_ref()],
+        bump = charter.bump,
+        has_one = beneficiary
+    )]
+    pub charter: Box<Account<'info, Charter>>,
+    #[account(
+        mut,
+        seeds = [b"mandate", charter.key().as_ref()],
+        bump = mandate.bump,
+        has_one = charter
+    )]
+    pub mandate: Box<Account<'info, Mandate>>,
+    #[account(
+        mut,
+        seeds = [b"asset-rule", mandate.key().as_ref(), mint.key().as_ref()],
+        bump = asset_rule.bump,
+        constraint = asset_rule.mandate == mandate.key() @ KeysError::AssetRuleMandateMismatch,
+        constraint = asset_rule.mint == mint.key() @ KeysError::AssetRuleMintMismatch
+    )]
+    pub asset_rule: Box<Account<'info, AssetRule>>,
+    #[account(
+        mut,
+        seeds = [
+            b"allowance-v1",
+            mandate.key().as_ref(),
+            mint.key().as_ref(),
+            action_digest.as_ref()
+        ],
+        bump = allowance_v1.bump,
+        constraint = allowance_v1.mandate == mandate.key() @ KeysError::AllowanceMandateMismatch,
+        constraint = allowance_v1.beneficiary == beneficiary.key() @ KeysError::AllowanceBeneficiaryMismatch,
+        constraint = allowance_v1.mint == mint.key() @ KeysError::AllowanceMintMismatch,
+        constraint = allowance_v1.guardian == charter.guardian @ KeysError::Unauthorized,
+        constraint = allowance_v1.destination_token_account == delegate_token_account.key() @ KeysError::AllowanceActionMismatch
+    )]
+    pub allowance_v1: Box<Account<'info, AllowanceReceiptV1>>,
     #[account(
         mut,
         seeds = [b"vault", mandate.key().as_ref(), mint.key().as_ref()],
@@ -2327,6 +2669,26 @@ impl AllowanceReceipt {
 }
 
 #[account]
+pub struct AllowanceReceiptV1 {
+    pub mandate: Pubkey,
+    pub guardian: Pubkey,
+    pub beneficiary: Pubkey,
+    pub mint: Pubkey,
+    pub destination_token_account: Pubkey,
+    pub action_digest: [u8; 32],
+    pub amount: u64,
+    pub max_notional_micro_usd: u64,
+    pub mandate_nonce: u64,
+    pub expires_at: i64,
+    pub used: bool,
+    pub used_at: i64,
+    pub bump: u8,
+}
+impl AllowanceReceiptV1 {
+    pub const SPACE: usize = 8 + (32 * 6) + (8 * 5) + 1 + 1;
+}
+
+#[account]
 pub struct ProposalCommitment {
     pub mandate: Pubkey,
     pub beneficiary: Pubkey,
@@ -2488,7 +2850,7 @@ pub enum KeysError {
     OrcaSwapFailed,
 }
 
-// V1 design fixture only. No production instruction calls this helper yet.
+// V1 canonical digest is enforced by the new grant/execute instructions.
 #[allow(clippy::too_many_arguments)]
 fn canonical_allow_once_v1_hash(
     program_id: &Pubkey,
@@ -2518,9 +2880,98 @@ fn canonical_allow_once_v1_hash(
     .to_bytes()
 }
 
+// This predicate is called in the capital path; tests exercise actual refusal logic.
+#[allow(clippy::too_many_arguments)]
+fn require_v1_exact_action(
+    allowance: &AllowanceReceiptV1,
+    program_id: &Pubkey,
+    mandate: &Pubkey,
+    expected_nonce: u64,
+    mint: &Pubkey,
+    beneficiary: &Pubkey,
+    destination: &Pubkey,
+    amount: u64,
+    guardian: &Pubkey,
+    action_digest: [u8; 32],
+) -> Result<()> {
+    require_eq!(allowance.amount, amount, KeysError::AllowanceActionMismatch);
+    require_eq!(allowance.mandate_nonce, expected_nonce, KeysError::StaleAllowance);
+    require_keys_eq!(allowance.mandate, *mandate, KeysError::AllowanceMandateMismatch);
+    require_keys_eq!(allowance.mint, *mint, KeysError::AllowanceMintMismatch);
+    require_keys_eq!(
+        allowance.beneficiary,
+        *beneficiary,
+        KeysError::AllowanceBeneficiaryMismatch
+    );
+    require_keys_eq!(allowance.guardian, *guardian, KeysError::Unauthorized);
+    require_keys_eq!(
+        allowance.destination_token_account,
+        *destination,
+        KeysError::AllowanceActionMismatch
+    );
+    let expected_digest = canonical_allow_once_v1_hash(
+        program_id,
+        mandate,
+        expected_nonce,
+        mint,
+        beneficiary,
+        destination,
+        amount,
+        allowance.max_notional_micro_usd,
+        allowance.expires_at,
+        guardian,
+    );
+    require!(
+        allowance.action_digest == action_digest && action_digest == expected_digest,
+        KeysError::AllowanceActionMismatch
+    );
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn v1_exact_action_predicate_refuses_changed_amount_destination_and_nonce() {
+        let program_id = Pubkey::new_from_array([1; 32]);
+        let mandate = Pubkey::new_from_array([2; 32]);
+        let mint = Pubkey::new_from_array([3; 32]);
+        let beneficiary = Pubkey::new_from_array([4; 32]);
+        let destination = Pubkey::new_from_array([5; 32]);
+        let guardian = Pubkey::new_from_array([6; 32]);
+        let digest = canonical_allow_once_v1_hash(
+            &program_id, &mandate, 7, &mint, &beneficiary,
+            &destination, 500, 1000, 1234, &guardian,
+        );
+        let allowance = AllowanceReceiptV1 {
+            mandate, guardian, beneficiary, mint,
+            destination_token_account: destination,
+            action_digest: digest,
+            amount: 500,
+            max_notional_micro_usd: 1000,
+            mandate_nonce: 7,
+            expires_at: 1234,
+            used: false,
+            used_at: 0,
+            bump: 255,
+        };
+        let other_destination = Pubkey::new_from_array([9; 32]);
+        let other_guardian = Pubkey::new_from_array([10; 32]);
+        let check = |nonce, destination_key, amount, guardian_key, supplied_digest| {
+            require_v1_exact_action(
+                &allowance, &program_id, &mandate, nonce, &mint,
+                &beneficiary, destination_key, amount, guardian_key, supplied_digest,
+            )
+        };
+        assert!(check(7, &destination, 500, &guardian, digest).is_ok());
+        assert!(check(7, &destination, 501, &guardian, digest).is_err());
+        assert!(check(7, &other_destination, 500, &guardian, digest).is_err());
+        assert!(check(8, &destination, 500, &guardian, digest).is_err());
+        assert!(check(7, &destination, 500, &other_guardian, digest).is_err());
+        assert!(check(7, &destination, 500, &guardian, [0u8; 32]).is_err());
+    }
+
 
     #[test]
     fn v1_hash_binds_every_material_action_field() {
