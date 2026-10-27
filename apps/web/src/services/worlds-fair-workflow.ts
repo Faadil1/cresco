@@ -109,7 +109,7 @@ export type IntentResult =
   | { decision: "ALLOW"; boundary: "STANDING"; principalApprovalRequired: false; receipt: { eventId: string; signature: string; explorer: string; quote: Quote; effectObserved: boolean }; idempotentReplay?: boolean }
   | { decision: "PENDING_PRINCIPAL"; boundary: "SOFT"; policyDiff: ExceptionRequest["policyDiff"]; request: ExceptionRequest; refusal: { code: string; evidence: string }; idempotentReplay?: boolean }
   | { decision: "REFUSE"; boundary: string; code: string; exceptionAvailable: false; idempotentReplay?: boolean }
-  | { decision: "UNKNOWN"; retryPolicy: string; message: string; idempotentReplay?: boolean };
+  | { decision: "UNKNOWN"; retryPolicy: string; message: string; eventId?: string; idempotentReplay?: boolean };
 
 export type WorkflowEvent = {
   id: string;
