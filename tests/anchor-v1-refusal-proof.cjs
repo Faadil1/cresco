@@ -108,9 +108,9 @@ describe("CRESCO V1 — isolated local-validator refusal proof (no Pyth CPI)", f
     }).signers([beneficiary]).rpc();
 
   const snapshot = async () => ({
-    vaultAmount: (await getAccount(provider.connection, vault)).amount.toString(),
-    destinationAmount: (await getAccount(provider.connection, destination)).amount.toString(),
-    alternateAmount: (await getAccount(provider.connection, alternateDestination)).amount.toString(),
+    vaultAmount: (await getAccount(provider.connection, vault, 'confirmed')).amount.toString(),
+    destinationAmount: (await getAccount(provider.connection, destination, 'confirmed')).amount.toString(),
+    alternateAmount: (await getAccount(provider.connection, alternateDestination, 'confirmed')).amount.toString(),
     spent: (await program.account.assetRule.fetch(assetRule)).spentThisPeriod.toString(),
     spentNotional: (await program.account.assetRule.fetch(assetRule)).spentThisPeriodNotional.toString(),
     used: (await program.account.allowanceReceiptV1.fetch(allowanceV1)).used,
