@@ -97,7 +97,7 @@ describe("CRESCO V1 — isolated local-validator refusal proof (no Pyth CPI)", f
 
   const attemptExecute = (requestedAmount, destinationAccount, requestedNonce = nonce, digest = actionDigest) =>
     program.methods.executeOnceWithPythV1(
-      [1], bn(requestedAmount), bn(requestedNonce), [...digest],
+      Buffer.from([1]), bn(requestedAmount), bn(requestedNonce), [...digest],
     ).accountsStrict({
       charter, mandate, assetRule, allowanceV1, vaultTokenAccount: vault, mint,
       beneficiary: beneficiary.publicKey, delegateTokenAccount: destinationAccount,
