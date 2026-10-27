@@ -219,6 +219,66 @@ test('robustness: transport failure is UNKNOWN (never a fake success) and the ke
   assert.equal(rec.body.reconciled[0].resolution, 'NO_SIGNATURE_RECORDED');
 });
 
+test('capital safety: UNKNOWN locks new idempotency keys through a no-signature reconcile', async () => {
+  const { wf, id, bearer, chain } = await setup({ behaviour: { intentThrows: true } });
+  const first = await wf.submitIntent(id, bearer('operator'), { inputAmount: 100_000, idempotencyKey: 'unknown-intent-001' });
+  assert.equal(first.body.decision, 'UNKNOWN');
+  const safety = await wf.intentSafety(id, bearer('operator'));
+  assert.equal(safety.body.blocked, true);
+  assert.equal(safety.body.idempotencyKey, 'unknown-intent-001');
+  const afterFirst = chain.st.calls.filter((c) => c[0] === 'intent').length;
+  await rejectsWith(() => wf.submitIntent(id, bearer('operator'), { inputAmount: 100_000, idempotencyKey: 'new-intent-002' }), 409, 'INTENT_RECONCILIATION_REQUIRED');
+  // Original idempotent response is replayed without any second chain attempt.
+  const replay = await wf.submitIntent(id, bearer('operator'), { inputAmount: 100_000, idempotencyKey: 'unknown-intent-001' });
+  assert.equal(replay.body.decision, 'UNKNOWN');
+  assert.equal(replay.body.idempotentReplay, true);
+  assert.equal(chain.st.calls.filter((c) => c[0] === 'intent').length, afterFirst);
+  const rec = await wf.reconcile(id, bearer('principal'));
+  assert.equal(rec.body.reconciled[0].resolution, 'NO_SIGNATURE_RECORDED');
+  assert.equal((await wf.intentSafety(id, bearer('operator'))).body.blocked, true);
+  await rejectsWith(() => wf.submitIntent(id, bearer('operator'), { inputAmount: 100_000, idempotencyKey: 'third-intent-003' }), 409, 'INTENT_RECONCILIATION_REQUIRED');
+});
+
+test('capital safety: signed failed intent clears hold only after verified reconciliation', async () => {
+  const { wf, id, bearer, chain } = await setup({ behaviour: { signatureStatus: () => ({ status: 'FAILED' }) } });
+  const signature = '7'.repeat(88);
+  chain.executeIntent = async (args) => {
+    chain.st.calls.push(['intent', args.inputAmount]);
+    throw new Error('SOLANA_CONFIRMATION_TIMEOUT:' + signature);
+  };
+  const first = await wf.submitIntent(id, bearer('operator'), { inputAmount: 110_000, idempotencyKey: 'signed-failed-001' });
+  assert.equal(first.body.decision, 'UNKNOWN');
+  await rejectsWith(() => wf.submitIntent(id, bearer('operator'), { inputAmount: 110_000, idempotencyKey: 'signed-failed-002' }), 409, 'INTENT_RECONCILIATION_REQUIRED');
+  const rec = await wf.reconcile(id, bearer('principal'));
+  assert.equal(rec.body.reconciled[0].resolution, 'EFFECTS_FAILED');
+  assert.equal((await wf.intentSafety(id, bearer('operator'))).body.blocked, false);
+  chain.executeIntent = async ({ inputAmount }) => {
+    chain.st.calls.push(['intent', inputAmount]);
+    chain.st.spent += inputAmount;
+    return { decision: 'ALLOW', signature: '6'.repeat(88), quote: { notionalMicroUsd: inputAmount }, effectObserved: true };
+  };
+  const next = await wf.submitIntent(id, bearer('operator'), { inputAmount: 110_000, idempotencyKey: 'signed-failed-002' });
+  assert.equal(next.body.decision, 'ALLOW');
+  assert.equal(chain.st.spent, 110_000);
+});
+
+test('capital safety: pending signature and truncated event history do not release sticky hold', async () => {
+  const { wf, id, bearer, chain } = await setup({
+    behaviour: { signatureStatus: () => ({ status: 'PENDING' }) },
+    options: { maxEvents: 2 }
+  });
+  chain.executeIntent = async () => { throw new Error('SOLANA_CONFIRMATION_TIMEOUT:' + '7'.repeat(88)); };
+  await wf.submitIntent(id, bearer('operator'), { inputAmount: 110_000, idempotencyKey: 'signed-pending-001' });
+  const rec = await wf.reconcile(id, bearer('principal'));
+  assert.equal(rec.body.reconciled[0].resolution, 'STILL_UNKNOWN');
+  for (let i = 0; i < 3; i++) {
+    await wf.setStatus(id, bearer('principal'), { status: i % 2 ? 'ACTIVE' : 'PAUSED' });
+  }
+  const status = await wf.intentSafety(id, bearer('operator'));
+  assert.equal(status.body.blocked, true);
+  await rejectsWith(() => wf.submitIntent(id, bearer('operator'), { inputAmount: 110_000, idempotencyKey: 'signed-pending-002' }), 409, 'INTENT_RECONCILIATION_REQUIRED');
+});
+
 test('robustness: BUSY mandate returns 409 with retryAfter and leaves the request PENDING', async () => {
   const { wf, id, bearer, chain } = await setup();
   const pending = await wf.submitIntent(id, bearer('operator'), { inputAmount: 700_000 });
