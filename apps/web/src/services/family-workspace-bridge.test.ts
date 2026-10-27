@@ -88,6 +88,13 @@ describe("Family workspace role bridge", () => {
     expect(await inspectFamilyWorkspace("parent")).toEqual({ kind: "unavailable" });
   });
 
+  it("distinguishes a verified empty guardian queue from unreadable activity", async () => {
+    mocks.notifications.mockResolvedValueOnce({ role: "principal", pendingDecisions: 0, notifications: [] });
+    expect(await inspectFamilyWorkspace("parent")).toMatchObject({
+      kind: "ready", activity: { kind: "loaded", pendingDecisions: 0, latestEventType: null },
+    });
+  });
+
   it("does not imply an empty inbox when notification API fails", async () => {
     mocks.notifications.mockRejectedValueOnce(new Error("offline"));
     expect(await inspectFamilyWorkspace("parent")).toMatchObject({
