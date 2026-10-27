@@ -11,6 +11,8 @@ This stacked branch starts from PR #78, which itself is based on PR #77. It inco
 3. Rust unit tests verify the 600/1000 ceiling, attempted spend 401 refusal, USD cap, optional USD cap and arithmetic overflow.
 4. The Pyth-free isolated local-validator test adds a real 500+100 token spend, guardian rule edit with preserved 600 counter, and an in-bounds-action-limit attempt of 401 that must fail the period cap; vault, counters and receipt status must remain unchanged.
 
+5. The guardian can **lengthen** an active spend window, but shortening it before the old window has elapsed fails closed. The rule's previous start and duration define the earliest allowable reset time; shortening after the old boundary is permitted. Rust unit tests and a staged local-validator negative test cover the 3600→300-second attack. Actual validator proof is pending.
+
 ## Evidence boundary
 
 - CI Rust unit success is source-level validation only; the test runner needs SBF compilation and execution on a local validator to support `LOCAL` proof.
