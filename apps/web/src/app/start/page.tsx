@@ -12,10 +12,10 @@ import { useStore } from "@/state/store";
 export default function StartPage() {
   const router = useRouter();
   const { state, dispatch } = useStore();
-  const [busy, setBusy] = useState<"email" | "demo" | null>(null);
+  const [busy, setBusy] = useState<"guided" | "demo" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const go = async (kind: "email" | "demo") => {
+  const go = async (kind: "guided" | "demo") => {
     setBusy(kind);
     setError(null);
     try {
@@ -36,8 +36,8 @@ export default function StartPage() {
       subtitle="Learning comes first. You won't need a wallet or any money to begin."
       footer={
         <div className="space-y-3">
-          <ActionButton onClick={() => go("email")} disabled={busy !== null} arrow>
-            {busy === "email" ? "Setting up…" : "Start guided learning"}
+          <ActionButton onClick={() => go("guided")} disabled={busy !== null} arrow>
+            {busy === "guided" ? "Setting up…" : "Start guided learning"}
           </ActionButton>
           <ActionButton variant="secondary" onClick={() => go("demo")} disabled={busy !== null}>
             {busy === "demo" ? "Opening demo…" : `Try the demo as ${state.profile.childName}`}
