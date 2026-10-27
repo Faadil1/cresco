@@ -17,7 +17,7 @@ const roleName = { principal: "Parent", risk: "Second parent", operator: "Teen" 
 // Unknown events stay unknown, rather than looking like financial success.
 const eventLabels: Record<string, string> = {
   EXCEPTION_REQUESTED: "A request was submitted",
-  EXCEPTION_EXECUTED: "A request was marked executed — inspect the Devnet receipt",
+  EXCEPTION_EXECUTED: "A request was marked executed; inspect the Devnet receipt",
   EXCEPTION_REFUSED: "A request was refused",
   EXCEPTION_REFUSED_BY_PROGRAM: "The program refused a request",
   EXCEPTION_STALE: "A request became stale",
