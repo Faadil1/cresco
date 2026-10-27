@@ -46,7 +46,7 @@ export default function ParentSignIn() {
         <StoryVignette role="parent" className="block w-full" />
       </div>
       <p className="mt-3 rounded-[14px] bg-surface-soft px-3.5 py-3 text-[12.5px] text-ink-2">
-        No email is collected here. CRESCO starts a temporary guardian-role demo session, not verified identity, KYC or a production account. Devnet mandate approval uses separate workspace credentials.
+        No email is collected here. CRESCO starts a temporary guardian-role demo session. This is not identity verification, KYC or a production account. Devnet mandate approval uses separate workspace credentials.
       </p>
       <div className="mt-5"><FamilyWorkspaceEntry audience="parent" compact /></div>
       {error ? (
