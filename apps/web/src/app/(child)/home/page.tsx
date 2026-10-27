@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronRight, ShieldCheck } from "lucide-react";
 import { GoalArt } from "@/components/illustrations/objects";
 import { StoryVignette } from "@/components/illustrations/family-story";
+import { FamilyWorkspaceEntry } from "@/components/family-workspace-entry";
 import { BadgeArt } from "@/components/illustrations/badges";
 import { LessonCard, MissionCard } from "@/components/learning";
 import {
@@ -78,6 +79,7 @@ export default function HomePage() {
         <div>
           <ModeSwitch />
           <div className="mt-4">{hero}</div>
+          <div className="mt-4"><FamilyWorkspaceEntry audience="teen" compact /></div>
 
           {state.mode === "money" && latestRequest ? (
             <div className="mt-3">

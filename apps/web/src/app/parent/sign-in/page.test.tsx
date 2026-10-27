@@ -27,6 +27,10 @@ vi.mock("@/components/onboarding", () => ({
   ),
 }));
 
+vi.mock("@/components/family-workspace-entry", () => ({
+  FamilyWorkspaceEntry: ({ audience }: { audience: string }) => <div data-testid="family-workspace-bridge">{audience} workspace bridge</div>,
+}));
+
 vi.mock("@/components/illustrations/people", () => ({
   ParentBust: () => <div aria-hidden="true" />,
 }));
@@ -86,5 +90,16 @@ describe("CRESCO parent sign-in recovery", () => {
     ).toBeEnabled();
     expect(dispatch).not.toHaveBeenCalled();
     expect(push).not.toHaveBeenCalled();
+  });
+
+  it("opens the parent demo without collecting an unused email", async () => {
+    signInDemo.mockResolvedValueOnce({ role: "parent", token: "demo-only" });
+    render(<ParentSignIn />);
+    expect(screen.queryByRole("textbox", { name: /email/i })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /continue as Alex \(demo\)/i }));
+    expect(signInDemo).toHaveBeenCalledWith("parent", "Alex");
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: "signIn" }));
+    expect(push).toHaveBeenCalledWith("/parent");
+    expect(screen.getByTestId("family-workspace-bridge")).toHaveTextContent("parent");
   });
 });

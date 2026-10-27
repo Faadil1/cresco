@@ -27,3 +27,18 @@ test("Family onboarding shows contextual people without removing demo disclosure
   await expect(page.getByRole("img", { name: /illustrated parent reviewing a CRESCO request/i })).toBeVisible();
   await expect(page.getByText(/not identity verification/i)).toBeVisible();
 });
+
+test("Family onboarding does not collect pretend email identities and exposes safe Devnet handoff", async ({ page }) => {
+  await page.goto("/start");
+  await expect(page.getByRole("button", { name: /start guided learning/i })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: /email/i })).toHaveCount(0);
+  await expect(page.getByText(/ask your parent to create the family mandate/i)).toBeVisible();
+  await expect(page.getByText(/demo assets/i)).toBeVisible();
+
+  await page.goto("/parent/sign-in");
+  await expect(page.getByRole("button", { name: /continue as .* \(demo\)/i })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: /email/i })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /set up family mandate/i })).toHaveAttribute("href", "/worlds-fair/desk?case=family");
+  await expect(page.getByText(/not identity verification/i)).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1)).toBe(false);
+});

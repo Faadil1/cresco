@@ -235,7 +235,7 @@ export const workflowApi = {
   createWorkspace: (input: { useCase?: UseCase; guardianMode?: GuardianMode; name?: string; principalLabel?: string; operatorLabel?: string; riskLabel?: string; policy?: Partial<WorkspacePolicy>; webhookUrl?: string }) =>
     call<CreatedWorkspace>("POST", "/workspaces", { body: input }).then((r) => r.body),
   getWorkspace: (id: string) => call<Workspace>("GET", `/workspaces/${id}`).then((r) => r.body),
-  whoami: (id: string, token: string) => call<{ role: WorkflowRole }>("GET", `/workspaces/${id}/whoami`, { token }).then((r) => r.body),
+  whoami: (id: string, token: string) => call<{ workspaceId: string; role: WorkflowRole }>("GET", `/workspaces/${id}/whoami`, { token }).then((r) => r.body),
   bootstrap: (id: string, token: string) => call<Workspace>("POST", `/workspaces/${id}/bootstrap`, { token, body: {} }).then((r) => r.body),
   submitIntent: (id: string, token: string, input: { inputAmount: number; maxSlippageBps: number; clientReference?: string }, idempotencyKey: string) =>
     call<IntentResult>("POST", `/workspaces/${id}/intents`, { token, body: { action: "SWAP_EXACT_IN", ...input }, idempotencyKey }),

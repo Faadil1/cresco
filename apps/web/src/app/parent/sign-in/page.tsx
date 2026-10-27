@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { FamilyWorkspaceEntry } from "@/components/family-workspace-entry";
 import { OnboardingFrame } from "@/components/onboarding";
 import { StoryVignette } from "@/components/illustrations/family-story";
 import { ActionButton } from "@/components/ui/primitives";
@@ -11,7 +12,6 @@ import { useStore } from "@/state/store";
 export default function ParentSignIn() {
   const router = useRouter();
   const { state, dispatch } = useStore();
-  const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,10 +36,7 @@ export default function ParentSignIn() {
       subtitle="You set the limits once. Inside them, your child learns to decide on their own."
       footer={
         <div className="space-y-3">
-          <ActionButton onClick={signIn} disabled={busy || !/.+@.+\..+/.test(email)} arrow>
-            Continue
-          </ActionButton>
-          <ActionButton variant="secondary" onClick={signIn} disabled={busy}>
+          <ActionButton onClick={signIn} disabled={busy} arrow>
             {busy ? "Opening…" : `Continue as ${state.profile.parentName} (demo)`}
           </ActionButton>
         </div>
@@ -48,20 +45,10 @@ export default function ParentSignIn() {
       <div className="mx-auto max-w-[350px] overflow-hidden rounded-[22px] border border-line-soft">
         <StoryVignette role="parent" className="block w-full" />
       </div>
-      <label className="mt-6 block">
-        <span className="text-[14px] font-semibold text-navy-strong">Parent email</span>
-        <input
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="parent@example.com"
-          className="mt-1.5 h-[52px] w-full rounded-[15px] border border-line bg-surface px-4 text-[15px] font-semibold text-navy placeholder:text-ink-3 focus:border-blue focus:outline-none focus:ring-2 focus:ring-blue/20"
-        />
-      </label>
       <p className="mt-3 rounded-[14px] bg-surface-soft px-3.5 py-3 text-[12.5px] text-ink-2">
-        Demo sign-in: CRESCO issues a temporary guardian session so authority-changing actions are role-gated. This is not identity verification, KYC or a production account.
+        No email is collected here. CRESCO starts a temporary guardian-role demo session. This is not identity verification, KYC or a production account. Devnet mandate approval uses separate workspace credentials.
       </p>
+      <div className="mt-5"><FamilyWorkspaceEntry audience="parent" compact /></div>
       {error ? (
         <p
           role="alert"

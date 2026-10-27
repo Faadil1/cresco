@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { StoryVignette } from "@/components/illustrations/family-story";
+import { FamilyWorkspaceEntry } from "@/components/family-workspace-entry";
 import { PriceChange, PriceChart, WeeklyBars } from "@/components/finance";
 import { MandateSummaryCard, MoneyBalanceCard } from "@/components/mode";
 import { ErrorState, Skeleton, useToast } from "@/components/ui/feedback";
@@ -136,6 +137,7 @@ export default function ParentDashboard() {
         <div className="p-6"><p className="cresco-section-kicker">CRESCO · Family</p><p className="mt-1 font-display text-[29px] text-navy-strong">Your rules. Their room to grow.</p><p className="mt-1 text-[13px] text-ink-2">Review exceptions when they matter, without replacing independent decisions.</p></div>
         <StoryVignette role="parent" className="h-[160px] w-[270px] shrink-0 object-cover" />
       </section>
+      <div className="mt-5"><FamilyWorkspaceEntry audience="parent" compact /></div>
       <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Column 1 */}
         <div className="min-w-0 space-y-5">
