@@ -13,8 +13,7 @@ const {
   SYSVAR_INSTRUCTIONS_PUBKEY,
 } = anchor.web3;
 const {
-  TOKEN_PROGRAM_ID, createMint, createAccount,
-  getOrCreateAssociatedTokenAccount, getAccount, mintTo,
+  TOKEN_PROGRAM_ID, createMint, createAccount, getAccount, mintTo,
 } = spl;
 // NOTE: This file is CommonJS; ESM helper is loaded via dynamic import below.
 
@@ -143,11 +142,14 @@ describe("CRESCO V1 — isolated local-validator refusal proof (no Pyth CPI)", f
     console.log('LOCALNET setup=mint_creation');
     mint = await createMint(provider.connection, payer, guardian, null, 0,
       undefined, { commitment: 'confirmed', preflightCommitment: 'confirmed' });
-    console.log('LOCALNET setup=beneficiary_associated_account');
-    destination = (await getOrCreateAssociatedTokenAccount(
+    // Use explicit SPL token accounts for this V1 exact-destination test.
+    // ATA compatibility is a separate unproven gate; the ATA helper rejected
+    // setup on isolated Solana 2.3.0 before any CRESCO instruction was invoked.
+    console.log('LOCALNET setup=beneficiary_token_account_non_ata');
+    destination = await createAccount(
       provider.connection, payer, mint, beneficiary.publicKey,
-      false, 'confirmed', { commitment: 'confirmed', preflightCommitment: 'confirmed' },
-    )).address;
+      undefined, { commitment: 'confirmed', preflightCommitment: 'confirmed' },
+    );
     alternateDestination = await createAccount(
       provider.connection, payer, mint, beneficiary.publicKey,
       undefined, { commitment: 'confirmed', preflightCommitment: 'confirmed' },
