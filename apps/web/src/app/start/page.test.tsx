@@ -27,6 +27,10 @@ vi.mock("@/components/onboarding", () => ({
   ),
 }));
 
+vi.mock("@/components/family-workspace-entry", () => ({
+  FamilyWorkspaceEntry: ({ audience }: { audience: string }) => <div data-testid="family-workspace-bridge">{audience} workspace bridge</div>,
+}));
+
 vi.mock("@/components/illustrations/people", () => ({
   KidBust: () => <div aria-hidden="true" />,
 }));
@@ -86,5 +90,16 @@ describe("CRESCO child sign-in recovery", () => {
     ).toBeEnabled();
     expect(dispatch).not.toHaveBeenCalled();
     expect(push).not.toHaveBeenCalled();
+  });
+
+  it("starts guided learning without asking for a fake email identity", async () => {
+    signInDemo.mockResolvedValueOnce({ role: "child", token: "demo-only" });
+    render(<StartPage />);
+    expect(screen.queryByRole("textbox", { name: /email/i })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /start guided learning/i }));
+    expect(signInDemo).toHaveBeenCalledWith("child", "Jordan");
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: "signIn" }));
+    expect(push).toHaveBeenCalledWith("/onboarding/about");
+    expect(screen.getByTestId("family-workspace-bridge")).toHaveTextContent("teen");
   });
 });
