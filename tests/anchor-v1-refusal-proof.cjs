@@ -281,6 +281,55 @@ describe("CRESCO V1 — isolated local-validator refusal proof (no Pyth CPI)", f
     await remainsUnchanged(before);
   });
 
+  it("preserves period spend across guardian rule edit and refuses exceeding remainder", async () => {
+    // Standing transfers are the deterministic, Pyth-free way to seed a genuine
+    // 600/1000 spending window on this isolated validator.
+    const standing = (value, expectedNonce) => program.methods
+      .executeWithinMandate(bn(value), bn(expectedNonce))
+      .accountsStrict({
+        charter, mandate, assetRule, vaultTokenAccount: vault, mint,
+        beneficiary: beneficiary.publicKey, delegateTokenAccount: destination,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      }).signers([beneficiary]).rpc();
+
+    await standing(500, nonce);
+    await standing(100, nonce);
+    const preEdit = await program.account.assetRule.fetch(assetRule);
+    assert.equal(preEdit.spentThisPeriod.toString(), "600");
+    // An attempted shorter window must not replenish the 600 already spent.
+    const preShorten = await snapshot();
+    const beforeShortenMandate = await program.account.mandate.fetch(mandate);
+    await expectRefusal("guardian_early_period_shortening",
+      () => program.methods.updateAssetRule(
+        bn(beforeShortenMandate.nonce), true, 1,
+        bn(500), bn(1000), bn(10), bn(0), 1435,
+      ).accountsStrict({ charter, mandate, assetRule, guardian }).rpc(),
+      ["InvalidPeriod"]);
+    await remainsUnchanged(preShorten);
+    assert.equal(
+      (await program.account.mandate.fetch(mandate)).nonce.toString(),
+      beforeShortenMandate.nonce.toString(),
+    );
+
+    const mandateBeforeEdit = await program.account.mandate.fetch(mandate);
+    await program.methods.updateAssetRule(
+      bn(mandateBeforeEdit.nonce), true, 1,
+      bn(500), bn(1000), bn(3600), bn(0), 1435,
+    ).accountsStrict({ charter, mandate, assetRule, guardian }).rpc();
+    const postEdit = await program.account.assetRule.fetch(assetRule);
+    assert.equal(postEdit.spentThisPeriod.toString(), "600");
+    assert.equal(postEdit.periodStartedAt.toString(), preEdit.periodStartedAt.toString());
+    assert.equal(postEdit.spentThisPeriodNotional.toString(), preEdit.spentThisPeriodNotional.toString());
+
+    const updatedNonce = (await program.account.mandate.fetch(mandate)).nonce;
+    const before = await snapshot();
+    await expectRefusal("v1_integration_period_cap_after_policy_edit",
+      () => standing(401, updatedNonce),
+      ["PeriodAmountExceeded"]);
+    await remainsUnchanged(before);
+    console.log("PROOF period_counter_preserved=600/1000 policy_edit=true refused_overage=401");
+  });
+
   it("refuses execution after guardian pauses the mandate, with zero spend", async () => {
     const state = await program.account.mandate.fetch(mandate);
     await program.methods.setMandateStatus(bn(state.nonce), 1).accountsStrict({

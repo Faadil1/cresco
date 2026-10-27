@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - security/allow-once-v1-hash-fixture
+      - security/allow-once-v1-onchain-enforcement
     paths:
       - "programs/keys/**"
       - "tests/anchor-v1-refusal-proof.cjs"
