@@ -293,6 +293,21 @@ describe("CRESCO V1 — isolated local-validator refusal proof (no Pyth CPI)", f
     await standing(100, nonce);
     const preEdit = await program.account.assetRule.fetch(assetRule);
     assert.equal(preEdit.spentThisPeriod.toString(), "600");
+    // An attempted shorter window must not replenish the 600 already spent.
+    const preShorten = await snapshot();
+    const beforeShortenMandate = await program.account.mandate.fetch(mandate);
+    await expectRefusal("guardian_early_period_shortening",
+      () => program.methods.updateAssetRule(
+        bn(beforeShortenMandate.nonce), true, 1,
+        bn(500), bn(1000), bn(10), bn(0), 1435,
+      ).accountsStrict({ charter, mandate, assetRule, guardian }).rpc(),
+      ["InvalidPeriod"]);
+    await remainsUnchanged(preShorten);
+    assert.equal(
+      (await program.account.mandate.fetch(mandate)).nonce.toString(),
+      beforeShortenMandate.nonce.toString(),
+    );
+
     const mandateBeforeEdit = await program.account.mandate.fetch(mandate);
     await program.methods.updateAssetRule(
       bn(mandateBeforeEdit.nonce), true, 1,
