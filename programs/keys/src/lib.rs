@@ -279,6 +279,14 @@ pub mod keys {
         );
 
         let rule = &mut ctx.accounts.asset_rule;
+        // A shorter window must never advance the next budget reset.
+        // The existing window can change only after its original boundary.
+        check_safe_period_duration_edit(
+            rule.period_started_at,
+            rule.period_seconds,
+            period_seconds,
+            Clock::get()?.unix_timestamp,
+        )?;
         rule.enabled = enabled;
         rule.action_mask = action_mask;
         rule.max_action_amount = max_action_amount;
@@ -1410,6 +1418,26 @@ fn checked_period_spend(
         KeysError::PythPeriodNotionalExceeded
     );
     Ok((next_amount, next_notional))
+}
+
+// Prevent a guardian policy edit from silently replenishing spending before
+// the originally committed period has elapsed. Lengthening is conservative;
+// shortening is allowed only after the old period's actual boundary.
+fn check_safe_period_duration_edit(
+    old_started_at: i64,
+    old_period_seconds: i64,
+    requested_period_seconds: i64,
+    now: i64,
+) -> Result<()> {
+    require!(old_period_seconds > 0 && requested_period_seconds > 0, KeysError::InvalidPeriod);
+    let old_boundary = old_started_at
+        .checked_add(old_period_seconds)
+        .ok_or(KeysError::Overflow)?;
+    require!(
+        requested_period_seconds >= old_period_seconds || now >= old_boundary,
+        KeysError::InvalidPeriod
+    );
+    Ok(())
 }
 
 fn reset_period_if_needed(rule: &mut AssetRule, now: i64) {
@@ -3038,6 +3066,18 @@ mod tests {
                 .checked_add(amount)
                 .map(|next| next <= max_period)
                 .unwrap_or(false)
+    }
+
+    #[test]
+    fn guardian_cannot_shorten_active_period_to_refresh_spending_early() {
+        // Original window: starts at t=100, duration 3600, ends at 3700.
+        assert!(check_safe_period_duration_edit(100, 3600, 300, 150).is_err());
+        assert!(check_safe_period_duration_edit(100, 3600, 300, 3699).is_err());
+        assert!(check_safe_period_duration_edit(100, 3600, 3600, 150).is_ok());
+        assert!(check_safe_period_duration_edit(100, 3600, 7200, 150).is_ok());
+        assert!(check_safe_period_duration_edit(100, 3600, 300, 3700).is_ok());
+        assert!(check_safe_period_duration_edit(100, 3600, 300, 3701).is_ok());
+        assert!(check_safe_period_duration_edit(i64::MAX, 3600, 300, i64::MAX).is_err());
     }
 
     #[test]
