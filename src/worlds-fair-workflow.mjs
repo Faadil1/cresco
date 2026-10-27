@@ -203,6 +203,7 @@ export function createWorldFairWorkflow({
     events: (id) => `wf:ws:${id}:events`,
     requests: (id) => `wf:ws:${id}:requests`,
     idem: (id) => `wf:ws:${id}:idem`,
+    intentHold: (id) => `wf:ws:${id}:intent-hold`,
     guardianOps: (id) => `wf:ws:${id}:guardian-ops`
   };
 
@@ -508,6 +509,45 @@ export function createWorldFairWorkflow({
     return { action, inputAmount, maxSlippageBps, idempotencyKey, clientReference };
   }
 
+  // A transaction may have executed when its response was lost. The last
+  // uncertain intent is also stored independently from capped event history:
+  // trimming old events can never silently authorize a new capital action.
+  async function intentRecoveryStatus(ws) {
+    const held = await store.get(keys.intentHold(ws.id));
+    const events = (await store.get(keys.events(ws.id))) ?? [];
+    const resolutions = new Map(
+      events.filter((e) => e.type === 'OUTCOME_RECONCILED' && e.data?.unknownEventId)
+        .map((e) => [e.data.unknownEventId, e.data.resolution])
+    );
+    const uncertain = [...events].reverse().find((e) =>
+      e.type === 'OUTCOME_UNKNOWN' && e.data?.operation === 'INTENT' &&
+      !['EFFECTS_CONFIRMED', 'EFFECTS_FAILED'].includes(resolutions.get(e.id))
+    );
+    const latest = [...events].reverse().find((e) =>
+      e.type === 'OUTCOME_UNKNOWN' && e.data?.operation === 'INTENT'
+    );
+    const lastResolution = latest ? resolutions.get(latest.id) ?? null : null;
+    const blocked = Boolean(held || uncertain);
+    return {
+      blocked,
+      code: blocked ? 'INTENT_RECONCILIATION_REQUIRED' : null,
+      eventId: held?.eventId ?? uncertain?.id ?? latest?.id ?? null,
+      idempotencyKey: held?.idempotencyKey ?? uncertain?.data?.intent?.idempotencyKey ?? latest?.data?.intent?.idempotencyKey ?? null,
+      lastResolution,
+      retryPolicy: blocked ? 'NO_NEW_INTENT_UNTIL_VERIFIED_SIGNATURE' : 'NORMAL',
+      requiresManualReview: blocked && (!held?.signature && !uncertain?.signatures?.length),
+      note: blocked
+        ? 'A previous intent has no verified final outcome. Reconcile and inspect the mandate; do not submit a new trade.'
+        : 'No unresolved capital intent blocks new submissions.'
+    };
+  }
+
+  async function intentSafety(id, token) {
+    const ws = await loadWorkspace(id);
+    authorize(ws, token, WORKFLOW_ROLES);
+    return { status: 200, body: { contractVersion: WORKFLOW_CONTRACT_VERSION, ...(await intentRecoveryStatus(ws)) } };
+  }
+
   async function submitIntent(id, token, body) {
     const ws = await loadWorkspace(id);
     authorize(ws, token, ['operator']);
@@ -518,6 +558,12 @@ export function createWorldFairWorkflow({
     if (intent.idempotencyKey && idem[intent.idempotencyKey]) {
       const prior = idem[intent.idempotencyKey];
       return { status: prior.status, body: { ...prior.body, idempotentReplay: true } };
+    }
+    const recovery = await intentRecoveryStatus(ws);
+    if (recovery.blocked) {
+      fail(409, 'INTENT_RECONCILIATION_REQUIRED',
+        'A previous trade has an unverified outcome. Reconcile before another intent; a different idempotency key does not bypass this hold.',
+        { eventId: recovery.eventId, retryPolicy: recovery.retryPolicy });
     }
     const remember = async (response) => {
       if (intent.idempotencyKey) {
@@ -540,6 +586,13 @@ export function createWorldFairWorkflow({
         summary: 'Intent outcome not confirmed; do not resubmit blindly',
         data: { operation: 'INTENT', intent, message: String(error?.message ?? error).slice(0, 300) },
         signatures: signatureFromError(error) ? [{ label: 'standing.execute', signature: signatureFromError(error) }] : []
+      });
+      // Sticky across reload, alternate keys and event-history trimming.
+      await store.put(keys.intentHold(ws.id), {
+        eventId: event.id,
+        idempotencyKey: intent.idempotencyKey,
+        signature: signatureFromError(error) ?? null,
+        heldAt: nowIso()
       });
       return remember({
         status: 503,
@@ -1143,6 +1196,12 @@ export function createWorldFairWorkflow({
         results.push({ unknownEventId: e.id, resolution: 'STILL_UNKNOWN', checks });
         continue;
       }
+      // NO_SIGNATURE_RECORDED is NOT evidence that the trade did not execute.
+      // Keep the durable hold in that case, even if the event is marked reviewed.
+      if (e.data?.operation === 'INTENT' && ['EFFECTS_CONFIRMED', 'EFFECTS_FAILED'].includes(resolution)) {
+        const held = await store.get(keys.intentHold(ws.id));
+        if (held?.eventId === e.id) await store.put(keys.intentHold(ws.id), null);
+      }
       await appendEvent(ws, {
         type: 'OUTCOME_RECONCILED',
         actor: role,
@@ -1170,6 +1229,7 @@ export function createWorldFairWorkflow({
     whoami,
     bootstrap,
     submitIntent,
+    intentSafety,
     listRequests,
     decide,
     setStatus,
