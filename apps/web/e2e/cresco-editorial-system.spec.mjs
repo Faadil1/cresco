@@ -39,6 +39,6 @@ test("Family onboarding does not collect pretend email identities and exposes sa
   await expect(page.getByRole("button", { name: /continue as .* \(demo\)/i })).toBeVisible();
   await expect(page.getByRole("textbox", { name: /email/i })).toHaveCount(0);
   await expect(page.getByRole("link", { name: /set up family mandate/i })).toHaveAttribute("href", "/worlds-fair/desk?case=family");
-  await expect(page.getByText(/not verified identity/i)).toBeVisible();
+  await expect(page.getByText(/not identity verification/i)).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1)).toBe(false);
 });
