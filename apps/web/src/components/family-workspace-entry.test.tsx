@@ -20,7 +20,7 @@ describe("Family Devnet workspace continuity entry", () => {
     render(<FamilyWorkspaceEntry audience="parent" />);
     expect(await screen.findByRole("link", { name: /set up family mandate/i })).toHaveAttribute("href", "/worlds-fair/desk?case=family");
     expect(screen.getByText(/no email/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/separate demo session/i)).toBeInTheDocument();
+    expect(screen.getByText(/different demo session/i)).toBeInTheDocument();
   });
 
   it("gives the teen a safe private-role handoff rather than exposing a parent setup CTA", async () => {
