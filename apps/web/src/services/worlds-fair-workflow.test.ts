@@ -6,6 +6,7 @@ import {
   parseShareFragment,
   setGuardianSigner,
   shareLink,
+  singleRoleFamilyKeychain,
   toBase,
   usd,
   workflowApi,
@@ -111,6 +112,20 @@ describe("World's Fair workflow client", () => {
     expect(parsed).toEqual({ workspaceId: "ws-abcdef12", role: "principal", token: "wf_principal_abc+/=" });
     expect(parseShareFragment("#ws=ws-abcdef12&role=admin&token=x")).toBeNull();
     expect(parseShareFragment("#ws=../x&role=operator&token=x")).toBeNull();
+  });
+
+  it("narrows only legacy Family multi-role browser capabilities", () => {
+    const multi = {
+      workspaceId: "ws-abcdef12",
+      tokens: { operator: "wf_operator_x", principal: "wf_principal_y", risk: "wf_risk_z" },
+    };
+    expect(singleRoleFamilyKeychain(multi, "capital")).toBe(multi);
+    expect(singleRoleFamilyKeychain(multi, undefined)).toBe(multi);
+    expect(singleRoleFamilyKeychain(multi, "family").tokens).toEqual({ principal: "wf_principal_y" });
+    const teen = { workspaceId: "ws-abcdef12", tokens: { operator: "wf_operator_x" } };
+    expect(singleRoleFamilyKeychain(teen, "family")).toBe(teen);
+    const secondParent = { workspaceId: "ws-abcdef12", tokens: { risk: "wf_risk_z", operator: "wf_operator_x" } };
+    expect(singleRoleFamilyKeychain(secondParent, "family").tokens).toEqual({ risk: "wf_risk_z" });
   });
 
   it("formats Devnet units without em dashes", () => {
