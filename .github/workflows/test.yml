@@ -14,3 +14,24 @@ jobs:
         run: npm install --no-audit --no-fund
       - run: npm test
       - run: npm run demo
+
+  hosted-readonly-observation:
+    # Supplemental public-HTTP observation only; does not gate product CI.
+    # Intentionally uses no API bearer, cookies, secrets, workspace ID or POST.
+    name: Hosted Family contract observation (GET/OPTIONS only; NOT release proof)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Probe public host and record redacted observation
+        run: |
+          node scripts/family-readonly-host-probe.mjs \
+            --api-origin https://keys-api-stocklana.faadil-casecraft.workers.dev \
+            --web-origin https://cresco-lac.vercel.app
