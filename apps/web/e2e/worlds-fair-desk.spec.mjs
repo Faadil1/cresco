@@ -58,7 +58,21 @@ function mockApi(page, state) {
         tokens: { principal: "wf_principal_new_e2e", operator: "wf_operator_new_e2e", risk: "wf_risk_new_e2e" },
       });
     }
-    if (method === "POST" && path === "/workspaces") return json(201, { ...ws, tokens: { operator: "wf_operator_e2e", principal: "wf_principal_e2e", risk: "wf_risk_e2e" }, tokenNotice: "shown once" });
+    if (method === "GET" && path === `/workspaces/${WS_ID}/principal/wallet-message`) {
+      return json(200, { message: "CRESCO wallet binding", issuedAt: url.searchParams.get("issuedAt") });
+    }
+    if (method === "POST" && path === `/workspaces/${WS_ID}/principal/wallet`) {
+      state.walletEnrollment = req.postDataJSON();
+      if (state.walletEnrollment.recoveryEnrollmentCode !== "fec_creator_e2e") {
+        return json(403, { error: "PARENT_ENROLLMENT_CODE_INVALID" });
+      }
+      return json(200, { wallet: { publicKey: "E2EWallet111" } });
+    }
+    if (method === "POST" && path === "/workspaces") return json(201, {
+      ...ws, recoveryEnrollmentCode: state.useCase === "family" ? "fec_creator_e2e" : undefined,
+      tokens: { operator: "wf_operator_e2e", principal: "wf_principal_e2e", risk: "wf_risk_e2e" },
+      tokenNotice: "shown once"
+    });
     if (method === "GET" && path === `/workspaces/${WS_ID}`) return json(200, ws);
     if (method === "GET" && path === `/workspaces/${WS_ID}/intents/safety`) {
       return json(200, {
@@ -301,4 +315,29 @@ test("Family Parent wallet lost-link recovery rekeys all role links, persists on
     .toEqual({ principal: "wf_principal_new_e2e" });
   await expect(page.getByText(/ALL previous Family links are invalid/i)).toBeVisible();
   await expect(page.getByRole("button", { name: /copy link/i })).toHaveCount(3);
+});
+
+test("Family creator keeps enrollment proof separate and wallet first bind needs the code (mock)", async ({ page }) => {
+  const state = { useCase: "family", requests: [], events: [], walletEnrollment: null };
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "phantom", {
+      configurable: true,
+      value: { solana: {
+        connect: async () => ({ publicKey: { toString: () => "E2EWallet111" } }),
+        signMessage: async () => ({ signature: new Uint8Array([1, 2, 3]) }),
+      } }
+    });
+  });
+  await mockApi(page, state);
+  await page.goto("/worlds-fair/desk?case=family");
+  await page.getByRole("button", { name: /create workspace/i }).click();
+  await expect(page.getByRole("button", { name: /copy Parent setup code/i })).toBeVisible();
+  await page.getByRole("button", { name: /continue to the desk/i }).click();
+  const secure = page.getByRole("button", { name: /secure Parent recovery wallet/i });
+  await expect(secure).toBeDisabled();
+  await page.getByPlaceholder("Paste the one-time setup code").fill("fec_creator_e2e");
+  await expect(secure).toBeEnabled();
+  await secure.click();
+  await expect.poll(() => state.walletEnrollment?.recoveryEnrollmentCode).toBe("fec_creator_e2e");
+  expect(await page.evaluate(() => JSON.stringify(localStorage))).not.toContain("fec_creator_e2e");
 });
