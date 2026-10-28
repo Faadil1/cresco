@@ -58,6 +58,10 @@ function api(overrides: Record<string, (init?: RequestInit) => Response> = {}) {
     if (key === `GET /workspaces/${WS.id}/requests`) return json(200, { requests: [PENDING] });
     if (key === `GET /workspaces/${WS.id}/history`) return json(200, { events: [{ id: "e1", seq: 1, at: "2026-10-12T12:01:00Z", type: "EXCEPTION_REQUESTED", actor: "operator", summary: "Outside standing authority", signatures: [] }] });
     if (key === `GET /workspaces/${WS.id}/mandate`) return json(200, MANDATE);
+    if (key === `GET /workspaces/${WS.id}/intents/safety`) return json(200, {
+      blocked: false, code: null, eventId: null, idempotencyKey: null,
+      lastResolution: null, retryPolicy: "NORMAL", requiresManualReview: false, note: "Clear",
+    });
     if (key === `GET /workspaces/${WS.id}/notifications`) return json(200, { role: "principal", pendingDecisions: 1, pending: [PENDING], notifications: [], cursor: 0 });
     return json(404, { error: "NOT_FOUND" });
   });
@@ -134,7 +138,9 @@ describe("World's Fair desk", () => {
       [`POST /workspaces/${WS.id}/intents`]: () => json(503, { decision: "UNKNOWN", retryPolicy: "REQUIRES_STATE_RECONCILIATION", message: "The program outcome could not be confirmed." }),
     });
     render(<WorldFairDeskPage />);
-    await userEvent.click(await screen.findByRole("button", { name: /submit intent/i }));
+    const button = await screen.findByRole("button", { name: /submit intent/i });
+    await waitFor(() => expect(button).toBeEnabled());
+    await userEvent.click(button);
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent(/Outcome UNKNOWN/);
     expect(alert).toHaveTextContent(/does not show success/);
@@ -197,6 +203,90 @@ describe("World's Fair desk", () => {
     window.dispatchEvent(new Event("focus"));
     await waitFor(() => expect(approval).toBeEnabled());
     expect(screen.queryByText(/Request updates unavailable/i)).not.toBeInTheDocument();
+  });
+
+    const button = await screen.findByRole("button", { name: /submit intent/i });
+    await waitFor(() => expect(button).toBeEnabled());
+    await userEvent.click(button);
+  it("persists an UNKNOWN trade hold across reload and resumes only on a signed reconciliation", async () => {
+    window.localStorage.setItem("cresco-worlds-fair-desk-v1", JSON.stringify({
+      workspaceId: WS.id, tokens: { operator: "wf_operator_a" },
+    }));
+    let blocked = false;
+    let resolved = false;
+    let lastKey = "";
+    const calls = api({
+      [`GET /workspaces/${WS.id}/intents/safety`]: () => json(200, {
+        blocked, code: blocked ? "INTENT_RECONCILIATION_REQUIRED" : null,
+        eventId: "evt-unknown-001", idempotencyKey: lastKey || null,
+        lastResolution: resolved ? "EFFECTS_FAILED" : null,
+        retryPolicy: blocked ? "NO_NEW_INTENT_UNTIL_VERIFIED_SIGNATURE" : "NORMAL",
+        requiresManualReview: blocked, note: blocked ? "Unverified outcome" : "Clear",
+      }),
+      [`POST /workspaces/${WS.id}/intents`]: (init) => {
+        lastKey = (init?.headers as Record<string, string>)["idempotency-key"];
+        blocked = true;
+        return json(503, {
+          decision: "UNKNOWN", eventId: "evt-unknown-001",
+          retryPolicy: "REQUIRES_STATE_RECONCILIATION", message: "Outcome unconfirmed",
+        });
+      },
+      [`POST /workspaces/${WS.id}/reconcile`]: () => {
+        blocked = false;
+        resolved = true;
+        return json(200, { reconciled: [{ unknownEventId: "evt-unknown-001", resolution: "EFFECTS_FAILED" }] });
+      },
+    });
+    const view = render(<WorldFairDeskPage />);
+    const submit = await screen.findByRole("button", { name: /submit intent/i });
+    await waitFor(() => expect(submit).toBeEnabled());
+    await userEvent.click(submit);
+    await waitFor(() => expect(submit).toBeDisabled());
+    expect(calls.filter((x) => x.method === "POST" && x.path.endsWith("/intents"))).toHaveLength(1);
+    expect(window.localStorage.getItem(`cresco-intent-recovery-v1:${WS.id}`)).toContain("evt-unknown-001");
+    view.unmount();
+    render(<WorldFairDeskPage />);
+    const again = await screen.findByRole("button", { name: /submit intent/i });
+    await waitFor(() => expect(again).toBeDisabled());
+    await userEvent.click(screen.getByRole("button", { name: /reconcile and check mandate/i }));
+    await waitFor(() => expect(again).toBeEnabled());
+    expect(window.localStorage.getItem(`cresco-intent-recovery-v1:${WS.id}`)).toBeNull();
+    expect(calls.filter((x) => x.method === "POST" && x.path.endsWith("/reconcile"))).toHaveLength(1);
+  });
+
+  it("keeps an UNKNOWN intent blocked when reconciliation has no signature", async () => {
+    window.localStorage.setItem("cresco-worlds-fair-desk-v1", JSON.stringify({
+      workspaceId: WS.id, tokens: { operator: "wf_operator_a" },
+    }));
+    let blocked = false;
+    let lastKey = "";
+    const calls = api({
+      [`GET /workspaces/${WS.id}/intents/safety`]: () => json(200, {
+        blocked, code: blocked ? "INTENT_RECONCILIATION_REQUIRED" : null,
+        eventId: "evt-no-signature", idempotencyKey: lastKey || null, lastResolution: blocked ? "NO_SIGNATURE_RECORDED" : null,
+        retryPolicy: blocked ? "NO_NEW_INTENT_UNTIL_VERIFIED_SIGNATURE" : "NORMAL",
+        requiresManualReview: blocked, note: "No confirmed signature",
+      }),
+      [`POST /workspaces/${WS.id}/intents`]: (init) => {
+        lastKey = (init?.headers as Record<string, string>)["idempotency-key"];
+        blocked = true;
+        return json(503, {
+          decision: "UNKNOWN", eventId: "evt-no-signature", retryPolicy: "REQUIRES_STATE_RECONCILIATION", message: "Unconfirmed",
+        });
+      },
+      [`POST /workspaces/${WS.id}/reconcile`]: () => json(200, {
+        reconciled: [{ unknownEventId: "evt-no-signature", resolution: "NO_SIGNATURE_RECORDED" }],
+      }),
+    });
+    render(<WorldFairDeskPage />);
+    const submit = await screen.findByRole("button", { name: /submit intent/i });
+    await waitFor(() => expect(submit).toBeEnabled());
+    await userEvent.click(submit);
+    await waitFor(() => expect(submit).toBeDisabled());
+    await userEvent.click(screen.getByRole("button", { name: /reconcile and check mandate/i }));
+    await waitFor(() => expect(screen.getByText(/Still blocked: there is no verified final signature/i)).toBeInTheDocument());
+    expect(submit).toBeDisabled();
+    expect(calls.filter((x) => x.method === "POST" && x.path.endsWith("/intents"))).toHaveLength(1);
   });
 
   it("imports a role from a share link fragment and scrubs the token from the URL", async () => {
