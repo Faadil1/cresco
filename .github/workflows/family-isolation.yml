@@ -35,3 +35,22 @@ jobs:
         run: |
           node -e 'const f=require("./dist/server/wrangler.json"); if(f.name!=="cresco-family-web") process.exit(1);'
           echo 'Family artifact only. No Wrangler deploy or Cloudflare write.'
+
+  family-api-dry-run:
+    name: Family-only API bundle (WRANGLER DRY RUN; NO DEPLOY)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - name: Verify isolated API target before bundling
+        run: |
+          node -e 'const f=require("./wrangler.family-api.jsonc"); if(f.name!=="cresco-family-api" || f.main!=="src/cloudflare-family-only-worker.mjs" || f.durable_objects.bindings[0].class_name!=="CrescoFamilyIsolatedState") process.exit(1)'
+      - name: Bundle family API without authentication, upload or deployment
+        run: npx --yes wrangler@4.118.0 deploy --dry-run --config wrangler.family-api.jsonc --outdir .family-api-dry-run
