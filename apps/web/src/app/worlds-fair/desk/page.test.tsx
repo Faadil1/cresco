@@ -150,7 +150,8 @@ describe("World's Fair desk", () => {
         workspaceId: WS.id, onChainAuthorityChanged: false,
         tokens: { principal: "wf_principal_new", operator: "wf_operator_new", risk: "wf_risk_new" },
       }),
-      [`GET /workspaces/${WS.id}`]: () => json(200, { ...WS, useCase: "family" }),
+      // Metadata may be offline AFTER the signed rekey commits.
+      [`GET /workspaces/${WS.id}`]: () => json(503, { error: "WORKSPACE_READ_UNAVAILABLE" }),
     });
     render(<WorldFairDeskPage />);
     await userEvent.type(screen.getByPlaceholderText("ws-..."), WS.id);
@@ -166,6 +167,8 @@ describe("World's Fair desk", () => {
     const saved = JSON.parse(window.localStorage.getItem("cresco-worlds-fair-desk-v1") ?? "{}");
     expect(saved.tokens).toEqual({ principal: "wf_principal_new" });
     expect(screen.getByText(/ALL previous Family links are invalid/i)).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /copy link/i })).toHaveLength(3);
+    expect(calls.some((x) => x.method === "GET" && x.path === `/workspaces/${WS.id}`)).toBe(false);
     Reflect.deleteProperty(window, "phantom");
   });
 
