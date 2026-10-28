@@ -13,7 +13,7 @@ import {
 export const WORKFLOW_PREFIX = '/api/v0.4/worlds-fair';
 const JSON_HEADERS = { 'content-type': 'application/json; charset=utf-8' };
 
-const MUTATING = /^\/workspaces\/[a-z0-9-]+\/(bootstrap|intents|requests\/[a-z0-9-]+\/decision|mandate\/status|mandate\/policy|asset-rule|vault\/topup|principal\/wallet|guardian\/submit|reconcile)$/;
+const MUTATING = /^\/workspaces\/[a-z0-9-]+\/(bootstrap|intents|requests\/[a-z0-9-]+\/decision|mandate\/status|mandate\/policy|asset-rule|vault\/topup|principal\/wallet|guardian\/submit|reconcile|roles\/(operator|risk)\/rotate)$/;
 
 export function isWorkflowPath(path) {
   return typeof path === 'string' && path.startsWith(WORKFLOW_PREFIX);
@@ -82,6 +82,7 @@ export function workflowOpenApi() {
       [`${WORKFLOW_PREFIX}/workspaces`]: { post: op('Create a workspace (returns role tokens once)', []) },
       [`${WORKFLOW_PREFIX}/workspaces/{id}`]: { get: op('Authenticated workspace view', ['operator', 'principal', 'risk']) },
       [`${WORKFLOW_PREFIX}/workspaces/{id}/whoami`]: { get: op('Resolve the role of a token', ['operator', 'principal', 'risk']) },
+      [`${WORKFLOW_PREFIX}/workspaces/{id}/roles/{role}/rotate`]: { post: op('Principal-only Family Teen/second-parent role link replacement. Returns new token once; old link revoked', ['principal']) },
       [`${WORKFLOW_PREFIX}/workspaces/{id}/bootstrap`]: { post: op('Create or reuse the on-chain mandate, asset rule and vaults (idempotent)', ['principal']) },
       [`${WORKFLOW_PREFIX}/workspaces/{id}/intents`]: {
         post: op('Submit a SWAP_EXACT_IN intent', ['operator'], {
@@ -137,6 +138,8 @@ export async function routeWorldFairWorkflow({ method, path, body, headers, quer
 
     if (method === 'GET' && sub === '') return ok(await workflow.getWorkspace(id, token));
     if (method === 'GET' && sub === '/whoami') return ok(await workflow.whoami(id, token));
+    const rotation = sub.match(/^\/roles\/([a-z-]+)\/rotate$/);
+    if (method === 'POST' && rotation) return ok(await workflow.rotateFamilyRole(id, token, rotation[1]));
     if (method === 'POST' && sub === '/bootstrap') return ok(await workflow.bootstrap(id, token));
     if (method === 'GET' && sub === '/intents/safety') return ok(await workflow.intentSafety(id, token));
     if (method === 'POST' && sub === '/intents') {

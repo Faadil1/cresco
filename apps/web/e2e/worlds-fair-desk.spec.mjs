@@ -30,6 +30,15 @@ function mockApi(page, state) {
       chain: { status: "READY", accounts: { mandate: "MandatePda" } },
       truthBoundary: {},
     };
+    if (method === "POST" && path === `/workspaces/${WS_ID}/roles/operator/rotate`) {
+      if (req.headers()["authorization"] !== "Bearer wf_principal_e2e") return json(403, { error: "ROLE_FORBIDDEN" });
+      state.revokedOperator = true;
+      state.rotations = (state.rotations ?? 0) + 1;
+      return json(200, { workspaceId: WS_ID, role: "operator", token: "wf_operator_replaced", onChainAuthorityChanged: false });
+    }
+    if (state.revokedOperator && req.headers()["authorization"] === "Bearer wf_operator_e2e") {
+      return json(401, { error: "AUTH_INVALID", message: "Old role link invalidated" });
+    }
     if (method === "POST" && path === "/workspaces") return json(201, { ...ws, tokens: { operator: "wf_operator_e2e", principal: "wf_principal_e2e", risk: "wf_risk_e2e" }, tokenNotice: "shown once" });
     if (method === "GET" && path === `/workspaces/${WS_ID}`) return json(200, ws);
     if (method === "GET" && path === `/workspaces/${WS_ID}/intents/safety`) {
@@ -204,4 +213,50 @@ test("Family creator keeps only Parent authority, importing Teen replaces it", a
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("cresco-worlds-fair-desk-v1")).tokens))
     .toEqual({ operator: "wf_operator_e2e" });
   expect(new URL(page.url()).hash).toBe("");
+});
+
+test("Parent replaces a Teen link: old Teen browser is denied, new role link restores access", async ({ browser }) => {
+  const state = { useCase: "family", requests: [], events: [], revokedOperator: false, rotations: 0 };
+  const parentContext = await browser.newContext({ ...devices["iPhone 13"] });
+  const oldTeenContext = await browser.newContext({ ...devices["iPhone 13"] });
+  const newTeenContext = await browser.newContext({ ...devices["iPhone 13"] });
+  try {
+    const parent = await parentContext.newPage();
+    const oldTeen = await oldTeenContext.newPage();
+    const newTeen = await newTeenContext.newPage();
+    await parent.addInitScript(({ id }) => {
+      localStorage.setItem("cresco-worlds-fair-desk-v1", JSON.stringify({ workspaceId: id, tokens: { principal: "wf_principal_e2e" } }));
+    }, { id: WS_ID });
+    await oldTeen.addInitScript(({ id }) => {
+      localStorage.setItem("cresco-worlds-fair-desk-v1", JSON.stringify({ workspaceId: id, tokens: { operator: "wf_operator_e2e" } }));
+    }, { id: WS_ID });
+    await newTeen.addInitScript(({ id }) => {
+      localStorage.setItem("cresco-worlds-fair-desk-v1", JSON.stringify({ workspaceId: id, tokens: { operator: "wf_operator_replaced" } }));
+    }, { id: WS_ID });
+    await mockApi(parent, state);
+    await mockApi(oldTeen, state);
+    await mockApi(newTeen, state);
+
+    await oldTeen.goto("/worlds-fair/desk?case=family");
+    await expect(oldTeen.getByRole("tab", { name: /^Teen$/i })).toBeVisible();
+    await parent.goto("/worlds-fair/desk?case=family");
+    await expect(parent.getByRole("button", { name: /replace Teen access/i })).toBeVisible();
+    await parent.getByRole("button", { name: /replace Teen access/i }).click();
+    expect(state.rotations).toBe(0);
+    await parent.getByRole("button", { name: /confirm link replacement/i }).click();
+    await expect(parent.getByRole("button", { name: /copy replacement link/i })).toBeVisible();
+    expect(state.rotations).toBe(1);
+
+    await oldTeen.reload();
+    await expect(oldTeen.getByRole("alert").filter({ hasText: "Old role link invalidated" })).toBeVisible();
+    await expect(oldTeen.getByRole("button", { name: /submit intent/i })).toHaveCount(0);
+
+    await newTeen.goto("/worlds-fair/desk?case=family");
+    await expect(newTeen.getByRole("tab", { name: /^Teen$/i })).toBeVisible();
+    await expect(newTeen.getByRole("tab", { name: /^Parent$/i })).toHaveCount(0);
+  } finally {
+    await parentContext.close();
+    await oldTeenContext.close();
+    await newTeenContext.close();
+  }
 });

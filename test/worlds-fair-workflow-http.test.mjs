@@ -132,6 +132,52 @@ test('HTTP v0.4: workspace metadata, mandate and principal wallet message are pr
   assert.match(principalWalletMessage.body.message, /workspace:/);
 });
 
+test('Family Parent rotates Teen and second-parent role links; old links fail all reads and writes', async () => {
+  const store = createMemoryWorkflowStore();
+  const wf = createWorldFairWorkflow({ store, chainFactory: () => simpleChain() });
+  const P = '/api/v0.4/worlds-fair';
+  const family = (await call(wf, 'POST', `${P}/workspaces`, { useCase: 'family' })).body;
+  const other = (await call(wf, 'POST', `${P}/workspaces`, { useCase: 'family' })).body;
+  const capital = (await call(wf, 'POST', `${P}/workspaces`, { useCase: 'capital' })).body;
+  const path = (role) => `${P}/workspaces/${family.id}/roles/${role}/rotate`;
+  const oldTeen = family.tokens.operator;
+  const oldSecondParent = family.tokens.risk;
+  const principal = family.tokens.principal;
+
+  assert.equal((await call(wf, 'POST', path('operator'), {}, oldTeen)).status, 403);
+  assert.equal((await call(wf, 'POST', path('operator'), {}, oldSecondParent)).status, 403);
+  assert.equal((await call(wf, 'POST', path('operator'))).status, 401);
+  assert.equal((await call(wf, 'POST', path('operator'), {}, other.tokens.principal)).status, 401);
+  assert.equal((await call(wf, 'POST', path('principal'), {}, principal)).status, 400);
+  assert.equal((await call(wf, 'POST', `${P}/workspaces/${capital.id}/roles/operator/rotate`, {}, capital.tokens.principal)).status, 409);
+  const changed = await call(wf, 'POST', path('operator'), {}, principal);
+  assert.equal(changed.status, 200);
+  assert.equal(changed.body.role, 'operator');
+  assert.match(changed.body.token, /^wf_operator_/);
+  assert.notEqual(changed.body.token, oldTeen);
+  assert.equal(changed.body.onChainAuthorityChanged, false);
+  const rawWorkspace = JSON.stringify(await store.get(`wf:ws:${family.id}`));
+  const audit = JSON.stringify(await store.get(`wf:ws:${family.id}:events`));
+  assert.ok(!rawWorkspace.includes(changed.body.token));
+  assert.ok(!audit.includes(changed.body.token));
+  for (const suffix of ['', '/requests', '/history', '/mandate', '/intents/safety']) {
+    assert.equal((await call(wf, 'GET', `${P}/workspaces/${family.id}${suffix}`, null, oldTeen)).status, 401);
+    assert.equal((await call(wf, 'GET', `${P}/workspaces/${family.id}${suffix}`, null, changed.body.token)).status, suffix === '/mandate' ? 409 : 200);
+  }
+  assert.equal((await call(wf, 'POST', `${P}/workspaces/${family.id}/intents`, { inputAmount: 100_000 }, oldTeen)).status, 401);
+  assert.equal((await call(wf, 'GET', `${P}/workspaces/${family.id}/whoami`, null, principal)).status, 200);
+  assert.equal((await call(wf, 'GET', `${P}/workspaces/${family.id}/whoami`, null, oldSecondParent)).status, 200);
+
+  const riskChanged = await call(wf, 'POST', path('risk'), {}, principal);
+  assert.equal(riskChanged.status, 200);
+  assert.equal((await call(wf, 'GET', `${P}/workspaces/${family.id}/whoami`, null, oldSecondParent)).status, 401);
+  assert.equal((await call(wf, 'GET', `${P}/workspaces/${family.id}/whoami`, null, riskChanged.body.token)).status, 200);
+  const history = await call(wf, 'GET', `${P}/workspaces/${family.id}/history`, null, principal);
+  assert.ok(history.body.events.filter((e) => e.type === 'ROLE_TOKEN_ROTATED').length >= 2);
+  assert.ok(!JSON.stringify(history.body).includes(riskChanged.body.token));
+  assert.ok(!JSON.stringify(history.body).includes(changed.body.token));
+});
+
 test('HTTP v0.4: Idempotency-Key header is honoured and errors carry codes', async () => {
   const chain = simpleChain();
   const wf = createWorldFairWorkflow({ store: createMemoryWorkflowStore(), chainFactory: () => chain });
@@ -196,6 +242,8 @@ test('write scope only applies to mutating workspace routes', () => {
   assert.equal(workflowWriteScope('POST', '/api/v0.4/worlds-fair/workspaces/ws-abc123/requests/req-1/decision'), 'ws-abc123');
   assert.equal(workflowWriteScope('GET', '/api/v0.4/worlds-fair/workspaces/ws-abc123/history'), null);
   assert.equal(workflowWriteScope('POST', '/api/v0.4/worlds-fair/workspaces'), '__index');
+  assert.equal(workflowWriteScope('POST', '/api/v0.4/worlds-fair/workspaces/ws-abc123/roles/operator/rotate'), 'ws-abc123');
+  assert.equal(workflowWriteScope('POST', '/api/v0.4/worlds-fair/workspaces/ws-abc123/roles/risk/rotate'), 'ws-abc123');
 });
 
 function durableEnv() {

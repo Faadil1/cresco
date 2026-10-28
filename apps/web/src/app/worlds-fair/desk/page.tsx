@@ -555,6 +555,9 @@ export default function WorldFairDeskPage() {
   const [localIntentHold, setLocalIntentHold] = useState<IntentAttemptHold | null>(null);
   const [intentSafetyError, setIntentSafetyError] = useState<string | null>(null);
   const [recoveryNotice, setRecoveryNotice] = useState<string | null>(null);
+  const [confirmRoleRotation, setConfirmRoleRotation] = useState<"operator" | "risk" | null>(null);
+  const [replacementRoleLink, setReplacementRoleLink] = useState<{ role: "operator" | "risk"; link: string } | null>(null);
+  const [replacementCopied, setReplacementCopied] = useState(false);
   const [amount, setAmount] = useState("0.20");
   const [slippage, setSlippage] = useState("100");
   const [note, setNote] = useState("");
@@ -585,6 +588,9 @@ export default function WorldFairDeskPage() {
       setLocalIntentHold(null);
       setRecoveryNotice(null);
       setIntentResult(null);
+      setConfirmRoleRotation(null);
+      setReplacementRoleLink(null);
+      setReplacementCopied(false);
       setPendingCount(0);
       setLoadError(null);
       setActionError(null);
@@ -880,6 +886,22 @@ export default function WorldFairDeskPage() {
     });
   }
 
+  async function replaceFamilyRole(role: "operator" | "risk") {
+    const principalToken = token("principal");
+    if (!id || !principalToken || ws?.useCase !== "family" || activityUncertain || actionBusy || confirmRoleRotation !== role) return;
+    await run(`rotate-${role}`, async () => {
+      // The old bearer stops working as soon as the server commits the change.
+      // Do not persist the new bearer in localStorage or in any event payload.
+      const replacement = await workflowApi.rotateFamilyRole(id, principalToken, role);
+      if (replacement.role !== role || replacement.workspaceId !== id || !replacement.token) {
+        throw new Error("Replacement link response could not be verified. Request a new rotation before sharing.");
+      }
+      setReplacementRoleLink({ role, link: shareLink(window.location.origin, id, role, replacement.token) });
+      setReplacementCopied(false);
+      setConfirmRoleRotation(null);
+    });
+  }
+
   async function bindWallet() {
     const t = token("principal");
     if (!id || !t) return;
@@ -918,7 +940,7 @@ export default function WorldFairDeskPage() {
             <Link href="/" className="rounded-full border border-line bg-surface/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft hover:border-green/35">CRESCO home</Link>
             <Link href="/worlds-fair" className="rounded-full border border-line bg-surface/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft hover:border-green/35">Technical proof</Link>
             {id ? (
-              <button type="button" onClick={() => { saveKeychain({ workspaceId: null, tokens: {} }); setKeychain({ workspaceId: null, tokens: {} }); setWs(null); setMandate(null); setRequests([]); setEvents([]); setIntentSafety(null); setLocalIntentHold(null); setRecoveryNotice(null); setIntentResult(null); }} className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft">
+              <button type="button" onClick={() => { saveKeychain({ workspaceId: null, tokens: {} }); setKeychain({ workspaceId: null, tokens: {} }); setWs(null); setMandate(null); setRequests([]); setEvents([]); setIntentSafety(null); setLocalIntentHold(null); setRecoveryNotice(null); setIntentResult(null); setReplacementRoleLink(null); setConfirmRoleRotation(null); }} className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft">
                 Leave workspace
               </button>
             ) : null}
@@ -1168,6 +1190,50 @@ export default function WorldFairDeskPage() {
                   </Card>
 
                   <div className="grid content-start gap-6">
+                    {tab === "principal" && ws.useCase === "family" ? (
+                      <Card>
+                        <Eyebrow>Family access · Parent controls</Eyebrow>
+                        <p className="mt-2 text-[13px] font-semibold text-ink-2">Lost or shared a Teen or second-parent link? Replace that role&apos;s access. The previous link stops working immediately. This does not revoke a Solana mandate or prove anyone&apos;s legal identity.</p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {(["operator", "risk"] as const).map((role) => (
+                            <button key={role} type="button" disabled={Boolean(actionBusy) || activityUncertain || Boolean(replacementRoleLink)}
+                              onClick={() => setConfirmRoleRotation(role)}
+                              className="inline-flex min-h-10 items-center rounded-[12px] border border-line bg-white px-3 text-[12px] font-bold text-navy disabled:opacity-50">
+                              Replace {role === "operator" ? "Teen" : "second-parent"} access
+                            </button>
+                          ))}
+                        </div>
+                        {confirmRoleRotation ? (
+                          <div role="group" aria-label="Confirm role replacement" className="mt-4 rounded-[14px] border border-yellow/50 bg-yellow-soft p-3">
+                            <p className="text-[12px] font-bold text-navy">Confirm replacing the {confirmRoleRotation === "operator" ? "Teen" : "second-parent"} link? All old copies will stop working, including on another device. The new link is shown only once. No onchain financial authority changes.</p>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <button type="button" disabled={Boolean(actionBusy) || activityUncertain}
+                                onClick={() => void replaceFamilyRole(confirmRoleRotation)}
+                                className="min-h-10 rounded-[10px] bg-navy-strong px-3 text-[12px] font-bold text-white disabled:opacity-50">Confirm link replacement</button>
+                              <button type="button" onClick={() => setConfirmRoleRotation(null)}
+                                className="min-h-10 rounded-[10px] border border-line bg-white px-3 text-[12px] font-bold text-navy">Cancel</button>
+                            </div>
+                          </div>
+                        ) : null}
+                        {replacementRoleLink ? (
+                          <div role="status" className="mt-4 rounded-[14px] border border-green/30 bg-green-soft p-3 text-[12px] font-semibold text-navy">
+                            <p className="font-bold">Old {replacementRoleLink.role === "operator" ? "Teen" : "second-parent"} link invalidated. Copy the new link once, then share it privately with the intended person.</p>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <button type="button" onClick={async () => {
+                                try {
+                                  await navigator.clipboard.writeText(replacementRoleLink.link);
+                                  setReplacementCopied(true);
+                                } catch { setActionError("Could not copy the replacement link. Do not share a previously issued link."); }
+                              }} className="min-h-10 rounded-[10px] border border-line bg-white px-3 font-bold text-navy">
+                                {replacementCopied ? "Link copied" : "Copy replacement link"}
+                              </button>
+                              <button type="button" onClick={() => { setReplacementRoleLink(null); setReplacementCopied(false); }}
+                                className="min-h-10 rounded-[10px] border border-line bg-white px-3 font-bold text-navy">Dismiss link</button>
+                            </div>
+                          </div>
+                        ) : null}
+                      </Card>
+                    ) : null}
                     <Card>
                       <Eyebrow>This period</Eyebrow>
                       {mandate?.consumption ? (
