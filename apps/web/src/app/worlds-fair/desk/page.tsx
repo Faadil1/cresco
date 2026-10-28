@@ -536,6 +536,7 @@ export default function WorldFairDeskPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionBusy, setActionBusy] = useState<string | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
+  const [activityUncertain, setActivityUncertain] = useState(false);
   const [intentResult, setIntentResult] = useState<IntentResult | null>(null);
   const [amount, setAmount] = useState("0.20");
   const [slippage, setSlippage] = useState("100");
@@ -587,14 +588,69 @@ export default function WorldFairDeskPage() {
         setEvents(data.events);
         setMandate(data.mandate);
         setLoadError(null);
+        setActivityUncertain(false);
       })
       .catch((err) => {
-        if (!cancelled) setLoadError(errorText(err));
+        if (!cancelled) {
+          setLoadError(errorText(err));
+          setActivityUncertain(true);
+        }
       });
     return () => {
       cancelled = true;
     };
   }, [id, version]);
+
+  // Keep separate Parent and Teen browser sessions in sync without new writes.
+  // A role-specific desk can become stale while another device submits or decides.
+  // Read only requests/history: do not poll the chain mandate or infer execution.
+  useEffect(() => {
+    if (!id || ws?.id !== id || actionBusy ||
+        (tab !== "operator" && tab !== "principal" && tab !== "risk") ||
+        !keychain.tokens[tab]) return;
+    let cancelled = false;
+    let inFlight = false;
+    const sync = async () => {
+      if (cancelled || inFlight || document.hidden) return;
+      inFlight = true;
+      try {
+        const [nextRequests, nextEvents] = await Promise.all([
+          workflowApi.listRequests(id),
+          workflowApi.history(id, 60),
+        ]);
+        if (!Array.isArray(nextRequests) || !Array.isArray(nextEvents)) {
+          throw new Error("Request history could not be verified");
+        }
+        if (!cancelled) {
+          setRequests(nextRequests);
+          setEvents(nextEvents);
+          setActivityUncertain(false);
+        }
+      } catch {
+        // Keep the last known snapshot visible, but do not permit decisions
+        // based on an unverified snapshot. A failure never means zero pending.
+        if (!cancelled) setActivityUncertain(true);
+      } finally {
+        inFlight = false;
+      }
+    };
+    const onFocus = () => { void sync(); };
+    const onVisibility = () => {
+      if (document.hidden) setActivityUncertain(true);
+      else void sync();
+    };
+    // A second device may create or decide a request while this tab is open.
+    void sync();
+    const interval = window.setInterval(() => { void sync(); }, 15_000);
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [id, ws?.id, tab, actionBusy, version, keychain]);
 
   // CAP-11: approvers are notified of pending exception requests while the desk is open.
   useEffect(() => {
@@ -641,7 +697,7 @@ export default function WorldFairDeskPage() {
   async function submitIntent(e: React.FormEvent) {
     e.preventDefault();
     const t = token("operator");
-    if (!id || !t) return;
+    if (!id || !t || activityUncertain) return;
     await run("intent", async () => {
       const res = await workflowApi.submitIntent(id, t, { inputAmount: toBase(amount), maxSlippageBps: Number(slippage) }, idemRef.current);
       setIntentResult(res.body);
@@ -651,7 +707,7 @@ export default function WorldFairDeskPage() {
 
   async function decide(req: ExceptionRequest, decision: "APPROVE" | "REFUSE", role: WorkflowRole) {
     const t = token(role);
-    if (!id || !t) return;
+    if (!id || !t || activityUncertain) return;
     await run(`decide-${req.id}`, async () => {
       if (decision === "APPROVE" && role === "principal" && ws?.roles.principal.wallet && ws.guardianMode !== "principal-wallet") {
         const issuedAt = new Date().toISOString();
@@ -748,6 +804,11 @@ export default function WorldFairDeskPage() {
             </>
           ) : null}
           {loadError ? <p role="alert" className="rounded-[16px] border border-loss/25 bg-loss-soft p-4 text-[13px] font-bold text-loss-text">{loadError}</p> : null}
+          {id && ws && activityUncertain ? (
+            <p role="alert" className="rounded-[16px] border border-loss/25 bg-loss-soft p-4 text-[13px] font-bold text-loss-text">
+              Request updates unavailable. The visible requests may be outdated. Decisions and new intents are paused until a successful read. Check the connection and use Refresh.
+            </p>
+          ) : null}
           {id && !ws && !loadError ? (
             <p className="flex items-center gap-2 text-[14px] font-bold text-ink-2"><LoaderCircle className="size-4 animate-spin" /> Loading the workspace…</p>
           ) : null}
@@ -879,7 +940,7 @@ export default function WorldFairDeskPage() {
                           <input className="mt-1 w-full rounded-[14px] border border-line px-3 py-2.5 text-[15px] font-bold text-navy-strong" inputMode="numeric" value={slippage} onChange={(e) => setSlippage(e.target.value)} />
                         </label>
                       </details>
-                      <button type="submit" disabled={actionBusy === "intent" || notReady || mandateStatus === "REVOKED"} className="flex min-h-13 items-center justify-center gap-2 rounded-[16px] bg-blue px-5 py-3.5 text-[15px] font-semibold text-white shadow-button transition-colors hover:bg-blue-strong disabled:opacity-60">
+                      <button type="submit" disabled={actionBusy === "intent" || activityUncertain || notReady || mandateStatus === "REVOKED"} className="flex min-h-13 items-center justify-center gap-2 rounded-[16px] bg-blue px-5 py-3.5 text-[15px] font-semibold text-white shadow-button transition-colors hover:bg-blue-strong disabled:opacity-60">
                         {actionBusy === "intent" ? <><LoaderCircle className="size-4 animate-spin" /> Executing on Devnet…</> : <>Submit intent <ArrowRight className="size-4" /></>}
                       </button>
                       <p className="text-[11px] font-bold text-ink-3">Each submit carries an idempotency key: a network retry cannot execute twice.</p>
@@ -889,7 +950,7 @@ export default function WorldFairDeskPage() {
                   <Card className="md:p-7">
                     <Eyebrow>My requests to {names.principal}</Eyebrow>
                     <div className="mt-4 grid gap-3">
-                      {requests.length ? requests.slice(0, 8).map((r) => <RequestCard key={r.id} req={r} names={names} />) : <p className="rounded-[18px] border border-dashed border-line p-6 text-center text-[13px] font-semibold text-ink-2">No requests yet. Try an amount above the limit to create one.</p>}
+                      {requests.length ? requests.slice(0, 8).map((r) => <RequestCard key={r.id} req={r} names={names} />) : <p className="rounded-[18px] border border-dashed border-line p-6 text-center text-[13px] font-semibold text-ink-2">{activityUncertain ? "Request status unverified. Check again before acting." : "No requests yet. Try an amount above the limit to create one."}</p>}
                     </div>
                   </Card>
                 </div>
@@ -909,17 +970,17 @@ export default function WorldFairDeskPage() {
                       {pending.length ? pending.map((r) => (
                         <RequestCard key={r.id} req={r} names={names}>
                           <div className="mt-4 flex flex-wrap gap-2">
-                            <button type="button" disabled={Boolean(actionBusy)} onClick={() => decide(r, "APPROVE", tab)} className="inline-flex min-h-11 items-center gap-1.5 rounded-[14px] bg-green px-5 text-[14px] font-semibold text-white shadow-soft transition-opacity hover:opacity-90 disabled:opacity-60">
+                            <button type="button" disabled={Boolean(actionBusy) || activityUncertain} onClick={() => decide(r, "APPROVE", tab)} className="inline-flex min-h-11 items-center gap-1.5 rounded-[14px] bg-green px-5 text-[14px] font-semibold text-white shadow-soft transition-opacity hover:opacity-90 disabled:opacity-60">
                               {actionBusy === `decide-${r.id}` ? <LoaderCircle className="size-4 animate-spin" /> : tab === "principal" && ws.roles.principal.wallet ? <Wallet className="size-4" /> : <Check className="size-4" />}
                               Approve exactly once
                             </button>
-                            <button type="button" disabled={Boolean(actionBusy)} onClick={() => decide(r, "REFUSE", tab)} className="inline-flex min-h-11 items-center gap-1.5 rounded-[14px] border border-loss/30 bg-white px-4 text-[14px] font-semibold text-loss-text disabled:opacity-60">
+                            <button type="button" disabled={Boolean(actionBusy) || activityUncertain} onClick={() => decide(r, "REFUSE", tab)} className="inline-flex min-h-11 items-center gap-1.5 rounded-[14px] border border-loss/30 bg-white px-4 text-[14px] font-semibold text-loss-text disabled:opacity-60">
                               <X className="size-4" /> Refuse
                             </button>
                           </div>
                           {tab === "principal" && walletGuardianWs ? <p className="mt-2 text-[12px] font-semibold text-ink-3">Your wallet signs the exact grant. Sign within 90 seconds.</p> : null}
                         </RequestCard>
-                      )) : <p className="rounded-[18px] border border-dashed border-line p-6 text-center text-[13px] font-semibold text-ink-2">Nothing waiting. Requests appear here as soon as {names.operator} crosses the limit.</p>}
+                      )) : <p className="rounded-[18px] border border-dashed border-line p-6 text-center text-[13px] font-semibold text-ink-2">{activityUncertain ? "Request status unverified. Check again before deciding." : <>Nothing waiting. Requests appear here as soon as {names.operator} crosses the limit.</>}</p>}
                     </div>
                     <label className="mt-4 block text-[12px] font-semibold text-ink-2">Note with your decision (optional)
                       <input className="mt-1 w-full rounded-[14px] border border-line px-3 py-2.5 text-[14px] font-semibold" value={note} onChange={(e) => setNote(e.target.value)} maxLength={280} />
