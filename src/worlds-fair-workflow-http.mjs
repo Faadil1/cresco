@@ -13,7 +13,7 @@ import {
 export const WORKFLOW_PREFIX = '/api/v0.4/worlds-fair';
 const JSON_HEADERS = { 'content-type': 'application/json; charset=utf-8' };
 
-const MUTATING = /^\/workspaces\/[a-z0-9-]+\/(bootstrap|intents|requests\/[a-z0-9-]+\/decision|mandate\/status|mandate\/policy|asset-rule|vault\/topup|principal\/wallet|guardian\/submit|reconcile|roles\/(operator|risk)\/rotate)$/;
+const MUTATING = /^\/workspaces\/[a-z0-9-]+\/(bootstrap|intents|requests\/[a-z0-9-]+\/decision|mandate\/status|mandate\/policy|asset-rule|vault\/topup|principal\/wallet|guardian\/submit|reconcile|roles\/(operator|risk)\/rotate|principal\/recovery\/(challenge|complete))$/;
 
 export function isWorkflowPath(path) {
   return typeof path === 'string' && path.startsWith(WORKFLOW_PREFIX);
@@ -110,7 +110,9 @@ export function workflowOpenApi() {
       [`${WORKFLOW_PREFIX}/workspaces/{id}/vault/topup`]: { post: op('Restore Devnet trade-vault and delegate funding (idempotent)', ['principal']) },
       [`${WORKFLOW_PREFIX}/workspaces/{id}/history`]: { get: op('Authenticated workspace event history (?limit=)', ['operator', 'principal', 'risk']) },
       [`${WORKFLOW_PREFIX}/workspaces/{id}/notifications`]: { get: op('Role-specific notifications (?since=cursor)', ['operator', 'principal', 'risk']) },
-      [`${WORKFLOW_PREFIX}/workspaces/{id}/principal/wallet`]: { post: op('Bind a principal wallet (signed binding message)', ['principal']) },
+      [`${WORKFLOW_PREFIX}/workspaces/{id}/principal/wallet`]: { post: op('First binding of an immutable principal recovery wallet (signed binding message)', ['principal']) },
+      [`${WORKFLOW_PREFIX}/workspaces/{id}/principal/recovery/challenge`]: { post: op('Start wallet-bound Family API access recovery; must have previously bound Parent wallet', []) },
+      [`${WORKFLOW_PREFIX}/workspaces/{id}/principal/recovery/complete`]: { post: op('Complete one-time Parent wallet signature recovery; rotates all Family role tokens', []) },
       [`${WORKFLOW_PREFIX}/workspaces/{id}/principal/wallet-message`]: { get: op('Principal-only wallet binding message (?issuedAt=)', ['principal']) },
       [`${WORKFLOW_PREFIX}/workspaces/{id}/guardian/submit`]: { post: op('Submit a transaction signed by the principal wallet (guardianMode principal-wallet): { opId, signedTransaction }', ['principal']) },
       [`${WORKFLOW_PREFIX}/workspaces/{id}/reconcile`]: { post: op('Resolve UNKNOWN outcomes from transaction signatures', ['operator', 'principal', 'risk']) }
@@ -138,6 +140,8 @@ export async function routeWorldFairWorkflow({ method, path, body, headers, quer
 
     if (method === 'GET' && sub === '') return ok(await workflow.getWorkspace(id, token));
     if (method === 'GET' && sub === '/whoami') return ok(await workflow.whoami(id, token));
+    if (method === 'POST' && sub === '/principal/recovery/challenge') return ok(await workflow.issuePrincipalRecoveryChallenge(id));
+    if (method === 'POST' && sub === '/principal/recovery/complete') return ok(await workflow.recoverPrincipalWithWallet(id, body ?? {}));
     const rotation = sub.match(/^\/roles\/([a-z-]+)\/rotate$/);
     if (method === 'POST' && rotation) return ok(await workflow.rotateFamilyRole(id, token, rotation[1]));
     if (method === 'POST' && sub === '/bootstrap') return ok(await workflow.bootstrap(id, token));
