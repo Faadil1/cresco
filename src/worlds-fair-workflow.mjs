@@ -1147,7 +1147,7 @@ export function createWorldFairWorkflow({
       fail(409, 'PARENT_RECOVERY_NOT_ENROLLED', 'Wallet-bound Family recovery is not enrolled');
     }
     const challenge = await store.get(keys.principalRecovery(ws.id));
-    if (!challenge || challenge.consumedAt || Date.parse(challenge.expiresAt) <= clock()) {
+    if (!challenge || challenge.consumedAt || ws.lastPrincipalRecoveryChallengeId === challenge?.challengeId || Date.parse(challenge.expiresAt) <= clock()) {
       fail(410, 'PARENT_RECOVERY_CHALLENGE_EXPIRED', 'Request a new recovery challenge');
     }
     const nonce = String(body.nonce ?? '');
@@ -1164,14 +1164,19 @@ export function createWorldFairWorkflow({
     if (!verifyWalletSignature({ publicKey: ws.principal.wallet.publicKey, message, signature: body.signature })) {
       fail(401, 'PARENT_RECOVERY_SIGNATURE_INVALID', 'The Parent wallet signature is not valid');
     }
-    // Consume before rotating. A lost response is never evidence of failure:
-    // sign a fresh challenge instead; replaying this proof is refused.
-    await store.put(keys.principalRecovery(ws.id), { ...challenge, consumedAt: nowIso() });
+    // The credential rekey AND challenge consumption marker belong in ONE
+    // durable workspace write. If that write fails, old tokens/challenge remain
+    // unchanged; if later audit/secondary writes fail, replay still fails.
+    // Avoid two-key commit ordering that consumes the challenge before rekey.
     const tokens = Object.fromEntries(WORKFLOW_ROLES.map((role) =>
       [role, `wf_${role}_${randomBytes(24).toString('base64url')}`]
     ));
     ws.tokens = Object.fromEntries(Object.entries(tokens).map(([role, raw]) => [role, sha256(raw)]));
+    ws.lastPrincipalRecoveryChallengeId = challenge.challengeId;
     await saveWorkspace(ws);
+    // Non-authority recovery metadata. The workspace marker above is canonical,
+    // so failures here cannot authorize a second use of the same signature.
+    await store.put(keys.principalRecovery(ws.id), { ...challenge, consumedAt: nowIso() });
     await appendEvent(ws, {
       type: 'PARENT_API_ACCESS_RECOVERED',
       actor: 'principal-wallet',
