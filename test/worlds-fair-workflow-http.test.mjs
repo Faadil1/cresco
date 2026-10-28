@@ -209,9 +209,9 @@ test('Worker v0.4: state persists in the Durable Object across isolates (fresh w
   const pending = await (await workerCall(env, services, 'POST', `${P}/workspaces/${id}/intents`, { inputAmount: 800_000 }, tokens.operator)).json();
   assert.equal(pending.decision, 'PENDING_PRINCIPAL');
 
-  const listed = await (await workerCall(env, services, 'GET', `${P}/workspaces/${id}/requests?status=PENDING`)).json();
+  const listed = await (await workerCall(env, services, 'GET', `${P}/workspaces/${id}/requests?status=PENDING`, null, tokens.operator)).json();
   assert.equal(listed.requests.length, 1);
-  const res = await workerCall(env, services, 'GET', `${P}/workspaces/${id}/history`);
+  const res = await workerCall(env, services, 'GET', `${P}/workspaces/${id}/history`, null, tokens.operator);
   assert.equal(res.headers.get('access-control-allow-origin'), 'https://cresco-lac.vercel.app');
   assert.equal(res.headers.get('cache-control'), 'no-store');
 });
@@ -233,7 +233,7 @@ test('Worker v0.4: concurrent writes on one workspace are serialized (BUSY), oth
   assert.equal((await second.json()).error, 'BUSY');
   assert.ok(Number(second.headers.get('retry-after')) >= 1);
 
-  const read = await workerCall(env, services, 'GET', `${P}/workspaces/${a.id}/history`);
+  const read = await workerCall(env, services, 'GET', `${P}/workspaces/${a.id}/history`, null, a.tokens.operator);
   assert.equal(read.status, 200);
 
   release();
