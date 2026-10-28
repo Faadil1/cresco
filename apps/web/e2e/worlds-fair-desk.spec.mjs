@@ -19,8 +19,11 @@ function mockApi(page, state) {
     const ws = {
       id: WS_ID,
       name: "E2E desk",
+      useCase: state.useCase ?? "capital",
       createdAt: "2026-10-12T12:00:00Z",
-      roles: { principal: { label: "Allocator", wallet: null }, operator: { label: "Strategy" }, risk: { label: "Risk" } },
+      roles: state.useCase === "family"
+        ? { principal: { label: "Parent", wallet: null }, operator: { label: "Teen" }, risk: { label: "Second parent" } }
+        : { principal: { label: "Allocator", wallet: null }, operator: { label: "Strategy" }, risk: { label: "Risk" } },
       policy: { maxActionNotionalMicroUsd: 500000, maxPeriodNotionalMicroUsd: 10000000, maxActionAmount: 5000000, maxPeriodAmount: 10000000 },
       requestTtlSeconds: 1800,
       notifications: { webhookConfigured: false },
@@ -104,4 +107,47 @@ test("operator ALLOW, soft boundary to principal approval, and UNKNOWN shown as 
 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
   expect(overflow).toBe(false);
+});
+
+test("separate Teen and Parent browsers observe a request and a decision without manual reload", async ({ browser }) => {
+  const state = { useCase: "family", requests: [], events: [], nextIntentUnknown: false };
+  const teenContext = await browser.newContext({ ...devices["iPhone 13"] });
+  const parentContext = await browser.newContext({ ...devices["iPhone 13"] });
+  try {
+    const teen = await teenContext.newPage();
+    const parent = await parentContext.newPage();
+    await teen.addInitScript(({ id }) => {
+      localStorage.setItem("cresco-worlds-fair-desk-v1", JSON.stringify({ workspaceId: id, tokens: { operator: "wf_operator_e2e" } }));
+    }, { id: WS_ID });
+    await parent.addInitScript(({ id }) => {
+      localStorage.setItem("cresco-worlds-fair-desk-v1", JSON.stringify({ workspaceId: id, tokens: { principal: "wf_principal_e2e" } }));
+    }, { id: WS_ID });
+    await mockApi(teen, state);
+    await mockApi(parent, state);
+    await teen.goto("/worlds-fair/desk?case=family");
+    await parent.goto("/worlds-fair/desk?case=family");
+
+    await expect(teen.getByRole("tab", { name: /^Teen$/i })).toBeVisible();
+    await expect(teen.getByRole("tab", { name: /^Parent$/i })).toHaveCount(0);
+    await expect(parent.getByRole("tab", { name: /^Parent$/i })).toBeVisible();
+    await expect(parent.getByRole("tab", { name: /^Teen$/i })).toHaveCount(0);
+    await expect(parent.getByText(/Nothing waiting\. Requests appear here/i)).toBeVisible();
+
+    await teen.getByLabel(/amount to invest/i).fill("0.75");
+    await teen.getByRole("button", { name: /submit intent/i }).click();
+    await expect(teen.getByText(/Above the limit/i).first()).toBeVisible();
+
+    await parent.evaluate(() => window.dispatchEvent(new Event("focus")));
+    const approval = parent.getByTestId("request-req-e2e000000001");
+    await expect(approval.getByRole("button", { name: /approve exactly once/i })).toBeEnabled();
+    await approval.getByRole("button", { name: /approve exactly once/i }).click();
+    await expect(parent.getByText(/decided requests/i)).toBeVisible();
+
+    await teen.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await expect(teen.getByTestId("request-req-e2e000000001")).toContainText(/executed once/i);
+    expect(await teen.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1)).toBe(false);
+  } finally {
+    await teenContext.close();
+    await parentContext.close();
+  }
 });
