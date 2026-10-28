@@ -241,6 +241,18 @@ test('Worker v0.4: state persists in the Durable Object across isolates (fresh w
   const pending = await (await workerCall(env, services, 'POST', `${P}/workspaces/${id}/intents`, { inputAmount: 800_000 }, tokens.operator)).json();
   assert.equal(pending.decision, 'PENDING_PRINCIPAL');
 
+  for (const suffix of ['', '/mandate']) {
+    const anonymous = await workerCall(env, services, 'GET', `${P}/workspaces/${id}${suffix}`);
+    assert.equal(anonymous.status, 401);
+    assert.equal(anonymous.headers.get('cache-control'), 'no-store');
+    const privateRead = await workerCall(env, services, 'GET', `${P}/workspaces/${id}${suffix}`, null, tokens.operator);
+    assert.equal(privateRead.status, 200);
+    assert.equal(privateRead.headers.get('cache-control'), 'no-store');
+    const foreignOrigin = await workerCall(env, services, 'GET', `${P}/workspaces/${id}${suffix}`, null, tokens.operator, { Origin: 'https://untrusted.example' });
+    assert.equal(foreignOrigin.headers.get('access-control-allow-origin'), null);
+    assert.equal(foreignOrigin.headers.get('cache-control'), 'no-store');
+  }
+
   const listed = await (await workerCall(env, services, 'GET', `${P}/workspaces/${id}/requests?status=PENDING`, null, tokens.operator)).json();
   assert.equal(listed.requests.length, 1);
   const res = await workerCall(env, services, 'GET', `${P}/workspaces/${id}/history`, null, tokens.operator);
