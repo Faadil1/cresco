@@ -112,8 +112,11 @@ export function configureCrescoBackend(next: Partial<CrescoConfig> | null) {
 }
 
 export function crescoConfig(): CrescoConfig {
+  // Family builds must not silently point to the Colosseum / Stocklana API.
   const productionFallback =
-    process.env.NODE_ENV === "production" ? PUBLIC_HOSTED_CRESCO_API : "";
+    process.env.NODE_ENV === "production" && process.env.NEXT_PUBLIC_CRESCO_FAMILY_ONLY !== "1"
+      ? PUBLIC_HOSTED_CRESCO_API
+      : "";
 
   const url = (
     override?.url ??
