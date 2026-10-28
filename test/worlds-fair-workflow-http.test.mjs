@@ -59,7 +59,7 @@ test('HTTP v0.4: full operator -> principal loop through the shared router', asy
   assert.equal(pending.status, 202);
   const rid = pending.body.request.id;
 
-  const msg = await call(wf, 'GET', `${P}/workspaces/${id}/requests/${rid}/approval-message`, null, null, { issuedAt: '2026-10-12T12:00:00.000Z' });
+  const msg = await call(wf, 'GET', `${P}/workspaces/${id}/requests/${rid}/approval-message`, null, tokens.principal, { issuedAt: '2026-10-12T12:00:00.000Z' });
   assert.match(msg.body.message, /decision:APPROVE/);
   assert.match(msg.body.message, new RegExp(`request:${rid}`));
 
@@ -70,7 +70,7 @@ test('HTTP v0.4: full operator -> principal loop through the shared router', asy
   const approved = await call(wf, 'POST', `${P}/workspaces/${id}/requests/${rid}/decision`, { decision: 'APPROVE' }, tokens.principal);
   assert.equal(approved.body.request.status, 'EXECUTED');
 
-  const history = await call(wf, 'GET', `${P}/workspaces/${id}/history`);
+  const history = await call(wf, 'GET', `${P}/workspaces/${id}/history`, null, tokens.operator);
   assert.equal(history.body.events[0].type, 'EXCEPTION_EXECUTED');
   const mandate = await call(wf, 'GET', `${P}/workspaces/${id}/mandate`);
   assert.equal(mandate.body.consumption.spentAmount, 100_000);
@@ -78,6 +78,30 @@ test('HTTP v0.4: full operator -> principal loop through the shared router', asy
   assert.ok(notes.body.notifications.some((n) => n.type === 'EXCEPTION_EXECUTED'));
   const who = await call(wf, 'GET', `${P}/workspaces/${id}/whoami`, null, tokens.risk);
   assert.equal(who.body.role, 'risk');
+});
+
+test('HTTP v0.4: private workspace reads require a matching bearer role', async () => {
+  const wf = createWorldFairWorkflow({ store: createMemoryWorkflowStore(), chainFactory: () => simpleChain() });
+  const P = '/api/v0.4/worlds-fair';
+  const a = (await call(wf, 'POST', `${P}/workspaces`, {})).body;
+  const b = (await call(wf, 'POST', `${P}/workspaces`, {})).body;
+  await call(wf, 'POST', `${P}/workspaces/${a.id}/bootstrap`, {}, a.tokens.principal);
+  const pending = await call(wf, 'POST', `${P}/workspaces/${a.id}/intents`, { inputAmount: 900_000 }, a.tokens.operator);
+  const rid = pending.body.request.id;
+  for (const path of [`/requests`, `/history`]) {
+    const missing = await call(wf, 'GET', `${P}/workspaces/${a.id}${path}`);
+    assert.equal(missing.status, 401);
+    const foreign = await call(wf, 'GET', `${P}/workspaces/${a.id}${path}`, null, b.tokens.operator);
+    assert.ok([401, 403].includes(foreign.status));
+    const authorized = await call(wf, 'GET', `${P}/workspaces/${a.id}${path}`, null, a.tokens.operator);
+    assert.equal(authorized.status, 200);
+  }
+  const unsigned = await call(wf, 'GET', `${P}/workspaces/${a.id}/requests/${rid}/approval-message`);
+  assert.equal(unsigned.status, 401);
+  const teen = await call(wf, 'GET', `${P}/workspaces/${a.id}/requests/${rid}/approval-message`, null, a.tokens.operator);
+  assert.equal(teen.status, 403);
+  const parent = await call(wf, 'GET', `${P}/workspaces/${a.id}/requests/${rid}/approval-message`, null, a.tokens.principal);
+  assert.equal(parent.status, 200);
 });
 
 test('HTTP v0.4: Idempotency-Key header is honoured and errors carry codes', async () => {
@@ -131,6 +155,8 @@ test('HTTP v0.4: OpenAPI contract documents every role-gated route', async () =>
   assert.ok(intents.responses['202']);
   assert.deepEqual(spec.paths['/api/v0.4/worlds-fair/workspaces/{id}/requests/{requestId}/decision'].post['x-cresco-roles'], ['principal', 'risk']);
   assert.deepEqual(spec.paths['/api/v0.4/worlds-fair/workspaces/{id}/intents/safety'].get['x-cresco-roles'], ['operator', 'principal', 'risk']);
+  assert.deepEqual(spec.paths['/api/v0.4/worlds-fair/workspaces/{id}/requests'].get['x-cresco-roles'], ['operator', 'principal', 'risk']);
+  assert.deepEqual(spec.paths['/api/v0.4/worlds-fair/workspaces/{id}/history'].get['x-cresco-roles'], ['operator', 'principal', 'risk']);
 });
 
 test('write scope only applies to mutating workspace routes', () => {
