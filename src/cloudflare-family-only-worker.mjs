@@ -93,6 +93,12 @@ export async function handleCrescoFamilyOnlyRequest(request, env = {}, services 
   const res = await handleCrescoCloudflareRequest(request, familyEnv, services);
   const headers = new Headers(res.headers);
   headers.set('cache-control', 'no-store');
+  if (request.method === 'OPTIONS') {
+    // Private early-access creation sends a custom header; the new Family API
+    // must advertise it without widening the historic Colosseum CORS policy.
+    headers.set('access-control-allow-headers',
+      'content-type,idempotency-key,authorization,x-cresco-create-token');
+  }
   return new Response(res.body, { status: res.status, headers });
 }
 
