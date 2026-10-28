@@ -58,6 +58,7 @@ function api(overrides: Record<string, (init?: RequestInit) => Response> = {}) {
     if (key === `GET /workspaces/${WS.id}/requests`) return json(200, { requests: [PENDING] });
     if (key === `GET /workspaces/${WS.id}/history`) return json(200, { events: [{ id: "e1", seq: 1, at: "2026-10-12T12:01:00Z", type: "EXCEPTION_REQUESTED", actor: "operator", summary: "Outside standing authority", signatures: [] }] });
     if (key === `GET /workspaces/${WS.id}/mandate`) return json(200, MANDATE);
+    if (key.startsWith(`GET /workspaces/${WS.id}/principal/wallet-message?issuedAt=`)) return json(200, { message: "CRESCO wallet bind" });
     if (key === `GET /workspaces/${WS.id}/intents/safety`) return json(200, {
       blocked: false, code: null, eventId: null, idempotencyKey: null,
       lastResolution: null, retryPolicy: "NORMAL", requiresManualReview: false, note: "Clear",
@@ -108,7 +109,6 @@ describe("World's Fair desk", () => {
     }));
     const calls = api({
       [`GET /workspaces/${WS.id}`]: () => json(200, { ...WS, useCase: "family" }),
-      [`GET /workspaces/${WS.id}/principal/wallet-message?issuedAt=`]: () => json(200, { message: "bind" }),
       [`POST /workspaces/${WS.id}/principal/wallet`]: () => json(200, { wallet: { publicKey: "ParentWallet" } }),
     });
     render(<WorldFairDeskPage />);
