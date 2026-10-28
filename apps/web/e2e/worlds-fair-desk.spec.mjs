@@ -184,3 +184,24 @@ test("separate Teen and Parent browsers observe a request and a decision without
     await parentContext.close();
   }
 });
+
+test("Family creator keeps only Parent authority, importing Teen replaces it", async ({ page }) => {
+  const state = { useCase: "family", requests: [], events: [], nextIntentUnknown: false };
+  await mockApi(page, state);
+  await page.goto("/worlds-fair/desk?case=family");
+  await page.getByRole("button", { name: /create workspace/i }).click();
+  await expect(page.getByText(/keeps only the Parent role/i)).toBeVisible();
+  await expect(page.getByRole("button", { name: /copy link/i })).toHaveCount(3);
+  await page.getByRole("button", { name: /continue to the desk/i }).click();
+  await expect(page.getByRole("tab", { name: /^Parent$/i })).toBeVisible();
+  await expect(page.getByRole("tab", { name: /^Teen$/i })).toHaveCount(0);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("cresco-worlds-fair-desk-v1")).tokens))
+    .toEqual({ principal: "wf_principal_e2e" });
+
+  await page.goto(`/worlds-fair/desk?case=family#ws=${WS_ID}&role=operator&token=wf_operator_e2e`);
+  await expect(page.getByRole("tab", { name: /^Teen$/i })).toBeVisible();
+  await expect(page.getByRole("tab", { name: /^Parent$/i })).toHaveCount(0);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("cresco-worlds-fair-desk-v1")).tokens))
+    .toEqual({ operator: "wf_operator_e2e" });
+  expect(new URL(page.url()).hash).toBe("");
+});
