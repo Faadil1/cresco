@@ -565,27 +565,54 @@ export default function WorldFairDeskPage() {
   const [landingCase, setLandingCase] = useState<UseCase>("family");
 
   useEffect(() => {
-    void Promise.resolve().then(() => {
-    const requested = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("case") : null;
-    if (requested === "family" || requested === "capital") setLandingCase(requested);
-    const stored = loadKeychain();
-    const shared = typeof window !== "undefined" ? parseShareFragment(window.location.hash) : null;
-    if (shared) {
+    let cancelled = false;
+    const importSharedRole = () => {
+      if (cancelled) return false;
+      const shared = parseShareFragment(window.location.hash);
+      if (!shared) return false;
+      // A share link may arrive on an already-mounted desk via hashchange.
+      // Replacing (never merging) its bearer must also discard stale view data.
       const next: DeskKeychain = {
         workspaceId: shared.workspaceId,
-        // Never combine imported role capabilities with a pre-existing browser role.
         tokens: { [shared.role]: shared.token },
       };
       saveKeychain(next);
+      setWs(null);
+      setMandate(null);
+      setRequests([]);
+      setEvents([]);
+      setIntentSafety(null);
+      setLocalIntentHold(null);
+      setRecoveryNotice(null);
+      setIntentResult(null);
+      setPendingCount(0);
+      setLoadError(null);
+      setActionError(null);
+      setActivityUncertain(true);
       setKeychain(next);
       setTab(shared.role);
+      // Do not leak role bearer into query parameters or browser history.
       window.history.replaceState(null, "", window.location.pathname + window.location.search);
-    } else {
+      return true;
+    };
+    // Initial hydration and subsequent same-document link navigation both
+    // require a role import; hash-only navigation does not remount Next.js.
+    void Promise.resolve().then(() => {
+      if (cancelled) return;
+      const requested = new URLSearchParams(window.location.search).get("case");
+      if (requested === "family" || requested === "capital") setLandingCase(requested);
+      if (importSharedRole()) return;
+      const stored = loadKeychain();
       setKeychain(stored);
       const first = (["operator", "principal", "risk"] as WorkflowRole[]).find((r) => stored.tokens[r]);
       if (first) setTab(first);
-    }
     });
+    const onHashChange = () => { importSharedRole(); };
+    window.addEventListener("hashchange", onHashChange);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("hashchange", onHashChange);
+    };
   }, []);
 
   const id = keychain.workspaceId;
