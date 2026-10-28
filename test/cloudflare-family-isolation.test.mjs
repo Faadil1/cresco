@@ -80,7 +80,7 @@ test('Family-only Worker issues only Family roles and exposes isolated contract,
     const who=await call('GET',`/workspaces/${family.id}/whoami`,undefined,
       {authorization:`Bearer ${family.tokens[role]}`},cfg,services);
     assert.equal(who.status,200);
-    assert.equal((await who.json()).body?.role,undefined); // direct HTTP body is role result, not a wrapper
+    assert.equal((await who.json()).role,role);
   }
   const locked=await call('POST',`/workspaces/${family.id}/bootstrap`,{},
     {authorization:`Bearer ${family.tokens.principal}`},cfg,services);
