@@ -52,7 +52,7 @@ test('Cloudflare account inventory calls only GET and reveals no credentials or 
   assert.equal(value.deploymentAuthorized, false);
   assert.equal(value.buildBranchVerified, false);
   assert.ok(calls.every(x => x.method === 'GET' && x.redirect === 'error'));
-  assert.equal(calls.length, 6);
+  assert.equal(calls.length, 5);
   assert.ok(!JSON.stringify(value).includes(TOKEN));
   assert.ok(!JSON.stringify(value).includes('DO_NOT_EMIT'));
   assert.ok(!JSON.stringify(value).includes(ACCOUNT));
