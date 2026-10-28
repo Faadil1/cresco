@@ -477,7 +477,9 @@ function JourneySteps({ current }: { current: number }) {
   );
 }
 
-function TokenHandoff({ ws, onDone }: { ws: CreatedWorkspace; onDone: () => void }) {
+type RoleHandoff = Pick<CreatedWorkspace, "id" | "useCase" | "tokens" | "tokenNotice" | "recoveryEnrollmentCode">;
+
+function TokenHandoff({ ws, onDone }: { ws: RoleHandoff; onDone: () => void }) {
   const [copied, setCopied] = useState<string | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
   const origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -512,7 +514,7 @@ function TokenHandoff({ ws, onDone }: { ws: CreatedWorkspace; onDone: () => void
           return (
             <div key={role} className="flex flex-wrap items-center justify-between gap-2 rounded-[16px] border border-line p-3">
               <div>
-                <p className="text-[13px] font-semibold text-navy-strong">{USE_CASES[caseOfWorkspace(ws)].roles[role].title}</p>
+                <p className="text-[13px] font-semibold text-navy-strong">{USE_CASES[ws.useCase === "family" ? "family" : "capital"].roles[role].title}</p>
                 <p className="font-mono text-[11px] text-ink-3">{short(link, 38, 10)}</p>
               </div>
               <button
@@ -556,7 +558,7 @@ async function loadDesk(id: string, roleToken: string) {
 
 export default function WorldFairDeskPage() {
   const [keychain, setKeychain] = useState<DeskKeychain>({ workspaceId: null, tokens: {} });
-  const [handoff, setHandoff] = useState<CreatedWorkspace | null>(null);
+  const [handoff, setHandoff] = useState<RoleHandoff | null>(null);
   const [ws, setWs] = useState<Workspace | null>(null);
   const [mandate, setMandate] = useState<MandateView | null>(null);
   const [requests, setRequests] = useState<ExceptionRequest[]>([]);
@@ -935,9 +937,14 @@ export default function WorldFairDeskPage() {
       saveKeychain({ workspaceId: target, tokens: { principal: result.tokens.principal } });
       setKeychain({ workspaceId: target, tokens: { principal: result.tokens.principal } });
       setTab("principal");
-      const workspace = await workflowApi.getWorkspace(target, result.tokens.principal);
+      // The API credential rekey has already COMMITTED. Do not gate the
+      // one-time link handoff on a second, fallible workspace metadata read:
+      // losing that GET would otherwise discard both Teen and second-parent
+      // links after the old role tokens had been revoked.
       setHandoff({
-        ...workspace, tokens: result.tokens,
+        id: target,
+        useCase: "family",
+        tokens: result.tokens,
         tokenNotice: "Parent wallet recovery verified. ALL previous Family links are invalid. Distribute these new links securely.",
       });
       setRecoveryWorkspaceId("");
