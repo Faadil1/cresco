@@ -94,6 +94,7 @@ export function workflowOpenApi() {
           }
         })
       },
+      [`${WORKFLOW_PREFIX}/workspaces/{id}/intents/safety`]: { get: op('Check if an unverified previous intent blocks new trades', ['operator', 'principal', 'risk']) },
       [`${WORKFLOW_PREFIX}/workspaces/{id}/requests`]: { get: op('List exception requests (?status=PENDING)', []) },
       [`${WORKFLOW_PREFIX}/workspaces/{id}/requests/{requestId}/decision`]: {
         post: op('Approve (exact one-use grant, executed once) or refuse', ['principal', 'risk'], {
@@ -137,6 +138,7 @@ export async function routeWorldFairWorkflow({ method, path, body, headers, quer
     if (method === 'GET' && sub === '') return ok(await workflow.getWorkspace(id));
     if (method === 'GET' && sub === '/whoami') return ok(await workflow.whoami(id, token));
     if (method === 'POST' && sub === '/bootstrap') return ok(await workflow.bootstrap(id, token));
+    if (method === 'GET' && sub === '/intents/safety') return ok(await workflow.intentSafety(id, token));
     if (method === 'POST' && sub === '/intents') {
       const idem = header(headers, 'idempotency-key');
       return ok(await workflow.submitIntent(id, token, { ...(body ?? {}), ...(idem && !body?.idempotencyKey ? { idempotencyKey: idem } : {}) }));

@@ -99,6 +99,28 @@ test('HTTP v0.4: Idempotency-Key header is honoured and errors carry codes', asy
   assert.equal(missing.status, 404);
 });
 
+test('HTTP v0.4: an unresolved intent holds the server and safety endpoint is role protected', async () => {
+  const chain = simpleChain();
+  const wf = createWorldFairWorkflow({ store: createMemoryWorkflowStore(), chainFactory: () => chain });
+  const P = '/api/v0.4/worlds-fair';
+  const { id, tokens } = (await call(wf, 'POST', `${P}/workspaces`, {})).body;
+  await call(wf, 'POST', `${P}/workspaces/${id}/bootstrap`, null, tokens.principal);
+  chain.executeIntent = async () => { throw new Error('network failure after possible execution'); };
+  const first = await call(wf, 'POST', `${P}/workspaces/${id}/intents`, { inputAmount: 50_000, idempotencyKey: 'http-unknown-001' }, tokens.operator);
+  assert.equal(first.status, 503);
+  assert.equal(first.body.decision, 'UNKNOWN');
+  const unauthenticated = await call(wf, 'GET', `${P}/workspaces/${id}/intents/safety`);
+  assert.equal(unauthenticated.status, 401);
+  const safety = await call(wf, 'GET', `${P}/workspaces/${id}/intents/safety`, null, tokens.operator);
+  assert.equal(safety.body.blocked, true);
+  const blocked = await call(wf, 'POST', `${P}/workspaces/${id}/intents`, { inputAmount: 50_000, idempotencyKey: 'http-unknown-002' }, tokens.operator);
+  assert.equal(blocked.status, 409);
+  assert.equal(blocked.body.error, 'INTENT_RECONCILIATION_REQUIRED');
+  await call(wf, 'POST', `${P}/workspaces/${id}/reconcile`, {}, tokens.principal);
+  const after = await call(wf, 'GET', `${P}/workspaces/${id}/intents/safety`, null, tokens.risk);
+  assert.equal(after.body.blocked, true);
+});
+
 test('HTTP v0.4: OpenAPI contract documents every role-gated route', async () => {
   const res = await routeCrescoHttp({ method: 'GET', path: '/api/v0.4/worlds-fair/openapi', services: {} });
   assert.equal(res.status, 200);
@@ -108,6 +130,7 @@ test('HTTP v0.4: OpenAPI contract documents every role-gated route', async () =>
   assert.deepEqual(intents['x-cresco-roles'], ['operator']);
   assert.ok(intents.responses['202']);
   assert.deepEqual(spec.paths['/api/v0.4/worlds-fair/workspaces/{id}/requests/{requestId}/decision'].post['x-cresco-roles'], ['principal', 'risk']);
+  assert.deepEqual(spec.paths['/api/v0.4/worlds-fair/workspaces/{id}/intents/safety'].get['x-cresco-roles'], ['operator', 'principal', 'risk']);
 });
 
 test('write scope only applies to mutating workspace routes', () => {

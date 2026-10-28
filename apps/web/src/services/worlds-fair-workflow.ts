@@ -109,7 +109,7 @@ export type IntentResult =
   | { decision: "ALLOW"; boundary: "STANDING"; principalApprovalRequired: false; receipt: { eventId: string; signature: string; explorer: string; quote: Quote; effectObserved: boolean }; idempotentReplay?: boolean }
   | { decision: "PENDING_PRINCIPAL"; boundary: "SOFT"; policyDiff: ExceptionRequest["policyDiff"]; request: ExceptionRequest; refusal: { code: string; evidence: string }; idempotentReplay?: boolean }
   | { decision: "REFUSE"; boundary: string; code: string; exceptionAvailable: false; idempotentReplay?: boolean }
-  | { decision: "UNKNOWN"; retryPolicy: string; message: string; idempotentReplay?: boolean };
+  | { decision: "UNKNOWN"; retryPolicy: string; message: string; eventId?: string; idempotentReplay?: boolean };
 
 export type WorkflowEvent = {
   id: string;
@@ -236,6 +236,8 @@ export const workflowApi = {
     call<CreatedWorkspace>("POST", "/workspaces", { body: input }).then((r) => r.body),
   getWorkspace: (id: string) => call<Workspace>("GET", `/workspaces/${id}`).then((r) => r.body),
   whoami: (id: string, token: string) => call<{ workspaceId: string; role: WorkflowRole }>("GET", `/workspaces/${id}/whoami`, { token }).then((r) => r.body),
+  intentSafety: (id: string, token: string) =>
+    call<import("./intent-recovery").IntentSafetyView>("GET", `/workspaces/${id}/intents/safety`, { token }).then((r) => r.body),
   bootstrap: (id: string, token: string) => call<Workspace>("POST", `/workspaces/${id}/bootstrap`, { token, body: {} }).then((r) => r.body),
   submitIntent: (id: string, token: string, input: { inputAmount: number; maxSlippageBps: number; clientReference?: string }, idempotencyKey: string) =>
     call<IntentResult>("POST", `/workspaces/${id}/intents`, { token, body: { action: "SWAP_EXACT_IN", ...input }, idempotencyKey }),

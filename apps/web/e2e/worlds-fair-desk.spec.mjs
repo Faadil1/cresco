@@ -32,6 +32,23 @@ function mockApi(page, state) {
     };
     if (method === "POST" && path === "/workspaces") return json(201, { ...ws, tokens: { operator: "wf_operator_e2e", principal: "wf_principal_e2e", risk: "wf_risk_e2e" }, tokenNotice: "shown once" });
     if (method === "GET" && path === `/workspaces/${WS_ID}`) return json(200, ws);
+    if (method === "GET" && path === `/workspaces/${WS_ID}/intents/safety`) {
+      return json(200, {
+        blocked: Boolean(state.intentHeld),
+        code: state.intentHeld ? "INTENT_RECONCILIATION_REQUIRED" : null,
+        eventId: state.intentHeld ? "evt-e2e-unknown" : null,
+        idempotencyKey: state.lastIntentKey ?? null,
+        lastResolution: state.intentHeld ? "NO_SIGNATURE_RECORDED" : null,
+        retryPolicy: state.intentHeld ? "NO_NEW_INTENT_UNTIL_VERIFIED_SIGNATURE" : "NORMAL",
+        requiresManualReview: Boolean(state.intentHeld),
+        note: state.intentHeld ? "Unverified trade outcome" : "No unresolved trades",
+      });
+    }
+    if (method === "POST" && path === `/workspaces/${WS_ID}/reconcile`) {
+      return json(200, { reconciled: state.intentHeld
+        ? [{ unknownEventId: "evt-e2e-unknown", resolution: "NO_SIGNATURE_RECORDED" }]
+        : [] });
+    }
     if (method === "GET" && path === `/workspaces/${WS_ID}/requests`) return json(200, { requests: state.requests });
     if (method === "GET" && path === `/workspaces/${WS_ID}/history`) return json(200, { events: state.events });
     if (method === "GET" && path === `/workspaces/${WS_ID}/notifications`) return json(200, { role: "principal", pendingDecisions: state.requests.filter((r) => r.status === "PENDING").length, pending: [], notifications: [], cursor: 0 });
@@ -45,10 +62,20 @@ function mockApi(page, state) {
       });
     }
     if (method === "POST" && path === `/workspaces/${WS_ID}/intents`) {
+      state.intentSubmits = (state.intentSubmits ?? 0) + 1;
+      state.lastIntentKey = req.headers()["idempotency-key"];
+      if (state.intentHeld) return json(409, {
+        error: "INTENT_RECONCILIATION_REQUIRED", message: "Prior trade is unverified",
+      });
       const body = req.postDataJSON();
       if (state.nextIntentUnknown) {
         state.nextIntentUnknown = false;
-        return json(503, { decision: "UNKNOWN", retryPolicy: "REQUIRES_STATE_RECONCILIATION", message: "The program outcome could not be confirmed." });
+        state.intentHeld = true;
+        return json(503, {
+          decision: "UNKNOWN", eventId: "evt-e2e-unknown",
+          retryPolicy: "REQUIRES_STATE_RECONCILIATION",
+          message: "The program outcome could not be confirmed.",
+        });
       }
       if (body.inputAmount > 500000) {
         const request = {
@@ -74,7 +101,7 @@ function mockApi(page, state) {
 }
 
 test("operator ALLOW, soft boundary to principal approval, and UNKNOWN shown as unconfirmed", async ({ page }) => {
-  const state = { requests: [], events: [], nextIntentUnknown: false };
+  const state = { requests: [], events: [], nextIntentUnknown: false, intentHeld: false, intentSubmits: 0 };
   await mockApi(page, state);
   await page.goto("/worlds-fair/desk", { waitUntil: "networkidle" });
 
@@ -104,6 +131,12 @@ test("operator ALLOW, soft boundary to principal approval, and UNKNOWN shown as 
   await page.getByRole("tab", { name: /operator/i }).click();
   await page.getByRole("button", { name: /submit intent/i }).click();
   await expect(page.getByRole("alert").filter({ hasText: "Outcome UNKNOWN" })).toContainText("does not show success");
+  await expect(page.getByRole("button", { name: /submit intent/i })).toBeDisabled();
+  expect(state.intentSubmits).toBe(3);
+  await page.getByRole("button", { name: /reconcile and check mandate/i }).click();
+  await expect(page.getByText(/Still blocked: there is no verified final signature/i)).toBeVisible();
+  await expect(page.getByRole("button", { name: /submit intent/i })).toBeDisabled();
+  expect(state.intentSubmits).toBe(3);
 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
   expect(overflow).toBe(false);

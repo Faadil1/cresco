@@ -49,6 +49,14 @@ import {
   type UseCase,
   type Workspace,
 } from "@/services/worlds-fair-workflow";
+import {
+  clearIntentAttempt,
+  loadIntentAttempt,
+  mayReleaseIntentAttempt,
+  saveIntentAttempt,
+  type IntentAttemptHold,
+  type IntentSafetyView,
+} from "@/services/intent-recovery";
 
 type Tab = WorkflowRole | "history" | "api";
 
@@ -538,6 +546,10 @@ export default function WorldFairDeskPage() {
   const [pendingCount, setPendingCount] = useState(0);
   const [activityUncertain, setActivityUncertain] = useState(false);
   const [intentResult, setIntentResult] = useState<IntentResult | null>(null);
+  const [intentSafety, setIntentSafety] = useState<IntentSafetyView | null>(null);
+  const [localIntentHold, setLocalIntentHold] = useState<IntentAttemptHold | null>(null);
+  const [intentSafetyError, setIntentSafetyError] = useState<string | null>(null);
+  const [recoveryNotice, setRecoveryNotice] = useState<string | null>(null);
   const [amount, setAmount] = useState("0.20");
   const [slippage, setSlippage] = useState("100");
   const [note, setNote] = useState("");
@@ -652,6 +664,28 @@ export default function WorldFairDeskPage() {
     };
   }, [id, ws?.id, tab, actionBusy, version, keychain]);
 
+  // Capital actions cannot be sent before the durable recovery state has been
+  // read from the workflow API. The local hold also survives reloads and
+  // protects lost HTTP responses without an explicit UNKNOWN body.
+  useEffect(() => {
+    if (!id || !keychain.tokens.operator) {
+      return;
+    }
+    let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (cancelled) return;
+      setIntentSafety(null);
+      setIntentSafetyError(null);
+      setLocalIntentHold(loadIntentAttempt(id));
+      void workflowApi.intentSafety(id, keychain.tokens.operator!).then((status) => {
+        if (!cancelled) setIntentSafety(status);
+      }).catch((error) => {
+        if (!cancelled) setIntentSafetyError(errorText(error));
+      });
+    });
+    return () => { cancelled = true; };
+  }, [id, keychain.tokens.operator, version]);
+
   // CAP-11: approvers are notified of pending exception requests while the desk is open.
   useEffect(() => {
     const approverToken = keychain.tokens.principal ?? keychain.tokens.risk;
@@ -697,11 +731,80 @@ export default function WorldFairDeskPage() {
   async function submitIntent(e: React.FormEvent) {
     e.preventDefault();
     const t = token("operator");
-    if (!id || !t || activityUncertain) return;
+    if (!id || !t || activityUncertain || actionBusy || !intentSafety || intentSafety.blocked || localIntentHold || intentSafetyError) return;
     await run("intent", async () => {
-      const res = await workflowApi.submitIntent(id, t, { inputAmount: toBase(amount), maxSlippageBps: Number(slippage) }, idemRef.current);
-      setIntentResult(res.body);
-      idemRef.current = newIdempotencyKey();
+      const inputAmount = toBase(amount);
+      const maxSlippageBps = Number(slippage);
+      if (!Number.isSafeInteger(inputAmount) || inputAmount <= 0 ||
+          !Number.isSafeInteger(maxSlippageBps) || maxSlippageBps < 1 || maxSlippageBps > 300) {
+        throw new Error("Enter a positive amount and slippage between 1 and 300 bps.");
+      }
+      const hold: IntentAttemptHold = {
+        workspaceId: id,
+        idempotencyKey: idemRef.current,
+        inputAmount,
+        maxSlippageBps,
+        eventId: null,
+        createdAt: new Date().toISOString(),
+      };
+      // Must persist before starting any write; abort when storage is unavailable.
+      saveIntentAttempt(hold);
+      setLocalIntentHold(hold);
+      setRecoveryNotice(null);
+      try {
+        const res = await workflowApi.submitIntent(id, t, { inputAmount, maxSlippageBps }, hold.idempotencyKey);
+        setIntentResult(res.body);
+        if (res.body.decision === "UNKNOWN") {
+          const recorded = { ...hold, eventId: ("eventId" in res.body ? res.body.eventId : null) ?? null };
+          saveIntentAttempt(recorded);
+          setLocalIntentHold(recorded);
+          setRecoveryNotice("The transaction may have executed. Reconcile its signature and read the latest mandate before a new action.");
+        } else {
+          clearIntentAttempt(id);
+          setLocalIntentHold(null);
+          idemRef.current = newIdempotencyKey();
+        }
+      } catch (error) {
+        // Validation/auth/BUSY refusals from the API are definitive non-capital
+        // outcomes; transport errors, 5xx and unknown-intent holds are not.
+        if (error instanceof WorkflowApiError &&
+            error.status >= 400 && error.status < 500 &&
+            error.code !== "INTENT_RECONCILIATION_REQUIRED") {
+          clearIntentAttempt(id);
+          setLocalIntentHold(null);
+        } else {
+          setRecoveryNotice("The result of this attempt is unconfirmed. Do not submit another trade until reconciliation.");
+        }
+        throw error;
+      }
+    });
+  }
+
+  async function reconcileIntent() {
+    const t = token("operator");
+    if (!id || !t || actionBusy) return;
+    await run("intent-reconcile", async () => {
+      await workflowApi.reconcile(id, t);
+      // Both a verified signature and a fresh mandate read are required.
+      const [safety, latestMandate] = await Promise.all([
+        workflowApi.intentSafety(id, t),
+        workflowApi.mandate(id),
+      ]);
+      setIntentSafety(safety);
+      setMandate(latestMandate);
+      setIntentSafetyError(null);
+      const held = loadIntentAttempt(id);
+      if (held && mayReleaseIntentAttempt(held, safety)) {
+        clearIntentAttempt(id);
+        setLocalIntentHold(null);
+        setRecoveryNotice("The previous transaction signature was verified and the mandate was refreshed. You may submit a new action.");
+        idemRef.current = newIdempotencyKey();
+      } else if (safety.blocked || held) {
+        setLocalIntentHold(held);
+        setRecoveryNotice("Still blocked: there is no verified final signature for the prior intent. Do not retry with a new key. An operator must inspect the mandate and transaction evidence.");
+      } else {
+        setRecoveryNotice("The latest mandate has been refreshed. No unresolved trade is blocking this workspace.");
+      }
     });
   }
 
@@ -760,7 +863,7 @@ export default function WorldFairDeskPage() {
             <Link href="/" className="rounded-full border border-line bg-surface/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft hover:border-green/35">CRESCO home</Link>
             <Link href="/worlds-fair" className="rounded-full border border-line bg-surface/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft hover:border-green/35">Technical proof</Link>
             {id ? (
-              <button type="button" onClick={() => { saveKeychain({ workspaceId: null, tokens: {} }); setKeychain({ workspaceId: null, tokens: {} }); setWs(null); setMandate(null); setRequests([]); setEvents([]); }} className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft">
+              <button type="button" onClick={() => { saveKeychain({ workspaceId: null, tokens: {} }); setKeychain({ workspaceId: null, tokens: {} }); setWs(null); setMandate(null); setRequests([]); setEvents([]); setIntentSafety(null); setLocalIntentHold(null); setRecoveryNotice(null); setIntentResult(null); }} className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft">
                 Leave workspace
               </button>
             ) : null}
@@ -940,11 +1043,27 @@ export default function WorldFairDeskPage() {
                           <input className="mt-1 w-full rounded-[14px] border border-line px-3 py-2.5 text-[15px] font-bold text-navy-strong" inputMode="numeric" value={slippage} onChange={(e) => setSlippage(e.target.value)} />
                         </label>
                       </details>
-                      <button type="submit" disabled={actionBusy === "intent" || activityUncertain || notReady || mandateStatus === "REVOKED"} className="flex min-h-13 items-center justify-center gap-2 rounded-[16px] bg-blue px-5 py-3.5 text-[15px] font-semibold text-white shadow-button transition-colors hover:bg-blue-strong disabled:opacity-60">
+                      <button type="submit" disabled={Boolean(actionBusy) || activityUncertain || notReady || mandateStatus === "REVOKED" || !intentSafety || intentSafety.blocked || Boolean(localIntentHold) || Boolean(intentSafetyError)} className="flex min-h-13 items-center justify-center gap-2 rounded-[16px] bg-blue px-5 py-3.5 text-[15px] font-semibold text-white shadow-button transition-colors hover:bg-blue-strong disabled:opacity-60">
                         {actionBusy === "intent" ? <><LoaderCircle className="size-4 animate-spin" /> Executing on Devnet…</> : <>Submit intent <ArrowRight className="size-4" /></>}
                       </button>
                       <p className="text-[11px] font-bold text-ink-3">Each submit carries an idempotency key: a network retry cannot execute twice.</p>
                     </form>
+                    {(intentSafety?.blocked || localIntentHold || intentSafetyError || !intentSafety || recoveryNotice) ? (
+                      <div aria-label="Trade recovery status" role="status" className="mt-4 rounded-[18px] border border-yellow/50 bg-yellow-soft p-4 text-[13px] font-semibold text-navy">
+                        <p className="font-bold">{intentSafety?.blocked || localIntentHold || intentSafetyError
+                          ? "Trade submissions held until the previous outcome is verified"
+                          : !intentSafety ? "Checking the current transaction state…" : "Recovery check complete"}</p>
+                        <p className="mt-1">{recoveryNotice || intentSafetyError || intentSafety?.note || "Checking the workflow server before allowing a new capital action."}</p>
+                        {intentSafety?.blocked || localIntentHold ? (
+                          <p className="mt-1 text-[12px]">A new idempotency key does not override a pending or unsigned transaction. No new trade can be safely inferred from an UNKNOWN outcome.</p>
+                        ) : null}
+                        <button type="button" onClick={() => void reconcileIntent()} disabled={Boolean(actionBusy) || !intentSafety && !localIntentHold}
+                          className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-[12px] border border-line bg-white px-4 text-[13px] font-bold text-navy disabled:opacity-50">
+                          {actionBusy === "intent-reconcile" ? <LoaderCircle className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
+                          Reconcile and check mandate
+                        </button>
+                      </div>
+                    ) : null}
                     {intentResult ? <IntentOutcome result={intentResult} requests={requests} principal={names.principal} /> : null}
                   </Card>
                   <Card className="md:p-7">
