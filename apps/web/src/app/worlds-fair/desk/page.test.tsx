@@ -140,6 +140,65 @@ describe("World's Fair desk", () => {
     expect(alert).toHaveTextContent(/does not show success/);
   });
 
+  it("refreshes the Parent request inbox when the browser regains focus", async () => {
+    window.localStorage.setItem("cresco-worlds-fair-desk-v1", JSON.stringify({
+      workspaceId: WS.id, tokens: { principal: "wf_principal_b" },
+    }));
+    let currentRequests: typeof PENDING[] = [];
+    api({
+      [`GET /workspaces/${WS.id}/requests`]: () => json(200, { requests: currentRequests }),
+    });
+    render(<WorldFairDeskPage />);
+    expect(await screen.findByText(/Nothing waiting\. Requests appear here/i)).toBeInTheDocument();
+
+    currentRequests = [PENDING];
+    window.dispatchEvent(new Event("focus"));
+    expect(await screen.findByTestId(`request-${PENDING.id}`)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /approve exactly once/i })).toBeEnabled();
+  });
+
+  it("shows a changed decision to the Teen after a focus refresh", async () => {
+    window.localStorage.setItem("cresco-worlds-fair-desk-v1", JSON.stringify({
+      workspaceId: WS.id, tokens: { operator: "wf_operator_a" },
+    }));
+    let currentRequests = [{ ...PENDING }];
+    api({
+      [`GET /workspaces/${WS.id}/requests`]: () => json(200, { requests: currentRequests }),
+    });
+    render(<WorldFairDeskPage />);
+    expect(await screen.findByText(/Waiting for the principal/i)).toBeInTheDocument();
+
+    currentRequests = [{ ...PENDING, status: "REFUSED_BY_PRINCIPAL" }];
+    window.dispatchEvent(new Event("focus"));
+    expect(await screen.findByText(/the principal said no/i)).toBeInTheDocument();
+  });
+
+  it("blocks stale Parent decisions when request updates fail and restores them after recovery", async () => {
+    window.localStorage.setItem("cresco-worlds-fair-desk-v1", JSON.stringify({
+      workspaceId: WS.id, tokens: { principal: "wf_principal_b" },
+    }));
+    let offline = false;
+    const calls = api({
+      [`GET /workspaces/${WS.id}/requests`]: () =>
+        offline ? json(503, { error: "NETWORK_UNAVAILABLE" }) : json(200, { requests: [PENDING] }),
+    });
+    render(<WorldFairDeskPage />);
+    const approval = await screen.findByRole("button", { name: /approve exactly once/i });
+    expect(approval).toBeEnabled();
+
+    offline = true;
+    window.dispatchEvent(new Event("focus"));
+    expect(await screen.findByRole("alert", { name: "" })).toHaveTextContent(/Request updates unavailable/i);
+    expect(approval).toBeDisabled();
+    await userEvent.click(approval);
+    expect(calls.some((c) => c.path.endsWith("/decision"))).toBe(false);
+
+    offline = false;
+    window.dispatchEvent(new Event("focus"));
+    await waitFor(() => expect(approval).toBeEnabled());
+    expect(screen.queryByText(/Request updates unavailable/i)).not.toBeInTheDocument();
+  });
+
   it("imports a role from a share link fragment and scrubs the token from the URL", async () => {
     api();
     window.history.replaceState(null, "", `/worlds-fair/desk#ws=${WS.id}&role=risk&token=wf_risk_c`);
