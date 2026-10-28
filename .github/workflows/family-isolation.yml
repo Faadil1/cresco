@@ -7,6 +7,10 @@ on:
       - "src/worlds-fair-workflow.mjs"
       - "src/worlds-fair-workflow-http.mjs"
       - "wrangler.family-api.jsonc"
+      - "scripts/family-release-boundary.mjs"
+      - "scripts/family-standalone-readonly-probe.mjs"
+      - "test/family-release-boundary.test.mjs"
+      - "test/family-standalone-readonly-probe.test.mjs"
       - "test/cloudflare-family-isolation.test.mjs"
       - ".github/workflows/family-isolation.yml"
 jobs:
@@ -31,9 +35,9 @@ jobs:
       - run: npm run build:family
         env:
           NEXT_PUBLIC_CRESCO_API_URL: https://cresco-family-api.faadil-casecraft.workers.dev
-      - name: Confirm no historic Worker targets
+      - name: Verify historic Worker freeze and exact Family Web artifact
         run: |
-          node -e 'const f=require("./dist/server/wrangler.json"); if(f.name!=="cresco-family-web") process.exit(1);'
+          node ../../scripts/family-release-boundary.mjs --built-web
           echo 'Family artifact only. No Wrangler deploy or Cloudflare write.'
 
   family-api-dry-run:
@@ -48,6 +52,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Verify release boundary and read-only probe regressions
+        run: |
+          node scripts/family-release-boundary.mjs
+          node --test test/family-release-boundary.test.mjs test/family-standalone-readonly-probe.test.mjs
       - run: npm install --no-audit --no-fund
       - name: Verify isolated API target before bundling
         run: |
