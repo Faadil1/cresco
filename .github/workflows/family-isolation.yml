@@ -1,0 +1,37 @@
+name: family-isolation-build
+on:
+  pull_request:
+    paths:
+      - "apps/web/**"
+      - "src/cloudflare-family-only-worker.mjs"
+      - "src/worlds-fair-workflow.mjs"
+      - "src/worlds-fair-workflow-http.mjs"
+      - "wrangler.family-api.jsonc"
+      - "test/cloudflare-family-isolation.test.mjs"
+      - ".github/workflows/family-isolation.yml"
+jobs:
+  family-build:
+    name: Family-only Cloudflare artifact (NO DEPLOY)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: npm install --no-audit --no-fund
+      - run: npm run build:family
+        env:
+          NEXT_PUBLIC_CRESCO_API_URL: https://cresco-family-api.faadil-casecraft.workers.dev
+      - name: Confirm no historic Worker targets
+        run: |
+          node -e 'const f=require("./dist/server/wrangler.json"); if(f.name!=="cresco-family-web") process.exit(1);'
+          echo 'Family artifact only. No Wrangler deploy or Cloudflare write.'
