@@ -287,7 +287,7 @@ export function loadKeychain(): DeskKeychain {
  * Never surface multiple roles in the same Family desk. The historical capital
  * lab may still retain multiple tokens for its explicitly shared test scenario.
  */
-export function singleRoleFamilyKeychain(saved: DeskKeychain, useCase: UseCase): DeskKeychain {
+export function singleRoleFamilyKeychain(saved: DeskKeychain, useCase: UseCase | undefined): DeskKeychain {
   if (useCase !== "family") return saved;
   const roles: WorkflowRole[] = ["principal", "risk", "operator"];
   const available = roles.filter((role) => Boolean(saved.tokens[role]));
