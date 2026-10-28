@@ -37,7 +37,8 @@ describe("Family workspace role bridge", () => {
   it("never presents a delegated-capital workspace as a Family workspace", async () => {
     mocks.getWorkspace.mockResolvedValue({ ...workspace, useCase: "capital" });
     expect(await inspectFamilyWorkspace("parent")).toEqual({ kind: "other-context" });
-    expect(mocks.whoami).not.toHaveBeenCalled();
+    expect(mocks.whoami).toHaveBeenCalledWith(id, "wf_principal_secret");
+    expect(mocks.getWorkspace).toHaveBeenCalledWith(id, "wf_principal_secret");
   });
 
   it("does not assume that a missing useCase implies Family", async () => {
@@ -49,6 +50,7 @@ describe("Family workspace role bridge", () => {
     const result = await inspectFamilyWorkspace("parent");
     expect(result).toEqual({ kind: "ready", workspaceName: "Home family", role: "principal", mandateReady: true, activity: { kind: "loaded", pendingDecisions: 2, latestEventType: "EXCEPTION_REQUESTED" } });
     expect(mocks.whoami).toHaveBeenCalledWith(id, "wf_principal_secret");
+    expect(mocks.getWorkspace).toHaveBeenCalledWith(id, "wf_principal_secret");
     expect(mocks.notifications).toHaveBeenCalledWith(id, "wf_principal_secret", 0);
     expect(JSON.stringify(result)).not.toContain("wf_principal_secret");
   });
@@ -73,6 +75,7 @@ describe("Family workspace role bridge", () => {
     mocks.loadKeychain.mockReturnValue({ workspaceId: id, tokens: { operator: "wf_operator_secret", principal: "wf_principal_secret" } });
     expect(await inspectFamilyWorkspace("teen")).toEqual({ kind: "shared-device-risk" });
     expect(mocks.whoami).not.toHaveBeenCalled();
+    expect(mocks.getWorkspace).not.toHaveBeenCalled();
   });
 
   it("requires an appropriate private role link, never borrowing another role", async () => {
