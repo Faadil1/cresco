@@ -60,6 +60,8 @@ import {
 } from "@/services/intent-recovery";
 
 type Tab = WorkflowRole | "history" | "api";
+const FAMILY_ONLY = process.env.NEXT_PUBLIC_CRESCO_FAMILY_ONLY === "1";
+const FAMILY_SETUP_ONLY = process.env.NEXT_PUBLIC_CRESCO_FAMILY_SETUP_ONLY === "1";
 
 // One on-chain mechanism, two presentations. Only words change: the CRESCO
 // program, the mandate and the exception flow are identical.
@@ -386,6 +388,7 @@ function CreateWorkspace({ useCase, onCreated }: { useCase: UseCase; onCreated: 
   }
   const [webhookUrl, setWebhookUrl] = useState("");
   const [walletGuardian, setWalletGuardian] = useState(false);
+  const [invitation, setInvitation] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -403,7 +406,8 @@ function CreateWorkspace({ useCase, onCreated }: { useCase: UseCase; onCreated: 
         riskLabel,
         policy: { maxActionNotionalMicroUsd: toBase(limit) },
         ...(webhookUrl ? { webhookUrl } : {}),
-      });
+      }, FAMILY_ONLY ? invitation.trim() : undefined);
+      setInvitation("");
       onCreated(ws);
     } catch (err) {
       setError(errorText(err));
@@ -416,12 +420,18 @@ function CreateWorkspace({ useCase, onCreated }: { useCase: UseCase; onCreated: 
   const label = "text-[12px] font-semibold text-ink-2";
   return (
     <Card className="md:p-8">
-      <Eyebrow>Try it on Solana Devnet</Eyebrow>
+      <Eyebrow>{FAMILY_ONLY ? "Family early access · Private setup" : "Try it on Solana Devnet"}</Eyebrow>
       <h2 className="mt-2 font-display text-[40px] font-normal leading-[1.02] tracking-[-0.02em] text-navy-strong">{copy.formTitle}</h2>
       <p className="mt-2 max-w-[62ch] text-[14px] font-semibold leading-relaxed text-ink-2">
         {copy.pitch} You get one private link per person, shown once.
       </p>
       <form onSubmit={submit} className="mt-6 grid gap-5">
+        {FAMILY_ONLY ? (
+          <label className={label}>Private Family invitation code
+            <input type="password" autoComplete="off" className={input} value={invitation} onChange={(e) => setInvitation(e.target.value)} required placeholder="Code from the Cresco team" />
+            <span className="mt-1 block text-[11px] text-ink-3">Sent only to the separate Family API. Never saved to your browser keychain.</span>
+          </label>
+        ) : null}
         <div className="grid gap-4 md:grid-cols-3">
           <label className={label}>{copy.roles.operator.title}<input className={input} value={operatorLabel} onChange={(e) => setOperatorLabel(e.target.value)} /></label>
           <label className={label}>{copy.roles.principal.title}<input className={input} value={principalLabel} onChange={(e) => setPrincipalLabel(e.target.value)} /></label>
@@ -432,13 +442,13 @@ function CreateWorkspace({ useCase, onCreated }: { useCase: UseCase; onCreated: 
             <input className={`${input} text-[22px] tabular`} inputMode="decimal" value={limit} onChange={(e) => setLimit(e.target.value)} aria-describedby="limit-help" />
             <span id="limit-help" className="mt-1 block text-[11px] font-semibold text-ink-3">Below it: acts alone. Above it: asks once. Devnet bounds 0.05 to 5.00.</span>
           </label>
-          <label className={`flex cursor-pointer items-start gap-3 rounded-[18px] border p-4 text-[13px] font-semibold text-ink-2 transition-colors ${walletGuardian ? "border-green/40 bg-green-soft" : "border-line bg-surface-soft hover:border-blue/30"}`}>
+          {!FAMILY_SETUP_ONLY ? <label className={`flex cursor-pointer items-start gap-3 rounded-[18px] border p-4 text-[13px] font-semibold text-ink-2 transition-colors ${walletGuardian ? "border-green/40 bg-green-soft" : "border-line bg-surface-soft hover:border-blue/30"}`}>
             <input type="checkbox" className="mt-1 size-4 accent-green" checked={walletGuardian} onChange={(e) => setWalletGuardian(e.target.checked)} />
             <span>
               <span className="flex items-center gap-1.5 font-semibold text-navy-strong"><Wallet className="size-4" /> My wallet is the on-chain guardian (non-custodial)</span>
               The {copy.roles.principal.title.toLowerCase()}&apos;s wallet signs the mandate, every exact exception and every pause, resume or revoke. The server holds no authority over the mandate. Needs a Solana wallet on Devnet with a little Devnet SOL.
             </span>
-          </label>
+          </label> : <p className="rounded-[14px] border border-yellow/50 bg-yellow-soft p-4 text-[12px] font-semibold text-navy">Setup-only: no Solana trade, mandate funding or wallet transaction will be initiated. Family API access and wallet-message enrollment only.</p>}
         </div>
         <details className="rounded-[16px] border border-line px-4 py-3">
           <summary className="cursor-pointer text-[13px] font-semibold text-navy">More options</summary>
@@ -451,7 +461,7 @@ function CreateWorkspace({ useCase, onCreated }: { useCase: UseCase; onCreated: 
           <button type="submit" disabled={busy} className="flex min-h-12 items-center gap-2 rounded-[16px] bg-blue px-6 text-[15px] font-semibold text-white shadow-button transition-colors hover:bg-blue-strong disabled:opacity-60">
             {busy ? <LoaderCircle className="size-4 animate-spin" /> : <KeyRound className="size-4" />} Create workspace
           </button>
-          <p className="text-[12px] font-semibold text-ink-3">Creates its own Devnet mandate, separate from the judge lab.</p>
+          <p className="text-[12px] font-semibold text-ink-3">{FAMILY_SETUP_ONLY ? "Creates an isolated Family profile; no Devnet mandate is created." : "Creates its own Devnet mandate, separate from the judge lab."}</p>
         </div>
         {error ? <p role="alert" className="text-[13px] font-bold text-loss-text">{error}</p> : null}
       </form>
@@ -630,7 +640,7 @@ export default function WorldFairDeskPage() {
     void Promise.resolve().then(() => {
       if (cancelled) return;
       const requested = new URLSearchParams(window.location.search).get("case");
-      if (requested === "family" || requested === "capital") setLandingCase(requested);
+      if (!FAMILY_ONLY && (requested === "family" || requested === "capital")) setLandingCase(requested);
       if (importSharedRole()) return;
       const stored = loadKeychain();
       setKeychain(stored);
@@ -816,6 +826,7 @@ export default function WorldFairDeskPage() {
 
   async function submitIntent(e: React.FormEvent) {
     e.preventDefault();
+    if (FAMILY_SETUP_ONLY) return;
     const t = token("operator");
     if (!id || !t || activityUncertain || actionBusy || !intentSafety || intentSafety.blocked || localIntentHold || intentSafetyError) return;
     await run("intent", async () => {
@@ -896,7 +907,7 @@ export default function WorldFairDeskPage() {
 
   async function decide(req: ExceptionRequest, decision: "APPROVE" | "REFUSE", role: WorkflowRole) {
     const t = token(role);
-    if (!id || !t || activityUncertain) return;
+    if (!id || !t || activityUncertain || FAMILY_SETUP_ONLY) return;
     await run(`decide-${req.id}`, async () => {
       if (decision === "APPROVE" && role === "principal" && ws?.roles.principal.wallet && ws.guardianMode !== "principal-wallet") {
         const issuedAt = new Date().toISOString();
@@ -1011,7 +1022,7 @@ export default function WorldFairDeskPage() {
           <Wordmark size="md" />
           <nav aria-label="CRESCO product" className="flex flex-wrap gap-2">
             <Link href="/" className="rounded-full border border-line bg-surface/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft hover:border-green/35">CRESCO home</Link>
-            <Link href="/worlds-fair" className="rounded-full border border-line bg-surface/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft hover:border-green/35">Technical proof</Link>
+            {!FAMILY_ONLY ? <Link href="/worlds-fair" className="rounded-full border border-line bg-surface/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft hover:border-green/35">Technical proof</Link> : null}
             {id ? (
               <button type="button" onClick={() => { saveKeychain({ workspaceId: null, tokens: {} }); setKeychain({ workspaceId: null, tokens: {} }); setWs(null); setMandate(null); setRequests([]); setEvents([]); setIntentSafety(null); setLocalIntentHold(null); setRecoveryNotice(null); setIntentResult(null); setWalletSetupCode(""); setReplacementRoleLink(null); setConfirmRoleRotation(null); }} className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft">
                 Leave workspace
@@ -1029,8 +1040,8 @@ export default function WorldFairDeskPage() {
                 Set the line. <em className="text-green-strong">Everything else follows.</em>
               </h1>
               <div className="mt-6 flex flex-wrap items-center gap-4">
-                <UseCaseToggle value={landingCase} onChange={setLandingCase} />
-                <Link href="/how-it-works" className="text-[14px] font-medium text-blue hover:underline">How it works</Link>
+                {!FAMILY_ONLY ? <UseCaseToggle value={landingCase} onChange={setLandingCase} /> : <span className="rounded-full bg-green-soft px-4 py-2 text-[12px] font-bold text-green-strong">Family only · isolated early access</span>}
+                {!FAMILY_ONLY ? <Link href="/how-it-works" className="text-[14px] font-medium text-blue hover:underline">How it works</Link> : null}
               </div>
               </div>
               <div className="cresco-editorial-panel overflow-hidden">
@@ -1044,7 +1055,7 @@ export default function WorldFairDeskPage() {
             </section>
 
             <section className="mt-8">
-              <CreateWorkspace useCase={landingCase} onCreated={onCreated} />
+              <CreateWorkspace useCase={FAMILY_ONLY ? "family" : landingCase} onCreated={onCreated} />
               {landingCase === "family" ? (
                 <Card className="mt-6">
                   <Eyebrow>Family Parent · Wallet recovery</Eyebrow>
@@ -1091,7 +1102,8 @@ export default function WorldFairDeskPage() {
 
           {ws && !handoff ? (
             <>
-              {notReady && ws.chain.status === "NOT_BOOTSTRAPPED" ? <JourneySteps current={2} /> : null}
+              {FAMILY_SETUP_ONLY ? <p role="status" className="rounded-[14px] border border-yellow/40 bg-yellow-soft p-4 text-[13px] font-bold text-navy">Family setup preview · Devnet trading, mandate funding and approvals are locked until a separate security and release review.</p> : null}
+              {notReady && !FAMILY_SETUP_ONLY && ws.chain.status === "NOT_BOOTSTRAPPED" ? <JourneySteps current={2} /> : null}
               <Card className="md:p-7">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
@@ -1140,7 +1152,7 @@ export default function WorldFairDeskPage() {
                   </div>
                 </div>
 
-                {notReady && token("principal") && ws.chain.status === "NOT_BOOTSTRAPPED" ? (
+                {notReady && !FAMILY_SETUP_ONLY && token("principal") && ws.chain.status === "NOT_BOOTSTRAPPED" ? (
                   <div className="mt-5 rounded-[18px] border border-blue/25 bg-blue-soft p-5">
                     <p className="text-[15px] font-semibold text-navy-strong">Create the mandate on Solana Devnet</p>
                     {walletGuardianWs ? (
@@ -1216,7 +1228,7 @@ export default function WorldFairDeskPage() {
                           <input className="mt-1 w-full rounded-[14px] border border-line px-3 py-2.5 text-[15px] font-bold text-navy-strong" inputMode="numeric" value={slippage} onChange={(e) => setSlippage(e.target.value)} />
                         </label>
                       </details>
-                      <button type="submit" disabled={Boolean(actionBusy) || activityUncertain || notReady || mandateStatus === "REVOKED" || !intentSafety || intentSafety.blocked || Boolean(localIntentHold) || Boolean(intentSafetyError)} className="flex min-h-13 items-center justify-center gap-2 rounded-[16px] bg-blue px-5 py-3.5 text-[15px] font-semibold text-white shadow-button transition-colors hover:bg-blue-strong disabled:opacity-60">
+                      <button type="submit" disabled={FAMILY_SETUP_ONLY || Boolean(actionBusy) || activityUncertain || notReady || mandateStatus === "REVOKED" || !intentSafety || intentSafety.blocked || Boolean(localIntentHold) || Boolean(intentSafetyError)} className="flex min-h-13 items-center justify-center gap-2 rounded-[16px] bg-blue px-5 py-3.5 text-[15px] font-semibold text-white shadow-button transition-colors hover:bg-blue-strong disabled:opacity-60">
                         {actionBusy === "intent" ? <><LoaderCircle className="size-4 animate-spin" /> Executing on Devnet…</> : <>Submit intent <ArrowRight className="size-4" /></>}
                       </button>
                       <p className="text-[11px] font-bold text-ink-3">Each submit carries an idempotency key: a network retry cannot execute twice.</p>
@@ -1262,11 +1274,11 @@ export default function WorldFairDeskPage() {
                       {pending.length ? pending.map((r) => (
                         <RequestCard key={r.id} req={r} names={names}>
                           <div className="mt-4 flex flex-wrap gap-2">
-                            <button type="button" disabled={Boolean(actionBusy) || activityUncertain} onClick={() => decide(r, "APPROVE", tab)} className="inline-flex min-h-11 items-center gap-1.5 rounded-[14px] bg-green px-5 text-[14px] font-semibold text-white shadow-soft transition-opacity hover:opacity-90 disabled:opacity-60">
+                            <button type="button" disabled={FAMILY_SETUP_ONLY || Boolean(actionBusy) || activityUncertain} onClick={() => decide(r, "APPROVE", tab)} className="inline-flex min-h-11 items-center gap-1.5 rounded-[14px] bg-green px-5 text-[14px] font-semibold text-white shadow-soft transition-opacity hover:opacity-90 disabled:opacity-60">
                               {actionBusy === `decide-${r.id}` ? <LoaderCircle className="size-4 animate-spin" /> : tab === "principal" && ws.roles.principal.wallet ? <Wallet className="size-4" /> : <Check className="size-4" />}
                               Approve exactly once
                             </button>
-                            <button type="button" disabled={Boolean(actionBusy) || activityUncertain} onClick={() => decide(r, "REFUSE", tab)} className="inline-flex min-h-11 items-center gap-1.5 rounded-[14px] border border-loss/30 bg-white px-4 text-[14px] font-semibold text-loss-text disabled:opacity-60">
+                            <button type="button" disabled={FAMILY_SETUP_ONLY || Boolean(actionBusy) || activityUncertain} onClick={() => decide(r, "REFUSE", tab)} className="inline-flex min-h-11 items-center gap-1.5 rounded-[14px] border border-loss/30 bg-white px-4 text-[14px] font-semibold text-loss-text disabled:opacity-60">
                               <X className="size-4" /> Refuse
                             </button>
                           </div>
