@@ -1181,14 +1181,14 @@ export function createWorldFairWorkflow({
     // the recovery anchor. This endpoint only allows a first binding or a
     // no-op of the exact same wallet; changing it needs a separate reviewed
     // wallet-to-wallet protocol.
+    if (isWalletGuardian(ws) && ws.chain?.guardian && ws.chain.guardian !== nextWallet) {
+      fail(409, 'GUARDIAN_WALLET_FIXED', 'This wallet is the on-chain guardian of the mandate and cannot be replaced', { guardian: ws.chain.guardian });
+    }
     if (ws.principal.wallet?.publicKey) {
       if (ws.principal.wallet.publicKey !== nextWallet) {
         fail(409, 'PRINCIPAL_WALLET_ALREADY_BOUND', 'Cannot replace the bound Parent wallet using a role bearer');
       }
       return { status: 200, body: { contractVersion: WORKFLOW_CONTRACT_VERSION, wallet: ws.principal.wallet, alreadyBound: true } };
-    }
-    if (isWalletGuardian(ws) && ws.chain?.guardian && ws.chain.guardian !== nextWallet) {
-      fail(409, 'GUARDIAN_WALLET_FIXED', 'This wallet is the on-chain guardian of the mandate and cannot be replaced', { guardian: ws.chain.guardian });
     }
     ws.principal.wallet = { publicKey: nextWallet, boundAt: nowIso() };
     await saveWorkspace(ws);
