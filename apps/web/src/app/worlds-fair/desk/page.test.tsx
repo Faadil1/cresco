@@ -136,6 +136,36 @@ describe("World's Fair desk", () => {
     expect(await screen.findByRole("progressbar", { name: /Notional/ })).toHaveAttribute("aria-valuenow", "4");
   });
 
+  it("Parent confirms replacing a Teen link, then copies it without storing the new bearer", async () => {
+    window.localStorage.setItem("cresco-worlds-fair-desk-v1", JSON.stringify({
+      workspaceId: WS.id, tokens: { principal: "wf_principal_b" },
+    }));
+    const calls = api({
+      [`GET /workspaces/${WS.id}`]: () => json(200, { ...WS, useCase: "family" }),
+      [`POST /workspaces/${WS.id}/roles/operator/rotate`]: () => json(200, {
+        workspaceId: WS.id, role: "operator", token: "wf_operator_replacement",
+        notice: "Previous link invalid", onChainAuthorityChanged: false,
+      }),
+    });
+    render(<WorldFairDeskPage />);
+    await screen.findByRole("button", { name: /replace Teen access/i });
+    await userEvent.click(screen.getByRole("button", { name: /replace Teen access/i }));
+    expect(calls.filter((c) => c.path.endsWith("/roles/operator/rotate"))).toHaveLength(0);
+    expect(screen.getByRole("group", { name: /confirm role replacement/i })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /confirm link replacement/i }));
+    await screen.findByText(/Old Teen link invalidated/i);
+    expect(calls.filter((c) => c.path.endsWith("/roles/operator/rotate"))).toHaveLength(1);
+    const rotated = calls.find((c) => c.path.endsWith("/roles/operator/rotate"));
+    expect((rotated?.init?.headers as Record<string, string>).authorization).toBe("Bearer wf_principal_b");
+    expect(JSON.stringify(window.localStorage)).not.toContain("wf_operator_replacement");
+    await userEvent.click(screen.getByRole("button", { name: /copy replacement link/i }));
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining(`#ws=${WS.id}&role=operator&token=wf_operator_replacement`),
+    );
+    await userEvent.click(screen.getByRole("button", { name: /dismiss link/i }));
+    expect(screen.queryByRole("button", { name: /copy replacement link/i })).not.toBeInTheDocument();
+  });
+
   it("includes the viewer role token for every private request and history read", async () => {
     window.localStorage.setItem("cresco-worlds-fair-desk-v1", JSON.stringify({
       workspaceId: WS.id, tokens: { principal: "wf_principal_b" },
