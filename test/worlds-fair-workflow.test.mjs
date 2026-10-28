@@ -549,7 +549,7 @@ test('principal-wallet guardian: bootstrap, approval and pause all wait for the 
   const pub = new PublicKey(ed25519.getPublicKey(secret)).toBase58();
   const issuedAt = new Date(now).toISOString();
   const sign = (message) => Buffer.from(ed25519.sign(new TextEncoder().encode(message), secret)).toString('base64');
-  await wf.bindWallet(id, bearer('principal'), { publicKey: pub, issuedAt, signature: sign(walletBindingMessage({ workspaceId: id, issuedAt })) });
+  await wf.bindWallet(id, bearer('principal'), { publicKey: pub, issuedAt, signature: sign(walletBindingMessage({ workspaceId: id, issuedAt })), recoveryEnrollmentCode: created.body.recoveryEnrollmentCode });
 
   const boot = await wf.bootstrap(id, bearer('principal'));
   assert.equal(boot.status, 202);
