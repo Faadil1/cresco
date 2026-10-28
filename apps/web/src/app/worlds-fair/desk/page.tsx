@@ -593,7 +593,12 @@ export default function WorldFairDeskPage() {
     if (!id) return;
     let cancelled = false;
     const readToken = keychain.tokens.operator ?? keychain.tokens.principal ?? keychain.tokens.risk;
-    if (!readToken) { setLoadError("A workspace role link is required to read private requests and history."); return; }
+    if (!readToken) {
+      void Promise.resolve().then(() => {
+        if (!cancelled) setLoadError("A workspace role link is required to read private requests and history.");
+      });
+      return () => { cancelled = true; };
+    }
     void loadDesk(id, readToken)
       .then((data) => {
         if (cancelled) return;
