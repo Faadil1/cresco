@@ -20,6 +20,31 @@ Historical public targets:
 - The record explicitly says the active live version could **not** be confirmed. Do NOT interpret those version IDs as live on 2026-10-28.
 - Provenance: `state/CURRENT.yaml` and `docs/worlds-fair/RELEASE-LOCK-2026-10-12.md`.
 
+## Owner dashboard observation — 2026-10-28 (VISUAL, no API token)
+
+The owner provided two screenshots of Cloudflare **Workers & Pages → Overview** for the historical `cresco` and `keys-api-stocklana` Workers. These images remain in the conversation; they are not uploaded to this public GitHub repository.
+
+| Verified from the screenshots | Historical Web | Historical API |
+| --- | --- | --- |
+| Cloudflare account | Same dashboard account as the API (account ID intentionally omitted) | Same dashboard account as Web |
+| Worker name | `cresco` | `keys-api-stocklana` |
+| workers.dev subdomain | `faadil-casecraft` | `faadil-casecraft` |
+| Worker integration | GitHub connected; deployment row shows `main` | GitHub `Faadil1/cresco` visible; deployment row shows `main` |
+| Top deployment-row short identifier shown | `8b2fcbb9` | `cb798053` |
+| Deployment-row age displayed | 6 days | 6 days |
+| Binding | `ASSETS` | `FAMILY_STATE` Durable Object |
+| Errors over last 24h (dashboard) | 0 | 0 |
+| 24h invocations (dashboard) | 118 | approximately 3.41k |
+
+**Do not conflate the displayed short deployment-row IDs with a Git commit SHA or a verified active Cloudflare version ID.** The screenshots show the most recent build/deployment rows marked *Ready* but do not expose the active deployment's complete version IDs or traffic split. They also do not show **Settings → Build → Branch control**, the configured Build/Deploy/Preview commands or whether automatic preview builds are enabled.
+
+### Consequence for release planning
+
+- **OBSERVED:** same Cloudflare account and workers.dev subdomain, named historical Workers, GitHub-linked `main` deployment rows, and a historical API `FAMILY_STATE` binding. This confirms the original two public targets to **leave untouched**.
+- **UNKNOWN:** exact active release versions, provenance binding to hosted commits, production-branch settings in each Worker, preview settings, existence of `cresco-api-stocklana` as a third Worker, and whether `cresco-family-web` / `cresco-family-api` names are free.
+- **NEXT SAFE EVIDENCE:** screenshots of **Deployments → Active deployment/version details** and **Settings → Build → Branch control / Build & deploy commands**, for each historical Worker. Do not click Save, Deploy, Disconnect, Rollback, or edit secrets.
+- **NOT DONE:** authenticated Cloudflare API inventory, Cloudflare resource creation, builds to Family live URLs, or deploy. Independent security review remains BLOCKED.
+
 ## What can be read without changing Cloudflare?
 
 The new local-only program `scripts/family-cloudflare-readonly-inventory.mjs` makes exclusively HTTPS **GET** requests to the official Cloudflare API:
