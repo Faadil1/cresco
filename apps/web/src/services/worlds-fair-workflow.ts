@@ -282,6 +282,22 @@ export function loadKeychain(): DeskKeychain {
   }
 }
 
+/**
+ * Browser-local Family roles are capabilities, not verified household identities.
+ * Never surface multiple roles in the same Family desk. The historical capital
+ * lab may still retain multiple tokens for its explicitly shared test scenario.
+ */
+export function singleRoleFamilyKeychain(saved: DeskKeychain, useCase: UseCase): DeskKeychain {
+  if (useCase !== "family") return saved;
+  const roles: WorkflowRole[] = ["principal", "risk", "operator"];
+  const available = roles.filter((role) => Boolean(saved.tokens[role]));
+  if (available.length <= 1) return saved;
+  // An older shared Family desk is narrowed to its original guardian session.
+  // This is not real-world parental identity verification.
+  const keep = available[0];
+  return { workspaceId: saved.workspaceId, tokens: { [keep]: saved.tokens[keep] } };
+}
+
 export function saveKeychain(next: DeskKeychain) {
   try {
     window.localStorage.setItem(KEYCHAIN, JSON.stringify(next));
