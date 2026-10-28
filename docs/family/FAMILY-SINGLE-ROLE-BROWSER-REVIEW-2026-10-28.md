@@ -15,7 +15,7 @@ This was identified in source while reviewing draft PR #88. It is **not** a veri
 2. Importing a role link now **replaces** the local role capability rather than merging it with an existing role, regardless of the context; any prior session needs a fresh share link to resume.
 3. On opening an **older Family** workspace with multiple saved roles, the UI narrows its saved keychain to one role (principal > risk > operator) *before rendering controls*; it removes other role tokens from this browser's localStorage. The capital demonstration workspace intentionally retains its older same-browser multi-role behavior, which is not appropriate for Family production usage.
 4. The handoff explicitly says a bearer role is **not real-world identity verification**. This implementation does not authenticate a child's age or a legal guardian's authority.
-5. The share-link fragment is scrubbed immediately after parsing. The route query is preserved, and role tokens are not transferred into URL query parameters.
+5. The share-link fragment is scrubbed immediately after parsing. The route query is preserved, and role tokens are not transferred into URL query parameters. A real mobile WebKit regression revealed that hash-only navigation to a shared role link does not remount the desk; the client now handles `hashchange` and clears previous workspace requests, history, mandate and transaction result snapshots before loading the newly imported role.
 6. No API authority, wallet signer, policy, onchain program, transaction logic or live environment is changed.
 
 ## Negative and compatibility contract
