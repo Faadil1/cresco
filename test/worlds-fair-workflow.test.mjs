@@ -152,12 +152,12 @@ test('policy revision changes standing limits on-chain and is bounded for Devnet
 test('CAP-10: risk owner updates the asset rule and sees period consumption', async () => {
   const { wf, id, bearer } = await setup();
   await wf.submitIntent(id, bearer('operator'), { inputAmount: 400_000 });
-  const before = await wf.mandate(id);
+  const before = await wf.mandate(id, bearer('operator'));
   assert.equal(before.body.consumption.spentAmount, 400_000);
   assert.equal(before.body.consumption.amountUsedPct, 4);
   const res = await wf.updateAssetRule(id, bearer('risk'), { maxActionAmount: 1_000_000, maxPeriodAmount: 2_000_000 });
   assert.equal(res.body.policy.maxActionAmount, 1_000_000);
-  const after = await wf.mandate(id);
+  const after = await wf.mandate(id, bearer('operator'));
   assert.equal(after.body.consumption.spentAmount, 0);
   assert.equal(after.body.assetRule.maxPeriodAmount, 2_000_000);
 });
@@ -371,7 +371,7 @@ test('bootstrap failure is reported as safe-to-retry, not success', async () => 
   const wf = createWorldFairWorkflow({ store: createMemoryWorkflowStore(), chainFactory: () => chain });
   const c = await wf.createWorkspace({});
   await rejectsWith(() => wf.bootstrap(c.body.id, `Bearer ${c.body.tokens.principal}`), 503, 'BOOTSTRAP_UNCONFIRMED');
-  assert.equal((await wf.getWorkspace(c.body.id)).body.chain.status, 'NOT_BOOTSTRAPPED');
+  assert.equal((await wf.getWorkspace(c.body.id, c.body.tokens.principal)).body.chain.status, 'NOT_BOOTSTRAPPED');
 });
 
 test('missing server secrets surface CHAIN_RUNTIME_UNAVAILABLE', async () => {
