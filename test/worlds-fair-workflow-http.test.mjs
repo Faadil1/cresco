@@ -72,7 +72,7 @@ test('HTTP v0.4: full operator -> principal loop through the shared router', asy
 
   const history = await call(wf, 'GET', `${P}/workspaces/${id}/history`, null, tokens.operator);
   assert.equal(history.body.events[0].type, 'EXCEPTION_EXECUTED');
-  const mandate = await call(wf, 'GET', `${P}/workspaces/${id}/mandate`);
+  const mandate = await call(wf, 'GET', `${P}/workspaces/${id}/mandate`, null, tokens.operator);
   assert.equal(mandate.body.consumption.spentAmount, 100_000);
   const notes = await call(wf, 'GET', `${P}/workspaces/${id}/notifications`, null, tokens.operator);
   assert.ok(notes.body.notifications.some((n) => n.type === 'EXCEPTION_EXECUTED'));
@@ -102,6 +102,34 @@ test('HTTP v0.4: private workspace reads require a matching bearer role', async 
   assert.equal(teen.status, 403);
   const parent = await call(wf, 'GET', `${P}/workspaces/${a.id}/requests/${rid}/approval-message`, null, a.tokens.principal);
   assert.equal(parent.status, 200);
+});
+
+test('HTTP v0.4: workspace metadata, mandate and principal wallet message are private by role', async () => {
+  const wf = createWorldFairWorkflow({ store: createMemoryWorkflowStore(), chainFactory: () => simpleChain() });
+  const P = '/api/v0.4/worlds-fair';
+  const a = (await call(wf, 'POST', `${P}/workspaces`, { name: 'Family private', useCase: 'family' })).body;
+  const b = (await call(wf, 'POST', `${P}/workspaces`, { name: 'Other private' })).body;
+  await call(wf, 'POST', `${P}/workspaces/${a.id}/bootstrap`, {}, a.tokens.principal);
+  const walletPath = '/principal/wallet-message';
+  for (const suffix of ['', '/mandate', walletPath]) {
+    const missing = await call(wf, 'GET', `${P}/workspaces/${a.id}${suffix}`);
+    assert.equal(missing.status, 401, `Missing bearer for ${suffix || 'workspace'}`);
+    const foreign = await call(wf, 'GET', `${P}/workspaces/${a.id}${suffix}`, null, b.tokens.principal);
+    assert.equal(foreign.status, 401, `Wrong workspace bearer for ${suffix || 'workspace'}`);
+  }
+  for (const role of ['operator', 'principal', 'risk']) {
+    for (const suffix of ['', '/mandate']) {
+      const result = await call(wf, 'GET', `${P}/workspaces/${a.id}${suffix}`, null, a.tokens[role]);
+      assert.equal(result.status, 200, `${role} reads ${suffix || 'workspace'}`);
+    }
+  }
+  const teenWalletMessage = await call(wf, 'GET', `${P}/workspaces/${a.id}${walletPath}`, null, a.tokens.operator);
+  assert.equal(teenWalletMessage.status, 403);
+  const secondParentWalletMessage = await call(wf, 'GET', `${P}/workspaces/${a.id}${walletPath}`, null, a.tokens.risk);
+  assert.equal(secondParentWalletMessage.status, 403);
+  const principalWalletMessage = await call(wf, 'GET', `${P}/workspaces/${a.id}${walletPath}`, null, a.tokens.principal);
+  assert.equal(principalWalletMessage.status, 200);
+  assert.match(principalWalletMessage.body.message, /workspace:/);
 });
 
 test('HTTP v0.4: Idempotency-Key header is honoured and errors carry codes', async () => {
@@ -157,6 +185,10 @@ test('HTTP v0.4: OpenAPI contract documents every role-gated route', async () =>
   assert.deepEqual(spec.paths['/api/v0.4/worlds-fair/workspaces/{id}/intents/safety'].get['x-cresco-roles'], ['operator', 'principal', 'risk']);
   assert.deepEqual(spec.paths['/api/v0.4/worlds-fair/workspaces/{id}/requests'].get['x-cresco-roles'], ['operator', 'principal', 'risk']);
   assert.deepEqual(spec.paths['/api/v0.4/worlds-fair/workspaces/{id}/history'].get['x-cresco-roles'], ['operator', 'principal', 'risk']);
+  for (const suffix of ['', '/mandate']) {
+    assert.deepEqual(spec.paths[`/api/v0.4/worlds-fair/workspaces/{id}${suffix}`].get['x-cresco-roles'], ['operator', 'principal', 'risk']);
+  }
+  assert.deepEqual(spec.paths['/api/v0.4/worlds-fair/workspaces/{id}/principal/wallet-message'].get['x-cresco-roles'], ['principal']);
 });
 
 test('write scope only applies to mutating workspace routes', () => {
