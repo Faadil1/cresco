@@ -166,11 +166,11 @@ describe("World's Fair desk", () => {
       [`GET /workspaces/${WS.id}/requests`]: () => json(200, { requests: currentRequests }),
     });
     render(<WorldFairDeskPage />);
-    expect(await screen.findByText(/Waiting for the principal/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Waiting for Allocator/i)).toBeInTheDocument();
 
     currentRequests = [{ ...PENDING, status: "REFUSED_BY_PRINCIPAL" }];
     window.dispatchEvent(new Event("focus"));
-    expect(await screen.findByText(/the principal said no/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Allocator said no/i)).toBeInTheDocument();
   });
 
   it("blocks stale Parent decisions when request updates fail and restores them after recovery", async () => {
