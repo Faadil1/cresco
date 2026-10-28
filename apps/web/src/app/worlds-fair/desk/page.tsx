@@ -1193,7 +1193,7 @@ export default function WorldFairDeskPage() {
                     {tab === "principal" && ws.useCase === "family" ? (
                       <Card>
                         <Eyebrow>Family access · Parent controls</Eyebrow>
-                        <p className="mt-2 text-[13px] font-semibold text-ink-2">Lost or shared a Teen or second-parent link? Replace that role's access. The previous link stops working immediately. This does not revoke a Solana mandate or prove anyone's legal identity.</p>
+                        <p className="mt-2 text-[13px] font-semibold text-ink-2">Lost or shared a Teen or second-parent link? Replace that role&apos;s access. The previous link stops working immediately. This does not revoke a Solana mandate or prove anyone&apos;s legal identity.</p>
                         <div className="mt-3 flex flex-wrap gap-2">
                           {(["operator", "risk"] as const).map((role) => (
                             <button key={role} type="button" disabled={Boolean(actionBusy) || activityUncertain || Boolean(replacementRoleLink)}
