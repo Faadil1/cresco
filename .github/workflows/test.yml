@@ -30,8 +30,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Probe public host and record redacted observation
+      - name: Probe CURRENT Cloudflare public API and Web (no secrets, no writes)
         run: |
+          set +e
           node scripts/family-readonly-host-probe.mjs \
             --api-origin https://keys-api-stocklana.faadil-casecraft.workers.dev \
-            --web-origin https://cresco-lac.vercel.app
+            --web-origin https://cresco.faadil-casecraft.workers.dev
+          api_status=$?
+          node scripts/family-readonly-web-probe.mjs \
+            --web-origin https://cresco.faadil-casecraft.workers.dev
+          web_status=$?
+          echo "CURRENT HOSTED OBSERVATION: API status $api_status, web status $web_status (no hosted SHA attestation)"
+          if [ "$api_status" -ne 0 ] || [ "$web_status" -ne 0 ]; then exit 1; fi
