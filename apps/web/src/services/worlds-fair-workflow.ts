@@ -236,6 +236,10 @@ export const workflowApi = {
     call<CreatedWorkspace>("POST", "/workspaces", { body: input }).then((r) => r.body),
   getWorkspace: (id: string, token: string) => call<Workspace>("GET", `/workspaces/${id}`, { token }).then((r) => r.body),
   whoami: (id: string, token: string) => call<{ workspaceId: string; role: WorkflowRole }>("GET", `/workspaces/${id}/whoami`, { token }).then((r) => r.body),
+  issueParentRecoveryChallenge: (id: string) =>
+    call<{ workspaceId: string; challengeId: string; nonce: string; expiresAt: string; message: string }>("POST", `/workspaces/${id}/principal/recovery/challenge`, { body: {} }).then((r) => r.body),
+  recoverParentWithWallet: (id: string, proof: { challengeId: string; nonce: string; publicKey: string; signature: string }) =>
+    call<{ workspaceId: string; tokens: Record<WorkflowRole, string>; onChainAuthorityChanged: false }>("POST", `/workspaces/${id}/principal/recovery/complete`, { body: proof }).then((r) => r.body),
   rotateFamilyRole: (id: string, principalToken: string, role: "operator" | "risk") =>
     call<{ workspaceId: string; role: "operator" | "risk"; token: string; notice: string; onChainAuthorityChanged: false }>("POST", `/workspaces/${id}/roles/${role}/rotate`, { token: principalToken, body: {} }).then((r) => r.body),
   intentSafety: (id: string, token: string) =>
