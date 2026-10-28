@@ -234,7 +234,7 @@ export function newIdempotencyKey(prefix = "intent") {
 export const workflowApi = {
   createWorkspace: (input: { useCase?: UseCase; guardianMode?: GuardianMode; name?: string; principalLabel?: string; operatorLabel?: string; riskLabel?: string; policy?: Partial<WorkspacePolicy>; webhookUrl?: string }) =>
     call<CreatedWorkspace>("POST", "/workspaces", { body: input }).then((r) => r.body),
-  getWorkspace: (id: string) => call<Workspace>("GET", `/workspaces/${id}`).then((r) => r.body),
+  getWorkspace: (id: string, token: string) => call<Workspace>("GET", `/workspaces/${id}`, { token }).then((r) => r.body),
   whoami: (id: string, token: string) => call<{ workspaceId: string; role: WorkflowRole }>("GET", `/workspaces/${id}/whoami`, { token }).then((r) => r.body),
   intentSafety: (id: string, token: string) =>
     call<import("./intent-recovery").IntentSafetyView>("GET", `/workspaces/${id}/intents/safety`, { token }).then((r) => r.body),
@@ -247,7 +247,7 @@ export const workflowApi = {
     call<{ message: string; issuedAt: string }>("GET", `/workspaces/${id}/requests/${requestId}/approval-message?issuedAt=${encodeURIComponent(issuedAt)}`, { token }).then((r) => r.body),
   decide: (id: string, requestId: string, token: string, input: { decision: "APPROVE" | "REFUSE"; note?: string; issuedAt?: string; walletSignature?: string }) =>
     call<{ request: ExceptionRequest; retryPolicy?: string }>("POST", `/workspaces/${id}/requests/${requestId}/decision`, { token, body: input }),
-  mandate: (id: string) => call<MandateView>("GET", `/workspaces/${id}/mandate`).then((r) => r.body),
+  mandate: (id: string, token: string) => call<MandateView>("GET", `/workspaces/${id}/mandate`, { token }).then((r) => r.body),
   setStatus: (id: string, token: string, status: "ACTIVE" | "PAUSED" | "REVOKED", confirm?: string) =>
     call<{ staleRequests: number }>("POST", `/workspaces/${id}/mandate/status`, { token, body: { status, ...(confirm ? { confirm } : {}) } }).then((r) => r.body),
   revisePolicy: (id: string, token: string, input: { maxActionNotionalMicroUsd?: number; maxPeriodNotionalMicroUsd?: number }) =>
@@ -257,8 +257,8 @@ export const workflowApi = {
   topUpVault: (id: string, token: string) => call<{ effects: number }>("POST", `/workspaces/${id}/vault/topup`, { token, body: {} }).then((r) => r.body),
   history: (id: string, token: string, limit = 100) => call<{ events: WorkflowEvent[] }>("GET", `/workspaces/${id}/history?limit=${limit}`, { token }).then((r) => r.body.events),
   notifications: (id: string, token: string, since = 0) => call<NotificationsView>("GET", `/workspaces/${id}/notifications?since=${since}`, { token }).then((r) => r.body),
-  walletMessage: (id: string, issuedAt: string) =>
-    call<{ message: string; issuedAt: string }>("GET", `/workspaces/${id}/principal/wallet-message?issuedAt=${encodeURIComponent(issuedAt)}`).then((r) => r.body),
+  walletMessage: (id: string, token: string, issuedAt: string) =>
+    call<{ message: string; issuedAt: string }>("GET", `/workspaces/${id}/principal/wallet-message?issuedAt=${encodeURIComponent(issuedAt)}`, { token }).then((r) => r.body),
   bindWallet: (id: string, token: string, input: { publicKey: string; signature: string; issuedAt: string }) =>
     call<{ wallet: { publicKey: string } }>("POST", `/workspaces/${id}/principal/wallet`, { token, body: input }).then((r) => r.body),
   reconcile: (id: string, token: string) =>
