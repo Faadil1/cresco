@@ -33,7 +33,9 @@ const DEFAULTS = Object.freeze({
   topUpCooldownSeconds: 10 * 60,
   // A transaction prepared for the principal's wallet must be signed quickly:
   // its blockhash and the Pyth message it carries both age out.
-  guardianOpTtlSeconds: 90
+  guardianOpTtlSeconds: 90,
+  // Offchain wallet-bound recovery proof, distinct from Solana transactions.
+  principalRecoveryTtlSeconds: 120
 });
 
 // Devnet safety envelope for principal-chosen policies (protects the shared
@@ -124,6 +126,18 @@ export function walletBindingMessage({ workspaceId, issuedAt }) {
   return `CRESCO World's Fair principal wallet binding\nworkspace:${workspaceId}\nissuedAt:${issuedAt}`;
 }
 
+export function principalRecoveryMessage({ workspaceId, challengeId, nonce, expiresAt }) {
+  return [
+    'CRESCO Family principal API access recovery',
+    `workspace:${workspaceId}`,
+    `challenge:${challengeId}`,
+    `nonce:${nonce}`,
+    `expiresAt:${expiresAt}`,
+    'effect:REPLACE_ALL_FAMILY_API_ROLE_LINKS',
+    'onChainAuthorityEffect:NONE'
+  ].join('\n');
+}
+
 export function approvalMessage({ workspaceId, request, issuedAt }) {
   return [
     "CRESCO World's Fair exception approval",
@@ -204,7 +218,8 @@ export function createWorldFairWorkflow({
     requests: (id) => `wf:ws:${id}:requests`,
     idem: (id) => `wf:ws:${id}:idem`,
     intentHold: (id) => `wf:ws:${id}:intent-hold`,
-    guardianOps: (id) => `wf:ws:${id}:guardian-ops`
+    guardianOps: (id) => `wf:ws:${id}:guardian-ops`,
+    principalRecovery: (id) => `wf:ws:${id}:principal-recovery`
   };
 
   const isWalletGuardian = (ws) => ws.guardianMode === 'principal-wallet';
@@ -1074,6 +1089,85 @@ export function createWorldFairWorkflow({
     };
   }
 
+  // Anonymous challenge issuance only after a Family principal wallet was
+  // bound with a role bearer. A workspace ID alone cannot recover credentials.
+  async function issuePrincipalRecoveryChallenge(id) {
+    const ws = await loadWorkspace(id);
+    if (ws.useCase !== 'family') {
+      fail(409, 'FAMILY_WORKSPACE_REQUIRED', 'Parent recovery is limited to Family workspaces');
+    }
+    if (!ws.principal.wallet?.publicKey) {
+      fail(409, 'PARENT_RECOVERY_NOT_ENROLLED', 'The Parent did not bind a recovery wallet. No automatic account recovery is available');
+    }
+    const previous = await store.get(keys.principalRecovery(ws.id));
+    if (previous && Date.parse(previous.expiresAt) > clock()) {
+      fail(429, 'PARENT_RECOVERY_CHALLENGE_PENDING', 'A recovery challenge is still active. Use it or wait for expiry');
+    }
+    const challengeId = `prc_${randomBytes(12).toString('hex')}`;
+    const nonce = randomBytes(24).toString('base64url');
+    const expiresAt = new Date(clock() + cfg.principalRecoveryTtlSeconds * 1000).toISOString();
+    await store.put(keys.principalRecovery(ws.id), {
+      challengeId, nonceHash: sha256(nonce), expiresAt
+    });
+    return {
+      status: 201,
+      body: {
+        contractVersion: WORKFLOW_CONTRACT_VERSION,
+        workspaceId: ws.id, challengeId, nonce, expiresAt,
+        message: principalRecoveryMessage({ workspaceId: ws.id, challengeId, nonce, expiresAt }),
+        notice: 'Sign with the previously bound Parent wallet. No Devnet transaction is requested.'
+      }
+    };
+  }
+
+  async function recoverPrincipalWithWallet(id, body = {}) {
+    const ws = await loadWorkspace(id);
+    if (ws.useCase !== 'family' || !ws.principal.wallet?.publicKey) {
+      fail(409, 'PARENT_RECOVERY_NOT_ENROLLED', 'Wallet-bound Family recovery is not enrolled');
+    }
+    const challenge = await store.get(keys.principalRecovery(ws.id));
+    if (!challenge || challenge.consumedAt || Date.parse(challenge.expiresAt) <= clock()) {
+      fail(410, 'PARENT_RECOVERY_CHALLENGE_EXPIRED', 'Request a new recovery challenge');
+    }
+    const nonce = String(body.nonce ?? '');
+    if (body.challengeId !== challenge.challengeId || !nonce || sha256(nonce) !== challenge.nonceHash) {
+      fail(401, 'PARENT_RECOVERY_CHALLENGE_INVALID', 'The recovery challenge does not match');
+    }
+    if (String(body.publicKey ?? '') !== ws.principal.wallet.publicKey) {
+      fail(403, 'PARENT_RECOVERY_WALLET_MISMATCH', 'Use the previously bound Parent wallet');
+    }
+    const message = principalRecoveryMessage({
+      workspaceId: ws.id, challengeId: challenge.challengeId,
+      nonce, expiresAt: challenge.expiresAt
+    });
+    if (!verifyWalletSignature({ publicKey: ws.principal.wallet.publicKey, message, signature: body.signature })) {
+      fail(401, 'PARENT_RECOVERY_SIGNATURE_INVALID', 'The Parent wallet signature is not valid');
+    }
+    // Consume before rotating. A lost response is never evidence of failure:
+    // sign a fresh challenge instead; replaying this proof is refused.
+    await store.put(keys.principalRecovery(ws.id), { ...challenge, consumedAt: nowIso() });
+    const tokens = Object.fromEntries(WORKFLOW_ROLES.map((role) =>
+      [role, `wf_${role}_${randomBytes(24).toString('base64url')}`]
+    ));
+    ws.tokens = Object.fromEntries(Object.entries(tokens).map(([role, raw]) => [role, sha256(raw)]));
+    await saveWorkspace(ws);
+    await appendEvent(ws, {
+      type: 'PARENT_API_ACCESS_RECOVERED',
+      actor: 'principal-wallet',
+      summary: 'Verified Parent wallet recovered Family API access; all previous role links invalidated',
+      data: { scope: 'ALL_FAMILY_API_ROLES', onChainAuthorityChanged: false }
+    });
+    return {
+      status: 200,
+      body: {
+        contractVersion: WORKFLOW_CONTRACT_VERSION,
+        workspaceId: ws.id, tokens,
+        onChainAuthorityChanged: false,
+        notice: 'All previous Family API role links are invalid. New links are shown once. This does not change onchain authority or past signed transactions.'
+      }
+    };
+  }
+
   async function bindWallet(id, token, body = {}) {
     const ws = await loadWorkspace(id);
     authorize(ws, token, ['principal']);
@@ -1083,6 +1177,16 @@ export function createWorldFairWorkflow({
       fail(401, 'WALLET_SIGNATURE_INVALID', 'The wallet signature does not match the binding message', { expectedMessage: message });
     }
     const nextWallet = new PublicKey(String(body.publicKey)).toBase58();
+    // Once bound, a stolen principal bearer must NOT be sufficient to hijack
+    // the recovery anchor. This endpoint only allows a first binding or a
+    // no-op of the exact same wallet; changing it needs a separate reviewed
+    // wallet-to-wallet protocol.
+    if (ws.principal.wallet?.publicKey) {
+      if (ws.principal.wallet.publicKey !== nextWallet) {
+        fail(409, 'PRINCIPAL_WALLET_ALREADY_BOUND', 'Cannot replace the bound Parent wallet using a role bearer');
+      }
+      return { status: 200, body: { contractVersion: WORKFLOW_CONTRACT_VERSION, wallet: ws.principal.wallet, alreadyBound: true } };
+    }
     if (isWalletGuardian(ws) && ws.chain?.guardian && ws.chain.guardian !== nextWallet) {
       fail(409, 'GUARDIAN_WALLET_FIXED', 'This wallet is the on-chain guardian of the mandate and cannot be replaced', { guardian: ws.chain.guardian });
     }
@@ -1279,6 +1383,8 @@ export function createWorldFairWorkflow({
     history,
     notifications,
     bindWallet,
+    issuePrincipalRecoveryChallenge,
+    recoverPrincipalWithWallet,
     submitGuardian,
     topUpVault,
     reconcile
