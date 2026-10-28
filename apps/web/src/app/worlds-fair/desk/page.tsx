@@ -518,9 +518,9 @@ function TokenHandoff({ ws, onDone }: { ws: CreatedWorkspace; onDone: () => void
   );
 }
 
-async function loadDesk(id: string) {
+async function loadDesk(id: string, roleToken: string) {
   const ws = await workflowApi.getWorkspace(id);
-  const [requests, events] = await Promise.all([workflowApi.listRequests(id), workflowApi.history(id, 60)]);
+  const [requests, events] = await Promise.all([workflowApi.listRequests(id, roleToken), workflowApi.history(id, roleToken, 60)]);
   let mandate: MandateView | null = null;
   if (ws.chain.status === "READY") {
     try {
@@ -592,7 +592,9 @@ export default function WorldFairDeskPage() {
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
-    void loadDesk(id)
+    const readToken = keychain.tokens.operator ?? keychain.tokens.principal ?? keychain.tokens.risk;
+    if (!readToken) { setLoadError("A workspace role link is required to read private requests and history."); return; }
+    void loadDesk(id, readToken)
       .then((data) => {
         if (cancelled) return;
         setWs(data.ws);
@@ -611,7 +613,7 @@ export default function WorldFairDeskPage() {
     return () => {
       cancelled = true;
     };
-  }, [id, version]);
+  }, [id, version, keychain.tokens]);
 
   // Keep separate Parent and Teen browser sessions in sync without new writes.
   // A role-specific desk can become stale while another device submits or decides.
@@ -627,8 +629,8 @@ export default function WorldFairDeskPage() {
       inFlight = true;
       try {
         const [nextRequests, nextEvents] = await Promise.all([
-          workflowApi.listRequests(id),
-          workflowApi.history(id, 60),
+          workflowApi.listRequests(id, keychain.tokens[tab]!),
+          workflowApi.history(id, keychain.tokens[tab]!, 60),
         ]);
         if (!Array.isArray(nextRequests) || !Array.isArray(nextEvents)) {
           throw new Error("Request history could not be verified");
@@ -814,7 +816,7 @@ export default function WorldFairDeskPage() {
     await run(`decide-${req.id}`, async () => {
       if (decision === "APPROVE" && role === "principal" && ws?.roles.principal.wallet && ws.guardianMode !== "principal-wallet") {
         const issuedAt = new Date().toISOString();
-        const { message } = await workflowApi.approvalMessage(id, req.id, issuedAt);
+        const { message } = await workflowApi.approvalMessage(id, req.id, t, issuedAt);
         const signed = await signWithWallet(message);
         if (signed.publicKey !== ws.roles.principal.wallet) throw new Error(`Connect the bound wallet ${short(ws.roles.principal.wallet)} to approve.`);
         await workflowApi.decide(id, req.id, t, { decision, note: note || undefined, issuedAt, walletSignature: signed.signature });
