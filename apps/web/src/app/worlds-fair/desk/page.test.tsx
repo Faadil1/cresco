@@ -166,7 +166,7 @@ describe("World's Fair desk", () => {
       [`GET /workspaces/${WS.id}/requests`]: () => json(200, { requests: currentRequests }),
     });
     render(<WorldFairDeskPage />);
-    expect(await screen.findByText(/Waiting for Allocator/i)).toBeInTheDocument();
+    expect(await screen.findByTestId(`request-${PENDING.id}`)).toHaveTextContent(/Waiting for Allocator/i);
 
     currentRequests = [{ ...PENDING, status: "REFUSED_BY_PRINCIPAL" }];
     window.dispatchEvent(new Event("focus"));
