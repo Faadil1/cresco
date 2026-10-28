@@ -181,7 +181,7 @@ export class WorkflowApiError extends Error {
 
 const PREFIX = "/api/v0.4/worlds-fair";
 
-async function call<T>(method: "GET" | "POST", path: string, opts: { token?: string | null; body?: unknown; idempotencyKey?: string; timeoutMs?: number } = {}): Promise<{ status: number; body: T }> {
+async function call<T>(method: "GET" | "POST", path: string, opts: { token?: string | null; createToken?: string; body?: unknown; idempotencyKey?: string; timeoutMs?: number } = {}): Promise<{ status: number; body: T }> {
   const { url } = crescoConfig();
   if (!url) throw new WorkflowApiError(0, "API_NOT_CONFIGURED", "No CRESCO API URL is configured for this build.", {});
   const controller = typeof AbortController === "function" ? new AbortController() : null;
@@ -193,6 +193,7 @@ async function call<T>(method: "GET" | "POST", path: string, opts: { token?: str
       headers: {
         ...(opts.body !== undefined ? { "content-type": "application/json" } : {}),
         ...(opts.token ? { authorization: `Bearer ${opts.token}` } : {}),
+        ...(opts.createToken ? { "x-cresco-create-token": opts.createToken } : {}),
         ...(opts.idempotencyKey ? { "idempotency-key": opts.idempotencyKey } : {}),
       },
       body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
@@ -233,8 +234,8 @@ export function newIdempotencyKey(prefix = "intent") {
 }
 
 export const workflowApi = {
-  createWorkspace: (input: { useCase?: UseCase; guardianMode?: GuardianMode; name?: string; principalLabel?: string; operatorLabel?: string; riskLabel?: string; policy?: Partial<WorkspacePolicy>; webhookUrl?: string }) =>
-    call<CreatedWorkspace>("POST", "/workspaces", { body: input }).then((r) => r.body),
+  createWorkspace: (input: { useCase?: UseCase; guardianMode?: GuardianMode; name?: string; principalLabel?: string; operatorLabel?: string; riskLabel?: string; policy?: Partial<WorkspacePolicy>; webhookUrl?: string }, createToken?: string) =>
+    call<CreatedWorkspace>("POST", "/workspaces", { body: input, ...(createToken ? { createToken } : {}) }).then((r) => r.body),
   getWorkspace: (id: string, token: string) => call<Workspace>("GET", `/workspaces/${id}`, { token }).then((r) => r.body),
   whoami: (id: string, token: string) => call<{ workspaceId: string; role: WorkflowRole }>("GET", `/workspaces/${id}/whoami`, { token }).then((r) => r.body),
   issueParentRecoveryChallenge: (id: string) =>
