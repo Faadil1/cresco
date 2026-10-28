@@ -20,6 +20,11 @@ Le préfixe `cresco-family-...` est un **nom de Worker prévu**, pas une preuve 
 
 La soumission Colosseum, son URL, ses données et ses preuves historiques ne sont pas des cibles de modification. La branche et la PR Family sont totalement distinctes, en **DRAFT**.
 
+### Interdiction supplémentaire — Workers Builds sur `main`
+
+Les notes canoniques `state/CURRENT.yaml` indiquent que le frontend soumis à Colosseum peut être automatiquement reconstruit par Cloudflare Workers Builds à chaque modification de `main`. **Il est donc interdit de fusionner la PR Family #94 ou ses PR parentes dans `main` tant que l'autodéploiement du Worker Colosseum n'est pas découplé ou bloqué de manière vérifiée.** Un merge apparemment purement source peut modifier la version publique du concours. La stratégie de livraison Family est une **branche longue durée propre à Family ou un dépôt séparé**, avec deux nouveaux Workers et des règles de build indépendantes. Cette PR reste en DRAFT, elle ne doit pas être marquée « Ready » ni fusionnée pour faciliter le déploiement.
+
+
 ## Ce qui fonctionne sur la branche Family
 
 1. Le nouveau Worker API accepte uniquement la surface `/api/v0.4/worlds-fair/` et `/health` ; les anciennes routes de démo et les autres APIs ne sont pas routées. Il refuse explicitement un `POST /workspaces` non-Family.
