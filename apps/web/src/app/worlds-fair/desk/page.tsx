@@ -566,6 +566,9 @@ export default function WorldFairDeskPage() {
   const [rulePeriod, setRulePeriod] = useState("");
   const idemRef = useRef<string>(newIdempotencyKey());
   const [landingCase, setLandingCase] = useState<UseCase>("family");
+  const [recoveryWorkspaceId, setRecoveryWorkspaceId] = useState("");
+  const [recoveryBusy, setRecoveryBusy] = useState(false);
+  const [recoveryError, setRecoveryError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -886,6 +889,45 @@ export default function WorldFairDeskPage() {
     });
   }
 
+  async function recoverParentAccess(event: React.FormEvent) {
+    event.preventDefault();
+    const target = recoveryWorkspaceId.trim();
+    if (!/^ws-[a-z0-9-]{6,64}$/.test(target) || recoveryBusy) {
+      setRecoveryError("Enter the workspace ID from your original Family role link.");
+      return;
+    }
+    setRecoveryBusy(true);
+    setRecoveryError(null);
+    try {
+      // There is no role-token fallback. The wallet must already have been
+      // bound before the Parent lost their API bearer.
+      const challenge = await workflowApi.issueParentRecoveryChallenge(target);
+      const signed = await signWithWallet(challenge.message);
+      const result = await workflowApi.recoverParentWithWallet(target, {
+        challengeId: challenge.challengeId, nonce: challenge.nonce,
+        publicKey: signed.publicKey, signature: signed.signature,
+      });
+      if (result.workspaceId !== target || !result.tokens.principal || !result.tokens.operator || !result.tokens.risk) {
+        throw new Error("Recovery response was incomplete. Do not use any previous links.");
+      }
+      // Persist only the newly recovered Parent token immediately: if a later
+      // read fails, the guardian can still reload the desk with their new key.
+      saveKeychain({ workspaceId: target, tokens: { principal: result.tokens.principal } });
+      setKeychain({ workspaceId: target, tokens: { principal: result.tokens.principal } });
+      setTab("principal");
+      const workspace = await workflowApi.getWorkspace(target, result.tokens.principal);
+      setHandoff({
+        ...workspace, tokens: result.tokens,
+        tokenNotice: "Parent wallet recovery verified. ALL previous Family links are invalid. Distribute these new links securely.",
+      });
+      setRecoveryWorkspaceId("");
+    } catch (error) {
+      setRecoveryError(errorText(error));
+    } finally {
+      setRecoveryBusy(false);
+    }
+  }
+
   async function replaceFamilyRole(role: "operator" | "risk") {
     const principalToken = token("principal");
     if (!id || !principalToken || ws?.useCase !== "family" || activityUncertain || actionBusy || confirmRoleRotation !== role) return;
@@ -972,6 +1014,29 @@ export default function WorldFairDeskPage() {
 
             <section className="mt-8">
               <CreateWorkspace useCase={landingCase} onCreated={onCreated} />
+              {landingCase === "family" ? (
+                <Card className="mt-6">
+                  <Eyebrow>Family Parent · Wallet recovery</Eyebrow>
+                  <h2 className="mt-2 font-display text-[30px] text-navy-strong">Lost your Parent link?</h2>
+                  <p className="mt-2 text-[13px] font-semibold text-ink-2">
+                    Recover only if you previously secured this workspace with a Parent wallet. Sign an exact, short-lived message in that same wallet. No Solana transaction or funds are requested. All old Family links will be revoked, including Teen and second-parent access.
+                  </p>
+                  <form onSubmit={(event) => void recoverParentAccess(event)} className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
+                    <label className="text-[12px] font-bold text-ink-2">
+                      Family workspace ID
+                      <input value={recoveryWorkspaceId} onChange={(event) => setRecoveryWorkspaceId(event.target.value)}
+                        placeholder="ws-..." required
+                        className="mt-1 min-h-11 w-full rounded-[12px] border border-line bg-white px-3 font-mono text-[13px] text-navy" />
+                    </label>
+                    <button type="submit" disabled={recoveryBusy}
+                      className="min-h-11 self-end rounded-[12px] bg-navy-strong px-4 text-[13px] font-bold text-white disabled:opacity-50">
+                      {recoveryBusy ? "Verifying wallet…" : "Recover with Parent wallet"}
+                    </button>
+                  </form>
+                  {recoveryError ? <p role="alert" className="mt-3 text-[12px] font-semibold text-loss-text">{recoveryError}</p> : null}
+                  <p className="mt-3 text-[11px] font-semibold text-ink-3">Not enrolled? Recovery is blocked. The app cannot verify legal guardianship or restore a lost wallet.</p>
+                </Card>
+              ) : null}
             </section>
           </>
         ) : null}
@@ -1194,6 +1259,18 @@ export default function WorldFairDeskPage() {
                       <Card>
                         <Eyebrow>Family access · Parent controls</Eyebrow>
                         <p className="mt-2 text-[13px] font-semibold text-ink-2">Lost or shared a Teen or second-parent link? Replace that role&apos;s access. The previous link stops working immediately. This does not revoke a Solana mandate or prove anyone&apos;s legal identity.</p>
+                        {ws.roles.principal.wallet ? (
+                          <p className="mt-3 text-[12px] font-semibold text-navy">Parent recovery wallet registered: <code className="font-mono">{short(ws.roles.principal.wallet)}</code>. Future Parent API recovery will require its signature. Approvals may also require this wallet.</p>
+                        ) : (
+                          <div className="mt-3 rounded-[14px] border border-yellow/40 bg-yellow-soft p-3">
+                            <p className="text-[12px] font-semibold text-navy">No Parent recovery wallet registered. If this Parent role link is lost, automatic recovery is unavailable. Register a wallet you control and can restore; this also enables signed approvals.</p>
+                            <button type="button" disabled={Boolean(actionBusy) || activityUncertain}
+                              onClick={() => void bindWallet()}
+                              className="mt-2 min-h-10 rounded-[12px] bg-navy-strong px-3 text-[12px] font-bold text-white disabled:opacity-50">
+                              {actionBusy === "wallet" ? "Registering…" : "Secure Parent recovery wallet"}
+                            </button>
+                          </div>
+                        )}
                         <div className="mt-3 flex flex-wrap gap-2">
                           {(["operator", "risk"] as const).map((role) => (
                             <button key={role} type="button" disabled={Boolean(actionBusy) || activityUncertain || Boolean(replacementRoleLink)}
