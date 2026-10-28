@@ -51,6 +51,6 @@ jobs:
       - run: npm install --no-audit --no-fund
       - name: Verify isolated API target before bundling
         run: |
-          node -e 'const f=require("./wrangler.family-api.jsonc"); if(f.name!=="cresco-family-api" || f.main!=="src/cloudflare-family-only-worker.mjs" || f.durable_objects.bindings[0].class_name!=="CrescoFamilyIsolatedState") process.exit(1)'
+          node -e 'const fs=require("node:fs");const f=JSON.parse(fs.readFileSync("./wrangler.family-api.jsonc","utf8")); if(f.name!=="cresco-family-api" || f.main!=="src/cloudflare-family-only-worker.mjs" || f.durable_objects.bindings[0].class_name!=="CrescoFamilyIsolatedState") process.exit(1)'
       - name: Bundle family API without authentication, upload or deployment
         run: npx --yes wrangler@4.118.0 deploy --dry-run --config wrangler.family-api.jsonc --outdir .family-api-dry-run
