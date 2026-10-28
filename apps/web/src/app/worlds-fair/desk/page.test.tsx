@@ -53,7 +53,7 @@ function api(overrides: Record<string, (init?: RequestInit) => Response> = {}) {
     calls.push({ method, path, init });
     const key = `${method} ${path}`;
     for (const [pattern, fn] of Object.entries(overrides)) if (key === pattern) return fn(init);
-    if (key === "POST /workspaces") return json(201, { ...WS, useCase: JSON.parse(String(init?.body)).useCase ?? "capital", tokens: { operator: "wf_operator_a", principal: "wf_principal_b", risk: "wf_risk_c" }, tokenNotice: "shown once" });
+    if (key === "POST /workspaces") return json(201, { ...WS, useCase: JSON.parse(String(init?.body)).useCase ?? "capital", recoveryEnrollmentCode: JSON.parse(String(init?.body)).useCase === "family" ? "fec_creator_once" : undefined, tokens: { operator: "wf_operator_a", principal: "wf_principal_b", risk: "wf_risk_c" }, tokenNotice: "shown once" });
     if (key === `GET /workspaces/${WS.id}`) return json(200, WS);
     if (key === `GET /workspaces/${WS.id}/requests`) return json(200, { requests: [PENDING] });
     if (key === `GET /workspaces/${WS.id}/history`) return json(200, { events: [{ id: "e1", seq: 1, at: "2026-10-12T12:01:00Z", type: "EXCEPTION_REQUESTED", actor: "operator", summary: "Outside standing authority", signatures: [] }] });
@@ -93,6 +93,38 @@ describe("World's Fair desk", () => {
     await screen.findByText(/hand each role its own link/i);
     const created = calls.find((c) => c.method === "POST" && c.path === "/workspaces");
     expect(JSON.parse(String(created?.init?.body))).toMatchObject({ useCase: "family", principalLabel: "Parent", operatorLabel: "Maya (16)" });
+  });
+
+  it("Family Parent wallet first binding sends separate creator enrollment proof and never stores it", async () => {
+    Object.defineProperty(window, "phantom", {
+      configurable: true,
+      value: { solana: {
+        connect: vi.fn(async () => ({ publicKey: { toString: () => "ParentWallet" } })),
+        signMessage: vi.fn(async () => ({ signature: new Uint8Array([1, 2, 3]) })),
+      } },
+    });
+    window.localStorage.setItem("cresco-worlds-fair-desk-v1", JSON.stringify({
+      workspaceId: WS.id, tokens: { principal: "wf_principal_b" },
+    }));
+    const calls = api({
+      [`GET /workspaces/${WS.id}`]: () => json(200, { ...WS, useCase: "family" }),
+      [`GET /workspaces/${WS.id}/principal/wallet-message?issuedAt=`]: () => json(200, { message: "bind" }),
+      [`POST /workspaces/${WS.id}/principal/wallet`]: () => json(200, { wallet: { publicKey: "ParentWallet" } }),
+    });
+    render(<WorldFairDeskPage />);
+    const control = await screen.findByRole("button", { name: /secure Parent recovery wallet/i });
+    expect(control).toBeDisabled();
+    await userEvent.type(screen.getByPlaceholderText("Paste the one-time setup code"), "fec_creator_once");
+    expect(control).toBeEnabled();
+    await userEvent.click(control);
+    await waitFor(() => expect(calls.some((call) => call.path.endsWith("/principal/wallet") && call.method === "POST")).toBe(true));
+    const bound = calls.find((call) => call.path.endsWith("/principal/wallet") && call.method === "POST")!;
+    expect(JSON.parse(String(bound.init?.body))).toMatchObject({
+      publicKey: "ParentWallet", signature: "AQID", recoveryEnrollmentCode: "fec_creator_once",
+    });
+    expect(JSON.stringify(window.localStorage)).not.toContain("fec_creator_once");
+    expect(screen.getByPlaceholderText("Paste the one-time setup code")).toHaveValue("");
+    Reflect.deleteProperty(window, "phantom");
   });
 
   it("Parent wallet recovery replaces all links and persists only Parent capability", async () => {
@@ -153,6 +185,10 @@ describe("World's Fair desk", () => {
     expect(saved.tokens).toEqual({ principal: "wf_principal_b" });
     expect(screen.getAllByRole("button", { name: /copy link/i })).toHaveLength(3);
     expect(screen.getByText(/keeps only the Parent role/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /copy Parent setup code/i })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /copy Parent setup code/i }));
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith("fec_creator_once");
+    expect(JSON.stringify(saved)).not.toContain("fec_creator_once");
   });
 
   it("shows the principal the Policy Diff and approves exactly once with the principal token", async () => {
