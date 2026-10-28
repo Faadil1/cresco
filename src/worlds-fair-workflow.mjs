@@ -461,8 +461,9 @@ export function createWorldFairWorkflow({
     };
   }
 
-  async function getWorkspace(id) {
+  async function getWorkspace(id, token) {
     const ws = await loadWorkspace(id);
+    authorize(ws, token, WORKFLOW_ROLES);
     return { status: 200, body: publicWorkspace(ws) };
   }
 
@@ -972,8 +973,9 @@ export function createWorldFairWorkflow({
     return { status: 200, body: { contractVersion: WORKFLOW_CONTRACT_VERSION, policy: ws.policy, mandate: result.mandate, staleRequests: staled, eventId: event.id } };
   }
 
-  async function mandate(id) {
+  async function mandate(id, token) {
     const ws = await loadWorkspace(id);
+    authorize(ws, token, WORKFLOW_ROLES);
     requireReady(ws);
     let view;
     try {
