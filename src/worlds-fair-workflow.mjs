@@ -467,6 +467,41 @@ export function createWorldFairWorkflow({
     return { status: 200, body: publicWorkspace(ws) };
   }
 
+  // Family bearer links are revocable offchain API capabilities, NOT an
+  // onchain delegate/guardian authority change. A new link is shown once.
+  async function rotateFamilyRole(id, token, targetRole) {
+    const ws = await loadWorkspace(id);
+    authorize(ws, token, ['principal']);
+    if ((ws.useCase ?? 'capital') !== 'family') {
+      fail(409, 'FAMILY_WORKSPACE_REQUIRED', 'Role link rotation is available only for Family workspaces');
+    }
+    if (!['operator', 'risk'].includes(targetRole)) {
+      fail(400, 'ROLE_ROTATION_TARGET_INVALID', 'Only the Teen or second-parent link can be replaced');
+    }
+    // The old token hash is overwritten before any response. Never write
+    // a raw token to durable storage, events, receipts or logs.
+    const nextToken = `wf_${targetRole}_${randomBytes(24).toString('base64url')}`;
+    ws.tokens[targetRole] = sha256(nextToken);
+    await saveWorkspace(ws);
+    await appendEvent(ws, {
+      type: 'ROLE_TOKEN_ROTATED',
+      actor: 'principal',
+      summary: `${targetRole} browser link replaced; previous token invalidated`,
+      data: { role: targetRole }
+    });
+    return {
+      status: 200,
+      body: {
+        contractVersion: WORKFLOW_CONTRACT_VERSION,
+        workspaceId: ws.id,
+        role: targetRole,
+        token: nextToken,
+        notice: 'Previous link immediately invalid. Copy this replacement link once to the intended person. The server does not retain the raw token.',
+        onChainAuthorityChanged: false
+      }
+    };
+  }
+
   async function whoami(id, token) {
     const ws = await loadWorkspace(id);
     const role = authorize(ws, token, WORKFLOW_ROLES);
@@ -1231,6 +1266,7 @@ export function createWorldFairWorkflow({
     createWorkspace,
     getWorkspace,
     whoami,
+    rotateFamilyRole,
     bootstrap,
     submitIntent,
     intentSafety,
