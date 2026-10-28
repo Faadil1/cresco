@@ -1,10 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { ed25519 } from '@noble/curves/ed25519';
+import { PublicKey } from '@solana/web3.js';
 
 import { routeCrescoHttp } from '../src/http-api.mjs';
 import { handleCrescoCloudflareRequest } from '../src/cloudflare-worker.mjs';
 import { FamilyState } from '../src/cloudflare-family-state.mjs';
-import { createMemoryWorkflowStore, createWorldFairWorkflow } from '../src/worlds-fair-workflow.mjs';
+import { createMemoryWorkflowStore, createWorldFairWorkflow, walletBindingMessage } from '../src/worlds-fair-workflow.mjs';
 import { workflowOpenApi, workflowWriteScope } from '../src/worlds-fair-workflow-http.mjs';
 
 function simpleChain() {
@@ -306,6 +308,51 @@ test('Worker v0.4: state persists in the Durable Object across isolates (fresh w
   const res = await workerCall(env, services, 'GET', `${P}/workspaces/${id}/history`, null, tokens.operator);
   assert.equal(res.headers.get('access-control-allow-origin'), 'https://cresco-lac.vercel.app');
   assert.equal(res.headers.get('cache-control'), 'no-store');
+});
+
+test('Worker v0.4: durable Family enrollment and one-use recovery revoke prior role links', async () => {
+  const env = durableEnv();
+  const services = { worldFairWorkspaceChainFactory: () => simpleChain() };
+  const P = '/api/v0.4/worlds-fair';
+  const createdResponse = await workerCall(env, services, 'POST', `${P}/workspaces`, { useCase: 'family' });
+  assert.equal(createdResponse.status, 201);
+  const w = await createdResponse.json();
+  assert.ok(w.recoveryEnrollmentCode?.startsWith('fec_'));
+  const storedWorkspace = env.values.get(`wf:ws:${w.id}`);
+  assert.equal(storedWorkspace.recoveryEnrollmentHash.length,64);
+  assert.ok(!JSON.stringify(storedWorkspace).includes(w.recoveryEnrollmentCode));
+
+  const secret = ed25519.utils.randomPrivateKey();
+  const pub = new PublicKey(ed25519.getPublicKey(secret)).toBase58();
+  const sign = (m) => Buffer.from(ed25519.sign(new TextEncoder().encode(m), secret)).toString('base64');
+  const issuedAt = new Date().toISOString();
+  const bind = { publicKey: pub, issuedAt,
+    signature: sign(walletBindingMessage({ workspaceId: w.id, issuedAt })) };
+  const denied = await workerCall(env,services,'POST',`${P}/workspaces/${w.id}/principal/wallet`,bind,w.tokens.principal);
+  assert.equal(denied.status,403);
+  assert.equal((await workerCall(env,services,'POST',`${P}/workspaces/${w.id}/principal/wallet`,
+    { ...bind, recoveryEnrollmentCode: w.recoveryEnrollmentCode },w.tokens.principal)).status,200);
+
+  const challengeRes = await workerCall(env,services,'POST',`${P}/workspaces/${w.id}/principal/recovery/challenge`,{});
+  assert.equal(challengeRes.status,201);
+  assert.equal(challengeRes.headers.get('cache-control'),'no-store');
+  const c = await challengeRes.json();
+  assert.match(c.message,/onChainAuthorityEffect:NONE/);
+  const proof = { challengeId:c.challengeId,nonce:c.nonce,publicKey:pub,signature:sign(c.message) };
+  const completedRes = await workerCall(env,services,'POST',`${P}/workspaces/${w.id}/principal/recovery/complete`,proof);
+  assert.equal(completedRes.status,200);
+  assert.equal(completedRes.headers.get('cache-control'),'no-store');
+  const completed = await completedRes.json();
+  assert.equal(completed.onChainAuthorityChanged,false);
+  for (const role of ['principal','operator','risk']) {
+    const old = await workerCall(env,services,'GET',`${P}/workspaces/${w.id}/whoami`,null,w.tokens[role]);
+    assert.equal(old.status,401);
+    const current = await workerCall(env,services,'GET',`${P}/workspaces/${w.id}/whoami`,null,completed.tokens[role]);
+    assert.equal(current.status,200);
+    assert.ok(!JSON.stringify(env.values.get(`wf:ws:${w.id}`)).includes(completed.tokens[role]));
+  }
+  const replay = await workerCall(env,services,'POST',`${P}/workspaces/${w.id}/principal/recovery/complete`,proof);
+  assert.equal(replay.status,410);
 });
 
 test('Worker v0.4: concurrent writes on one workspace are serialized (BUSY), other workspaces proceed', async () => {

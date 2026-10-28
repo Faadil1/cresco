@@ -14,3 +14,31 @@ jobs:
         run: npm install --no-audit --no-fund
       - run: npm test
       - run: npm run demo
+
+  hosted-readonly-observation:
+    # Supplemental public-HTTP observation only; does not gate product CI.
+    # Intentionally uses no API bearer, cookies, secrets, workspace ID or POST.
+    name: Hosted Family contract observation (GET/OPTIONS only; NOT release proof)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Probe CURRENT Cloudflare public API and Web (no secrets, no writes)
+        run: |
+          set +e
+          node scripts/family-readonly-host-probe.mjs \
+            --api-origin https://keys-api-stocklana.faadil-casecraft.workers.dev \
+            --web-origin https://cresco.faadil-casecraft.workers.dev
+          api_status=$?
+          node scripts/family-readonly-web-probe.mjs \
+            --web-origin https://cresco.faadil-casecraft.workers.dev
+          web_status=$?
+          echo "CURRENT HOSTED OBSERVATION: API status $api_status, web status $web_status (no hosted SHA attestation)"
+          if [ "$api_status" -ne 0 ] || [ "$web_status" -ne 0 ]; then exit 1; fi

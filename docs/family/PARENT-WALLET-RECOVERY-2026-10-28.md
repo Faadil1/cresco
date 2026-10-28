@@ -8,9 +8,9 @@ Previously, `POST /principal/wallet` permitted any bearer of the Parent API toke
 
 ## User and API lifecycle
 
-1. **Enroll before losing access**: from the Family Parent desk, register a wallet you control by signing the existing exact workspace-bound message; the public key becomes the immutable recovery anchor. This also means Family Parent approvals may require wallet signatures.
+1. **Enroll before losing access**: the original Family creator receives a separate 256-bit creator-only wallet-setup code **once**, independently of role links. It is never stored as a raw credential on the server or in browser localStorage. The Parent desk requires BOTH an exact-workspace Parent bearer and the creator setup code for first wallet enrollment, plus the wallet's signed binding message; after enrollment the setup-code hash is removed. The public key becomes the immutable recovery anchor. Legacy Family workspaces that have no setup-code hash and no bound wallet **cannot** self-enroll: do not bypass this gate. This also means Family Parent approvals may require wallet signatures.
 2. **No Parent bearer available**: from the Family landing page, supply the nonsecret workspace ID and request a recovery challenge. Unenrolled or non-Family workspaces fail closed.
-3. Server writes one outstanding random challenge per workspace with a 120-second expiry; persistent storage holds its nonce **hash**. A second challenge while valid returns 429 rather than silently invalidating the first.
+3. Server writes one random challenge per workspace with a 120-second expiry. The nonce is **public challenge material**, not a recovery credential. While it remains active, subsequent requests return the **same** challenge rather than lock out the original requester. Authorization remains the Ed25519 signature by the previously bound Parent wallet. Challenge creation and responses still need production-grade rate limiting for traffic abuse.
 4. The browser requests a wallet `signMessage` for `CRESCO Family principal API access recovery`, binding exact workspace ID, challenge ID, unpredictable nonce, expiry, all-role API rotation and `onChainAuthorityEffect:NONE`. The server verifies Ed25519 against the **previously bound Parent key**.
 5. On valid proof the challenge is marked consumed, and all three Family bearer token hashes (Parent, Teen, second parent) are replaced atomically in the single workspace record. The response shows replacement links only once; only the Parent bearer is persisted in the creator's browser. Previously issued links stop authorizing API operations. An audit event records the event without secrets.
 6. Lost HTTP response or crash after commitment may mean role tokens changed without the browser receiving the new ones. The Parent can request a fresh challenge when permitted and sign again. The previous challenge cannot be replayed or blindly retried. This does not undo any onchain transaction, pending signature, standing mandate or `UNKNOWN` intent.
@@ -30,8 +30,8 @@ API:
 | Parent UI enrollment and handoff | SOURCE/TEST CANDIDATE | Wallet signMessage; only Parent persisted |
 | Existing Family workspaces without enrolled wallet | **BLOCKED** | No self-service recovery. Do not silently initialize from old link after it is lost |
 | Wallet loss or stolen signing capability | **BLOCKED** | No secure recovery fallback yet |
-| Challenge exhaustion/denial-of-recovery | **BLOCKED/REVIEW** | One active challenge per workspace, 429 while active; unauthenticated request rate limit may be abused if workspace ID known. Consider independent abuse controls |
-| First-binding impersonation | **BLOCKED** | A stolen Parent bearer BEFORE enrollment could bind attacker wallet. Requires proper identity assurance; not solved here |
+| Challenge exhaustion/denial-of-recovery | **PARTIAL/REVIEW** | A valid pending challenge is returned again, so an anonymous caller cannot reserve/block the nonce. Traffic floods, workspace enumeration and shared ingress/resource exhaustion still require provider-side rate limits and independent review |
+| First-binding impersonation | **PARTIAL** | A stolen Parent bearer **alone** cannot enroll: a separate one-time creator setup code is required. Compromise of both credentials or fraudulent creation is not solved. No legal guardianship proof |
 | Principal wallet rotation/replacement | **N/A** | Explicitly prohibited by this change pending reviewed protocol |
 | Production auth account, legal guardianship and minor age | **BLOCKED** | Wallet proof ≠ parent identity |
 | Cache/CORS/real hosted runtime/physical two-device Devnet | **BLOCKED** | Separate reviewer and owner-authorized proof |
@@ -39,4 +39,4 @@ API:
 
 ### Operational warning
 
-This remains a prototype Devnet workspace feature, **not a secure real-money family custody account**. A compromised Parent bearer can still use other API powers consistent with existing server rules (including a server-guardian Devnet workspace). Recovery rotates browser API tokens, not onchain authorities. Independent threat-model review is required before external onboarding.
+This remains a prototype Devnet workspace feature, **not a secure real-money family custody account**. First binding requires the independent creator setup code for NEW Family workspaces; old unbound Family workspaces intentionally fail closed. For a lost setup code there is no automatic bypass. A compromised Parent bearer can still use other API powers consistent with existing server rules (including a server-guardian Devnet workspace). Recovery rotates browser API tokens, not onchain authorities. Independent threat-model review is required before external onboarding.

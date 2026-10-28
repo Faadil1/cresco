@@ -66,6 +66,7 @@ export type Workspace = {
 export type CreatedWorkspace = Workspace & {
   tokens: Record<WorkflowRole, string>;
   tokenNotice: string;
+  recoveryEnrollmentCode?: string; // creator-only, once, never stored in browser keychain
 };
 
 export type Quote = {
@@ -265,7 +266,7 @@ export const workflowApi = {
   notifications: (id: string, token: string, since = 0) => call<NotificationsView>("GET", `/workspaces/${id}/notifications?since=${since}`, { token }).then((r) => r.body),
   walletMessage: (id: string, token: string, issuedAt: string) =>
     call<{ message: string; issuedAt: string }>("GET", `/workspaces/${id}/principal/wallet-message?issuedAt=${encodeURIComponent(issuedAt)}`, { token }).then((r) => r.body),
-  bindWallet: (id: string, token: string, input: { publicKey: string; signature: string; issuedAt: string }) =>
+  bindWallet: (id: string, token: string, input: { publicKey: string; signature: string; issuedAt: string; recoveryEnrollmentCode?: string }) =>
     call<{ wallet: { publicKey: string } }>("POST", `/workspaces/${id}/principal/wallet`, { token, body: input }).then((r) => r.body),
   reconcile: (id: string, token: string) =>
     call<{ reconciled: { unknownEventId: string; resolution: string }[] }>("POST", `/workspaces/${id}/reconcile`, { token, body: {} }).then((r) => r.body),

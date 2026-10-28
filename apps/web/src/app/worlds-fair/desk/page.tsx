@@ -477,8 +477,11 @@ function JourneySteps({ current }: { current: number }) {
   );
 }
 
-function TokenHandoff({ ws, onDone }: { ws: CreatedWorkspace; onDone: () => void }) {
+type RoleHandoff = Pick<CreatedWorkspace, "id" | "useCase" | "tokens" | "tokenNotice" | "recoveryEnrollmentCode">;
+
+function TokenHandoff({ ws, onDone }: { ws: RoleHandoff; onDone: () => void }) {
   const [copied, setCopied] = useState<string | null>(null);
+  const [codeCopied, setCodeCopied] = useState(false);
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   return (
     <Card className="border-blue/30">
@@ -489,13 +492,29 @@ function TokenHandoff({ ws, onDone }: { ws: CreatedWorkspace; onDone: () => void
           ? "This browser keeps only the Parent role. Give the Teen and second-parent links to separate browser profiles. A role link is not proof of identity."
           : "This capital lab browser keeps all three roles for demonstration."}
       </p>
+      {ws.useCase === "family" && ws.recoveryEnrollmentCode ? (
+        <div className="mt-4 rounded-[16px] border border-yellow/50 bg-yellow-soft p-4">
+          <p className="text-[13px] font-bold text-navy">Creator-only Parent wallet setup code · shown once</p>
+          <p className="mt-1 text-[12px] font-semibold text-ink-2">Save this separately from every role link. It is required when securing the first Parent recovery wallet, and is never recoverable from the server. Do not give it to the Teen or second parent. This is possession proof, not legal guardian verification.</p>
+          <button type="button"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(ws.recoveryEnrollmentCode!);
+                setCodeCopied(true);
+              } catch { setCodeCopied(false); }
+            }}
+            className="mt-3 min-h-10 rounded-[12px] border border-line bg-white px-3 text-[12px] font-bold text-navy">
+            {codeCopied ? "Setup code copied" : "Copy Parent setup code"}
+          </button>
+        </div>
+      ) : null}
       <div className="mt-4 grid gap-3">
         {(["operator", "principal", "risk"] as WorkflowRole[]).map((role) => {
           const link = shareLink(origin, ws.id, role, ws.tokens[role]);
           return (
             <div key={role} className="flex flex-wrap items-center justify-between gap-2 rounded-[16px] border border-line p-3">
               <div>
-                <p className="text-[13px] font-semibold text-navy-strong">{USE_CASES[caseOfWorkspace(ws)].roles[role].title}</p>
+                <p className="text-[13px] font-semibold text-navy-strong">{USE_CASES[ws.useCase === "family" ? "family" : "capital"].roles[role].title}</p>
                 <p className="font-mono text-[11px] text-ink-3">{short(link, 38, 10)}</p>
               </div>
               <button
@@ -539,7 +558,7 @@ async function loadDesk(id: string, roleToken: string) {
 
 export default function WorldFairDeskPage() {
   const [keychain, setKeychain] = useState<DeskKeychain>({ workspaceId: null, tokens: {} });
-  const [handoff, setHandoff] = useState<CreatedWorkspace | null>(null);
+  const [handoff, setHandoff] = useState<RoleHandoff | null>(null);
   const [ws, setWs] = useState<Workspace | null>(null);
   const [mandate, setMandate] = useState<MandateView | null>(null);
   const [requests, setRequests] = useState<ExceptionRequest[]>([]);
@@ -569,6 +588,7 @@ export default function WorldFairDeskPage() {
   const [recoveryWorkspaceId, setRecoveryWorkspaceId] = useState("");
   const [recoveryBusy, setRecoveryBusy] = useState(false);
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
+  const [walletSetupCode, setWalletSetupCode] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -591,6 +611,7 @@ export default function WorldFairDeskPage() {
       setLocalIntentHold(null);
       setRecoveryNotice(null);
       setIntentResult(null);
+      setWalletSetupCode(""); // never carry an enrollment secret to another role or workspace
       setConfirmRoleRotation(null);
       setReplacementRoleLink(null);
       setReplacementCopied(false);
@@ -780,6 +801,7 @@ export default function WorldFairDeskPage() {
   }
 
   function onCreated(created: CreatedWorkspace) {
+    setWalletSetupCode("");
     // Show all links only in transient handoff; never persist Teen or second-
     // parent authority into the creator's Family browser.
     const next: DeskKeychain = {
@@ -915,9 +937,14 @@ export default function WorldFairDeskPage() {
       saveKeychain({ workspaceId: target, tokens: { principal: result.tokens.principal } });
       setKeychain({ workspaceId: target, tokens: { principal: result.tokens.principal } });
       setTab("principal");
-      const workspace = await workflowApi.getWorkspace(target, result.tokens.principal);
+      // The API credential rekey has already COMMITTED. Do not gate the
+      // one-time link handoff on a second, fallible workspace metadata read:
+      // losing that GET would otherwise discard both Teen and second-parent
+      // links after the old role tokens had been revoked.
       setHandoff({
-        ...workspace, tokens: result.tokens,
+        id: target,
+        useCase: "family",
+        tokens: result.tokens,
         tokenNotice: "Parent wallet recovery verified. ALL previous Family links are invalid. Distribute these new links securely.",
       });
       setRecoveryWorkspaceId("");
@@ -951,7 +978,11 @@ export default function WorldFairDeskPage() {
       const issuedAt = new Date().toISOString();
       const { message } = await workflowApi.walletMessage(id, t, issuedAt);
       const signed = await signWithWallet(message);
-      await workflowApi.bindWallet(id, t, { publicKey: signed.publicKey, signature: signed.signature, issuedAt });
+      await workflowApi.bindWallet(id, t, {
+        publicKey: signed.publicKey, signature: signed.signature, issuedAt,
+        ...(ws?.useCase === "family" ? { recoveryEnrollmentCode: walletSetupCode.trim() } : {}),
+      });
+      setWalletSetupCode("");
     });
   }
 
@@ -982,7 +1013,7 @@ export default function WorldFairDeskPage() {
             <Link href="/" className="rounded-full border border-line bg-surface/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft hover:border-green/35">CRESCO home</Link>
             <Link href="/worlds-fair" className="rounded-full border border-line bg-surface/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft hover:border-green/35">Technical proof</Link>
             {id ? (
-              <button type="button" onClick={() => { saveKeychain({ workspaceId: null, tokens: {} }); setKeychain({ workspaceId: null, tokens: {} }); setWs(null); setMandate(null); setRequests([]); setEvents([]); setIntentSafety(null); setLocalIntentHold(null); setRecoveryNotice(null); setIntentResult(null); setReplacementRoleLink(null); setConfirmRoleRotation(null); }} className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft">
+              <button type="button" onClick={() => { saveKeychain({ workspaceId: null, tokens: {} }); setKeychain({ workspaceId: null, tokens: {} }); setWs(null); setMandate(null); setRequests([]); setEvents([]); setIntentSafety(null); setLocalIntentHold(null); setRecoveryNotice(null); setIntentResult(null); setWalletSetupCode(""); setReplacementRoleLink(null); setConfirmRoleRotation(null); }} className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft">
                 Leave workspace
               </button>
             ) : null}
@@ -1118,7 +1149,7 @@ export default function WorldFairDeskPage() {
                       <p className="mt-1 text-[13px] font-semibold text-ink-2">Charter, mandate, asset rule, trade vaults and funding. Several transactions; safe to retry.</p>
                     )}
                     {walletGuardianWs && !ws.roles.principal.wallet ? (
-                      <button type="button" disabled={Boolean(actionBusy)} onClick={bindWallet} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-[14px] bg-blue px-4 text-[13px] font-semibold text-white disabled:opacity-60">
+                      <button type="button" disabled={Boolean(actionBusy) || ws.useCase === "family" && !walletSetupCode.trim()} onClick={bindWallet} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-[14px] bg-blue px-4 text-[13px] font-semibold text-white disabled:opacity-60">
                         {actionBusy === "wallet" ? <LoaderCircle className="size-4 animate-spin" /> : <Wallet className="size-4" />} Connect the guardian wallet
                       </button>
                     ) : (
@@ -1264,7 +1295,14 @@ export default function WorldFairDeskPage() {
                         ) : (
                           <div className="mt-3 rounded-[14px] border border-yellow/40 bg-yellow-soft p-3">
                             <p className="text-[12px] font-semibold text-navy">No Parent recovery wallet registered. If this Parent role link is lost, automatic recovery is unavailable. Register a wallet you control and can restore; this also enables signed approvals.</p>
-                            <button type="button" disabled={Boolean(actionBusy) || activityUncertain}
+                            <label className="mt-3 block text-[12px] font-bold text-navy">
+                              Creator-only Parent wallet setup code (from workspace creation)
+                              <input type="password" autoComplete="off" value={walletSetupCode}
+                                onChange={(event) => setWalletSetupCode(event.target.value)}
+                                placeholder="Paste the one-time setup code"
+                                className="mt-1 min-h-10 w-full rounded-[10px] border border-line bg-white px-3 text-[13px] text-navy" />
+                            </label>
+                            <button type="button" disabled={Boolean(actionBusy) || activityUncertain || !walletSetupCode.trim()}
                               onClick={() => void bindWallet()}
                               className="mt-2 min-h-10 rounded-[12px] bg-navy-strong px-3 text-[12px] font-bold text-white disabled:opacity-50">
                               {actionBusy === "wallet" ? "Registering…" : "Secure Parent recovery wallet"}
