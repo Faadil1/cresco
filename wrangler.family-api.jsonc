@@ -1,0 +1,32 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "cresco-family-api",
+  "main": "src/cloudflare-family-only-worker.mjs",
+  "compatibility_date": "2026-10-28",
+  "workers_dev": true,
+  "observability": {
+    "enabled": true
+  },
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "vars": {
+    "CRESCO_FAMILY_WEB_ORIGIN": "https://cresco-family-web.faadil-casecraft.workers.dev",
+    "CRESCO_FAMILY_MAX_WORKSPACES": "15"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "FAMILY_STATE",
+        "class_name": "CrescoFamilyIsolatedState"
+      }
+    ]
+  },
+  "exports": {
+    "CrescoFamilyIsolatedState": {
+      "type": "durable-object",
+      "state": "created",
+      "storage": "sqlite"
+    }
+  }
+}

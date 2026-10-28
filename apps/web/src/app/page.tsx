@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FamilyOnlyHome } from "@/components/family-only-home";
 import { ArrowRight, BookOpen, CheckCircle2, HeartHandshake, KeyRound, MessageCircle, ShieldCheck, Sprout } from "lucide-react";
 import { FamilyStoryScene, StoryVignette } from "@/components/illustrations/family-story";
 import { SiteHeader } from "@/components/site-header";
@@ -18,6 +19,7 @@ const benefits = [
 ];
 
 export default function WelcomePage() {
+  if (process.env.NEXT_PUBLIC_CRESCO_FAMILY_ONLY === "1") return <FamilyOnlyHome />;
   return (
     <main id="main" className="cresco-editorial-backdrop min-h-dvh">
       <div className="mx-auto w-full max-w-[1390px] px-5 pb-12 pt-5 md:px-9 lg:px-12">

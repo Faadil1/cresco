@@ -14,6 +14,7 @@
     "mock:cresco": "node scripts/mock-cresco-api.mjs",
     "dev:vinext": "vite dev --port 3001",
     "build:vinext": "vite build",
+    "build:family": "CRESCO_FAMILY_BUILD=1 vite build && node scripts/assert-family-build.mjs",
     "start:vinext": "wrangler dev --config dist/server/wrangler.json",
     "deploy:vinext": "vinext-cloudflare deploy --config dist/server/wrangler.json"
   },
