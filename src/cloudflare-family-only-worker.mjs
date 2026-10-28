@@ -9,9 +9,19 @@ export { FamilyState as CrescoFamilyIsolatedState } from './cloudflare-family-st
 
 const CHAIN_WRITE = /^\/workspaces\/[a-z0-9-]+\/(?:bootstrap|intents|requests\/[a-z0-9-]+\/decision|mandate\/status|mandate\/policy|asset-rule|vault\/topup|guardian\/submit|reconcile)$/;
 const ROUTES = new Set(['GET', 'POST', 'OPTIONS']);
-const response = (status, error, message) => new Response(JSON.stringify({
-  error, message, familyOnly: true, onChainAuthorityChanged: false
-}), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
+const response = (status, error, message, request, env) => {
+  const headers = new Headers({
+    'content-type': 'application/json; charset=utf-8',
+    'cache-control': 'no-store', 'vary': 'Origin'
+  });
+  const from = request.headers.get('origin');
+  if (from && from === env.CRESCO_FAMILY_WEB_ORIGIN) {
+    headers.set('access-control-allow-origin', from);
+  }
+  return new Response(JSON.stringify({
+    error, message, familyOnly: true, onChainAuthorityChanged: false
+  }), { status, headers });
+};
 
 export function familyWorkerPolicy(request, env = {}) {
   const path = new URL(request.url).pathname;
@@ -42,7 +52,7 @@ export function familyWorkerPolicy(request, env = {}) {
 
 export async function handleCrescoFamilyOnlyRequest(request, env = {}, services = {}) {
   const denied = familyWorkerPolicy(request, env);
-  if (denied) return response(denied.status, denied.error, 'This isolated Family service cannot perform the requested action');
+  if (denied) return response(denied.status, denied.error, 'This isolated Family service cannot perform the requested action', request, env);
   const path = new URL(request.url).pathname;
   // A public contract for this Worker should explicitly describe Family,
   // not imply that the Capital or legacy Family API is available.
@@ -60,13 +70,13 @@ export async function handleCrescoFamilyOnlyRequest(request, env = {}, services 
   if (request.method === 'POST' && path === WORKFLOW_PREFIX + '/workspaces') {
     let body;
     try { body = await request.clone().json(); } catch {
-      return response(400, 'FAMILY_JSON_INVALID', 'Workspace creation requires valid JSON');
+      return response(400, 'FAMILY_JSON_INVALID', 'Workspace creation requires valid JSON', request, env);
     }
     if (!body || body.useCase !== 'family') {
-      return response(403, 'FAMILY_CASE_REQUIRED', 'Only a Family workspace can be created here');
+      return response(403, 'FAMILY_CASE_REQUIRED', 'Only a Family workspace can be created here', request, env);
     }
     if (request.headers.get('x-cresco-create-token') !== env.CRESCO_FAMILY_CREATE_TOKEN) {
-      return response(401, 'FAMILY_INVITATION_INVALID', 'A valid Family early-access code is required');
+      return response(401, 'FAMILY_INVITATION_INVALID', 'A valid Family early-access code is required', request, env);
     }
   }
 
