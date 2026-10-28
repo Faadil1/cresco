@@ -205,9 +205,6 @@ describe("World's Fair desk", () => {
     expect(screen.queryByText(/Request updates unavailable/i)).not.toBeInTheDocument();
   });
 
-    const button = await screen.findByRole("button", { name: /submit intent/i });
-    await waitFor(() => expect(button).toBeEnabled());
-    await userEvent.click(button);
   it("persists an UNKNOWN trade hold across reload and resumes only on a signed reconciliation", async () => {
     window.localStorage.setItem("cresco-worlds-fair-desk-v1", JSON.stringify({
       workspaceId: WS.id, tokens: { operator: "wf_operator_a" },
