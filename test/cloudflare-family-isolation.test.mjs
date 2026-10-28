@@ -14,7 +14,7 @@ function env() {
       idFromName: (s) => s,
       get: () => ({
         fetch: async (input) => {
-          const path = new URL(input.url).pathname;
+          const path = new URL(typeof input === 'string' ? input : input.url).pathname;
           return Response.json(path === '/lease/acquire' ? {acquired:true} : {released:true});
         }
       })
@@ -49,6 +49,23 @@ test('Family uses distinct Worker names and Durable Object binding, preserving C
   assert.ok(!JSON.stringify(isolatedApi).includes('keys-api-stocklana'));
   assert.ok(!JSON.stringify(isolatedWeb).includes('cresco-api-stocklana'));
   assert.ok(!Object.keys(isolatedApi.vars).some(k=>/DEVNET_KEYPAIR|SOLANA_DEVNET_RPC|PYTH_PRO_API_KEY/.test(k)));
+});
+
+test('Family invitation preflight is accepted only for the dedicated frontend Origin', async () => {
+  const cfg=env();
+  const res=await handleCrescoFamilyOnlyRequest(
+    new Request(P+'/workspaces',{method:'OPTIONS',headers:{
+      origin:ORIGIN,'access-control-request-method':'POST',
+      'access-control-request-headers':'x-cresco-create-token'
+    }}),cfg);
+  assert.equal(res.status,204);
+  assert.equal(res.headers.get('access-control-allow-origin'),ORIGIN);
+  assert.match(res.headers.get('access-control-allow-headers')||'',/x-cresco-create-token/);
+  const bad=await handleCrescoFamilyOnlyRequest(new Request(P+'/workspaces',{method:'OPTIONS',headers:{
+    origin:'https://attacker.example','access-control-request-method':'POST'
+  }}),cfg);
+  assert.equal(bad.status,403);
+  assert.equal(bad.headers.get('access-control-allow-origin'),null);
 });
 
 test('Family-only Worker refuses Capital/legacy APIs, unconfigured origin, invite and Devnet writes', async () => {
