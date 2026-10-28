@@ -241,10 +241,10 @@ export const workflowApi = {
   bootstrap: (id: string, token: string) => call<Workspace>("POST", `/workspaces/${id}/bootstrap`, { token, body: {} }).then((r) => r.body),
   submitIntent: (id: string, token: string, input: { inputAmount: number; maxSlippageBps: number; clientReference?: string }, idempotencyKey: string) =>
     call<IntentResult>("POST", `/workspaces/${id}/intents`, { token, body: { action: "SWAP_EXACT_IN", ...input }, idempotencyKey }),
-  listRequests: (id: string, status?: string) =>
-    call<{ requests: ExceptionRequest[] }>("GET", `/workspaces/${id}/requests${status ? `?status=${status}` : ""}`).then((r) => r.body.requests),
-  approvalMessage: (id: string, requestId: string, issuedAt: string) =>
-    call<{ message: string; issuedAt: string }>("GET", `/workspaces/${id}/requests/${requestId}/approval-message?issuedAt=${encodeURIComponent(issuedAt)}`).then((r) => r.body),
+  listRequests: (id: string, token: string, status?: string) =>
+    call<{ requests: ExceptionRequest[] }>("GET", `/workspaces/${id}/requests${status ? `?status=${status}` : ""}`, { token }).then((r) => r.body.requests),
+  approvalMessage: (id: string, requestId: string, token: string, issuedAt: string) =>
+    call<{ message: string; issuedAt: string }>("GET", `/workspaces/${id}/requests/${requestId}/approval-message?issuedAt=${encodeURIComponent(issuedAt)}`, { token }).then((r) => r.body),
   decide: (id: string, requestId: string, token: string, input: { decision: "APPROVE" | "REFUSE"; note?: string; issuedAt?: string; walletSignature?: string }) =>
     call<{ request: ExceptionRequest; retryPolicy?: string }>("POST", `/workspaces/${id}/requests/${requestId}/decision`, { token, body: input }),
   mandate: (id: string) => call<MandateView>("GET", `/workspaces/${id}/mandate`).then((r) => r.body),
@@ -255,7 +255,7 @@ export const workflowApi = {
   updateAssetRule: (id: string, token: string, input: { maxActionAmount?: number; maxPeriodAmount?: number; enabled?: boolean }) =>
     call<{ policy: WorkspacePolicy; staleRequests: number }>("POST", `/workspaces/${id}/asset-rule`, { token, body: input }).then((r) => r.body),
   topUpVault: (id: string, token: string) => call<{ effects: number }>("POST", `/workspaces/${id}/vault/topup`, { token, body: {} }).then((r) => r.body),
-  history: (id: string, limit = 100) => call<{ events: WorkflowEvent[] }>("GET", `/workspaces/${id}/history?limit=${limit}`).then((r) => r.body.events),
+  history: (id: string, token: string, limit = 100) => call<{ events: WorkflowEvent[] }>("GET", `/workspaces/${id}/history?limit=${limit}`, { token }).then((r) => r.body.events),
   notifications: (id: string, token: string, since = 0) => call<NotificationsView>("GET", `/workspaces/${id}/notifications?since=${since}`, { token }).then((r) => r.body),
   walletMessage: (id: string, issuedAt: string) =>
     call<{ message: string; issuedAt: string }>("GET", `/workspaces/${id}/principal/wallet-message?issuedAt=${encodeURIComponent(issuedAt)}`).then((r) => r.body),

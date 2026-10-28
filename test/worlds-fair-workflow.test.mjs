@@ -74,7 +74,7 @@ test('CAP-03: soft boundary refuses, returns Policy Diff and a durable PENDING r
   assert.equal(res.body.decision, 'PENDING_PRINCIPAL');
   assert.deepEqual(res.body.policyDiff.violatedDimensions, ['MAX_ACTION_NOTIONAL']);
   assert.equal(res.body.refusal.evidence, 'PROGRAM_PREFLIGHT_SIMULATION');
-  const list = await wf.listRequests(id, { status: 'PENDING' });
+  const list = await wf.listRequests(id, bearer('operator'), { status: 'PENDING' });
   assert.equal(list.body.requests.length, 1);
   assert.equal(list.body.requests[0].mandateNonce, 7);
 });
@@ -114,7 +114,7 @@ test('CAP-07: pausing the mandate refuses intents and makes pending exceptions s
   const pending = await wf.submitIntent(id, bearer('operator'), { inputAmount: 800_000 });
   const paused = await wf.setStatus(id, bearer('principal'), { status: 'PAUSED' });
   assert.equal(paused.body.staleRequests, 1);
-  const req = (await wf.listRequests(id)).body.requests.find((r) => r.id === pending.body.request.id);
+  const req = (await wf.listRequests(id, bearer('operator'))).body.requests.find((r) => r.id === pending.body.request.id);
   assert.equal(req.status, 'STALE');
   const refused = await wf.submitIntent(id, bearer('operator'), { inputAmount: 100_000 });
   assert.equal(refused.body.code, 'MandateNotActive');
@@ -167,7 +167,7 @@ test('CAP-08: history is durable, ordered and carries explorer receipts', async 
   await wf.submitIntent(id, bearer('operator'), { inputAmount: 100_000 });
   const pending = await wf.submitIntent(id, bearer('operator'), { inputAmount: 700_000 });
   await wf.decide(id, pending.body.request.id, bearer('principal'), { decision: 'APPROVE' });
-  const h = (await wf.history(id)).body.events;
+  const h = (await wf.history(id, bearer('operator'))).body.events;
   const types = h.map((e) => e.type);
   assert.deepEqual(types.slice(0, 3), ['EXCEPTION_EXECUTED', 'EXCEPTION_REQUESTED', 'INTENT_ALLOWED']);
   const executed = h[0];
@@ -284,7 +284,7 @@ test('robustness: BUSY mandate returns 409 with retryAfter and leaves the reques
   const pending = await wf.submitIntent(id, bearer('operator'), { inputAmount: 700_000 });
   chain.approveAndExecuteException = async () => { throw Object.assign(new Error('busy'), { worldFairBusy: true }); };
   await rejectsWith(() => wf.decide(id, pending.body.request.id, bearer('principal'), { decision: 'APPROVE' }), 409, 'BUSY');
-  const req = (await wf.listRequests(id)).body.requests[0];
+  const req = (await wf.listRequests(id, bearer('operator'))).body.requests[0];
   assert.equal(req.status, 'PENDING');
 });
 
@@ -296,7 +296,7 @@ test('robustness: unconfirmed approval becomes UNKNOWN and reconciles from the g
   assert.equal(res.body.request.status, 'UNKNOWN');
   const rec = await wf.reconcile(id, bearer('principal'));
   assert.equal(rec.body.reconciled[0].resolution, 'EFFECTS_FAILED');
-  assert.equal((await wf.listRequests(id)).body.requests[0].status, 'REFUSED_BY_PROGRAM');
+  assert.equal((await wf.listRequests(id, bearer('operator'))).body.requests[0].status, 'REFUSED_BY_PROGRAM');
 });
 
 test('robustness: venue failure rolls back and consumes nothing', async () => {
@@ -304,7 +304,7 @@ test('robustness: venue failure rolls back and consumes nothing', async () => {
   const pending = await wf.submitIntent(id, bearer('operator'), { inputAmount: 700_000 });
   const res = await wf.decide(id, pending.body.request.id, bearer('principal'), { decision: 'APPROVE' });
   assert.equal(res.body.request.status, 'ROLLED_BACK');
-  const h = (await wf.history(id)).body.events[0];
+  const h = (await wf.history(id, bearer('operator'))).body.events[0];
   assert.equal(h.type, 'EXCEPTION_ROLLED_BACK');
   assert.equal(h.data.allowanceConsumed, false);
 });
@@ -315,7 +315,7 @@ test('robustness: pending requests expire and interrupted approvals become UNKNO
   const a = await wf.submitIntent(id, bearer('operator'), { inputAmount: 700_000 });
   t += 31 * 60 * 1000;
   await rejectsWith(() => wf.decide(id, a.body.request.id, bearer('principal'), { decision: 'APPROVE' }), 409, 'REQUEST_ALREADY_DECIDED');
-  assert.equal((await wf.listRequests(id)).body.requests[0].status, 'EXPIRED');
+  assert.equal((await wf.listRequests(id, bearer('operator'))).body.requests[0].status, 'EXPIRED');
 });
 
 test('robustness: price movement that makes the action fit standing does not auto-execute', async () => {
@@ -397,7 +397,7 @@ test('review fix: an unconfirmed approval keeps the execution signature and is n
   const res = await wf.decide(id, pending.body.request.id, bearer('principal'), { decision: 'APPROVE' });
   assert.equal(res.body.request.status, 'UNKNOWN');
   assert.equal(res.body.request.execution.signature, '7'.repeat(88));
-  const unknown = (await wf.history(id)).body.events.find((e) => e.type === 'OUTCOME_UNKNOWN');
+  const unknown = (await wf.history(id, bearer('operator'))).body.events.find((e) => e.type === 'OUTCOME_UNKNOWN');
   assert.deepEqual(unknown.signatures.map((s) => s.label), ['exception.grant', 'exception.execute']);
   // It can never be decided a second time.
   await rejectsWith(() => wf.decide(id, pending.body.request.id, bearer('principal'), { decision: 'APPROVE' }), 409, 'REQUEST_ALREADY_DECIDED');
@@ -408,10 +408,10 @@ test('review fix: read endpoints never persist, so they cannot overwrite an in-f
   const { wf, id, bearer } = await setup({ now: () => t });
   await wf.submitIntent(id, bearer('operator'), { inputAmount: 700_000 });
   t += 31 * 60 * 1000;
-  const before = (await wf.history(id)).body.events.length;
-  assert.equal((await wf.listRequests(id)).body.requests[0].status, 'EXPIRED'); // computed view
+  const before = (await wf.history(id, bearer('operator'))).body.events.length;
+  assert.equal((await wf.listRequests(id, bearer('operator'))).body.requests[0].status, 'EXPIRED'); // computed view
   assert.equal((await wf.notifications(id, bearer('principal'))).body.pendingDecisions, 0);
-  assert.equal((await wf.history(id)).body.events.length, before); // no write from GET
+  assert.equal((await wf.history(id, bearer('operator'))).body.events.length, before); // no write from GET
 });
 
 test('review fix: with a bound wallet only a wallet-signed principal can approve', async () => {
@@ -459,7 +459,7 @@ test('live fix: a confirmed grant without an execution transaction reconciles as
   assert.equal(res.body.request.status, 'UNKNOWN');
   const rec = await wf.reconcile(id, bearer('principal'));
   assert.equal(rec.body.reconciled[0].resolution, 'GRANT_ONLY_EXECUTION_NOT_SENT');
-  assert.equal((await wf.listRequests(id)).body.requests[0].status, 'NOT_EXECUTED');
+  assert.equal((await wf.listRequests(id, bearer('operator'))).body.requests[0].status, 'NOT_EXECUTED');
 });
 
 test('wallet-bound approval forwards the exact signed message to the chain for on-chain verification', async () => {
@@ -569,7 +569,7 @@ test('principal-wallet guardian: bootstrap, approval and pause all wait for the 
   assert.equal(grantOp.status, 202);
   assert.equal(grantOp.body.needsGuardianSignature.kind, 'GRANT');
   // Until the wallet signs, nothing is granted: the request is still pending.
-  assert.equal((await wf.listRequests(id)).body.requests.find((r) => r.id === rid).status, 'PENDING');
+  assert.equal((await wf.listRequests(id, bearer('operator'))).body.requests.find((r) => r.id === rid).status, 'PENDING');
   const g = grantOp.body.needsGuardianSignature;
   await rejectsWith(() => wf.submitGuardian(id, bearer('principal'), { opId: g.opId, signedTransaction: 'signed:tx-something-else' }), 400, 'GUARDIAN_TRANSACTION_ALTERED');
 
@@ -586,7 +586,7 @@ test('principal-wallet guardian: bootstrap, approval and pause all wait for the 
   const p = pause.body.needsGuardianSignature;
   await wf.submitGuardian(id, bearer('principal'), { opId: p.opId, signedTransaction: `signed:${p.transaction}` });
   assert.equal(chain.st.status, 'PAUSED');
-  const history = (await wf.history(id)).body.events.map((e) => e.type);
+  const history = (await wf.history(id, bearer('operator'))).body.events.map((e) => e.type);
   assert.ok(history.includes('MANDATE_STATUS_CHANGED'));
   assert.ok(history.includes('EXCEPTION_EXECUTED'));
 });

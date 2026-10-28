@@ -132,6 +132,23 @@ describe("World's Fair desk", () => {
     expect(await screen.findByRole("progressbar", { name: /Notional/ })).toHaveAttribute("aria-valuenow", "4");
   });
 
+  it("includes the viewer role token for every private request and history read", async () => {
+    window.localStorage.setItem("cresco-worlds-fair-desk-v1", JSON.stringify({
+      workspaceId: WS.id, tokens: { principal: "wf_principal_b" },
+    }));
+    const calls = api();
+    render(<WorldFairDeskPage />);
+    expect(await screen.findByRole("button", { name: /approve exactly once/i })).toBeInTheDocument();
+    await waitFor(() => {
+      const reads = calls.filter((c) => c.method === "GET" &&
+        (c.path.endsWith("/requests") || c.path.includes("/history?")));
+      expect(reads.length).toBeGreaterThanOrEqual(2);
+      expect(reads.every((c) =>
+        (c.init?.headers as Record<string, string>)?.authorization === "Bearer wf_principal_b"
+      )).toBe(true);
+    });
+  });
+
   it("operator sees UNKNOWN as unconfirmed, never as success", async () => {
     window.localStorage.setItem("cresco-worlds-fair-desk-v1", JSON.stringify({ workspaceId: WS.id, tokens: { operator: "wf_operator_a" } }));
     api({

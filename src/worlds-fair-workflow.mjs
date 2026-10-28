@@ -685,8 +685,9 @@ export function createWorldFairWorkflow({
     });
   }
 
-  async function listRequests(id, query = {}) {
+  async function listRequests(id, token, query = {}) {
     const ws = await loadWorkspace(id);
+    authorize(ws, token, WORKFLOW_ROLES);
     const requests = await sweepExpired(ws, await loadRequests(ws), { persist: false });
     let list = Object.values(requests).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
     if (query.status) list = list.filter((r) => r.status === String(query.status).toUpperCase());
@@ -1001,8 +1002,9 @@ export function createWorldFairWorkflow({
     return { status: 200, body: { contractVersion: WORKFLOW_CONTRACT_VERSION, workspaceId: ws.id, ...view, consumption, observedAt: nowIso() } };
   }
 
-  async function history(id, query = {}) {
+  async function history(id, token, query = {}) {
     const ws = await loadWorkspace(id);
+    authorize(ws, token, WORKFLOW_ROLES);
     const limit = Math.min(Math.max(Number(query.limit ?? 100) || 100, 1), cfg.maxEvents);
     const list = (await store.get(keys.events(ws.id))) ?? [];
     return { status: 200, body: { contractVersion: WORKFLOW_CONTRACT_VERSION, events: list.slice(-limit).reverse() } };

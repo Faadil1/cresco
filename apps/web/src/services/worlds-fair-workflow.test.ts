@@ -51,7 +51,7 @@ describe("World's Fair workflow client", () => {
     vi.stubGlobal("fetch", vi.fn(async () => json(403, { error: "ROLE_FORBIDDEN", message: "nope" })));
     await expect(workflowApi.decide("ws-abcdef12", "req-1", "t", { decision: "APPROVE" })).rejects.toBeInstanceOf(WorkflowApiError);
     vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("Failed to fetch"); }));
-    await expect(workflowApi.history("ws-abcdef12")).rejects.toMatchObject({ code: "NETWORK_UNAVAILABLE" });
+    await expect(workflowApi.history("ws-abcdef12", "wf_operator_x")).rejects.toMatchObject({ code: "NETWORK_UNAVAILABLE" });
   });
 
   it("principal-wallet guardian: a 202 signature request is signed by the wallet and submitted", async () => {
