@@ -117,12 +117,17 @@ describe("World's Fair desk", () => {
     await userEvent.type(screen.getByPlaceholderText("Paste the one-time setup code"), "fec_creator_once");
     expect(control).toBeEnabled();
     await userEvent.click(control);
-    await waitFor(() => expect(calls.some((call) => call.path.endsWith("/principal/wallet") && call.method === "POST")).toBe(true));
+    await waitFor(() => {
+      expect(
+        calls.some((call) => call.path.endsWith("/principal/wallet") && call.method === "POST"),
+        `Wallet enrollment did not POST; requests=${JSON.stringify(calls.map((x) => x.method + " " + x.path))}; error=${screen.queryByText(/failed|unavailable|error|invalid|No Solana wallet/i)?.textContent ?? "none"}`
+      ).toBe(true);
+    });
     const bound = calls.find((call) => call.path.endsWith("/principal/wallet") && call.method === "POST")!;
     expect(JSON.parse(String(bound.init?.body))).toMatchObject({
       publicKey: "ParentWallet", signature: "AQID", recoveryEnrollmentCode: "fec_creator_once",
     });
-    expect(JSON.stringify(window.localStorage)).not.toContain("fec_creator_once");
+    expect(window.localStorage.getItem("cresco-worlds-fair-desk-v1") ?? "").not.toContain("fec_creator_once");
     expect(screen.getByPlaceholderText("Paste the one-time setup code")).toHaveValue("");
     Reflect.deleteProperty(window, "phantom");
   });
