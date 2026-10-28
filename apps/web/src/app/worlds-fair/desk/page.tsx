@@ -32,6 +32,7 @@ import {
   newIdempotencyKey,
   parseShareFragment,
   saveKeychain,
+  singleRoleFamilyKeychain,
   setGuardianSigner,
   shareLink,
   toBase,
@@ -483,7 +484,11 @@ function TokenHandoff({ ws, onDone }: { ws: CreatedWorkspace; onDone: () => void
     <Card className="border-blue/30">
       <Eyebrow>Role links · shown once</Eyebrow>
       <h2 className="mt-2 font-display text-[36px] font-normal leading-tight tracking-[-0.02em] text-navy-strong">Hand each role its own link</h2>
-      <p className="mt-1 text-[13px] font-semibold text-ink-2">{ws.tokenNotice} This browser keeps all three so you can try every role.</p>
+      <p className="mt-1 text-[13px] font-semibold text-ink-2">
+        {ws.tokenNotice} {ws.useCase === "family"
+          ? "This browser keeps only the Parent role. Give the Teen and second-parent links to separate browser profiles. A role link is not proof of identity."
+          : "This capital lab browser keeps all three roles for demonstration."}
+      </p>
       <div className="mt-4 grid gap-3">
         {(["operator", "principal", "risk"] as WorkflowRole[]).map((role) => {
           const link = shareLink(origin, ws.id, role, ws.tokens[role]);
@@ -560,26 +565,54 @@ export default function WorldFairDeskPage() {
   const [landingCase, setLandingCase] = useState<UseCase>("family");
 
   useEffect(() => {
-    void Promise.resolve().then(() => {
-    const requested = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("case") : null;
-    if (requested === "family" || requested === "capital") setLandingCase(requested);
-    const stored = loadKeychain();
-    const shared = typeof window !== "undefined" ? parseShareFragment(window.location.hash) : null;
-    if (shared) {
+    let cancelled = false;
+    const importSharedRole = () => {
+      if (cancelled) return false;
+      const shared = parseShareFragment(window.location.hash);
+      if (!shared) return false;
+      // A share link may arrive on an already-mounted desk via hashchange.
+      // Replacing (never merging) its bearer must also discard stale view data.
       const next: DeskKeychain = {
         workspaceId: shared.workspaceId,
-        tokens: stored.workspaceId === shared.workspaceId ? { ...stored.tokens, [shared.role]: shared.token } : { [shared.role]: shared.token },
+        tokens: { [shared.role]: shared.token },
       };
       saveKeychain(next);
+      setWs(null);
+      setMandate(null);
+      setRequests([]);
+      setEvents([]);
+      setIntentSafety(null);
+      setLocalIntentHold(null);
+      setRecoveryNotice(null);
+      setIntentResult(null);
+      setPendingCount(0);
+      setLoadError(null);
+      setActionError(null);
+      setActivityUncertain(true);
       setKeychain(next);
       setTab(shared.role);
-      window.history.replaceState(null, "", window.location.pathname);
-    } else {
+      // Do not leak role bearer into query parameters or browser history.
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      return true;
+    };
+    // Initial hydration and subsequent same-document link navigation both
+    // require a role import; hash-only navigation does not remount Next.js.
+    void Promise.resolve().then(() => {
+      if (cancelled) return;
+      const requested = new URLSearchParams(window.location.search).get("case");
+      if (requested === "family" || requested === "capital") setLandingCase(requested);
+      if (importSharedRole()) return;
+      const stored = loadKeychain();
       setKeychain(stored);
       const first = (["operator", "principal", "risk"] as WorkflowRole[]).find((r) => stored.tokens[r]);
       if (first) setTab(first);
-    }
     });
+    const onHashChange = () => { importSharedRole(); };
+    window.addEventListener("hashchange", onHashChange);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("hashchange", onHashChange);
+    };
   }, []);
 
   const id = keychain.workspaceId;
@@ -602,6 +635,16 @@ export default function WorldFairDeskPage() {
     void loadDesk(id, readToken)
       .then((data) => {
         if (cancelled) return;
+        const scoped = singleRoleFamilyKeychain(keychain, data.ws.useCase);
+        if (scoped !== keychain) {
+          // Legacy Family browsers may hold all three demo roles. Narrow the
+          // stored capability set before enabling a Family action or role tab.
+          saveKeychain(scoped);
+          setKeychain(scoped);
+          const active = (["principal", "risk", "operator"] as WorkflowRole[]).find((role) => scoped.tokens[role]);
+          if (active) setTab(active);
+          return;
+        }
         setWs(data.ws);
         setRequests(data.requests);
         setEvents(data.events);
@@ -728,7 +771,12 @@ export default function WorldFairDeskPage() {
   }
 
   function onCreated(created: CreatedWorkspace) {
-    const next = { workspaceId: created.id, tokens: created.tokens };
+    // Show all links only in transient handoff; never persist Teen or second-
+    // parent authority into the creator's Family browser.
+    const next: DeskKeychain = {
+      workspaceId: created.id,
+      tokens: created.useCase === "family" ? { principal: created.tokens.principal } : created.tokens,
+    };
     saveKeychain(next);
     setKeychain(next);
     setHandoff(created);
