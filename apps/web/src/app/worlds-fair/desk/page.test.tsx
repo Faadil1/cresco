@@ -95,6 +95,43 @@ describe("World's Fair desk", () => {
     expect(JSON.parse(String(created?.init?.body))).toMatchObject({ useCase: "family", principalLabel: "Parent", operatorLabel: "Maya (16)" });
   });
 
+  it("Parent wallet recovery replaces all links and persists only Parent capability", async () => {
+    const walletKey = "BoundWallet111";
+    Object.defineProperty(window, "phantom", {
+      configurable: true,
+      value: { solana: {
+        connect: vi.fn(async () => ({ publicKey: { toString: () => walletKey } })),
+        signMessage: vi.fn(async () => ({ signature: new Uint8Array([1, 2, 3]) })),
+      } },
+    });
+    const calls = api({
+      [`POST /workspaces/${WS.id}/principal/recovery/challenge`]: () => json(201, {
+        workspaceId: WS.id, challengeId: "prc_test", nonce: "nonce", expiresAt: "2026-10-28T18:00:00Z",
+        message: "CRESCO Family principal API access recovery",
+      }),
+      [`POST /workspaces/${WS.id}/principal/recovery/complete`]: () => json(200, {
+        workspaceId: WS.id, onChainAuthorityChanged: false,
+        tokens: { principal: "wf_principal_new", operator: "wf_operator_new", risk: "wf_risk_new" },
+      }),
+      [`GET /workspaces/${WS.id}`]: () => json(200, { ...WS, useCase: "family" }),
+    });
+    render(<WorldFairDeskPage />);
+    await userEvent.type(screen.getByPlaceholderText("ws-..."), WS.id);
+    await userEvent.click(screen.getByRole("button", { name: /recover with Parent wallet/i }));
+    await screen.findByText(/hand each role its own link/i);
+    expect(calls.filter((x) => x.path.endsWith("/principal/recovery/challenge"))).toHaveLength(1);
+    const complete = calls.find((x) => x.path.endsWith("/principal/recovery/complete"));
+    expect(complete).toBeDefined();
+    expect((complete?.init?.headers as Record<string, string>).authorization).toBeUndefined();
+    expect(JSON.parse(String(complete?.init?.body))).toMatchObject({
+      challengeId: "prc_test", nonce: "nonce", publicKey: walletKey, signature: "AQID",
+    });
+    const saved = JSON.parse(window.localStorage.getItem("cresco-worlds-fair-desk-v1") ?? "{}");
+    expect(saved.tokens).toEqual({ principal: "wf_principal_new" });
+    expect(screen.getByText(/ALL previous Family links are invalid/i)).toBeInTheDocument();
+    Reflect.deleteProperty(window, "phantom");
+  });
+
   it("narrows an older multi-role Family keychain to the creator's Parent role", async () => {
     window.localStorage.setItem("cresco-worlds-fair-desk-v1", JSON.stringify({ workspaceId: WS.id, tokens: { operator: "wf_operator_a", principal: "wf_principal_b" } }));
     api({ [`GET /workspaces/${WS.id}`]: () => json(200, { ...WS, useCase: "family" }) });
