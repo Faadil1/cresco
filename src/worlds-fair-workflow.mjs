@@ -1105,7 +1105,7 @@ export function createWorldFairWorkflow({
       fail(409, 'PARENT_RECOVERY_NOT_ENROLLED', 'The Parent did not bind a recovery wallet. No automatic account recovery is available');
     }
     const previous = await store.get(keys.principalRecovery(ws.id));
-    if (previous && !previous.consumedAt && Date.parse(previous.expiresAt) > clock()) {
+    if (previous && !previous.consumedAt && ws.lastPrincipalRecoveryChallengeId !== previous.challengeId && Date.parse(previous.expiresAt) > clock()) {
       // The challenge nonce is public, not an authentication secret. Only a
       // signature from the previously bound Parent wallet can recover access.
       // Reusing the active challenge prevents an anonymous caller from
