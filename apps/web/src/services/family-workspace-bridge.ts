@@ -24,13 +24,8 @@ export async function inspectFamilyWorkspace(audience: FamilyAudience): Promise<
   const saved = loadKeychain();
   if (!saved.workspaceId) return { kind: "no-workspace" };
   try {
-    const workspace = await workflowApi.getWorkspace(saved.workspaceId);
-    // Older workspaces with no useCase are classified capital by the server;
-    // an absent field is not evidence of a Family workspace.
-    if (workspace.useCase !== "family") return { kind: "other-context" };
-
-    // An adult's principal/risk bearer token must not silently accompany a
-    // teen into their operator journey on a shared browser.
+    // Do not fetch private workspace metadata until the viewer's role is known.
+    // A teen in a shared browser must not inherit a stored guardian capability.
     if (audience === "teen" && (saved.tokens.principal || saved.tokens.risk)) {
       return { kind: "shared-device-risk" };
     }
@@ -39,12 +34,14 @@ export async function inspectFamilyWorkspace(audience: FamilyAudience): Promise<
     const desired = candidates.find((role) => Boolean(saved.tokens[role]));
     if (!desired) return { kind: "missing-role" };
 
-    // Possession of a localStorage key is not authentication. Ask the workflow
-    // server to verify the bearer role before displaying a "Resume" action.
+    // Verify the role first; a workspace identifier alone is never an access key.
     const validated = await workflowApi.whoami(saved.workspaceId, saved.tokens[desired]!);
     if (validated.role !== desired || validated.workspaceId !== saved.workspaceId) {
       return { kind: "missing-role" };
     }
+    const workspace = await workflowApi.getWorkspace(saved.workspaceId, saved.tokens[desired]!);
+    // Older workspaces with no useCase are classified capital by the server.
+    if (workspace.useCase !== "family") return { kind: "other-context" };
     // Read role-scoped request activity only after a matching server whoami.
     // Failure to read notifications must not convert an authenticated read-only
     // navigation into a false claim that there are zero outstanding requests.

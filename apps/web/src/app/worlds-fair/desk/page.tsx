@@ -519,12 +519,12 @@ function TokenHandoff({ ws, onDone }: { ws: CreatedWorkspace; onDone: () => void
 }
 
 async function loadDesk(id: string, roleToken: string) {
-  const ws = await workflowApi.getWorkspace(id);
+  const ws = await workflowApi.getWorkspace(id, roleToken);
   const [requests, events] = await Promise.all([workflowApi.listRequests(id, roleToken), workflowApi.history(id, roleToken, 60)]);
   let mandate: MandateView | null = null;
   if (ws.chain.status === "READY") {
     try {
-      mandate = await workflowApi.mandate(id);
+      mandate = await workflowApi.mandate(id, roleToken);
     } catch {
       mandate = null; // chain read can fail transiently; the desk still renders product state
     }
@@ -795,7 +795,7 @@ export default function WorldFairDeskPage() {
       // Both a verified signature and a fresh mandate read are required.
       const [safety, latestMandate] = await Promise.all([
         workflowApi.intentSafety(id, t),
-        workflowApi.mandate(id),
+        workflowApi.mandate(id, t),
       ]);
       setIntentSafety(safety);
       setMandate(latestMandate);
@@ -837,7 +837,7 @@ export default function WorldFairDeskPage() {
     if (!id || !t) return;
     await run("wallet", async () => {
       const issuedAt = new Date().toISOString();
-      const { message } = await workflowApi.walletMessage(id, issuedAt);
+      const { message } = await workflowApi.walletMessage(id, t, issuedAt);
       const signed = await signWithWallet(message);
       await workflowApi.bindWallet(id, t, { publicKey: signed.publicKey, signature: signed.signature, issuedAt });
     });

@@ -54,6 +54,28 @@ describe("World's Fair workflow client", () => {
     await expect(workflowApi.history("ws-abcdef12", "wf_operator_x")).rejects.toMatchObject({ code: "NETWORK_UNAVAILABLE" });
   });
 
+  it("adds the exact workspace role token to all private metadata, mandate and wallet-binding reads", async () => {
+    configureCrescoBackend({ url: "https://api.example.test", execution: "runtime" });
+    const fetchMock = vi.fn(async () => json(200, { id: "ws-abcdef12", message: "bind" }));
+    vi.stubGlobal("fetch", fetchMock);
+    await workflowApi.getWorkspace("ws-abcdef12", "wf_operator_only");
+    await workflowApi.mandate("ws-abcdef12", "wf_operator_only");
+    await workflowApi.walletMessage("ws-abcdef12", "wf_principal_only", "2026-10-28T12:00:00.000Z");
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    const urls = [
+      "/workspaces/ws-abcdef12",
+      "/workspaces/ws-abcdef12/mandate",
+      "/workspaces/ws-abcdef12/principal/wallet-message?issuedAt=",
+    ];
+    fetchMock.mock.calls.forEach((call, i) => {
+      const [url, init] = call as unknown as [string, RequestInit];
+      expect(url).toContain(urls[i]);
+      expect((init.headers as Record<string, string>).authorization).toBe(
+        i < 2 ? "Bearer wf_operator_only" : "Bearer wf_principal_only",
+      );
+    });
+  });
+
   it("principal-wallet guardian: a 202 signature request is signed by the wallet and submitted", async () => {
     configureCrescoBackend({ url: "https://api.example.test", execution: "runtime" });
     const request = { opId: "gop_1", kind: "LIFECYCLE", label: "set_mandate_status", guardian: "Wallet111", transaction: "dHg=", expiresAt: "2026-10-12T12:01:30Z", submitTo: "/workspaces/ws-abcdef12/guardian/submit" };
@@ -80,7 +102,7 @@ describe("World's Fair workflow client", () => {
 
   it("refuses to call an unconfigured API", async () => {
     configureCrescoBackend({ url: "", execution: "demo" });
-    await expect(workflowApi.getWorkspace("ws-abcdef12")).rejects.toMatchObject({ code: "API_NOT_CONFIGURED" });
+    await expect(workflowApi.getWorkspace("ws-abcdef12", "wf_operator_x")).rejects.toMatchObject({ code: "API_NOT_CONFIGURED" });
   });
 
   it("round-trips share links and rejects malformed fragments", () => {

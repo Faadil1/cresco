@@ -80,7 +80,7 @@ export function workflowOpenApi() {
     },
     paths: {
       [`${WORKFLOW_PREFIX}/workspaces`]: { post: op('Create a workspace (returns role tokens once)', []) },
-      [`${WORKFLOW_PREFIX}/workspaces/{id}`]: { get: op('Public workspace view', []) },
+      [`${WORKFLOW_PREFIX}/workspaces/{id}`]: { get: op('Authenticated workspace view', ['operator', 'principal', 'risk']) },
       [`${WORKFLOW_PREFIX}/workspaces/{id}/whoami`]: { get: op('Resolve the role of a token', ['operator', 'principal', 'risk']) },
       [`${WORKFLOW_PREFIX}/workspaces/{id}/bootstrap`]: { post: op('Create or reuse the on-chain mandate, asset rule and vaults (idempotent)', ['principal']) },
       [`${WORKFLOW_PREFIX}/workspaces/{id}/intents`]: {
@@ -102,7 +102,7 @@ export function workflowOpenApi() {
         })
       },
       [`${WORKFLOW_PREFIX}/workspaces/{id}/requests/{requestId}/approval-message`]: { get: op('Exact principal wallet approval message (?issuedAt=)', ['principal']) },
-      [`${WORKFLOW_PREFIX}/workspaces/{id}/mandate`]: { get: op('On-chain mandate, asset rule and period consumption', []) },
+      [`${WORKFLOW_PREFIX}/workspaces/{id}/mandate`]: { get: op('Authenticated on-chain mandate, asset rule and period consumption', ['operator', 'principal', 'risk']) },
       [`${WORKFLOW_PREFIX}/workspaces/{id}/mandate/status`]: { post: op('Pause, resume or revoke (confirm:"REVOKE")', ['principal']) },
       [`${WORKFLOW_PREFIX}/workspaces/{id}/mandate/policy`]: { post: op('Revise standing notional limits', ['principal']) },
       [`${WORKFLOW_PREFIX}/workspaces/{id}/asset-rule`]: { post: op('Update amount limits / enable flag (resets period counters)', ['principal', 'risk']) },
@@ -110,7 +110,7 @@ export function workflowOpenApi() {
       [`${WORKFLOW_PREFIX}/workspaces/{id}/history`]: { get: op('Authenticated workspace event history (?limit=)', ['operator', 'principal', 'risk']) },
       [`${WORKFLOW_PREFIX}/workspaces/{id}/notifications`]: { get: op('Role-specific notifications (?since=cursor)', ['operator', 'principal', 'risk']) },
       [`${WORKFLOW_PREFIX}/workspaces/{id}/principal/wallet`]: { post: op('Bind a principal wallet (signed binding message)', ['principal']) },
-      [`${WORKFLOW_PREFIX}/workspaces/{id}/principal/wallet-message`]: { get: op('Exact wallet binding message (?issuedAt=)', []) },
+      [`${WORKFLOW_PREFIX}/workspaces/{id}/principal/wallet-message`]: { get: op('Principal-only wallet binding message (?issuedAt=)', ['principal']) },
       [`${WORKFLOW_PREFIX}/workspaces/{id}/guardian/submit`]: { post: op('Submit a transaction signed by the principal wallet (guardianMode principal-wallet): { opId, signedTransaction }', ['principal']) },
       [`${WORKFLOW_PREFIX}/workspaces/{id}/reconcile`]: { post: op('Resolve UNKNOWN outcomes from transaction signatures', ['operator', 'principal', 'risk']) }
     }
@@ -135,7 +135,7 @@ export async function routeWorldFairWorkflow({ method, path, body, headers, quer
     if (!m) return { status: 404, headers: JSON_HEADERS, body: { error: 'NOT_FOUND' } };
     const [, id, sub = ''] = m;
 
-    if (method === 'GET' && sub === '') return ok(await workflow.getWorkspace(id));
+    if (method === 'GET' && sub === '') return ok(await workflow.getWorkspace(id, token));
     if (method === 'GET' && sub === '/whoami') return ok(await workflow.whoami(id, token));
     if (method === 'POST' && sub === '/bootstrap') return ok(await workflow.bootstrap(id, token));
     if (method === 'GET' && sub === '/intents/safety') return ok(await workflow.intentSafety(id, token));
@@ -158,10 +158,11 @@ export async function routeWorldFairWorkflow({ method, path, body, headers, quer
     }
     if (method === 'GET' && sub === '/principal/wallet-message') {
       const issuedAt = String(query.issuedAt ?? new Date().toISOString());
-      await workflow.getWorkspace(id);
+      const identity = await workflow.whoami(id, token);
+      if (identity.body.role !== 'principal') return { status: 403, headers: JSON_HEADERS, body: { error: 'ROLE_FORBIDDEN' } };
       return { status: 200, headers: JSON_HEADERS, body: { issuedAt, message: walletBindingMessage({ workspaceId: id, issuedAt }) } };
     }
-    if (method === 'GET' && sub === '/mandate') return ok(await workflow.mandate(id));
+    if (method === 'GET' && sub === '/mandate') return ok(await workflow.mandate(id, token));
     if (method === 'POST' && sub === '/mandate/status') return ok(await workflow.setStatus(id, token, body ?? {}));
     if (method === 'POST' && sub === '/mandate/policy') return ok(await workflow.revisePolicy(id, token, body ?? {}));
     if (method === 'POST' && sub === '/asset-rule') return ok(await workflow.updateAssetRule(id, token, body ?? {}));
