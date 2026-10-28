@@ -609,6 +609,7 @@ export default function WorldFairDeskPage() {
       setLocalIntentHold(null);
       setRecoveryNotice(null);
       setIntentResult(null);
+      setWalletSetupCode(""); // never carry an enrollment secret to another role or workspace
       setConfirmRoleRotation(null);
       setReplacementRoleLink(null);
       setReplacementCopied(false);
@@ -798,6 +799,7 @@ export default function WorldFairDeskPage() {
   }
 
   function onCreated(created: CreatedWorkspace) {
+    setWalletSetupCode("");
     // Show all links only in transient handoff; never persist Teen or second-
     // parent authority into the creator's Family browser.
     const next: DeskKeychain = {
@@ -1004,7 +1006,7 @@ export default function WorldFairDeskPage() {
             <Link href="/" className="rounded-full border border-line bg-surface/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft hover:border-green/35">CRESCO home</Link>
             <Link href="/worlds-fair" className="rounded-full border border-line bg-surface/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft hover:border-green/35">Technical proof</Link>
             {id ? (
-              <button type="button" onClick={() => { saveKeychain({ workspaceId: null, tokens: {} }); setKeychain({ workspaceId: null, tokens: {} }); setWs(null); setMandate(null); setRequests([]); setEvents([]); setIntentSafety(null); setLocalIntentHold(null); setRecoveryNotice(null); setIntentResult(null); setReplacementRoleLink(null); setConfirmRoleRotation(null); }} className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft">
+              <button type="button" onClick={() => { saveKeychain({ workspaceId: null, tokens: {} }); setKeychain({ workspaceId: null, tokens: {} }); setWs(null); setMandate(null); setRequests([]); setEvents([]); setIntentSafety(null); setLocalIntentHold(null); setRecoveryNotice(null); setIntentResult(null); setWalletSetupCode(""); setReplacementRoleLink(null); setConfirmRoleRotation(null); }} className="rounded-full border border-line bg-white/90 px-4 py-2 text-[13px] font-medium text-navy shadow-soft">
                 Leave workspace
               </button>
             ) : null}
