@@ -45,6 +45,47 @@ The owner provided two screenshots of Cloudflare **Workers & Pages → Overview*
 - **NEXT SAFE EVIDENCE:** screenshots of **Deployments → Active deployment/version details** and **Settings → Build → Branch control / Build & deploy commands**, for each historical Worker. Do not click Save, Deploy, Disconnect, Rollback, or edit secrets.
 - **NOT DONE:** authenticated Cloudflare API inventory, Cloudflare resource creation, builds to Family live URLs, or deploy. Independent security review remains BLOCKED.
 
+## Owner dashboard observation — Settings / Builds (2026-10-28)
+
+**Evidence level: OWNER-SUPPLIED DASHBOARD SCREENSHOTS.** These are visual observations, NOT authenticated API reads or a deployment operation. Screenshots are retained in the conversation and NOT committed to GitHub.
+
+| Setting shown | Historic Web `cresco` | Historic API `keys-api-stocklana` |
+| --- | --- | --- |
+| Git repository | `Faadil1/cresco` | `Faadil1/cresco` |
+| Production branch | `main` | `main` |
+| Disable builds switch | OFF (automatic builds enabled) | OFF (automatic builds enabled) |
+| Build root directory | `apps/web` | `/` (repository root) |
+| Build command | `npm run build:vinext` | None |
+| Deploy command | `npx wrangler deploy` | `npx --yes wrangler@4 deploy` |
+| Build watch paths | Include `*`; exclude `node_modules/**`, `.git/` shown | Not visible in screenshot |
+| Build API token | A token selection is displayed; secret value not visible, not collected | Not visible |
+| Preview branch controls and preview command | **UNKNOWN** (not established by grey Previews Base tab) | **UNKNOWN** (not established by grey Previews Base tab) |
+
+**Important configuration discrepancy:** Cloudflare displays an orange warning on the API Worker recommending the root `wrangler.jsonc` name be `keys-api-stocklana`, whereas the checked-in root Wrangler config says `cresco-api-stocklana`. Cloudflare's own troubleshooting docs say Workers Builds may override the name of its connected Worker using `WRANGLER_CI_OVERRIDE_NAME` on Wrangler v3+; hence this name mismatch is **a consistency/release-risk warning, not proof that production is deploying to the wrong Worker**. Do **not** accept an automatic configuration-fix PR, edit `wrangler.jsonc`, run `wrangler deploy`, or merge it to main as part of the Family release lane. Current original Worker identities remain frozen.
+
+**Why the freeze matters:** production branch `main` is confirmed for BOTH original Workers; automated builds are enabled. Cloudflare docs specify each push to the configured production branch can trigger a build + deploy. Thus a merge of any Family stack into `main`, even if its change seems unrelated, may automatically run the historic production deployments. GitHub CI green does not prevent this.
+
+### Family-only target configuration — proposal, NOT applied
+
+Only after the Cloudflare owner verifies name availability, preview-build settings, provider authorization and independent Family security review, create **two NEW Workers** with **explicit paths** in the new Workers' own Builds settings. Never modify the existing ones.
+
+| Proposed NEW Worker field | `cresco-family-api` | `cresco-family-web` |
+| --- | --- | --- |
+| Git repo / production branch | Dedicated Family repo or `Faadil1/cresco` / `family/standalone` | Same dedicated Family source / `family/standalone` |
+| Root directory | `/` | `apps/web` |
+| Build command | None (Wrangler bundles the API) | `npm run build:family` with dedicated Family API URL configured in the NEW build only |
+| Deploy command (only for future approved staging release) | `npx wrangler deploy --config wrangler.family-api.jsonc` | `npx wrangler deploy --config dist/server/wrangler.json` |
+| Target config must contain exact name | `cresco-family-api` | `cresco-family-web` |
+| Durable Object and state | New `CrescoFamilyIsolatedState`, never existing `FamilyState` | Web asset binding only |
+| Preview behavior | Restrict/disable until completely reviewed | Restrict/disable until completely reviewed |
+| Devnet financial writes | OFF by default, return 423 | No production trade entry |
+
+The proposed Family Web build MUST execute its release guard and require a dedicated API URL; the generated `dist/server/wrangler.json` must name `cresco-family-web` before any deployment is considered. The proposed API command MUST include the separate `--config` file. **Never reuse the default `npx wrangler deploy` commands from the Colosseum Workers for Family**. Verify that the new Workers' source branch and deploy commands are saved correctly BEFORE any authorized first release; do not assume Cloudflare defaults will pick them.
+
+**Provider configuration still missing:** the screenshots do not show an explicit enable/disable checkbox for preview builds, their command, or active full Cloudflare deployment version IDs/traffic splits. Request read-only views of the historical Workers' Previews / Deployments details next, without modifying any historical settings.
+
+References: [Cloudflare Build branches](https://developers.cloudflare.com/workers/ci-cd/builds/build-branches/), [Build configuration](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/), [Troubleshooting name mismatches](https://developers.cloudflare.com/workers/ci-cd/builds/troubleshoot/).
+
 ## What can be read without changing Cloudflare?
 
 The new local-only program `scripts/family-cloudflare-readonly-inventory.mjs` makes exclusively HTTPS **GET** requests to the official Cloudflare API:
