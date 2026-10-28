@@ -39,6 +39,25 @@ function mockApi(page, state) {
     if (state.revokedOperator && req.headers()["authorization"] === "Bearer wf_operator_e2e") {
       return json(401, { error: "AUTH_INVALID", message: "Old role link invalidated" });
     }
+    if (method === "POST" && path === `/workspaces/${WS_ID}/principal/recovery/challenge`) {
+      return json(201, {
+        workspaceId: WS_ID, challengeId: "prc_e2e", nonce: "nonce_e2e",
+        expiresAt: "2026-10-28T18:00:00.000Z",
+        message: "CRESCO Family principal API access recovery",
+      });
+    }
+    if (method === "POST" && path === `/workspaces/${WS_ID}/principal/recovery/complete`) {
+      const input = req.postDataJSON();
+      if (input.challengeId !== "prc_e2e" || input.nonce !== "nonce_e2e" ||
+          input.publicKey !== "E2EWallet111" || input.signature !== "AQID") {
+        return json(401, { error: "PARENT_RECOVERY_SIGNATURE_INVALID" });
+      }
+      state.recovered = true;
+      return json(200, {
+        workspaceId: WS_ID, onChainAuthorityChanged: false,
+        tokens: { principal: "wf_principal_new_e2e", operator: "wf_operator_new_e2e", risk: "wf_risk_new_e2e" },
+      });
+    }
     if (method === "POST" && path === "/workspaces") return json(201, { ...ws, tokens: { operator: "wf_operator_e2e", principal: "wf_principal_e2e", risk: "wf_risk_e2e" }, tokenNotice: "shown once" });
     if (method === "GET" && path === `/workspaces/${WS_ID}`) return json(200, ws);
     if (method === "GET" && path === `/workspaces/${WS_ID}/intents/safety`) {
@@ -259,4 +278,27 @@ test("Parent replaces a Teen link: old Teen browser is denied, new role link res
     await oldTeenContext.close();
     await newTeenContext.close();
   }
+});
+
+test("Family Parent wallet lost-link recovery rekeys all role links, persists only Parent (mock wallet/API)", async ({ page }) => {
+  const state = { useCase: "family", requests: [], events: [], recovered: false };
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "phantom", {
+      configurable: true,
+      value: { solana: {
+        connect: async () => ({ publicKey: { toString: () => "E2EWallet111" } }),
+        signMessage: async () => ({ signature: new Uint8Array([1, 2, 3]) }),
+      } },
+    });
+  });
+  await mockApi(page, state);
+  await page.goto("/worlds-fair/desk?case=family");
+  await page.getByPlaceholder("ws-...").fill(WS_ID);
+  await page.getByRole("button", { name: /recover with parent wallet/i }).click();
+  await expect(page.getByText(/hand each role its own link/i)).toBeVisible();
+  expect(state.recovered).toBe(true);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("cresco-worlds-fair-desk-v1")).tokens))
+    .toEqual({ principal: "wf_principal_new_e2e" });
+  await expect(page.getByText(/ALL previous Family links are invalid/i)).toBeVisible();
+  await expect(page.getByRole("button", { name: /copy link/i })).toHaveCount(3);
 });
