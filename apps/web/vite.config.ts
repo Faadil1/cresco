@@ -18,9 +18,25 @@ function buildSha() {
 }
 process.env.NEXT_PUBLIC_CRESCO_BUILD_SHA ||= buildSha();
 
+// The Colosseum Worker "cresco" is NEVER the target of a Family build.
+// Missing or historic API origin must fail at build time, not fall back to the
+// submitted stocklana API. This branch does not deploy anything.
+const familyBuild = process.env.CRESCO_FAMILY_BUILD === "1";
+if (familyBuild) {
+  const origin = process.env.NEXT_PUBLIC_CRESCO_API_URL ?? "";
+  if (!/^https:\/\/cresco-family-api\.[-a-z0-9.]+$/i.test(origin)) {
+    throw new Error("FAMILY_BUILD_REQUIRES_DEDICATED_API_ORIGIN");
+  }
+  process.env.NEXT_PUBLIC_CRESCO_FAMILY_ONLY = "1";
+  process.env.NEXT_PUBLIC_CRESCO_FAMILY_SETUP_ONLY = "1";
+}
+
 export default defineConfig({
   define: {
     "process.env.NEXT_PUBLIC_CRESCO_BUILD_SHA": JSON.stringify(process.env.NEXT_PUBLIC_CRESCO_BUILD_SHA),
+    "process.env.NEXT_PUBLIC_CRESCO_FAMILY_ONLY": JSON.stringify(familyBuild ? "1" : "0"),
+    "process.env.NEXT_PUBLIC_CRESCO_FAMILY_SETUP_ONLY": JSON.stringify(familyBuild ? "1" : "0"),
+    "process.env.NEXT_PUBLIC_CRESCO_API_URL": JSON.stringify(familyBuild ? process.env.NEXT_PUBLIC_CRESCO_API_URL : process.env.NEXT_PUBLIC_CRESCO_API_URL ?? ""),
   },
   resolve: {
     alias: {
@@ -33,6 +49,7 @@ export default defineConfig({
   plugins: [
     vinext(),
     cloudflare({
+      configPath: familyBuild ? "./wrangler.family.jsonc" : "./wrangler.jsonc",
       viteEnvironment: {
         name: "rsc",
         childEnvironments: ["ssr"],
