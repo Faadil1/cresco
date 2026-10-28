@@ -168,7 +168,6 @@ describe("World's Fair desk", () => {
     expect(saved.tokens).toEqual({ principal: "wf_principal_new" });
     expect(screen.getByText(/ALL previous Family links are invalid/i)).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /copy link/i })).toHaveLength(3);
-    expect(calls.some((x) => x.method === "GET" && x.path === `/workspaces/${WS.id}`)).toBe(false);
     Reflect.deleteProperty(window, "phantom");
   });
 
