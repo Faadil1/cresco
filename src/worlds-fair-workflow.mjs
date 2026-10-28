@@ -443,6 +443,9 @@ export function createWorldFairWorkflow({
     if (!Number.isSafeInteger(ttl) || ttl < 60 || ttl > 24 * 3600) fail(400, 'REQUEST_TTL_INVALID', 'requestTtlSeconds must be in [60, 86400]');
     const id = `ws-${randomUUID().replace(/-/g, '').slice(0, 16)}`;
     const tokens = Object.fromEntries(WORKFLOW_ROLES.map((r) => [r, `wf_${r}_${randomBytes(24).toString('base64url')}`]));
+    // Independent capability issued once to the original Family creator.
+    // Possessing a role bearer alone cannot establish the recovery wallet.
+    const recoveryEnrollmentCode = body.useCase === 'family' ? `fec_${randomBytes(32).toString('base64url')}` : null;
     const ws = {
       id,
       name: cleanLabel(body.name, 'Delegated trading desk'),
@@ -459,6 +462,7 @@ export function createWorldFairWorkflow({
       operator: { label: cleanLabel(body.operatorLabel, 'Delegated strategy') },
       risk: { label: cleanLabel(body.riskLabel, 'Risk owner') },
       tokens: Object.fromEntries(Object.entries(tokens).map(([r, t]) => [r, sha256(t)])),
+      ...(recoveryEnrollmentCode ? { recoveryEnrollmentHash: sha256(recoveryEnrollmentCode) } : {}),
       webhookUrl: validateWebhook(body.webhookUrl),
       chain: { status: 'NOT_BOOTSTRAPPED' }
     };
@@ -471,7 +475,8 @@ export function createWorldFairWorkflow({
       body: {
         ...publicWorkspace(ws),
         tokens,
-        tokenNotice: 'Role tokens are shown once. Share each one only with the person holding that role.'
+        ...(recoveryEnrollmentCode ? { recoveryEnrollmentCode } : {}),
+        tokenNotice: 'Role tokens are shown once. Share each one only with the person holding that role. Family wallet enrollment requires a separate creator-only code.'
       }
     };
   }
@@ -1100,14 +1105,30 @@ export function createWorldFairWorkflow({
       fail(409, 'PARENT_RECOVERY_NOT_ENROLLED', 'The Parent did not bind a recovery wallet. No automatic account recovery is available');
     }
     const previous = await store.get(keys.principalRecovery(ws.id));
-    if (previous && Date.parse(previous.expiresAt) > clock()) {
-      fail(429, 'PARENT_RECOVERY_CHALLENGE_PENDING', 'A recovery challenge is still active. Use it or wait for expiry');
+    if (previous && !previous.consumedAt && Date.parse(previous.expiresAt) > clock()) {
+      // The challenge nonce is public, not an authentication secret. Only a
+      // signature from the previously bound Parent wallet can recover access.
+      // Reusing the active challenge prevents an anonymous caller from
+      // preempting the legitimate Parent for the full TTL.
+      return {
+        status: 200,
+        body: {
+          contractVersion: WORKFLOW_CONTRACT_VERSION,
+          workspaceId: ws.id, challengeId: previous.challengeId,
+          nonce: previous.nonce, expiresAt: previous.expiresAt,
+          message: principalRecoveryMessage({
+            workspaceId: ws.id, challengeId: previous.challengeId,
+            nonce: previous.nonce, expiresAt: previous.expiresAt
+          }),
+          notice: 'An active challenge already exists. Sign with the previously bound Parent wallet; no Devnet transaction is requested.'
+        }
+      };
     }
     const challengeId = `prc_${randomBytes(12).toString('hex')}`;
     const nonce = randomBytes(24).toString('base64url');
     const expiresAt = new Date(clock() + cfg.principalRecoveryTtlSeconds * 1000).toISOString();
     await store.put(keys.principalRecovery(ws.id), {
-      challengeId, nonceHash: sha256(nonce), expiresAt
+      challengeId, nonce, expiresAt
     });
     return {
       status: 201,
@@ -1130,7 +1151,7 @@ export function createWorldFairWorkflow({
       fail(410, 'PARENT_RECOVERY_CHALLENGE_EXPIRED', 'Request a new recovery challenge');
     }
     const nonce = String(body.nonce ?? '');
-    if (body.challengeId !== challenge.challengeId || !nonce || sha256(nonce) !== challenge.nonceHash) {
+    if (body.challengeId !== challenge.challengeId || !nonce || nonce !== challenge.nonce) {
       fail(401, 'PARENT_RECOVERY_CHALLENGE_INVALID', 'The recovery challenge does not match');
     }
     if (String(body.publicKey ?? '') !== ws.principal.wallet.publicKey) {
@@ -1189,6 +1210,18 @@ export function createWorldFairWorkflow({
         fail(409, 'PRINCIPAL_WALLET_ALREADY_BOUND', 'Cannot replace the bound Parent wallet using a role bearer');
       }
       return { status: 200, body: { contractVersion: WORKFLOW_CONTRACT_VERSION, wallet: ws.principal.wallet, alreadyBound: true } };
+    }
+    if (ws.useCase === 'family') {
+      // Fail closed for legacy un-enrolled Family workspaces with no creator
+      // enrollment proof. Bearer-only initial binding is not trustworthy.
+      if (!ws.recoveryEnrollmentHash) {
+        fail(409, 'PARENT_ENROLLMENT_PROOF_UNAVAILABLE', 'This older Family workspace has no enrollment proof; automatic first binding is blocked');
+      }
+      const enrollment = String(body.recoveryEnrollmentCode ?? '');
+      if (!enrollment || sha256(enrollment) !== ws.recoveryEnrollmentHash) {
+        fail(403, 'PARENT_ENROLLMENT_CODE_INVALID', 'First Family wallet binding requires the separate creator enrollment code');
+      }
+      delete ws.recoveryEnrollmentHash; // single-use, no recovery-code replay
     }
     ws.principal.wallet = { publicKey: nextWallet, boundAt: nowIso() };
     await saveWorkspace(ws);
