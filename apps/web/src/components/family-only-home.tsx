@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FamilyAgencyPreview } from "@/components/family-agency-preview";
 import { ArrowRight, KeyRound, ShieldCheck, Users, Wallet } from "lucide-react";
 import { Wordmark } from "@/components/shell";
 
@@ -49,6 +50,7 @@ export function FamilyOnlyHome() {
             <div className="mt-4 flex items-center gap-2 text-[11px] font-semibold text-ink-3"><KeyRound className="size-4" /><Wallet className="size-4" /> No wallet transaction required to start setup.</div>
           </div>
         </section>
+        <FamilyAgencyPreview />
       </div>
     </main>
   );
