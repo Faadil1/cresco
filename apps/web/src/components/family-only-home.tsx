@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FamilyAgencyPreview } from "@/components/family-agency-preview";
+import { FamilyParentTrustCenter } from "@/components/family-parent-trust-center";
 import { ArrowRight, KeyRound, ShieldCheck, Users, Wallet } from "lucide-react";
 import { Wordmark } from "@/components/shell";
 
@@ -26,9 +27,14 @@ export function FamilyOnlyHome() {
             <p className="mt-7 max-w-[55ch] text-[16px] leading-7 text-ink-2">
               A dedicated space for a Parent, a Teen and a second parent to understand delegated financial decisions. This early-access environment is separate from the Colosseum submission and uses no real money.
             </p>
-            <Link href="/worlds-fair/desk?case=family" className="mt-8 inline-flex min-h-12 items-center gap-3 rounded-full bg-green-strong px-6 text-[14px] font-bold text-white hover:bg-green">
-              Open Family desk <ArrowRight className="size-4" />
-            </Link>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <a href="#family-trust" className="inline-flex min-h-12 items-center gap-3 rounded-full bg-green-strong px-6 text-[14px] font-bold text-white hover:bg-green">
+                Understand the limits <ArrowRight aria-hidden className="size-4" />
+              </a>
+              <Link href="/worlds-fair/desk?case=family" className="inline-flex min-h-12 items-center gap-3 rounded-full border border-green/40 bg-surface px-6 text-[14px] font-bold text-navy-strong hover:bg-green-soft">
+                Open technical Family desk
+              </Link>
+            </div>
           </div>
           <div className="rounded-[28px] border border-green/20 bg-surface p-7 shadow-soft">
             <div className="flex items-center gap-3">
@@ -50,6 +56,7 @@ export function FamilyOnlyHome() {
             <div className="mt-4 flex items-center gap-2 text-[11px] font-semibold text-ink-3"><KeyRound className="size-4" /><Wallet className="size-4" /> No wallet transaction required to start setup.</div>
           </div>
         </section>
+        <FamilyParentTrustCenter />
         <FamilyAgencyPreview />
       </div>
     </main>
