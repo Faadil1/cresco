@@ -55,7 +55,7 @@ export async function handleFamilyPracticeRequest(request, env) {
     const headers = new Headers({
       'cache-control': 'no-store', 'vary': 'Origin',
       'access-control-allow-methods': 'GET,POST,OPTIONS',
-      'access-control-allow-headers': 'content-type,authorization,x-cresco-family-practice-invite,x-cresco-family-practice-operator,x-practice-action-id',
+      'access-control-allow-headers': 'content-type,authorization,x-cresco-family-practice-invite,x-practice-action-id',
       'access-control-max-age': '0'
     });
     if (origin === env.CRESCO_FAMILY_WEB_ORIGIN) headers.set('access-control-allow-origin', origin);
@@ -121,6 +121,8 @@ export async function handleFamilyPracticeRequest(request, env) {
   // Emergency close is an operator-only destructive action. It is intentionally
   // separate from Parent identity and requires a distinct Worker secret.
   if (request.method === 'POST' && subpath === '/emergency-close') {
+    // This operation is for a trusted operator CLI, never a web browser.
+    if (origin) return failure('PRACTICE_OPERATOR_BROWSER_FORBIDDEN', 403, request, env);
     const expected = env.CRESCO_FAMILY_PRACTICE_OPERATOR_TOKEN;
     const supplied = request.headers.get('x-cresco-family-practice-operator');
     if (!expected || typeof expected !== 'string' || expected.length < 32) {
