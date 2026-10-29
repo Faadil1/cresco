@@ -20,6 +20,7 @@ function env() {
       get: (key) => {
         if (!backing.has(key)) {
           const records = new Map();
+          let due = null;
           let chain = Promise.resolve();
           const object = new CrescoFamilyPracticeState({
             blockConcurrencyWhile: (work) => {
@@ -29,11 +30,17 @@ function env() {
             },
             storage: {
               get: async (name) => records.get(name),
-              put: async (name, value) => { records.set(name, structuredClone(value)); }
+              put: async (name, value) => { records.set(name, structuredClone(value)); },
+              setAlarm: async (timestamp) => { due = timestamp; },
+              deleteAll: async () => { records.clear(); due = null; }
             }
           });
           // Cloudflare DOStub.fetch accepts (url, init); the class receives a Request.
-          backing.set(key, { fetch: (url, init) => object.fetch(new Request(url, init)) });
+          backing.set(key, {
+            fetch: (url, init) => object.fetch(new Request(url, init)),
+            alarm: () => object.alarm(),
+            getAlarm: () => due
+          });
         }
         return backing.get(key);
       }
@@ -174,4 +181,48 @@ test('simultaneous device retries with one action ID never spend imaginary credi
   assert.equal(value.body.availableCredits,80);
   assert.equal(value.body.version,1);
   assert.equal(value.body.events.length,1);
+});
+
+test('Parent can end fictional practice and revoke both roles; Teen cannot erase history', async () => {
+  const e = env();
+  const session = await create(e);
+  const route = '/sessions/' + session.practiceId;
+  const action = '/close';
+  assert.equal((await api(e, 'POST', route + action, {
+    token: session.teenToken, body: { confirm: 'END_PRACTICE' }
+  })).status, 403);
+  assert.equal((await api(e, 'POST', route + action, {
+    token: session.parentToken, body: { confirm: 'DELETE_ALL_REAL_ASSETS' }
+  })).status, 400);
+  const closed = await api(e, 'POST', route + action, {
+    token: session.parentToken, body: { confirm: 'END_PRACTICE' }
+  });
+  assert.equal(closed.status, 200);
+  assert.deepEqual(closed.body, {
+    closed: true, allRoleCodesRevoked: true, fictionalHistoryCleared: true
+  });
+  assert.equal((await api(e, 'GET', route, { token: session.parentToken })).status, 404);
+  assert.equal((await api(e, 'GET', route, { token: session.teenToken })).status, 404);
+});
+
+test('Seven-day alarm clears expired fictional research state and refuses all old role codes', async () => {
+  const e = env();
+  const session = await create(e);
+  const object = e.FAMILY_PRACTICE_STATE.get('practice:' + session.practiceId);
+  const due = object.getAlarm();
+  assert.ok(Number.isSafeInteger(due));
+  assert.ok(due > Date.now());
+  // Early alarms cannot destroy data.
+  await object.alarm();
+  assert.equal(object.getAlarm(), due);
+  assert.equal((await api(e, 'GET', '/sessions/' + session.practiceId, { token: session.teenToken })).status, 200);
+  const old = Date.now;
+  try {
+    Date.now = () => due + 1000;
+    await object.alarm();
+  } finally {
+    Date.now = old;
+  }
+  assert.equal(object.getAlarm(), null);
+  assert.equal((await api(e, 'GET', '/sessions/' + session.practiceId, { token: session.teenToken })).status, 404);
 });

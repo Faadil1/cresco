@@ -51,6 +51,22 @@ export class CrescoFamilyPracticeState {
     return this.handleRequest(request);
   }
 
+  async alarm() {
+    // Clear the entire SQLite-backed DO when the fictional exercise expires.
+    // Retryable failure is deliberately not swallowed by the alarm handler.
+    const practice = await this.ctx.storage.get('practice:v1');
+    if (!practice) {
+      await this.ctx.storage.deleteAll();
+      return;
+    }
+    const expiry = Date.parse(practice.expiresAt);
+    if (Number.isFinite(expiry) && Date.now() < expiry) {
+      await this.ctx.storage.setAlarm(expiry);
+      return;
+    }
+    await this.ctx.storage.deleteAll();
+  }
+
   async handleRequest(request) {
     if (request.method !== 'POST' && request.method !== 'GET') {
       return json({ error: 'METHOD_NOT_ALLOWED' }, 405);
@@ -74,6 +90,9 @@ export class CrescoFamilyPracticeState {
         available: credits, saved: 0, version: 0,
         requests: [], events: [], seenActions: {}
       };
+      // A session must never become active without a scheduled data purge.
+      // With the 2026-10-28 compatibility date, deleteAll also clears alarms.
+      await this.ctx.storage.setAlarm(Date.parse(s.expiresAt));
       await this.ctx.storage.put('practice:v1', s);
       return json({ created: true, practiceId: s.id }, 201);
     }
@@ -85,6 +104,15 @@ export class CrescoFamilyPracticeState {
     const role = hash === s.teenHash ? 'teen' : hash === s.parentHash ? 'parent' : null;
     if (!role) return json({ error: 'ROLE_INVALID' }, 403);
     if (request.method === 'GET' && path === '/state') return json(publicState(s, role));
+    if (request.method === 'POST' && path === '/close') {
+      if (role !== 'parent') return json({ error: 'PARENT_ONLY' }, 403);
+      const body = await request.json().catch(() => null);
+      if (!body || Object.keys(body).length !== 1 || body.confirm !== 'END_PRACTICE') {
+        return json({ error: 'PRACTICE_CLOSE_CONFIRMATION_REQUIRED' }, 400);
+      }
+      await this.ctx.storage.deleteAll();
+      return json({ closed: true, allRoleCodesRevoked: true, fictionalHistoryCleared: true });
+    }
 
     const key = request.headers.get('x-practice-action-id') || '';
     if (request.method !== 'POST' || !/^[0-9a-f-]{36}$/.test(key)) {
