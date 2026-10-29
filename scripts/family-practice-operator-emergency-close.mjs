@@ -25,7 +25,7 @@ if (confirm !== '--confirm-end-fictional-practice') {
   let url;
   try { url = new URL(api); } catch { url = null; }
   if (!url || url.protocol !== 'https:' ||
-    !/^cresco-family-api\.[a-z0-9-]+\.workers\.dev$/i.test(url.hostname) ||
+    url.hostname !== 'cresco-family-api.faadil-casecraft.workers.dev' ||
     url.pathname !== '/' || url.search || url.hash ||
     url.hostname === 'keys-api-stocklana.faadil-casecraft.workers.dev') {
     refuse('Refused: only an independently identified cresco-family-api Workers.dev origin is allowed.');
