@@ -141,3 +141,13 @@ export function decidePracticeDiscussion(
     method: "POST", token: c.token, body: { decision, reason }, actionId: crypto.randomUUID()
   });
 }
+
+/** Parent role only. Permanently ends this fictional exercise and revokes both role codes. */
+export function closePracticeSession(c: PracticeCredentials): Promise<{
+  closed: true; allRoleCodesRevoked: true; fictionalHistoryCleared: true;
+}> {
+  if (c.role !== "parent") throw new PracticeApiError(403, "PARENT_ONLY");
+  return call("/sessions/" + encodeURIComponent(c.practiceId) + "/close", {
+    method: "POST", token: c.token, body: { confirm: "END_PRACTICE" }
+  });
+}
