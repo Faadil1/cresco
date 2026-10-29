@@ -129,3 +129,20 @@ test('Family policy refuses all Devnet money-mutating endpoints while allowing s
     assert.equal(familyWorkerPolicy(req,e),null,path);
   }
 });
+
+test('staging Family Worker blocks every non-preflight call without Cloudflare Access context', async () => {
+  const e=env();
+  const req=(method)=>new Request(P+'/openapi',{method,headers:{origin:ORIGIN,'CF-Access-Jwt-Assertion':'forged-request-header'}});
+  const missing = await handleCrescoFamilyOnlyRequest(req('GET'),e,{});
+  assert.equal(missing.status,403);
+  assert.equal((await missing.json()).error,'FAMILY_ACCESS_REQUIRED');
+  const unset=await handleCrescoFamilyOnlyRequest(req('GET'),{...e,CRESCO_FAMILY_STAGING_REQUIRE_ACCESS:null},{},{access:{aud:'test'}});
+  assert.equal(unset.status,503);
+  const preflight=await handleCrescoFamilyOnlyRequest(req('OPTIONS'),e,{});
+  assert.equal(preflight.status,204);
+  assert.equal(preflight.headers.get('access-control-allow-origin'),ORIGIN);
+  assert.equal(preflight.headers.get('access-control-allow-credentials'),'true');
+  const unknown=await handleCrescoFamilyOnlyRequest(
+    new Request(P+'/openapi',{method:'OPTIONS',headers:{origin:'https://other.invalid'}}),e,{});
+  assert.equal(unknown.status,403);
+});
