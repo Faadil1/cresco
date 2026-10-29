@@ -20,6 +20,7 @@ const response = (status, error, message, request, env) => {
   const from = request.headers.get('origin');
   if (from && from === env.CRESCO_FAMILY_WEB_ORIGIN) {
     headers.set('access-control-allow-origin', from);
+    headers.set('access-control-allow-credentials', 'true');
   }
   return new Response(JSON.stringify({
     error, message, familyOnly: true, onChainAuthorityChanged: false
@@ -116,6 +117,9 @@ export async function handleCrescoFamilyOnlyRequest(request, env = {}, services 
     // must advertise it without widening the historic Colosseum CORS policy.
     headers.set('access-control-allow-headers',
       'content-type,idempotency-key,authorization,x-cresco-create-token');
+    if (request.headers.get('origin') === env.CRESCO_FAMILY_WEB_ORIGIN) {
+      headers.set('access-control-allow-credentials', 'true');
+    }
   }
   return new Response(res.body, { status: res.status, headers });
 }
