@@ -10,7 +10,7 @@ const ACCOUNT = 'a'.repeat(32);
 const TOKEN = 'test-token-never-real-' + 'a'.repeat(24);
 const ROOT = 'https://api.cloudflare.com/client/v4/accounts/' + ACCOUNT;
 
-function mockCall({ workerNames, apps, namespaces, totalPages = 1, status = 200 }) {
+function mockCall({ workerNames, apps, namespaces, totalPages = 1, doTotalPages = 1, status = 200 }) {
   const observed = [];
   const fetchImpl = async (url, options) => {
     observed.push({ url, options });
@@ -22,12 +22,13 @@ function mockCall({ workerNames, apps, namespaces, totalPages = 1, status = 200 
     assert.ok(url.startsWith(ROOT + '/'));
     let body;
     if (url === ROOT + '/workers/scripts') {
-      body = { success: true, result: workerNames.map((id) => ({ id })) };
+      body = { success: true, result: workerNames.map((item) => typeof item === 'string' ? { id: item } : item) };
     } else if (url === ROOT + '/access/apps?per_page=100') {
       body = { success: true, result: apps,
         result_info: { page: 1, total_pages: totalPages } };
     } else if (url === ROOT + '/workers/durable_objects/namespaces') {
-      body = { success: true, result: namespaces.map((name) => ({ class: name })) };
+      body = { success: true, result: namespaces.map((name) => ({ class: name })),
+        result_info: { page: 1, total_pages: doTotalPages } };
     } else {
       throw new Error('unexpected request');
     }
@@ -63,14 +64,15 @@ test('Even if every named asset and Access app appears, inventory can never auth
   const mock = mockCall({
     workerNames: [
       'cresco','keys-api-stocklana','cresco-api-stocklana',
-      'cresco-family-web','cresco-family-api'
+      {id:'cresco-family-web',tag:'immutable-web-tag-123'},
+      {id:'cresco-family-api',tag:'immutable-api-tag-456'}
     ],
     apps: [
       { name: 'Cresco Family Web', type: 'self_hosted',
-        destinations: [{ type: 'workers', worker_id: 'cresco-family-web' }],
+        destinations: [{ type: 'worker', worker_id: 'immutable-web-tag-123' }],
         policies: [{ id: 'dont-share' }] },
       { name: 'Cresco Family API', type: 'self_hosted',
-        destinations: [{ type: 'workers', worker_id: 'cresco-family-api' }],
+        destinations: [{ type: 'worker', worker_id: 'immutable-api-tag-456' }],
         policies: [{ id: 'dont-share' }] }
     ],
     namespaces: [
@@ -86,6 +88,7 @@ test('Even if every named asset and Access app appears, inventory can never auth
   assert.equal(r.evidenceLevel, 'INVENTORY_NOT_DEPLOYMENT_OR_POLICY_VERIFICATION');
   assert.ok(r.familyWorkers.every((x) => x.scriptPresent));
   assert.ok(r.familyWorkers.every((x) => x.accessApplicationMatchCount === 1));
+  assert.ok(r.familyWorkers.every((x) => x.workerLevelAllTrafficMatch === true));
   assert.ok(r.familyWorkers.every((x) => x.accessRuntimeVerified === false));
   assert.equal(r.familyDoClassNamesObserved.length, 3);
   assert.deepEqual(r.risks, []);
@@ -151,4 +154,52 @@ test('Summary intentionally excludes Access application policy details and token
   });
   assert.equal(report.launchVerdict, 'NO_GO');
   assert.ok(!JSON.stringify(report).includes('family-research@example.test'));
+});
+
+
+test('Access preview-only app and public bypass cannot be mistaken for full Worker protection', () => {
+  const workers = [
+    { id:'cresco',tag:'historic-tag' },
+    { id:'cresco-family-web',tag:'web-immutable-tag' },
+    { id:'cresco-family-api',tag:'api-immutable-tag' }
+  ];
+  const apps = [
+    {type:'self_hosted',destinations:[{type:'preview_worker',worker_id:'web-immutable-tag'}],
+      policies:[{decision:'allow'}]},
+    {type:'self_hosted',destinations:[{type:'worker',worker_id:'api-immutable-tag',
+      overrides:[{behavior:'public',path_pattern:'/api/*'}]}],
+      policies:[{decision:'allow'}]}
+  ];
+  const r = summarizeInventory({ workers, apps, namespaces: [],
+    pageComplete:true, accountId:ACCOUNT });
+  assert.equal(r.launchVerdict,'NO_GO');
+  assert.ok(r.familyWorkers[0].appObservations[0].coverageSignals.includes('preview_only'));
+  assert.equal(r.familyWorkers[0].workerLevelAllTrafficMatch,false);
+  assert.equal(r.familyWorkers[1].workerLevelAllTrafficMatch,true);
+  assert.equal(r.familyWorkers[1].publicPathOverrideDetected,true);
+  assert.ok(r.risks.includes('FAMILY_FULL_WORKER_ACCESS_NOT_EVIDENCED'));
+  assert.ok(r.risks.includes('FAMILY_ACCESS_PUBLIC_PATH_OVERRIDE_REVIEW'));
+});
+
+test('Typed all_workers and all_preview_workers destinations flag historic-worker exposure review', () => {
+  const r = summarizeInventory({
+    workers:[{id:'cresco',tag:'historical-id'},{id:'cresco-family-api',tag:'family-id'}],
+    apps:[{type:'self_hosted',destinations:[{type:'all_workers'}]},
+      {type:'self_hosted',destinations:[{type:'all_preview_workers'}]}],
+    namespaces:[],pageComplete:true,accountId:ACCOUNT
+  });
+  assert.ok(r.risks.includes('BROAD_ACCESS_SCOPE_REQUIRES_HISTORIC_WORKER_REVIEW'));
+  assert.equal(r.launchVerdict,'NO_GO');
+});
+
+test('Durable Object namespace pagination stays separate from Access pagination', async () => {
+  const mock=mockCall({
+    workerNames:['cresco'],apps:[],namespaces:['CrescoFamilyPracticeState'],
+    doTotalPages:2
+  });
+  const r=await inspectCloudflareReadOnly({
+    accountId:ACCOUNT,apiToken:TOKEN,fetchImpl:mock.fetchImpl
+  });
+  assert.ok(r.risks.includes('DURABLE_OBJECT_PAGINATION_INCOMPLETE'));
+  assert.ok(!r.risks.includes('ACCESS_APPLICATION_PAGINATION_INCOMPLETE'));
 });

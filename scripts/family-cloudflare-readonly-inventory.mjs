@@ -36,45 +36,79 @@ function workerName(item) {
   return typeof item?.id === 'string' ? item.id : null;
 }
 
-function appProtectsWorker(app, workerName) {
-  if (!app || typeof app !== 'object') return false;
-  const host = workerName + '.faadil-casecraft.workers.dev';
-  const direct = [app.domain, ...(Array.isArray(app.domains) ? app.domains : [])]
-    .some((domain) => typeof domain === 'string' && (
-      domain.toLowerCase() === host ||
-      domain.toLowerCase() === 'https://' + host
-    ));
-  const destination = Array.isArray(app.destinations) &&
-    app.destinations.some((d) => d?.worker_id === workerName ||
-      d?.uri === host || d?.uri === 'https://' + host);
-  return Boolean(direct || destination);
+
+function accessCoverageForWorker(app, worker) {
+  if (!worker || !app || typeof app !== 'object') return [];
+  const name = workerName(worker);
+  const tag = typeof worker.tag === 'string' ? worker.tag : null;
+  const hostname = name + '.faadil-casecraft.workers.dev';
+  const hits = [];
+  const hostnames = [app.domain, ...(Array.isArray(app.domains) ? app.domains : [])];
+  if (hostnames.some((value) => typeof value === 'string' &&
+    [hostname, 'https://' + hostname].includes(value.toLowerCase()))) {
+    hits.push('hostname_specific');
+  }
+  for (const d of Array.isArray(app.destinations) ? app.destinations : []) {
+    if (d?.type === 'worker' || d?.type === 'preview_worker') {
+      // Workers list id is the script name, whereas a Worker-level Access
+      // destination may use the immutable script tag. Never assume IDs match.
+      if (typeof d.worker_id === 'string' && (d.worker_id === tag || d.worker_id === name)) {
+        hits.push(d.type === 'worker' ? 'worker_all_traffic' : 'preview_only');
+      }
+    } else if (d?.type === 'public' &&
+      [hostname, 'https://' + hostname].includes(String(d.uri).toLowerCase())) {
+      hits.push('hostname_specific');
+    } else if (!d?.type && [hostname, 'https://' + hostname].includes(String(d?.uri).toLowerCase())) {
+      hits.push('hostname_specific');
+    }
+  }
+  return [...new Set(hits)];
+}
+
+function hasPublicOverride(app) {
+  return (Array.isArray(app?.destinations) ? app.destinations : [])
+    .some((d) => Array.isArray(d?.overrides) &&
+      d.overrides.some((override) => override?.behavior === 'public'));
 }
 
 function targetsHistoricalBroadly(app) {
-  // Descriptive, not proof: flag especially dangerous broad matches so the
-  // owner does not accidentally introduce account-wide Access during setup.
-  const fields = [app?.domain, ...(app?.domains || []),
-    ...(app?.destinations || []).map((d) => d?.uri)];
+  const destinations = Array.isArray(app?.destinations) ? app.destinations : [];
+  // The typed account-wide destination is independent of wildcard hostnames.
+  if (destinations.some((d) =>
+    d?.type === 'all_workers' || d?.type === 'all_preview_workers')) return true;
+  const fields = [app?.domain,
+    ...(Array.isArray(app?.domains) ? app.domains : []),
+    ...destinations.map((d) => d?.uri)];
   return fields.some((d) => typeof d === 'string' &&
     (d.includes('*.faadil-casecraft.workers.dev') ||
       d.includes('*.workers.dev') ||
       d.includes('faadil-casecraft.workers.dev/*')));
 }
 
-export function summarizeInventory({ workers, apps, namespaces, pageComplete, accountId }) {
+export function summarizeInventory({ workers, apps, namespaces, pageComplete, namespacePageComplete = true, accountId }) {
   const names = new Set(workers.map(workerName).filter(Boolean));
   const family = FAMILY.map((name) => {
-    const candidates = apps.filter((app) => appProtectsWorker(app, name));
-    const directAccessTargets = candidates.map((app) => ({
+    const worker = workers.find((item) => workerName(item) === name);
+    const candidates = apps.map((app) => ({
+      app, coverage: accessCoverageForWorker(app, worker)
+    })).filter((item) => item.coverage.length > 0);
+    const directAccessTargets = candidates.map(({ app, coverage }) => ({
       appType: typeof app.type === 'string' ? app.type : 'UNKNOWN',
+      coverageSignals: coverage,
+      // Preview-only or hostname-specific matches never prove protection of
+      // both production + preview URLs. Access enforcement requires live tests.
+      publicPathOverrideDetected: hasPublicOverride(app),
       policyConfigurationPresent: Array.isArray(app.policies) && app.policies.length > 0,
-      // App presence does not prove active enforcement. No policies or PII shown.
       accessRuntimeVerified: false
     }));
     return {
       worker: name,
       scriptPresent: names.has(name),
+      workerImmutableIdPresent: typeof worker?.tag === 'string',
       accessApplicationMatchCount: candidates.length,
+      workerLevelAllTrafficMatch: candidates.some((item) =>
+        item.coverage.includes('worker_all_traffic')),
+      publicPathOverrideDetected: candidates.some((item) => hasPublicOverride(item.app)),
       appObservations: directAccessTargets,
       accessRuntimeVerified: false
     };
@@ -92,8 +126,15 @@ export function summarizeInventory({ workers, apps, namespaces, pageComplete, ac
   ];
   const findings = [];
   if (!pageComplete) findings.push('ACCESS_APPLICATION_PAGINATION_INCOMPLETE');
+  if (!namespacePageComplete) findings.push('DURABLE_OBJECT_PAGINATION_INCOMPLETE');
   if (family.some((f) => !f.scriptPresent)) findings.push('FAMILY_WORKERS_NOT_BOTH_PRESENT');
   if (family.some((f) => f.accessApplicationMatchCount === 0)) findings.push('FAMILY_ACCESS_APPS_NOT_BOTH_EVIDENCED');
+  if (family.some((f) => f.scriptPresent && !f.workerLevelAllTrafficMatch)) {
+    findings.push('FAMILY_FULL_WORKER_ACCESS_NOT_EVIDENCED');
+  }
+  if (family.some((f) => f.publicPathOverrideDetected)) {
+    findings.push('FAMILY_ACCESS_PUBLIC_PATH_OVERRIDE_REVIEW');
+  }
   if (apps.some(targetsHistoricalBroadly)) findings.push('BROAD_ACCESS_SCOPE_REQUIRES_HISTORIC_WORKER_REVIEW');
   if (!EXPECTED_FAMILY_DO.every((name) => doNames.includes(name))) {
     findings.push('FAMILY_DURABLE_OBJECT_CLASSES_NOT_ALL_EVIDENCED');
@@ -166,14 +207,17 @@ export async function inspectCloudflareReadOnly({
     data[key] = body;
   }
   const pagination = data.apps.result_info;
-  const complete = pagination == null ||
-    (Number(pagination.total_pages ?? 1) <= 1 &&
+  const complete = pagination == null
+    ? Array.isArray(data.apps.result) && data.apps.result.length < 100
+    : (Number(pagination.total_pages ?? 1) <= 1 &&
       Number(pagination.page ?? 1) === 1);
   return summarizeInventory({
     workers: parseList(data.workers.result, 'workers'),
     apps: parseList(data.apps.result, 'Access apps'),
     namespaces: parseList(data.namespaces.result, 'Durable Object namespaces'),
     pageComplete: complete,
+    namespacePageComplete: Number(data.namespaces.result_info?.total_pages ?? 1) <= 1 &&
+      Number(data.namespaces.result_info?.page ?? 1) === 1,
     accountId
   });
 }
