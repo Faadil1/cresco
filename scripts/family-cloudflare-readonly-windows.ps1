@@ -80,7 +80,7 @@ try {
 }
 catch {
     Write-Host ('CRESCO_CF_ACCOUNT_AUDIT_NO_GO: ' + $_.Exception.Message) -ForegroundColor Red
-    $global:LASTEXITCODE = 2
+    throw 'Local audit halted. No deployment or account mutation was performed.'
 }
 finally {
     Remove-Item Env:\CLOUDFLARE_READONLY_API_TOKEN -ErrorAction SilentlyContinue
