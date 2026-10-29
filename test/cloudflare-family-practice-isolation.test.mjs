@@ -20,12 +20,14 @@ function env() {
       get: (key) => {
         if (!backing.has(key)) {
           const records = new Map();
-          backing.set(key, new CrescoFamilyPracticeState({
+          const object = new CrescoFamilyPracticeState({
             storage: {
               get: async (name) => records.get(name),
               put: async (name, value) => { records.set(name, structuredClone(value)); }
             }
-          }));
+          });
+          // Cloudflare DOStub.fetch accepts (url, init); the class receives a Request.
+          backing.set(key, { fetch: (url, init) => object.fetch(new Request(url, init)) });
         }
         return backing.get(key);
       }
