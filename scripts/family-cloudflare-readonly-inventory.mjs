@@ -140,7 +140,7 @@ export async function inspectCloudflareReadOnly({
   ];
   const data = {};
   for (const [key, path] of requests) {
-    const url = new URL(path, ROOT);
+    const url = new URL(ROOT + path);
     if (url.origin !== 'https://api.cloudflare.com' ||
         !url.pathname.startsWith('/client/v4/accounts/' + accountId + '/')) {
       throw new Error('CLOUDFLARE_API_HOST_OR_PATH_NOT_ALLOWED');
