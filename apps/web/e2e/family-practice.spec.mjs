@@ -117,6 +117,11 @@ function stateStore() {
   return { handle, observed, setUnavailable: (value) => { unavailable = value; } };
 }
 
+// The historic Colosseum web build deliberately does not expose /family-practice.
+// This test must run only in the independent Family-only browser workflow.
+test.skip(process.env.NEXT_PUBLIC_CRESCO_FAMILY_ONLY !== "1",
+  "Run only in the isolated Family build; Colosseum routes remain frozen.");
+
 test.use({ ...devices["iPhone 13"] });
 
 test("two isolated browser contexts complete a fictional Teen to Parent to Teen loop", async ({ browser }) => {
