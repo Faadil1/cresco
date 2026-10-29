@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowRight, BookOpen, CheckCircle2, Clock3, RefreshCw, ShieldCheck } from "lucide-react";
 import {
   createPracticeSession, decidePracticeDiscussion, loadPracticeState,
@@ -26,6 +26,7 @@ export function FamilyPracticeLab() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [reason, setReason] = useState<PracticeReason>("LEARN_TOGETHER");
+  const currentCredentials = useRef<PracticeCredentials | null>(null);
 
   const refresh = useCallback(async (c: PracticeCredentials, silent = false) => {
     try {
@@ -34,10 +35,12 @@ export function FamilyPracticeLab() {
         next.kind !== "FICTIONAL_CREDITS_ONLY" || next.truthBoundary?.realMoney !== false) {
         throw new Error("PRACTICE_ROLE_OR_TRUTH_UNVERIFIED");
       }
-      setSnapshot(next);
+      if (currentCredentials.current?.token !== c.token || currentCredentials.current?.practiceId !== c.practiceId) return;
+      setSnapshot((previous) => previous && previous.practiceId === next.practiceId && previous.version > next.version ? previous : next);
       setVerified(true);
       if (!silent) setNotice("Practice data verified. All credits are imaginary.");
     } catch {
+      if (currentCredentials.current?.token !== c.token || currentCredentials.current?.practiceId !== c.practiceId) return;
       setVerified(false);
       setNotice("Cannot verify the current practice state. Actions are blocked. Check your access or connection.");
     }
@@ -45,7 +48,8 @@ export function FamilyPracticeLab() {
 
   useEffect(() => {
     if (!credentials) return;
-    void refresh(credentials);
+    // Defer the first read: do not synchronously cascade state from the effect body.
+    queueMicrotask(() => void refresh(credentials));
     const interval = setInterval(() => {
       if (document.visibilityState === "visible") void refresh(credentials, true);
     }, 12000);
@@ -78,6 +82,7 @@ export function FamilyPracticeLab() {
       setNotice("Enter a valid practice ID and the access code for your chosen role.");
       return;
     }
+    currentCredentials.current = c;
     setSnapshot(null);
     setVerified(false);
     setCredentials(null);
@@ -204,6 +209,7 @@ export function FamilyPracticeLab() {
                 <RefreshCw aria-hidden className="size-4"/> Refresh history
               </button>
               <button type="button" onClick={() => {
+                currentCredentials.current = null;
                 setCredentials(null); setSnapshot(null); setVerified(false);
                 setNotice("Role access closed in this tab. Nothing was deleted from the separate practice service.");
               }} className="min-h-11 rounded-full border border-line px-4 py-2 text-[12px] font-bold text-navy-strong">
