@@ -2,10 +2,12 @@
 // historical Colosseum / World's Fair namespace or Worker name.
 import { handleCrescoCloudflareRequest } from './cloudflare-worker.mjs';
 import { workflowOpenApi, WORKFLOW_PREFIX } from './worlds-fair-workflow-http.mjs';
+import { handleFamilyPracticeRequest, PRACTICE_PREFIX } from './cloudflare-family-practice-api.mjs';
 
 // A distinct class name on a distinct Worker produces a distinct Durable
 // Object namespace. The historical FamilyState binding remains untouched.
 export { FamilyState as CrescoFamilyIsolatedState } from './cloudflare-family-state.mjs';
+export { CrescoFamilyPracticeState } from './cloudflare-family-practice-state.mjs';
 
 const CHAIN_WRITE = /^\/workspaces\/[a-z0-9-]+\/(?:bootstrap|intents|requests\/[a-z0-9-]+\/decision|mandate\/status|mandate\/policy|asset-rule|vault\/topup|guardian\/submit|reconcile)$/;
 const ROUTES = new Set(['GET', 'POST', 'OPTIONS']);
@@ -51,6 +53,10 @@ export function familyWorkerPolicy(request, env = {}) {
 }
 
 export async function handleCrescoFamilyOnlyRequest(request, env = {}, services = {}) {
+  // The separate fictional-credit service never reaches the Devnet workflow router.
+  if (new URL(request.url).pathname.startsWith(PRACTICE_PREFIX + '/')) {
+    return handleFamilyPracticeRequest(request, env);
+  }
   const denied = familyWorkerPolicy(request, env);
   if (denied) return response(denied.status, denied.error, 'This isolated Family service cannot perform the requested action', request, env);
   const path = new URL(request.url).pathname;
