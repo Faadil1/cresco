@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowRight, BookOpen, CheckCircle2, Clock3, RefreshCw, ShieldCheck } from "lucide-react";
 import {
-  createPracticeSession, decidePracticeDiscussion, loadPracticeState,
+  closePracticeSession, createPracticeSession, decidePracticeDiscussion, loadPracticeState,
   requestPracticeDiscussion, savePracticeCredits, type PracticeCredentials,
   type PracticeInvitation, type PracticeReason, type PracticeSnapshot
 } from "@/services/family-practice-client";
@@ -29,6 +29,7 @@ export function FamilyPracticeLab() {
   const currentCredentials = useRef<PracticeCredentials | null>(null);
   const unknownWriteHold = useRef(false);
   const [mustReview, setMustReview] = useState(false);
+  const [eraseConfirmed, setEraseConfirmed] = useState(false);
 
   const refresh = useCallback(async (c: PracticeCredentials, silent = false) => {
     try {
@@ -124,6 +125,28 @@ export function FamilyPracticeLab() {
       setMustReview(true);
       setVerified(false);
       setNotice("Action result unverified. Do not retry. Manually refresh and inspect the practice history first.");
+    } finally { setBusy(false); }
+  }
+
+  async function endResearchPractice() {
+    if (!credentials || credentials.role !== "parent" || !eraseConfirmed || busy || !verified) return;
+    setBusy(true);
+    setVerified(false);
+    setNotice("Ending this fictional practice and revoking both role codes…");
+    try {
+      const result = await closePracticeSession(credentials);
+      if (!result.closed || !result.allRoleCodesRevoked || !result.fictionalHistoryCleared) {
+        throw new Error("PRACTICE_CLOSURE_UNVERIFIED");
+      }
+      currentCredentials.current = null;
+      unknownWriteHold.current = false;
+      setMustReview(false);
+      setEraseConfirmed(false);
+      setSnapshot(null);
+      setCredentials(null);
+      setNotice("Practice ended. The service confirmed the fictional history was cleared and both role codes revoked.");
+    } catch {
+      setNotice("Closure could not be confirmed. The practice may still exist. Do not assume access codes are revoked; recheck privately.");
     } finally { setBusy(false); }
   }
 
@@ -332,6 +355,25 @@ export function FamilyPracticeLab() {
                   ))}
                 </ol>
               </section>
+              {credentials.role === "parent" && (
+                <section className="mt-5 rounded-xl border border-loss/30 bg-loss-soft p-4" aria-label="End research practice">
+                  <h3 className="text-[16px] font-bold text-navy-strong">End and erase this practice</h3>
+                  <p className="mt-2 text-[12px] leading-6 text-ink-2">
+                    This ends the fictional research exercise, erases its server-side practice history
+                    and invalidates both role codes. It cannot be undone. This is not a real financial account.
+                  </p>
+                  <label className="mt-3 flex items-start gap-3 text-[12px] font-semibold text-navy-strong">
+                    <input type="checkbox" checked={eraseConfirmed} onChange={(e) => setEraseConfirmed(e.target.checked)}
+                      className="mt-1 size-4 shrink-0 accent-red-700"/>
+                    I understand that this fictional exercise and both access codes will be permanently closed.
+                  </label>
+                  <button type="button" disabled={!eraseConfirmed || !verified || busy}
+                    onClick={() => void endResearchPractice()}
+                    className="mt-3 min-h-11 rounded-full border border-loss/50 bg-surface px-5 py-2 text-[12px] font-bold text-loss-text disabled:opacity-50">
+                    End practice and erase history
+                  </button>
+                </section>
+              )}
             </>
           )}
         </div>
@@ -340,7 +382,7 @@ export function FamilyPracticeLab() {
       <p className="mt-5 text-[12px] leading-6 text-ink-2">
         Role codes are kept in this tab&apos;s temporary React state, not in a URL,
         cookie or browser storage. Refreshing the page requires entering your own code again.
-        The server retains fictional exercise history for up to seven days. This research
+        The practice is scheduled for server-side deletion after seven days, or the Parent-role tester can end it earlier. Backups may be retained by the hosting provider. This research
         prototype is not a regulated financial product, verified family account or guardian consent.
       </p>
     </section>
