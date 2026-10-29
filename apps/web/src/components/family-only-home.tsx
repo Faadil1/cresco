@@ -131,6 +131,18 @@ export function FamilyOnlyHome() {
           Family release candidate pending independent review.
         </div>
 
+        <section className="mt-8 rounded-[22px] border border-green/30 bg-green-soft p-5 md:p-6" aria-label="Separate multi-device practice">
+          <h2 className="font-display text-[27px] text-navy-strong">Want to test with two devices?</h2>
+          <p className="mt-2 max-w-[72ch] text-[13px] leading-6 text-ink-2">
+            Invited adult researchers can explore separate Parent and Teen roles with an
+            independent fictional-credit history. Access codes do not prove parenthood,
+            and this is not a live financial account.
+          </p>
+          <Link href="/family-practice"
+            className="mt-4 inline-flex min-h-12 items-center gap-2 rounded-full bg-green-strong px-5 py-3 text-[13px] font-bold text-white">
+            Explore invited practice <ArrowRight aria-hidden className="size-4"/>
+          </Link>
+        </section>
         <FamilyParentTrustCenter />
         <FamilyAgencyPreview />
       </div>
