@@ -1,0 +1,50 @@
+name: family-practice-browser-rehearsal
+
+on:
+  pull_request:
+    paths:
+      - "apps/web/src/app/family-practice/**"
+      - "apps/web/src/components/family-practice-lab.tsx"
+      - "apps/web/src/services/family-practice-client.ts"
+      - "apps/web/e2e/family-practice.spec.mjs"
+      - "apps/web/playwright.family-practice.config.mjs"
+      - ".github/workflows/family-practice-browser.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  mocked-family-webkit:
+    name: Two-role Family WebKit mock (NO DEPLOY)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: npm install --no-audit --no-fund
+      - run: npm install --no-save --no-audit --no-fund @playwright/test
+      - name: Build a local Family-only research app, never the historic Colosseum target
+        run: npm run build
+        env:
+          NEXT_PUBLIC_CRESCO_FAMILY_ONLY: "1"
+          NEXT_PUBLIC_CRESCO_API_URL: https://cresco-family-api.faadil-casecraft.workers.dev
+      - run: npx playwright install --with-deps webkit
+      - name: Mocked two-context browser rehearsal (all backend calls intercepted)
+        run: npx playwright test --config playwright.family-practice.config.mjs
+        env:
+          NEXT_PUBLIC_CRESCO_FAMILY_ONLY: "1"
+          NEXT_PUBLIC_CRESCO_API_URL: https://cresco-family-api.faadil-casecraft.workers.dev
+      - name: Distinguish simulated browser proof from hosted release
+        run: |
+          echo "MOCKED_ROLE_E2E_ONLY=PASS"
+          echo "HOSTED_FAMILY_ROLE_E2E=NOT_RUN"
+          echo "CLOUDFLARE_DEPLOY=NOT_RUN"
