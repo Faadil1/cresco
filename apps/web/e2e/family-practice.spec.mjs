@@ -19,6 +19,7 @@ function stateStore() {
     contentType: "application/json",
     headers: {
       "access-control-allow-origin": "http://127.0.0.1:3100",
+      "access-control-allow-credentials": "true",
       "cache-control": "no-store",
       "vary": "Origin"
     },
