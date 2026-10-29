@@ -85,7 +85,7 @@ async function api(e, method, path, options = {}) {
   const req = new Request(HOST + PREFIX + path, {
     method,
     headers: {
-      origin: options.origin ?? ORIGIN,
+      ...(options.origin === null ? {} : { origin: options.origin ?? ORIGIN }),
       ...(options.body === undefined ? {} : { 'content-type': 'application/json' }),
       ...(options.token ? { authorization: 'Bearer ' + options.token } : {}),
       ...(options.invite ? { 'x-cresco-family-practice-invite': options.invite } : {}),
@@ -301,9 +301,10 @@ test('Independent operator secret can terminate a Parent-compromised practice an
   const e=env();
   const session=await create(e);
   const route='/sessions/'+session.practiceId;
-  assert.equal((await api(e,'POST',route+'/emergency-close',{operator:'invalid-supplied-operator-key-1234567890',body:{}})).status,401);
-  assert.equal((await api({...e,CRESCO_FAMILY_PRACTICE_OPERATOR_TOKEN:null},'POST',route+'/emergency-close',{operator:OPERATOR,body:{}})).status,503);
-  const closed=await api(e,'POST',route+'/emergency-close',{operator:OPERATOR,body:{}});
+  assert.equal((await api(e,'POST',route+'/emergency-close',{operator:OPERATOR,body:{}})).status,403);
+  assert.equal((await api(e,'POST',route+'/emergency-close',{operator:'invalid-supplied-operator-key-1234567890',origin:null,body:{}})).status,401);
+  assert.equal((await api({...e,CRESCO_FAMILY_PRACTICE_OPERATOR_TOKEN:null},'POST',route+'/emergency-close',{operator:OPERATOR,origin:null,body:{}})).status,503);
+  const closed=await api(e,'POST',route+'/emergency-close',{operator:OPERATOR,origin:null,body:{}});
   assert.equal(closed.status,200);
   assert.equal(closed.body.closed,true);
   assert.equal(closed.body.initiatedBy,'operator');
