@@ -2,19 +2,52 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { CrescoFamilyPracticeState } from '../src/cloudflare-family-practice-state.mjs';
+import { CrescoFamilyPracticeInviteGuard } from '../src/cloudflare-family-practice-invite-guard.mjs';
 import { handleCrescoFamilyOnlyRequest } from '../src/cloudflare-family-only-worker.mjs';
 
 const ORIGIN = 'https://cresco-family-web.faadil-casecraft.workers.dev';
 const HOST = 'https://cresco-family-api.faadil-casecraft.workers.dev';
 const PREFIX = '/api/family-practice/v1';
 const INVITE = 'a-long-private-research-invitation-token';
+const OPERATOR = 'a-distinct-very-long-operator-recovery-token-123';
 const id = (n) => '00000000-0000-4000-8000-' + String(n).padStart(12, '0');
 
 function env() {
   const backing = new Map();
+  const quotaBacking = new Map();
   return {
     CRESCO_FAMILY_WEB_ORIGIN: ORIGIN,
     CRESCO_FAMILY_PRACTICE_INVITE_TOKEN: INVITE,
+    CRESCO_FAMILY_PRACTICE_OPERATOR_TOKEN: OPERATOR,
+    FAMILY_PRACTICE_INVITE_GUARD: {
+      idFromName: (name) => name,
+      get: (name) => {
+        if (!quotaBacking.has(name)) {
+          const records = new Map();
+          let chain = Promise.resolve();
+          let scheduled = null;
+          const guard = new CrescoFamilyPracticeInviteGuard({
+            blockConcurrencyWhile: (work) => {
+              const next = chain.then(work);
+              chain = next.catch(() => {});
+              return next;
+            },
+            storage: {
+              get: async (key) => records.get(key),
+              put: async (key, value) => { records.set(key, structuredClone(value)); },
+              setAlarm: async (timestamp) => { scheduled = timestamp; },
+              deleteAll: async () => { records.clear(); scheduled = null; }
+            }
+          });
+          quotaBacking.set(name, {
+            fetch: (url, init) => guard.fetch(new Request(url, init)),
+            alarm: () => guard.alarm(),
+            getAlarm: () => scheduled
+          });
+        }
+        return quotaBacking.get(name);
+      }
+    },
     FAMILY_PRACTICE_STATE: {
       idFromName: (key) => key,
       get: (key) => {
@@ -56,6 +89,7 @@ async function api(e, method, path, options = {}) {
       ...(options.body === undefined ? {} : { 'content-type': 'application/json' }),
       ...(options.token ? { authorization: 'Bearer ' + options.token } : {}),
       ...(options.invite ? { 'x-cresco-family-practice-invite': options.invite } : {}),
+      ...(options.operator ? { 'x-cresco-family-practice-operator': options.operator } : {}),
       ...(options.actionId ? { 'x-practice-action-id': options.actionId } : {})
     },
     ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) })
@@ -73,10 +107,13 @@ async function create(e) {
 test('Config binds a separate real-fictional DO and no secret or historic config is modified', () => {
   const isolated = JSON.parse(readFileSync(new URL('../wrangler.family-api.jsonc',import.meta.url)));
   assert.equal(isolated.name, 'cresco-family-api');
-  assert.deepEqual(isolated.durable_objects.bindings.map(x => x.name), ['FAMILY_STATE', 'FAMILY_PRACTICE_STATE']);
+  assert.deepEqual(isolated.durable_objects.bindings.map(x => x.name), ['FAMILY_STATE', 'FAMILY_PRACTICE_STATE', 'FAMILY_PRACTICE_INVITE_GUARD']);
   assert.equal(isolated.durable_objects.bindings[1].class_name, 'CrescoFamilyPracticeState');
   assert.ok(isolated.exports.CrescoFamilyPracticeState);
+  assert.equal(isolated.durable_objects.bindings[2].class_name,'CrescoFamilyPracticeInviteGuard');
+  assert.ok(isolated.exports.CrescoFamilyPracticeInviteGuard);
   assert.equal(Object.hasOwn(isolated.vars, 'CRESCO_FAMILY_PRACTICE_INVITE_TOKEN'), false);
+  assert.equal(Object.hasOwn(isolated.vars, 'CRESCO_FAMILY_PRACTICE_OPERATOR_TOKEN'), false);
   assert.ok(!JSON.stringify(isolated).includes('keys-api-stocklana'));
 });
 
@@ -225,4 +262,51 @@ test('Seven-day alarm clears expired fictional research state and refuses all ol
   }
   assert.equal(object.getAlarm(), null);
   assert.equal((await api(e, 'GET', '/sessions/' + session.practiceId, { token: session.teenToken })).status, 404);
+});
+
+test('Global research quota rejects extra session creation even under simultaneous valid invitations', async () => {
+  const e = env();
+  const created = await Promise.all(Array.from({ length: 9 }, () =>
+    api(e,'POST','/sessions',{ invite: INVITE, body: {} })
+  ));
+  assert.equal(created.filter(x=>x.status===201).length, 6);
+  assert.equal(created.filter(x=>x.status===429).length, 3);
+  assert.ok(created.filter(x=>x.status===429).every(x=>x.body.error==='PRACTICE_RESEARCH_CAP_REACHED'));
+  const missing = await api({ ...e, FAMILY_PRACTICE_INVITE_GUARD: null },
+    'POST','/sessions',{invite:INVITE,body:{}});
+  assert.equal(missing.status,503);
+  assert.equal(missing.body.error,'PRACTICE_QUOTA_UNAVAILABLE');
+});
+
+test('Parent rotates compromised Teen code, previous Teen code stops working, and new one is scoped', async () => {
+  const e = env();
+  const session = await create(e);
+  const path = '/sessions/' + session.practiceId;
+  const invalid = await api(e,'POST',path+'/teen/rotate',{token:session.teenToken,body:{}});
+  assert.equal(invalid.status,403);
+  const rotated = await api(e,'POST',path+'/teen/rotate',{token:session.parentToken,body:{}});
+  assert.equal(rotated.status,200);
+  assert.equal(rotated.body.rotated,true);
+  assert.match(rotated.body.teenToken,/^pr_[0-9a-f]{64}$/);
+  assert.notEqual(rotated.body.teenToken,session.teenToken);
+  assert.equal((await api(e,'GET',path,{token:session.teenToken})).status,403);
+  assert.equal((await api(e,'GET',path,{token:rotated.body.teenToken})).status,200);
+  assert.equal((await api(e,'GET',path,{token:session.parentToken})).status,200);
+  assert.equal((await api(e,'POST',path+'/save',{
+    token:session.teenToken,body:{credits:20},actionId:id(88)
+  })).status,403);
+});
+
+test('Independent operator secret can terminate a Parent-compromised practice and revoke both codes', async () => {
+  const e=env();
+  const session=await create(e);
+  const route='/sessions/'+session.practiceId;
+  assert.equal((await api(e,'POST',route+'/emergency-close',{operator:'invalid-supplied-operator-key-1234567890',body:{}})).status,401);
+  assert.equal((await api({...e,CRESCO_FAMILY_PRACTICE_OPERATOR_TOKEN:null},'POST',route+'/emergency-close',{operator:OPERATOR,body:{}})).status,503);
+  const closed=await api(e,'POST',route+'/emergency-close',{operator:OPERATOR,body:{}});
+  assert.equal(closed.status,200);
+  assert.equal(closed.body.closed,true);
+  assert.equal(closed.body.initiatedBy,'operator');
+  assert.equal((await api(e,'GET',route,{token:session.parentToken})).status,404);
+  assert.equal((await api(e,'GET',route,{token:session.teenToken})).status,404);
 });
