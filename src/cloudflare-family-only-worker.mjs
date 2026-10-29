@@ -56,7 +56,7 @@ export function familyWorkerPolicy(request, env = {}) {
 export async function handleCrescoFamilyOnlyRequest(request, env = {}, services = {}, ctx = {}) {
   // Fail closed even if someone accidentally removes the Wrangler Access flag.
   // OPTIONS is harmless preflight and remains origin-restricted by the route handler.
-  if (env.CRESCO_FAMILY_STAGING_REQUIRE_ACCESS !== '1' && env.CRESCO_FAMILY_STAGING_REQUIRE_ACCESS !== 'unit-test-only') {
+  if (env.CRESCO_FAMILY_STAGING_REQUIRE_ACCESS !== '1') {
     return response(503, 'FAMILY_ACCESS_NOT_CONFIGURED',
       'Private Family authentication is not configured', request, env);
   }
