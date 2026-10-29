@@ -27,6 +27,8 @@ export function FamilyPracticeLab() {
   const [notice, setNotice] = useState("");
   const [reason, setReason] = useState<PracticeReason>("LEARN_TOGETHER");
   const currentCredentials = useRef<PracticeCredentials | null>(null);
+  const unknownWriteHold = useRef(false);
+  const [mustReview, setMustReview] = useState(false);
 
   const refresh = useCallback(async (c: PracticeCredentials, silent = false) => {
     try {
@@ -37,6 +39,14 @@ export function FamilyPracticeLab() {
       }
       if (currentCredentials.current?.token !== c.token || currentCredentials.current?.practiceId !== c.practiceId) return;
       setSnapshot((previous) => previous && previous.practiceId === next.practiceId && previous.version > next.version ? previous : next);
+      if (unknownWriteHold.current && silent) {
+        setVerified(false);
+        return; // automatic updates cannot clear an unknown write
+      }
+      if (!silent && unknownWriteHold.current) {
+        unknownWriteHold.current = false;
+        setMustReview(false);
+      }
       setVerified(true);
       if (!silent) setNotice("Practice data verified. All credits are imaginary.");
     } catch {
@@ -83,6 +93,8 @@ export function FamilyPracticeLab() {
       return;
     }
     currentCredentials.current = c;
+    unknownWriteHold.current = false;
+    setMustReview(false);
     setSnapshot(null);
     setVerified(false);
     setCredentials(null);
@@ -103,10 +115,15 @@ export function FamilyPracticeLab() {
         throw new Error("INVALID_PRACTICE_RESULT");
       }
       setSnapshot(next);
+      unknownWriteHold.current = false;
+      setMustReview(false);
       setVerified(true);
       setNotice("Practice action confirmed. No real money or asset changed hands.");
     } catch {
-      setNotice("Action result unverified. Do not retry blindly. Refresh the practice history first.");
+      unknownWriteHold.current = true;
+      setMustReview(true);
+      setVerified(false);
+      setNotice("Action result unverified. Do not retry. Manually refresh and inspect the practice history first.");
     } finally { setBusy(false); }
   }
 
@@ -210,6 +227,8 @@ export function FamilyPracticeLab() {
               </button>
               <button type="button" onClick={() => {
                 currentCredentials.current = null;
+                unknownWriteHold.current = false;
+                setMustReview(false);
                 setCredentials(null); setSnapshot(null); setVerified(false);
                 setNotice("Role access closed in this tab. Nothing was deleted from the separate practice service.");
               }} className="min-h-11 rounded-full border border-line px-4 py-2 text-[12px] font-bold text-navy-strong">
@@ -218,7 +237,11 @@ export function FamilyPracticeLab() {
             </div>
           </div>
           <p role="status" aria-live="polite" className="mt-4 rounded-xl bg-surface-soft p-3 text-[13px] leading-6 text-navy-strong">{notice || "Verifying your practice…"}</p>
-          {!verified && <p className="mt-2 text-[12px] font-bold text-loss-text">Unverified or offline : all actions are blocked.</p>}
+          {!verified && <p className="mt-2 text-[12px] font-bold text-loss-text">Unverified or offline: all actions are blocked.</p>}
+          {mustReview && <p role="alert" className="mt-2 text-[12px] font-bold text-loss-text">
+            A previous action may have completed. Background updates cannot unlock further actions.
+            Inspect the history and press Refresh history before trying anything else.
+          </p>}
           {snapshot && (
             <>
               <div className="mt-5 grid gap-3 sm:grid-cols-3">
