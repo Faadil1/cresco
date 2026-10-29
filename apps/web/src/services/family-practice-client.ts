@@ -92,6 +92,7 @@ async function call<T>(
     response = await fetch(base + PREFIX + path, {
       method: options.method || "GET",
       cache: "no-store",
+      credentials: "include", // Cloudflare Access auth cookie for the separately protected API.
       signal: controller.signal,
       headers: {
         ...(options.body ? { "content-type": "application/json" } : {}),
