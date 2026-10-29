@@ -97,6 +97,12 @@ export class CrescoFamilyPracticeState {
       return json({ created: true, practiceId: s.id }, 201);
     }
     if (!s) return json({ error: 'PRACTICE_NOT_FOUND' }, 404);
+    // Operator has separate authorization at the Family-only edge Worker.
+    // The DO binding is never a public network endpoint.
+    if (request.method === 'POST' && path === '/emergency-close') {
+      await this.ctx.storage.deleteAll();
+      return json({ closed: true, fictionalHistoryCleared: true, allRoleCodesRevoked: true });
+    }
     if (Date.now() >= Date.parse(s.expiresAt)) return json({ error: 'PRACTICE_EXPIRED' }, 410);
     const bearer = request.headers.get('authorization') || '';
     if (!/^Bearer pr_[a-f0-9]{64}$/.test(bearer)) return json({ error: 'ROLE_REQUIRED' }, 401);
@@ -112,6 +118,21 @@ export class CrescoFamilyPracticeState {
       }
       await this.ctx.storage.deleteAll();
       return json({ closed: true, allRoleCodesRevoked: true, fictionalHistoryCleared: true });
+    }
+    if (request.method === 'POST' && path === '/teen/rotate') {
+      if (role !== 'parent') return json({ error: 'PARENT_ONLY' }, 403);
+      const body = await request.json().catch(() => null);
+      if (!body || Object.keys(body).length !== 1 || !/^[0-9a-f]{64}$/.test(body.newHash ?? '') ||
+        body.newHash === s.parentHash || body.newHash === s.teenHash) {
+        return json({ error: 'PRACTICE_ROTATION_INVALID' }, 400);
+      }
+      s.teenHash = body.newHash;
+      s.version += 1;
+      s.events.push({ id: crypto.randomUUID(), at: new Date().toISOString(),
+        actor: 'parent', type: 'TEEN_CODE_ROTATED' });
+      s.events = s.events.slice(-maxEvents);
+      await this.ctx.storage.put('practice:v1', s);
+      return json({ rotated: true });
     }
 
     const key = request.headers.get('x-practice-action-id') || '';

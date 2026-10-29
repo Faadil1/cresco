@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowRight, BookOpen, CheckCircle2, Clock3, RefreshCw, ShieldCheck } from "lucide-react";
 import {
   closePracticeSession, createPracticeSession, decidePracticeDiscussion, loadPracticeState,
-  requestPracticeDiscussion, savePracticeCredits, type PracticeCredentials,
+  requestPracticeDiscussion, rotatePracticeTeenCode, savePracticeCredits, type PracticeCredentials,
   type PracticeInvitation, type PracticeReason, type PracticeSnapshot
 } from "@/services/family-practice-client";
 
@@ -30,6 +30,7 @@ export function FamilyPracticeLab() {
   const unknownWriteHold = useRef(false);
   const [mustReview, setMustReview] = useState(false);
   const [eraseConfirmed, setEraseConfirmed] = useState(false);
+  const [rotatedTeenCode, setRotatedTeenCode] = useState("");
 
   const refresh = useCallback(async (c: PracticeCredentials, silent = false) => {
     try {
@@ -94,6 +95,7 @@ export function FamilyPracticeLab() {
       return;
     }
     currentCredentials.current = c;
+    setRotatedTeenCode("");
     unknownWriteHold.current = false;
     setMustReview(false);
     setSnapshot(null);
@@ -128,6 +130,27 @@ export function FamilyPracticeLab() {
     } finally { setBusy(false); }
   }
 
+  async function replaceTeenCode() {
+    if (!credentials || credentials.role !== "parent" || !verified || busy) return;
+    setBusy(true);
+    setVerified(false);
+    setRotatedTeenCode("");
+    try {
+      const response = await rotatePracticeTeenCode(credentials);
+      if (!response.rotated || !/^pr_[0-9a-f]{64}$/.test(response.teenToken)) {
+        throw new Error("PRACTICE_ROTATION_RESULT_UNVERIFIED");
+      }
+      setRotatedTeenCode(response.teenToken);
+      unknownWriteHold.current = false;
+      setMustReview(false);
+      setNotice("Teen code replaced. The previous code is invalid. Record the new code privately, then refresh history.");
+    } catch {
+      unknownWriteHold.current = true;
+      setMustReview(true);
+      setNotice("Code replacement unverified. The previous Teen code may already be revoked. Manually review the session before trying again.");
+    } finally { setBusy(false); }
+  }
+
   async function endResearchPractice() {
     if (!credentials || credentials.role !== "parent" || !eraseConfirmed || busy || !verified) return;
     setBusy(true);
@@ -142,6 +165,7 @@ export function FamilyPracticeLab() {
       unknownWriteHold.current = false;
       setMustReview(false);
       setEraseConfirmed(false);
+      setRotatedTeenCode("");
       setSnapshot(null);
       setCredentials(null);
       setNotice("Practice ended. The service confirmed the fictional history was cleared and both role codes revoked.");
@@ -250,6 +274,7 @@ export function FamilyPracticeLab() {
               </button>
               <button type="button" onClick={() => {
                 currentCredentials.current = null;
+                setRotatedTeenCode("");
                 unknownWriteHold.current = false;
                 setMustReview(false);
                 setCredentials(null); setSnapshot(null); setVerified(false);
@@ -355,6 +380,28 @@ export function FamilyPracticeLab() {
                   ))}
                 </ol>
               </section>
+              {credentials.role === "parent" && (
+                <section className="mt-5 rounded-xl border border-line bg-surface-soft p-4" aria-label="Replace Teen role code">
+                  <h3 className="text-[16px] font-bold text-navy-strong">Replace Teen practice code</h3>
+                  <p className="mt-2 text-[12px] leading-6 text-ink-2">
+                    If the old Teen practice code was shared or lost, replace it.
+                    The old code stops working and the new one is displayed only here.
+                    This does not verify a real child or parent.
+                  </p>
+                  <button type="button" disabled={!verified || busy}
+                    onClick={() => void replaceTeenCode()}
+                    className="mt-3 min-h-11 rounded-full border border-line bg-surface px-4 py-2 text-[12px] font-bold text-navy-strong disabled:opacity-50">
+                    Revoke and replace Teen code
+                  </button>
+                  {rotatedTeenCode && (
+                    <p data-testid="rotated-teen-code" className="mt-4 break-all rounded-xl bg-green-soft p-3 text-[12px] leading-6 text-navy-strong">
+                      One-time new Teen code: <code>{rotatedTeenCode}</code>.
+                      Store it privately and share it only with the adult researcher testing the Teen view.
+                      The old code is invalid.
+                    </p>
+                  )}
+                </section>
+              )}
               {credentials.role === "parent" && (
                 <section className="mt-5 rounded-xl border border-loss/30 bg-loss-soft p-4" aria-label="End research practice">
                   <h3 className="text-[16px] font-bold text-navy-strong">End and erase this practice</h3>

@@ -23,6 +23,10 @@
       {
         "name": "FAMILY_PRACTICE_STATE",
         "class_name": "CrescoFamilyPracticeState"
+      },
+      {
+        "name": "FAMILY_PRACTICE_INVITE_GUARD",
+        "class_name": "CrescoFamilyPracticeInviteGuard"
       }
     ]
   },
@@ -33,6 +37,11 @@
       "storage": "sqlite"
     },
     "CrescoFamilyPracticeState": {
+      "type": "durable-object",
+      "state": "created",
+      "storage": "sqlite"
+    },
+    "CrescoFamilyPracticeInviteGuard": {
       "type": "durable-object",
       "state": "created",
       "storage": "sqlite"
