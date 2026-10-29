@@ -47,3 +47,9 @@ test('guard refuses a historical frontend Origin, plain secret, enabled Devnet w
   rejects(x => { x.api.vars.PYTH_PRO_API_KEY = 'unsafe'; });
   rejects(x => { x.web.routes = [{pattern:'*',zone_name:'example.com'}]; });
 });
+
+test('family API cannot be prepared without mandatory Access flag on the only isolated Worker', () => {
+  rejects(x => { delete x.api.vars.CRESCO_FAMILY_STAGING_REQUIRE_ACCESS; });
+  rejects(x => { x.api.vars.CRESCO_FAMILY_STAGING_REQUIRE_ACCESS = 'unit-test-only'; });
+  rejects(x => { x.api.vars.CRESCO_FAMILY_STAGING_REQUIRE_ACCESS = '0'; });
+});

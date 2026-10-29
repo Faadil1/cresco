@@ -49,6 +49,7 @@ describe("standalone fictional-practice client", () => {
     expect(calls[4].init.headers).toMatchObject({ authorization: "Bearer " + "pr_" + "b".repeat(64) });
     expect(calls.every(c => !c.url.includes("pr_") && !c.url.includes("invite"))).toBe(true);
     expect(calls.every(c => c.init.cache === "no-store")).toBe(true);
+    expect(calls.every(c => c.init.credentials === "include")).toBe(true);
   });
 
   it("never treats failed or malformed practice response as a confirmed outcome", async () => {

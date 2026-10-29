@@ -16,7 +16,10 @@ const serialize = (body, status, request, env) => {
     'x-content-type-options': 'nosniff'
   });
   const o = request.headers.get('origin');
-  if (o && o === env.CRESCO_FAMILY_WEB_ORIGIN) headers.set('access-control-allow-origin', o);
+  if (o && o === env.CRESCO_FAMILY_WEB_ORIGIN) {
+    headers.set('access-control-allow-origin', o);
+    headers.set('access-control-allow-credentials', 'true');
+  }
   return new Response(JSON.stringify(body), { status, headers });
 };
 const failure = (code, status, request, env) =>
@@ -58,7 +61,10 @@ export async function handleFamilyPracticeRequest(request, env) {
       'access-control-allow-headers': 'content-type,authorization,x-cresco-family-practice-invite,x-practice-action-id',
       'access-control-max-age': '0'
     });
-    if (origin === env.CRESCO_FAMILY_WEB_ORIGIN) headers.set('access-control-allow-origin', origin);
+    if (origin === env.CRESCO_FAMILY_WEB_ORIGIN) {
+      headers.set('access-control-allow-origin', origin);
+      headers.set('access-control-allow-credentials', 'true');
+    }
     return new Response(null, { status: 204, headers });
   }
   if (request.method === 'POST' && pathname === PRACTICE_PREFIX + '/sessions') {
@@ -175,7 +181,10 @@ export async function handleFamilyPracticeRequest(request, env) {
       headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store',
         'vary': 'Origin', 'x-content-type-options': 'nosniff' }
     });
-    if (origin === env.CRESCO_FAMILY_WEB_ORIGIN) response.headers.set('access-control-allow-origin', origin);
+    if (origin === env.CRESCO_FAMILY_WEB_ORIGIN) {
+      response.headers.set('access-control-allow-origin', origin);
+      response.headers.set('access-control-allow-credentials', 'true');
+    }
     if (newTeenToken) {
       if (result.status !== 200) return response;
       const outcome = await response.clone().json().catch(() => null);

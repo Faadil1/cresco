@@ -20,6 +20,7 @@ const response = (status, error, message, request, env) => {
   const from = request.headers.get('origin');
   if (from && from === env.CRESCO_FAMILY_WEB_ORIGIN) {
     headers.set('access-control-allow-origin', from);
+    headers.set('access-control-allow-credentials', 'true');
   }
   return new Response(JSON.stringify({
     error, message, familyOnly: true, onChainAuthorityChanged: false
@@ -53,7 +54,18 @@ export function familyWorkerPolicy(request, env = {}) {
   return null;
 }
 
-export async function handleCrescoFamilyOnlyRequest(request, env = {}, services = {}) {
+export async function handleCrescoFamilyOnlyRequest(request, env = {}, services = {}, ctx = {}) {
+  // Fail closed even if someone accidentally removes the Wrangler Access flag.
+  // OPTIONS is harmless preflight and remains origin-restricted by the route handler.
+  if (env.CRESCO_FAMILY_STAGING_REQUIRE_ACCESS !== '1') {
+    return response(503, 'FAMILY_ACCESS_NOT_CONFIGURED',
+      'Private Family authentication is not configured', request, env);
+  }
+  if (env.CRESCO_FAMILY_STAGING_REQUIRE_ACCESS === '1' &&
+      request.method !== 'OPTIONS' && !ctx.access) {
+    return response(403, 'FAMILY_ACCESS_REQUIRED',
+      'Cloudflare Access authentication is required', request, env);
+  }
   // The separate fictional-credit service never reaches the Devnet workflow router.
   if (new URL(request.url).pathname.startsWith(PRACTICE_PREFIX + '/')) {
     return handleFamilyPracticeRequest(request, env);
@@ -105,12 +117,15 @@ export async function handleCrescoFamilyOnlyRequest(request, env = {}, services 
     // must advertise it without widening the historic Colosseum CORS policy.
     headers.set('access-control-allow-headers',
       'content-type,idempotency-key,authorization,x-cresco-create-token');
+    if (request.headers.get('origin') === env.CRESCO_FAMILY_WEB_ORIGIN) {
+      headers.set('access-control-allow-credentials', 'true');
+    }
   }
   return new Response(res.body, { status: res.status, headers });
 }
 
 export default {
-  fetch(request, env) {
-    return handleCrescoFamilyOnlyRequest(request, env);
+  fetch(request, env, ctx) {
+    return handleCrescoFamilyOnlyRequest(request, env, {}, ctx);
   }
 };

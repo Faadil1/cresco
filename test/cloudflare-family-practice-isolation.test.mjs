@@ -17,6 +17,7 @@ function env() {
   const quotaBacking = new Map();
   return {
     CRESCO_FAMILY_WEB_ORIGIN: ORIGIN,
+    CRESCO_FAMILY_STAGING_REQUIRE_ACCESS: '1',
     CRESCO_FAMILY_PRACTICE_INVITE_TOKEN: INVITE,
     CRESCO_FAMILY_PRACTICE_OPERATOR_TOKEN: OPERATOR,
     FAMILY_PRACTICE_INVITE_GUARD: {
@@ -94,7 +95,7 @@ async function api(e, method, path, options = {}) {
     },
     ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) })
   });
-  const response = await handleCrescoFamilyOnlyRequest(req, e);
+  const response = await handleCrescoFamilyOnlyRequest(req, e, {}, { access: { aud: 'test-family-access' } });
   return { status: response.status, headers: response.headers, body: response.status === 204 ? null : await response.json() };
 }
 
@@ -310,4 +311,24 @@ test('Independent operator secret can terminate a Parent-compromised practice an
   assert.equal(closed.body.initiatedBy,'operator');
   assert.equal((await api(e,'GET',route,{token:session.parentToken})).status,404);
   assert.equal((await api(e,'GET',route,{token:session.teenToken})).status,404);
+});
+
+test('practice API without real Access ctx rejects bearer tokens and authorized invites before invoking state', async () => {
+  const e=env();
+  const request=new Request(HOST+PREFIX+'/sessions',{
+    method:'POST',
+    headers:{origin:ORIGIN,'x-cresco-family-practice-invite':INVITE,'content-type':'application/json'},
+    body:'{}'
+  });
+  const missing=await handleCrescoFamilyOnlyRequest(request,e);
+  assert.equal(missing.status,403);
+  assert.equal((await missing.json()).error,'FAMILY_ACCESS_REQUIRED');
+  const forged=await handleCrescoFamilyOnlyRequest(new Request(HOST+PREFIX+'/sessions',{
+    method:'POST',
+    headers:{origin:ORIGIN,'x-cresco-family-practice-invite':INVITE,
+      'CF-Access-Jwt-Assertion':'browser-forged', 'content-type':'application/json'},
+    body:'{}'
+  }),e);
+  assert.equal(forged.status,403);
+  assert.equal((await forged.json()).error,'FAMILY_ACCESS_REQUIRED');
 });
