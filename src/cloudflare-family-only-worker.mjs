@@ -8,6 +8,7 @@ import { handleFamilyPracticeRequest, PRACTICE_PREFIX } from './cloudflare-famil
 // Object namespace. The historical FamilyState binding remains untouched.
 export { FamilyState as CrescoFamilyIsolatedState } from './cloudflare-family-state.mjs';
 export { CrescoFamilyPracticeState } from './cloudflare-family-practice-state.mjs';
+export { CrescoFamilyPracticeInviteGuard } from './cloudflare-family-practice-invite-guard.mjs';
 
 const CHAIN_WRITE = /^\/workspaces\/[a-z0-9-]+\/(?:bootstrap|intents|requests\/[a-z0-9-]+\/decision|mandate\/status|mandate\/policy|asset-rule|vault\/topup|guardian\/submit|reconcile)$/;
 const ROUTES = new Set(['GET', 'POST', 'OPTIONS']);
