@@ -53,7 +53,18 @@ export function familyWorkerPolicy(request, env = {}) {
   return null;
 }
 
-export async function handleCrescoFamilyOnlyRequest(request, env = {}, services = {}) {
+export async function handleCrescoFamilyOnlyRequest(request, env = {}, services = {}, ctx = {}) {
+  // Fail closed even if someone accidentally removes the Wrangler Access flag.
+  // OPTIONS is harmless preflight and remains origin-restricted by the route handler.
+  if (env.CRESCO_FAMILY_STAGING_REQUIRE_ACCESS !== '1' && env.CRESCO_FAMILY_STAGING_REQUIRE_ACCESS !== 'unit-test-only') {
+    return response(503, 'FAMILY_ACCESS_NOT_CONFIGURED',
+      'Private Family authentication is not configured', request, env);
+  }
+  if (env.CRESCO_FAMILY_STAGING_REQUIRE_ACCESS === '1' &&
+      request.method !== 'OPTIONS' && !ctx.access) {
+    return response(403, 'FAMILY_ACCESS_REQUIRED',
+      'Cloudflare Access authentication is required', request, env);
+  }
   // The separate fictional-credit service never reaches the Devnet workflow router.
   if (new URL(request.url).pathname.startsWith(PRACTICE_PREFIX + '/')) {
     return handleFamilyPracticeRequest(request, env);
@@ -110,7 +121,7 @@ export async function handleCrescoFamilyOnlyRequest(request, env = {}, services 
 }
 
 export default {
-  fetch(request, env) {
-    return handleCrescoFamilyOnlyRequest(request, env);
+  fetch(request, env, ctx) {
+    return handleCrescoFamilyOnlyRequest(request, env, {}, ctx);
   }
 };
