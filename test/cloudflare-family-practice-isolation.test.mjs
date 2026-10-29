@@ -17,6 +17,7 @@ function env() {
   const quotaBacking = new Map();
   return {
     CRESCO_FAMILY_WEB_ORIGIN: ORIGIN,
+    CRESCO_FAMILY_STAGING_REQUIRE_ACCESS: '1',
     CRESCO_FAMILY_PRACTICE_INVITE_TOKEN: INVITE,
     CRESCO_FAMILY_PRACTICE_OPERATOR_TOKEN: OPERATOR,
     FAMILY_PRACTICE_INVITE_GUARD: {
@@ -94,7 +95,7 @@ async function api(e, method, path, options = {}) {
     },
     ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) })
   });
-  const response = await handleCrescoFamilyOnlyRequest(req, e);
+  const response = await handleCrescoFamilyOnlyRequest(req, e, {}, { access: { aud: 'test-family-access' } });
   return { status: response.status, headers: response.headers, body: response.status === 204 ? null : await response.json() };
 }
 
