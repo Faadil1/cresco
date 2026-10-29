@@ -218,7 +218,7 @@ export function FamilyPracticeLab() {
             </div>
           </div>
           <p role="status" aria-live="polite" className="mt-4 rounded-xl bg-surface-soft p-3 text-[13px] leading-6 text-navy-strong">{notice || "Verifying your practice…"}</p>
-          {!verified && <p className="mt-2 text-[12px] font-bold text-loss-text">Unverified or offline — all actions are blocked.</p>}
+          {!verified && <p className="mt-2 text-[12px] font-bold text-loss-text">Unverified or offline : all actions are blocked.</p>}
           {snapshot && (
             <>
               <div className="mt-5 grid gap-3 sm:grid-cols-3">
