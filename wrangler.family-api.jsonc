@@ -19,11 +19,20 @@
       {
         "name": "FAMILY_STATE",
         "class_name": "CrescoFamilyIsolatedState"
+      },
+      {
+        "name": "FAMILY_PRACTICE_STATE",
+        "class_name": "CrescoFamilyPracticeState"
       }
     ]
   },
   "exports": {
     "CrescoFamilyIsolatedState": {
+      "type": "durable-object",
+      "state": "created",
+      "storage": "sqlite"
+    },
+    "CrescoFamilyPracticeState": {
       "type": "durable-object",
       "state": "created",
       "storage": "sqlite"
