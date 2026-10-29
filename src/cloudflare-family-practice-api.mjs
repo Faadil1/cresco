@@ -95,6 +95,7 @@ export async function handleFamilyPracticeRequest(request, env) {
   const legalWrite = request.method === 'POST' &&
     (subpath === '/save' || subpath === '/request' || subpath === '/close' ||
       new RegExp('^/requests/' + UUID + '/decision' + String.fromCharCode(36)).test(subpath));
+  if (!legalRead && !legalWrite) return failure('PRACTICE_ROUTE_NOT_FOUND', 404, request, env);
   if (legalWrite) {
     const length = Number(request.headers.get('content-length') || '0');
     if (length > 512) return failure('PRACTICE_BODY_TOO_LARGE', 413, request, env);
