@@ -176,7 +176,7 @@ export async function handleFamilyPracticeRequest(request, env) {
     if (origin === env.CRESCO_FAMILY_WEB_ORIGIN) response.headers.set('access-control-allow-origin', origin);
     if (newTeenToken) {
       if (result.status !== 200) return response;
-      const outcome = await result.clone().json().catch(() => null);
+      const outcome = await response.clone().json().catch(() => null);
       if (!outcome?.rotated) return failure('PRACTICE_ROTATION_UNVERIFIED', 503, request, env);
       return serialize({ rotated: true, teenToken: newTeenToken,
         notice: 'Previous Teen role code is revoked. Store this new code privately; it is shown once.' }, 200, request, env);
