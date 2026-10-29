@@ -45,9 +45,10 @@ export function validateFamilyReleaseBoundary({
   assert.notEqual(web.name, oldWeb.name);
 
   assert.deepEqual(api.durable_objects?.bindings?.map((x) => [x.name, x.class_name]),
-    [['FAMILY_STATE', 'CrescoFamilyIsolatedState']],
+    [['FAMILY_STATE', 'CrescoFamilyIsolatedState'], ['FAMILY_PRACTICE_STATE', 'CrescoFamilyPracticeState']],
     'Family API must use exactly its own Durable Object class');
   assert.ok(api.exports?.CrescoFamilyIsolatedState, 'isolated DO class export required');
+  assert.ok(api.exports?.CrescoFamilyPracticeState, 'standalone fictional-practice DO export required');
   assert.notEqual(api.durable_objects.bindings[0].class_name,
     oldApi.durable_objects?.bindings?.[0]?.class_name,
     'historical DO class cannot be reused');
@@ -56,6 +57,8 @@ export function validateFamilyReleaseBoundary({
     'Family API must allow only the dedicated Family Web origin');
   assert.ok(!Object.hasOwn(api.vars ?? {}, 'CRESCO_FAMILY_DEVNET_WRITES'),
     'Devnet writes must not be enabled via committed Wrangler vars');
+  assert.ok(!Object.hasOwn(api.vars ?? {}, 'CRESCO_FAMILY_PRACTICE_INVITE_TOKEN'),
+    'Practice invite must be a secret, never a committed variable');
   assert.ok(!Object.hasOwn(api.vars ?? {}, 'CRESCO_FAMILY_CREATE_TOKEN'),
     'Private invite token must be a Worker secret, not a plaintext variable');
 
