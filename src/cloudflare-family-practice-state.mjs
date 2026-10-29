@@ -43,6 +43,15 @@ export class CrescoFamilyPracticeState {
   constructor(ctx) { this.ctx = ctx; }
 
   async fetch(request) {
+    // Serialize each read-modify-write against concurrent device actions.
+    // DOs are single-threaded, but async storage I/O can still interleave.
+    if (typeof this.ctx.blockConcurrencyWhile === 'function') {
+      return this.ctx.blockConcurrencyWhile(() => this.handleRequest(request));
+    }
+    return this.handleRequest(request);
+  }
+
+  async handleRequest(request) {
     if (request.method !== 'POST' && request.method !== 'GET') {
       return json({ error: 'METHOD_NOT_ALLOWED' }, 405);
     }
