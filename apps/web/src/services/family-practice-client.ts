@@ -151,3 +151,17 @@ export function closePracticeSession(c: PracticeCredentials): Promise<{
     method: "POST", token: c.token, body: { confirm: "END_PRACTICE" }
   });
 }
+
+/**
+ * An authenticated Parent can replace a potentially compromised Teen role code.
+ * The returned token appears only in this successful response and is never stored.
+ * If the outcome is uncertain, Parent may rotate again once the state is checked.
+ */
+export function rotatePracticeTeenCode(c: PracticeCredentials): Promise<{
+  rotated: true; teenToken: string; notice: string;
+}> {
+  if (c.role !== "parent") throw new PracticeApiError(403, "PARENT_ONLY");
+  return call("/sessions/" + encodeURIComponent(c.practiceId) + "/teen/rotate", {
+    method: "POST", token: c.token, body: {}
+  });
+}
