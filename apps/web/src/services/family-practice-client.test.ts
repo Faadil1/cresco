@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { configureCrescoBackend } from "./cresco-backend";
 import {
   createPracticeSession, loadPracticeState, requestPracticeDiscussion,
-  savePracticeCredits, decidePracticeDiscussion
+  savePracticeCredits, decidePracticeDiscussion, rotatePracticeTeenCode
 } from "./family-practice-client";
 
 const ID = "00000000-0000-4000-8000-000000000001";
@@ -59,4 +59,24 @@ describe("standalone fictional-practice client", () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("unverified", { status: 200 })));
     await expect(loadPracticeState(CRED)).rejects.toMatchObject({ code: "PRACTICE_RESPONSE_INVALID" });
   });
+  it("allows only a Parent role to request Teen-code replacement, without URL tokens", async () => {
+    vi.stubEnv("NEXT_PUBLIC_CRESCO_FAMILY_ONLY", "1");
+    configureCrescoBackend({ url: "https://cresco-family-api.example.test" });
+    await expect(rotatePracticeTeenCode(CRED)).rejects.toMatchObject({ code: "PARENT_ONLY", status: 403 });
+    const calls: { url: string; init: RequestInit }[] = [];
+    const fresh = "pr_" + "c".repeat(64);
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init: RequestInit) => {
+      calls.push({ url, init });
+      return Response.json({ rotated: true, teenToken: fresh, notice: "Shown once" });
+    }));
+    const parent = { ...CRED, role: "parent" as const, token: "pr_" + "b".repeat(64) };
+    const rotated = await rotatePracticeTeenCode(parent);
+    expect(rotated.teenToken).toBe(fresh);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].url).toContain("/teen/rotate");
+    expect(calls[0].url).not.toContain(parent.token);
+    expect(calls[0].init.headers).toMatchObject({ authorization: "Bearer " + parent.token });
+    expect(calls[0].init.cache).toBe("no-store");
+  });
+
 });
