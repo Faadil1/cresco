@@ -3,7 +3,7 @@ import { familyWebRouteAllowed } from "./family-web-route-guard";
 
 describe("isolated Family website routing", () => {
   it("allows only the Family entry, desk and required framework assets", () => {
-    for (const path of ["/", "/worlds-fair/desk", "/_next/static/chunk.js", "/_vinext/something", "/favicon.ico"]) {
+    for (const path of ["/", "/family-practice", "/worlds-fair/desk", "/_next/static/chunk.js", "/_vinext/something", "/favicon.ico"]) {
       expect(familyWebRouteAllowed(path)).toBe(true);
     }
   });
