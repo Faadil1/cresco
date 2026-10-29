@@ -20,7 +20,13 @@ function env() {
       get: (key) => {
         if (!backing.has(key)) {
           const records = new Map();
+          let chain = Promise.resolve();
           const object = new CrescoFamilyPracticeState({
+            blockConcurrencyWhile: (work) => {
+              const next = chain.then(work);
+              chain = next.catch(() => {});
+              return next;
+            },
             storage: {
               get: async (name) => records.get(name),
               put: async (name, value) => { records.set(name, structuredClone(value)); }
@@ -151,4 +157,21 @@ test('Fail closed without role secret, approved invite, private DO or allowed CO
   assert.equal(preflight.headers.get('access-control-allow-origin'),ORIGIN);
   assert.match(preflight.headers.get('access-control-allow-headers'),/x-practice-action-id/);
   assert.equal((await api(e,'GET','/sessions/../../api/v0.4/worlds-fair')).status,404);
+});
+
+test('simultaneous device retries with one action ID never spend imaginary credits twice', async () => {
+  const e = env();
+  const session = await create(e);
+  const path = '/sessions/' + session.practiceId + '/save';
+  const input = { token: session.teenToken, actionId: id(60), body: { credits: 20 } };
+  const results = await Promise.all([
+    api(e, 'POST', path, input), api(e, 'POST', path, input),
+    api(e, 'POST', path, input)
+  ]);
+  assert.deepEqual(results.map(x => x.status), [200,200,200]);
+  const value = await api(e,'GET','/sessions/'+session.practiceId,{token:session.parentToken});
+  assert.equal(value.body.savedCredits,20);
+  assert.equal(value.body.availableCredits,80);
+  assert.equal(value.body.version,1);
+  assert.equal(value.body.events.length,1);
 });
