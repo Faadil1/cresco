@@ -85,7 +85,7 @@ function targetsHistoricalBroadly(app) {
       d.includes('faadil-casecraft.workers.dev/*')));
 }
 
-export function summarizeInventory({ workers, apps, namespaces, pageComplete, accountId }) {
+export function summarizeInventory({ workers, apps, namespaces, pageComplete, namespacePageComplete = true, accountId }) {
   const names = new Set(workers.map(workerName).filter(Boolean));
   const family = FAMILY.map((name) => {
     const worker = workers.find((item) => workerName(item) === name);
@@ -126,6 +126,7 @@ export function summarizeInventory({ workers, apps, namespaces, pageComplete, ac
   ];
   const findings = [];
   if (!pageComplete) findings.push('ACCESS_APPLICATION_PAGINATION_INCOMPLETE');
+  if (!namespacePageComplete) findings.push('DURABLE_OBJECT_PAGINATION_INCOMPLETE');
   if (family.some((f) => !f.scriptPresent)) findings.push('FAMILY_WORKERS_NOT_BOTH_PRESENT');
   if (family.some((f) => f.accessApplicationMatchCount === 0)) findings.push('FAMILY_ACCESS_APPS_NOT_BOTH_EVIDENCED');
   if (family.some((f) => f.scriptPresent && !f.workerLevelAllTrafficMatch)) {
@@ -214,10 +215,9 @@ export async function inspectCloudflareReadOnly({
     workers: parseList(data.workers.result, 'workers'),
     apps: parseList(data.apps.result, 'Access apps'),
     namespaces: parseList(data.namespaces.result, 'Durable Object namespaces'),
-    pageComplete: complete && (
-      Number(data.namespaces.result_info?.total_pages ?? 1) <= 1 &&
-      Number(data.namespaces.result_info?.page ?? 1) === 1
-    ),
+    pageComplete: complete,
+    namespacePageComplete: Number(data.namespaces.result_info?.total_pages ?? 1) <= 1 &&
+      Number(data.namespaces.result_info?.page ?? 1) === 1,
     accountId
   });
 }
