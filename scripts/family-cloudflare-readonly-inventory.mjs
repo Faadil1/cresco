@@ -52,7 +52,7 @@ function accessCoverageForWorker(app, worker) {
     if (d?.type === 'worker' || d?.type === 'preview_worker') {
       // Workers list id is the script name, whereas a Worker-level Access
       // destination may use the immutable script tag. Never assume IDs match.
-      if (d.worker_id === tag || d.worker_id === name) {
+      if (typeof d.worker_id === 'string' && (d.worker_id === tag || d.worker_id === name)) {
         hits.push(d.type === 'worker' ? 'worker_all_traffic' : 'preview_only');
       }
     } else if (d?.type === 'public' &&
