@@ -9,6 +9,7 @@ const ORIGIN = 'https://cresco-family-web.faadil-casecraft.workers.dev';
 function env() {
   return {
     CRESCO_FAMILY_WEB_ORIGIN: ORIGIN,
+    CRESCO_FAMILY_STAGING_REQUIRE_ACCESS: '1',
     CRESCO_FAMILY_CREATE_TOKEN: 'private-invite',
     FAMILY_STATE: {
       idFromName: (s) => s,
@@ -28,7 +29,7 @@ const call = (method, path, body, headers = {}, environment = env(), services = 
       ...headers
     },
     ...(body === undefined ? {} : {body:JSON.stringify(body)})
-  }),environment,services);
+  }),environment,services,{access:{aud:'test-family-access'}});
 
 const readConfig = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
 
