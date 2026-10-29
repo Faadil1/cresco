@@ -50,6 +50,7 @@ function stateStore() {
     if (method === "OPTIONS") {
       return route.fulfill({ status: 204, headers: {
         "access-control-allow-origin": "http://127.0.0.1:3100",
+        "access-control-allow-credentials": "true",
         "access-control-allow-methods": "GET,POST,OPTIONS",
         "access-control-allow-headers": "authorization,content-type,x-cresco-family-practice-invite,x-practice-action-id",
       } });
