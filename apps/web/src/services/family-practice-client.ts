@@ -157,7 +157,7 @@ export function closePracticeSession(c: PracticeCredentials): Promise<{
  * The returned token appears only in this successful response and is never stored.
  * If the outcome is uncertain, Parent may rotate again once the state is checked.
  */
-export function rotatePracticeTeenCode(c: PracticeCredentials): Promise<{
+export async function rotatePracticeTeenCode(c: PracticeCredentials): Promise<{
   rotated: true; teenToken: string; notice: string;
 }> {
   if (c.role !== "parent") throw new PracticeApiError(403, "PARENT_ONLY");
