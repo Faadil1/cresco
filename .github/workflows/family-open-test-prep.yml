@@ -39,6 +39,31 @@ jobs:
           echo "FROZEN_FAMILY_PRODUCT_SOURCE=UNCHANGED"
       - name: Verify offline-only config policy and negative cases
         run: node --test apps/web/scripts/prepare-family-open-test.test.mjs
+      - name: Build reviewed standalone Family Worker locally (NO DEPLOY)
+        working-directory: apps/web
+        env:
+          NEXT_PUBLIC_CRESCO_API_URL: ""
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build:public-family
+      - name: Validate and prepare distinct Worker configs locally (NO DEPLOY)
+        working-directory: apps/web
+        env:
+          NEXT_PUBLIC_CRESCO_API_URL: ""
+        run: |
+          node scripts/prepare-family-open-test.mjs --validate-only
+          node scripts/prepare-family-open-test.mjs --prepare-local-config
+          node --input-type=module -e '
+            import {readFileSync} from "node:fs";
+            import assert from "node:assert/strict";
+            const cfg=JSON.parse(readFileSync("dist/server/wrangler.family-open-test.json","utf8"));
+            const closed=JSON.parse(readFileSync("dist/server/wrangler.family-open-test-closed.json","utf8"));
+            assert.equal(cfg.name,"cresco-family-open-test-web");
+            assert.equal(cfg.workers_dev,true);
+            assert.equal(cfg.preview_urls,false);
+            assert.equal(closed.workers_dev,false);
+            console.log("ISOLATED_FAMILY_TEST_CONFIG=PASS_NO_DEPLOY");
+          '
       - name: State release boundary
         run: |
           echo "FAMILY_TEST_WORKER_DEPLOYED=NO"
