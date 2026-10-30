@@ -157,7 +157,7 @@ test("learning actions lead to relevant Parent and Child practice screens on mob
   expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1)).toBe(false);
 });
 
-test("Child Explore research has search, compare and risk questions without granting authority", async ({ page }) => {
+test("Child Explore research has search, compare and risk questions without granting authority", async ({ page }, testInfo) => {
   const outbound = [];
   page.on("request", request => {
     if (["cresco-family-api", "keys-api-stocklana", "api.solana", "rpc.solana", "/api/family-practice"].some(value => request.url().includes(value))) outbound.push(request.url());
@@ -166,6 +166,7 @@ test("Child Explore research has search, compare and risk questions without gran
   await page.getByRole("navigation", { name: "Child demo navigation" })
     .getByRole("button", { name: "Explore" }).click();
   await expect(page.getByTestId("family-research-explore")).toBeVisible();
+  await testInfo.attach("family-child-explore-mobile.png", { body: await page.screenshot({ fullPage: false }), contentType: "image/png" });
   await expect(page.getByText(/6 fictional research examples shown/i)).toBeVisible();
 
   const search = page.getByRole("searchbox", { name: "Search fictional research examples" });
@@ -187,6 +188,8 @@ test("Child Explore research has search, compare and risk questions without gran
   await page.getByRole("navigation", { name: "Child demo navigation" })
     .getByRole("button", { name: "Home" }).click();
   await expect(page.getByTestId("practice-available")).toHaveText("100");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth >
+    document.documentElement.clientWidth + 1)).toBe(false);
   expect(outbound).toEqual([]);
 });
 
