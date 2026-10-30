@@ -1,6 +1,10 @@
 "use client";
 
 import { useReducer, useState } from "react";
+import { LessonIllustration } from "@/components/illustrations/scenes";
+import { GoalArt } from "@/components/illustrations/objects";
+import { BadgeArt } from "@/components/illustrations/badges";
+import { FamilyPracticePortfolio } from "@/components/family-public-portfolio";
 import {
   ArrowRight, BookOpen, CheckCircle2, Compass, Home, KeyRound,
   RotateCcw, ShieldCheck, Sprout, Users, Wallet,
@@ -11,7 +15,7 @@ import {
   type AssetCode, type FamilyPracticeState, type FamilyRole,
 } from "@/lib/family-public-practice";
 
-type ChildTab = "home" | "learn" | "explore" | "portfolio" | "key";
+type ChildTab = "home" | "learn" | "explore" | "portfolio" | "key" | "together";
 type ParentTab = "overview" | "learn" | "key" | "requests" | "together";
 const childTabs: { id: ChildTab; label: string; icon: typeof Home }[] = [
   { id: "home", label: "Home", icon: Home },
@@ -19,6 +23,7 @@ const childTabs: { id: ChildTab; label: string; icon: typeof Home }[] = [
   { id: "explore", label: "Explore", icon: Compass },
   { id: "portfolio", label: "Portfolio", icon: Wallet },
   { id: "key", label: "My Key", icon: KeyRound },
+  { id: "together", label: "Together", icon: Users },
 ];
 const parentTabs: { id: ParentTab; label: string; icon: typeof Home }[] = [
   { id: "overview", label: "Overview", icon: Home },
@@ -73,7 +78,26 @@ function LearningPath({ role, state, complete }: {
         <article className={panel} aria-label={lesson.title + " lesson"}>
           <p className="cresco-section-kicker">Interactive lesson</p>
           <h3 className="mt-2 font-display text-[29px] text-navy-strong">{lesson.title}</h3>
+          {lesson.illustration ? (
+            <LessonIllustration kind={lesson.illustration} title={lesson.title + " illustrated learning concept"}
+              className="mt-3 h-auto max-h-[230px] w-full overflow-hidden rounded-[18px] border border-line-soft" />
+          ) : null}
           <p className="mt-3 text-[15px] leading-7 text-navy">{lesson.concept}</p>
+          {lesson.detail ? (
+            <p className="mt-3 rounded-[14px] bg-blue-soft p-3 text-[13px] leading-6 text-navy">
+              <strong>Reality check: </strong>{lesson.detail}
+            </p>
+          ) : null}
+          {lesson.source ? (
+            <p className="mt-3 text-[12px] leading-6 text-ink-2">
+              <strong>Educational reference: </strong>
+              <a href={lesson.source.url} target="_blank" rel="noopener noreferrer"
+                className="font-semibold text-green-strong underline underline-offset-4">
+                {lesson.source.organization}: {lesson.source.title}
+              </a>
+              <span> · Source checked {lesson.source.verifiedAt} · U.S. educational context, not legal or personalized financial advice</span>
+            </p>
+          ) : <p className="mt-3 text-[12px] text-ink-3">Cresco practice explanation, not an external research citation.</p>}
           <fieldset className="mt-5 space-y-2">
             <legend className="mb-3 text-[15px] font-bold text-navy-strong">{lesson.question}</legend>
             {lesson.choices.map((choice, i) => (
@@ -120,8 +144,11 @@ function ChildHome({ state, open, save }: { state: FamilyPracticeState; open: (t
             <h3 className="mt-2 font-display text-[26px] text-navy-strong">Small steps count.</h3>
             <p className={small}>Set aside pretend credits independently. Your balance is fictional.</p>
           </div>
-          <button type="button" className={primary} disabled={remainingCredits(state) < 20}
-            onClick={save}>Set aside 20 <ArrowRight aria-hidden className="ml-1 inline size-4" /></button>
+          <div className="flex items-center gap-3">
+            <GoalArt goal="bike" className="hidden h-16 w-20 sm:block"/>
+            <button type="button" className={primary} disabled={remainingCredits(state) < 20}
+              onClick={save}>Set aside 20 <ArrowRight aria-hidden className="ml-1 inline size-4" /></button>
+          </div>
         </div>
       </div>
       <div className="grid gap-3 md:grid-cols-2">
@@ -138,7 +165,24 @@ function ChildHome({ state, open, save }: { state: FamilyPracticeState; open: (t
           <button type="button" className={`mt-4 ${secondary}`} onClick={() => open("explore")}>Explore companies</button>
         </div>
       </div>
-      <p className={small}>Learning badges: {state.childCompleted.length} · Parent learning: {state.parentCompleted.length} lessons. {state.togetherCompleted ? "Your family discussion is complete." : "Try Learn Together with your parent."}</p>
+      <div className={panel}>
+        <h3 className="text-[17px] font-bold text-navy-strong">Your wins · earned in practice</h3>
+        <div className="mt-3 flex flex-wrap gap-4">
+          {([
+            { badge: "first-investor", earned: state.receipts.length > 0, label: "First practice choice" },
+            { badge: "company-detective", earned: state.childCompleted.length >= 3, label: "Three lessons" },
+            { badge: "diversification-pro", earned: Object.values(state.holdings).filter(shares => shares > 0).length >= 2, label: "Explore two holdings" },
+            { badge: "ten-lessons", earned: state.childCompleted.length >= 10, label: "Ten lessons" },
+          ] as const).map(item => (
+            <div key={item.badge} className="flex w-[120px] flex-col items-center gap-1 text-center">
+              <BadgeArt badge={item.badge} earned={item.earned} className="size-14"/>
+              <span className="text-[11px] font-semibold text-navy-strong">{item.label}</span>
+              <span className="text-[10px] text-ink-3">{item.earned ? "Earned" : "Not yet"}</span>
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 text-[12px] text-ink-2">{state.togetherCompleted ? "Your family check-in is complete." : "Try Together with your parent."} Badges celebrate practice; they never change My Key.</p>
+      </div>
     </div>
   );
 }
@@ -194,44 +238,6 @@ function Explore({ state, buy, save }: {
         ))}
       </div>
       <KeySummary state={state} />
-    </section>
-  );
-}
-function Portfolio({ state }: { state: FamilyPracticeState }) {
-  return (
-    <section aria-labelledby="portfolio-title" className="space-y-4">
-      <header>
-        <p className="cresco-section-kicker">Practice portfolio</p>
-        <h2 id="portfolio-title" className="mt-2 font-display text-[34px] text-navy-strong">See what changed.</h2>
-        <p className={small}>No real purchases, shares, market prices or returns. These are fictional practice records.</p>
-      </header>
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Metric label="Available" value={String(remainingCredits(state))} testId="portfolio-available" />
-        <Metric label="Set aside" value={String(state.saved)} />
-        <Metric label="Spent in practice" value={String(state.spent)} />
-      </div>
-      <div className={panel}>
-        <h3 className="text-[19px] font-bold text-navy-strong">Holdings · fictional</h3>
-        <ul className="mt-3 space-y-2">
-          {PRACTICE_ASSETS.map(a => (
-            <li key={a.code} className="flex items-center justify-between rounded-[12px] bg-surface-soft px-4 py-3">
-              <span className="text-[13px] text-navy-strong">{a.name}</span>
-              <strong className="text-[13px] text-navy-strong">{state.holdings[a.code].toFixed(2)} practice shares</strong>
-            </li>
-          ))}
-        </ul>
-      </div>
-      <div className={panel}>
-        <h3 className="text-[19px] font-bold text-navy-strong">Practice receipts</h3>
-        {state.receipts.length ? (
-          <ul className="mt-3 space-y-2">{state.receipts.map(r => (
-            <li key={r.id} className="rounded-[12px] bg-green-soft p-3 text-[13px]">
-              <strong>{r.amount} credits · {r.asset}</strong> · {r.permission === "allow-once" ? "Exact parent exception used" : "Within standing Key"}
-              <span className="mt-1 block text-[11px] font-semibold">PRACTICE ONLY - NOT EXECUTED ONCHAIN</span>
-            </li>
-          ))}</ul>
-        ) : <p className={small}>No practice receipts yet. Explore and make a practice choice.</p>}
-      </div>
     </section>
   );
 }
@@ -302,24 +308,83 @@ function Requests({ state, decide }: {
     </section>
   );
 }
-function Together({ state, onComplete }: { state: FamilyPracticeState; onComplete: () => void }) {
+type ChildDiscussion = NonNullable<FamilyPracticeState["discussion"]["child"]>;
+type ParentDiscussion = NonNullable<FamilyPracticeState["discussion"]["parent"]>;
+const childChoices: { id: ChildDiscussion; title: string; why: string }[] = [
+  { id: "save-first", title: "Save first for the near-term bike goal", why: "Short timelines make preserving the goal important." },
+  { id: "practice-small", title: "Practice a small fictional choice", why: "A small practice example helps me understand uncertainty." },
+  { id: "ask-together", title: "Not sure yet, talk through the options", why: "Questions are a good reason to learn together." },
+];
+const parentChoices: { id: ParentDiscussion; title: string; why: string }[] = [
+  { id: "protect-goal", title: "Protect the child's short-term goal", why: "Make room for savings without confusing it with investing." },
+  { id: "small-limit", title: "Agree on a small practice boundary", why: "Let the child practice independently inside an explicit Key." },
+  { id: "review-risk", title: "Discuss risk before changing any limits", why: "Understand possible losses; this answer does not change My Key." },
+];
+function Together({ role, state, childAnswer, parentAnswer, onComplete }: {
+  role: FamilyRole;
+  state: FamilyPracticeState;
+  childAnswer: (choice: ChildDiscussion) => void;
+  parentAnswer: (choice: ParentDiscussion) => void;
+  onComplete: () => void;
+}) {
+  const myChoices = role === "child" ? childChoices : parentChoices;
+  const selected = role === "child" ? state.discussion.child : state.discussion.parent;
+  const child = childChoices.find(choice => choice.id === state.discussion.child);
+  const parent = parentChoices.find(choice => choice.id === state.discussion.parent);
   return (
     <section aria-labelledby="together-title" className="space-y-4">
-      <header><p className="cresco-section-kicker">Parent + Child</p>
+      <header>
+        <p className="cresco-section-kicker">Parent + Child · Shared learning activity</p>
         <h2 id="together-title" className="mt-2 font-display text-[34px] text-navy-strong">Learn together, not just approve.</h2>
-        <p className={small}>Discuss a saving goal and one practice decision, then review the consequence without treating a badge as permission.</p>
+        <p className={small}>Each person contributes their own perspective. Switch roles to finish the discussion, then compare outcomes together.</p>
       </header>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className={panel}><h3 className="text-[17px] font-bold text-navy-strong">Child&apos;s perspective</h3><p className={small}>What am I saving for? How much risk can I explain?</p><p className="mt-2 text-[12px]">Child progress: {state.childCompleted.length}/{CHILD_LEARNING.length}</p></div>
-        <div className={panel}><h3 className="text-[17px] font-bold text-navy-strong">Parent&apos;s perspective</h3><p className={small}>Can I explain the Key and the difference between one exception and changing a limit?</p><p className="mt-2 text-[12px]">Parent progress: {state.parentCompleted.length}/{PARENT_LEARNING.length}</p></div>
+      <div className={panel}>
+        <h3 className="text-[19px] font-bold text-navy-strong">
+          {role === "child" ? "Child: what matters most for the bike goal?" : "Parent: how would you guide this goal?"}
+        </h3>
+        <div className="mt-3 grid gap-2" role="group" aria-label={role === "child" ? "Child family goal choices" : "Parent family guidance choices"}>
+          {myChoices.map(choice => (
+            <button type="button" key={choice.id} aria-pressed={selected === choice.id}
+              className={`rounded-[14px] border px-4 py-3 text-left ${selected === choice.id ? "border-green-strong bg-green-soft" : "border-line bg-surface"}`}
+              onClick={() => role === "child" ? childAnswer(choice.id as ChildDiscussion) : parentAnswer(choice.id as ParentDiscussion)}>
+              <span className="block text-[13px] font-bold text-navy-strong">{choice.title}</span>
+              <span className="mt-1 block text-[12px] text-ink-2">{choice.why}</span>
+            </button>
+          ))}
+        </div>
       </div>
       <div className={panel}>
-        <h3 className="text-[19px] font-bold text-navy-strong">Our family practice check-in</h3>
-        <p className={`mt-2 ${small}`}>Talk about the bike goal, the credits set aside, the limits and any blocked request. The child can keep learning whether or not this activity is complete.</p>
-        <button className={`mt-4 ${primary}`} disabled={state.togetherCompleted} type="button" onClick={onComplete}>
+        <h3 className="text-[19px] font-bold text-navy-strong">Our two perspectives</h3>
+        <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-[14px] bg-surface-soft p-3">
+            <dt className="text-[12px] font-semibold text-ink-2">Child said</dt>
+            <dd className="mt-2 text-[13px] font-bold text-navy-strong" data-testid="together-child-answer">
+              {child?.title ?? "Awaiting Child input"}
+            </dd>
+          </div>
+          <div className="rounded-[14px] bg-surface-soft p-3">
+            <dt className="text-[12px] font-semibold text-ink-2">Parent said</dt>
+            <dd className="mt-2 text-[13px] font-bold text-navy-strong" data-testid="together-parent-answer">
+              {parent?.title ?? "Awaiting Parent input"}
+            </dd>
+          </div>
+        </dl>
+        {child && parent ? (
+          <div className="mt-4 rounded-[15px] border border-green/20 bg-green-soft p-4">
+            <strong className="text-[13px] text-navy-strong">Discussion prompt</strong>
+            <p className="mt-1 text-[13px] leading-6 text-navy-strong">
+              The Child values: {child.why} The Parent suggests: {parent.why}
+              Agree on what to learn next, without assuming either answer authorizes an action.
+            </p>
+          </div>
+        ) : <p className="mt-3 text-[12px] text-ink-2">Switch profiles so both people can contribute. No account is required for this fictional exercise.</p>}
+        <button type="button" className={`mt-4 ${primary}`}
+          disabled={!child || !parent || state.togetherCompleted} onClick={onComplete}>
           {state.togetherCompleted ? "Family check-in completed" : "Mark our discussion complete"}
         </button>
-        <p className="mt-3 text-[12px] text-ink-3">Completion is a learning milestone only; no Key, budget or permission changes.</p>
+        <p className="mt-3 text-[12px] text-ink-3">
+          This discussion is educational only. It changes no Key, allowance, permission or real financial status.
+        </p>
       </div>
     </section>
   );
@@ -376,7 +441,10 @@ export function FamilyPublicStudio() {
             childTab === "learn" ? <LearningPath role="child" state={state} complete={id => dispatch({ type: "complete", role: "child", lessonId: id })}/> :
             childTab === "explore" ? <Explore state={state} save={() => dispatch({ type: "save" })}
               buy={(asset, amount) => dispatch({ type: "buy", asset, amount })}/> :
-            childTab === "portfolio" ? <Portfolio state={state}/> : <KeySummary state={state}/>
+            childTab === "portfolio" ? <FamilyPracticePortfolio state={state}/> :
+            childTab === "key" ? <KeySummary state={state}/> :
+            <Together role="child" state={state} childAnswer={choice => dispatch({ type: "discussion-child", choice })}
+              parentAnswer={choice => dispatch({ type: "discussion-parent", choice })} onComplete={() => dispatch({ type: "together" })}/>
           ) : (
             parentTab === "overview" ? <div className="space-y-4">
               <header><p className="cresco-section-kicker">Parent dashboard</p><h2 className="mt-2 font-display text-[34px] text-navy-strong">Guide with confidence.</h2>
@@ -395,7 +463,8 @@ export function FamilyPublicStudio() {
             parentTab === "learn" ? <LearningPath role="parent" state={state} complete={id => dispatch({ type: "complete", role: "parent", lessonId: id })}/> :
             parentTab === "key" ? <ParentKey state={state} update={(maxPerAction, maxPeriod, allowed) => dispatch({ type: "set-key", maxPerAction, maxPeriod, allowed })}/> :
             parentTab === "requests" ? <Requests state={state} decide={(id, choice) => dispatch({ type: "respond", id, choice })}/> :
-            <Together state={state} onComplete={() => dispatch({ type: "together" })}/>
+            <Together role="parent" state={state} childAnswer={choice => dispatch({ type: "discussion-child", choice })}
+              parentAnswer={choice => dispatch({ type: "discussion-parent", choice })} onComplete={() => dispatch({ type: "together" })}/>
           )}
         </div>
       </div>
