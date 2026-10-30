@@ -62,6 +62,9 @@ try {
   RunChecked "copy-lint" "npm.cmd" @("run","copy:lint") (Join-Path $output "05-copy-lint.log")
   RunChecked "unit-tests" "npm.cmd" @("test") (Join-Path $output "06-unit-tests.log")
   RunChecked "family-public-build" "npm.cmd" @("run","build:public-family") (Join-Path $output "07-build.log")
+  # Regression: a previous successful build leaves dist/ in place; re-lint source
+  # without accidentally scanning thousands of generated JS bundle statements.
+  RunChecked "lint-after-build" "npm.cmd" @("run","lint") (Join-Path $output "07a-lint-after-build.log")
   RunChecked "public-artifact-isolation" "node" @("scripts/family-public-web-release.mjs","--validate-artifact") (Join-Path $output "08-isolation.log")
   RunChecked "historical-worker-boundary" "node" @("../../scripts/family-release-boundary.mjs","--built-web") (Join-Path $output "08-historic-freeze.log")
   RunChecked "webkit-dependency" "npx.cmd" @("playwright","install","webkit") (Join-Path $output "09-webkit.log")
@@ -86,7 +89,7 @@ try {
     "Node: $nodeVersion",
     "Mode: NO DEPLOY, browser-only fictional Family Worker",
     "WebKit checks: PASS",
-    "Playwright test collection, typecheck, lint, copy-lint, unit tests, public build, isolation and historical Worker freeze: PASS",
+    "Playwright collection, typecheck, pre- and post-build lint, copy-lint, unit tests, public build, isolation and historical Worker freeze: PASS",
     "Browser screenshots: $shotDir (when attached by Playwright)",
     "HTML Playwright report: $(Join-Path $web "playwright-report")",
     "Evidence directory: $output",
