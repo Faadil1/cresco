@@ -26,12 +26,14 @@ describe("Family-only landing first impression", () => {
 
   it("does not imply real child accounts, licensed finance or an approved real investment", () => {
     render(<FamilyOnlyHome />);
-    expect(screen.getByText(/no-money learning illustration, not a real family account/i)).toBeInTheDocument();
+    expect(screen.getByText(/this is a fictional learning exercise/i)).toBeInTheDocument();
     expect(screen.getByText(/single-browser simulation/i)).toBeInTheDocument();
     expect(screen.getByText(/does not prove separate accounts, legal guardianship/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /try the family practice story/i })).toHaveAttribute("href", "#family-agency-preview-title");
+    expect(screen.getByRole("link", { name: /try cresco — no sign-in/i })).toHaveAttribute("href", "/try");
+    expect(screen.getByRole("link", { name: /start free demo/i })).toHaveAttribute("href", "/try");
     expect(screen.getByRole("link", { name: /what parents should know/i })).toHaveAttribute("href", "#family-trust");
     expect(screen.queryByRole("link", { name: /invest now|buy stocks|earn yield/i })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /separate family setup preview/i })).toHaveAttribute("href", "/worlds-fair/desk?case=family");
+    expect(screen.queryByRole("link", { name: /separate family setup preview/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/invited adult researchers/i)).not.toBeInTheDocument();
   });
 });
