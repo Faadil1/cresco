@@ -11,6 +11,7 @@ $web = Split-Path -Parent $PSScriptRoot
 $root = (Resolve-Path (Join-Path $web "../..")).Path
 $originalApi = [Environment]::GetEnvironmentVariable("NEXT_PUBLIC_CRESCO_API_URL", "Process")
 $originalNodeEnv = [Environment]::GetEnvironmentVariable("NODE_ENV", "Process")
+$startLocation = (Get-Location).Path
 
 function GitText([string[]]$Arguments) {
   $value = & git -C $root @Arguments 2>&1
@@ -19,8 +20,13 @@ function GitText([string[]]$Arguments) {
 }
 function RunChecked([string]$Label, [string]$Command, [string[]]$Arguments, [string]$Log) {
   Write-Host "CHECK $Label" -ForegroundColor Cyan
-  & $Command @Arguments 2>&1 | Tee-Object -FilePath $Log
-  if ($LASTEXITCODE -ne 0) { throw "FAIL $Label ($LASTEXITCODE), log: $Log" }
+  $before = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  try {
+    & $Command @Arguments 2>&1 | Tee-Object -FilePath $Log
+    $exitCode = $LASTEXITCODE
+  } finally { $ErrorActionPreference = $before }
+  if ($exitCode -ne 0) { throw "FAIL $Label ($exitCode), log: $Log" }
   Write-Host "PASS $Label" -ForegroundColor Green
 }
 
@@ -28,22 +34,22 @@ try {
   if (-not (Get-Command npm.cmd -ErrorAction SilentlyContinue)) { throw "Node/npm not found. Node.js 22+ required." }
   if (-not (Get-Command npx.cmd -ErrorAction SilentlyContinue)) { throw "npx not found." }
   if (-not (Get-Command git -ErrorAction SilentlyContinue)) { throw "git not found." }
-  $branch = GitText @("rev-parse", "--abbrev-ref", "HEAD")
+  $branch = GitText -Arguments @("rev-parse", "--abbrev-ref", "HEAD")
   if ($branch -ne $expectedBranch) {
     throw "WRONG_BRANCH: got '$branch', expected '$expectedBranch'. Do not run this on original Colosseum or public Family checkout."
   }
-  $sha = GitText @("rev-parse", "HEAD")
-  $dirty = GitText @("status", "--porcelain")
+  $sha = GitText -Arguments @("rev-parse", "HEAD")
+  $dirty = GitText -Arguments @("status", "--porcelain")
   if ($dirty) { throw "DIRTY_CHECKOUT: commit/stash your changes or use a clean checkout. No verification was run." }
   $nodeVersion = & node -v
   if ($LASTEXITCODE -ne 0) { throw "Node.js is not available." }
-  if ([int]($nodeVersion.TrimStart("v").Split(".")[0]) -lt 22) { throw "Node.js >=22 is required, found $nodeVersion" }
+  if ([int]($nodeVersion.Substring(1).Split(".")[0]) -lt 22) { throw "Node.js >=22 is required, found $nodeVersion" }
 
   $output = Join-Path $env:TEMP ("cresco-family-pr114-proof-" + $sha.Substring(0, 12))
   New-Item -ItemType Directory -Path $output -Force | Out-Null
   Set-Location $web
   $env:NEXT_PUBLIC_CRESCO_API_URL = ""
-  $env:NODE_ENV = "production"
+  [Environment]::SetEnvironmentVariable("NODE_ENV", $null, "Process")
 
   if (-not $SkipInstall) {
     RunChecked "npm-dependencies" "npm.cmd" @("ci","--no-audit","--no-fund") (Join-Path $output "01-install.log")
@@ -84,5 +90,5 @@ try {
 } finally {
   [Environment]::SetEnvironmentVariable("NEXT_PUBLIC_CRESCO_API_URL", $originalApi, "Process")
   [Environment]::SetEnvironmentVariable("NODE_ENV", $originalNodeEnv, "Process")
-  Set-Location $root
+  Set-Location $startLocation
 }
