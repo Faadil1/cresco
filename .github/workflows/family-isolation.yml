@@ -33,6 +33,8 @@ jobs:
           cache-dependency-path: apps/web/package-lock.json
       - run: npm install --no-audit --no-fund
       - run: npm run build:public-family
+      - name: Validate that only a public Family Web release could be prepared
+        run: node scripts/family-public-web-release.mjs --validate-artifact
       - name: Verify historic Worker freeze and exact Family Web artifact
         run: |
           node ../../scripts/family-release-boundary.mjs --built-web
