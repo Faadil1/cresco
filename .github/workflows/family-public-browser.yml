@@ -6,6 +6,7 @@ on:
       - "apps/web/src/components/family-only-home.tsx"
       - "apps/web/src/components/family-agency-preview.tsx"
       - "apps/web/src/app/try/**"
+      - "apps/web/package.json"
       - "apps/web/vite.config.ts"
       - "apps/web/scripts/assert-family-public-build.mjs"
       - "apps/web/src/lib/family-web-route-guard.ts"
