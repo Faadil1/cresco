@@ -32,13 +32,11 @@ jobs:
           cache: npm
           cache-dependency-path: apps/web/package-lock.json
       - run: npm install --no-audit --no-fund
-      - run: npm run build:family
-        env:
-          NEXT_PUBLIC_CRESCO_API_URL: https://cresco-family-api.faadil-casecraft.workers.dev
+      - run: npm run build:public-family
       - name: Verify historic Worker freeze and exact Family Web artifact
         run: |
           node ../../scripts/family-release-boundary.mjs --built-web
-          echo 'Family artifact only. No Wrangler deploy or Cloudflare write.'
+          echo 'Public Family static-learning artifact only. No API, Wrangler deploy or Cloudflare write.'
 
   family-api-dry-run:
     name: Family-only API bundle (WRANGLER DRY RUN; NO DEPLOY)
