@@ -394,7 +394,7 @@ function Together({ role, state, childAnswer, parentAnswer, onComplete }: {
             <button type="button" key={choice.id} aria-pressed={selected === choice.id}
               className={`rounded-[14px] border px-4 py-3 text-left ${selected === choice.id ? "border-green-strong bg-green-soft" : "border-line bg-surface"}`}
               onClick={() => role === "child" ? childAnswer(choice.id as ChildDiscussion) : parentAnswer(choice.id as ParentDiscussion)}>
-              <span className="block text-[13px] font-bold text-navy-strong">{choice.title}</span>
+              <span className="block text-[13px] font-bold text-navy-strong">{choice.title.replace("bike goal", (state.goalId === "bike" ? "bike" : goal.label.toLowerCase()) + " goal")}</span>
               <span className="mt-1 block text-[12px] text-ink-2">{choice.why}</span>
             </button>
           ))}
@@ -406,7 +406,7 @@ function Together({ role, state, childAnswer, parentAnswer, onComplete }: {
           <div className="rounded-[14px] bg-surface-soft p-3">
             <dt className="text-[12px] font-semibold text-ink-2">Child said</dt>
             <dd className="mt-2 text-[13px] font-bold text-navy-strong" data-testid="together-child-answer">
-              {child?.title ?? "Awaiting Child input"}
+              {child?.title.replace("bike goal", (state.goalId === "bike" ? "bike" : goal.label.toLowerCase()) + " goal") ?? "Awaiting Child input"}
             </dd>
           </div>
           <div className="rounded-[14px] bg-surface-soft p-3">
@@ -502,7 +502,7 @@ export function FamilyPublicStudio() {
                 <Metric label="Child learning" value={`${state.childCompleted.length}/${CHILD_LEARNING.length}`} />
               </div>
               <div className={panel}>
-                <p className="cresco-section-kicker">Child's fictional saving goal</p>
+                <p className="cresco-section-kicker">Child&apos;s fictional saving goal</p>
                 <h3 className="mt-2 text-[19px] font-bold text-navy-strong">{selectedPracticeGoal(state).label}</h3>
                 <p className={small}>{state.saved} of {selectedPracticeGoal(state).target} credits set aside. Discuss the goal together; no approval needed to save fictional credits.</p>
               </div>
