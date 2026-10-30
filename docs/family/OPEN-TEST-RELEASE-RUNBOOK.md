@@ -64,6 +64,40 @@ The generator refuses uncommitted changes, a wrong branch, changed product sourc
 
 A real release requires **separate explicit owner authorization** after checking that the dedicated new Worker name does not already exist in the intended Cloudflare account. Obtain its actual public URL from the deployment receipt, then validate it. Do not infer the URL from a Worker name or assume the current public Family installation is reachable.
 
+
+## Windows guarded publishing handoff (owner approved direction; no remote access in this chat)
+
+GitHub CI validates the **source and release artifact** but the owner must complete the account-specific Cloudflare operation from their authenticated Windows session. There is no Cloudflare connector attached to this chat; **do not paste Cloudflare tokens, OAuth responses or account IDs**. `wrangler whoami` is a read-only check, and `wrangler deployments list --name` / `versions list --name` are read-only checks (Cloudflare [Wrangler docs](https://developers.cloudflare.com/workers/wrangler/commands/workers/)). An unsuccessful list call is **not proof** the Worker does not exist.
+
+From a **new checkout of the preparation branch** (not the old PR #114 or Colosseum worktree):
+
+```powershell
+cd C:\Users\fboussari\Documents
+git clone --single-branch --branch family/open-one-click-tester-launch-prep-2026-10-30 https://github.com/Faadil1/cresco.git cresco-family-open-test-launch
+cd .\cresco-family-open-test-launch\apps\web
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\family-open-test-windows-launch.ps1
+```
+
+The **default run never deploys**: it verifies unchanged frozen source, runs local negative tests/build, prepares ignored open/close Wrangler configs, checks Wrangler login, and reads possible Worker deployment/version details. If Wrangler is not logged in, authenticate privately with `npx wrangler login` in this isolated checkout and retry. Check **Cloudflare Dashboard → Workers & Pages** in the *intended account*: verify the **exact** `cresco-family-open-test-web` name is **absent**. Stop if it exists or if the Cloudflare account is unexpected; never overwrite it.
+
+Once account, target uniqueness, local proof and explicit authorization are all confirmed, the owner runs:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\family-open-test-windows-launch.ps1 -Publish -SkipInstall
+```
+
+The script requires typing `PUBLISH cresco-family-open-test-web` and invokes a single `npx --no-install wrangler deploy --config dist/server/wrangler.family-open-test.json` **only after rerunning the checks**. No other Worker name is accepted. Record the **actual** URL Wrangler returns and run the public smoke gate above before telling testers about it. Check the Cloudflare dashboard and the public URL again after the deployment.
+
+Emergency lockdown (only for the *new* Worker and only after verifying its identity):
+
+```powershell
+npx --no-install wrangler deploy --config dist/server/wrangler.family-open-test-closed.json
+```
+
+Never run that close config against any historical or existing Family worker. Verify the new URL is no longer publicly reachable. `workers_dev=false` and `preview_urls=false` are both explicitly set in the close config; Cloudflare documents these controls: [Wrangler configuration](https://developers.cloudflare.com/workers/wrangler/configuration/).
+
+**Safety properties:** No hidden automatic Cloudflare write, no deployment during CI, no temporary anonymous Cloudflare account, no account-token exchange inside ChatGPT. The only Cloudflare write is a direct, locally confirmed and user-triggered deployment of the newly named Worker.
+
 ## Release approval gate — not yet cleared
 
 Before ever sharing a link with test users, independently verify on the **actual public URL**:
