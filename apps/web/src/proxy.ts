@@ -19,5 +19,6 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Ensure /_next/image cannot bypass the Family-only route gate.\n  matcher: ["/((?!_next/static).*)"],
+  // Ensure /_next/image cannot bypass the Family-only route gate.
+  matcher: ["/((?!_next/static).*)"],
 };
