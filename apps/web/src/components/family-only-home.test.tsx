@@ -29,7 +29,7 @@ describe("Family-only landing first impression", () => {
     expect(screen.getByText(/this is a fictional learning exercise/i)).toBeInTheDocument();
     expect(screen.getByText(/single-browser simulation/i)).toBeInTheDocument();
     expect(screen.getByText(/does not prove separate accounts, legal guardianship/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /try cresco — no sign-in/i })).toHaveAttribute("href", "/try");
+    expect(screen.getByRole("link", { name: /try cresco - no sign-in/i })).toHaveAttribute("href", "/try");
     expect(screen.getByRole("link", { name: /start free demo/i })).toHaveAttribute("href", "/try");
     expect(screen.getByRole("link", { name: /what parents should know/i })).toHaveAttribute("href", "#family-trust");
     expect(screen.queryByRole("link", { name: /invest now|buy stocks|earn yield/i })).not.toBeInTheDocument();
