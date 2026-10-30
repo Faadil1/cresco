@@ -4,6 +4,13 @@ on:
   pull_request:
     paths:
       - "apps/web/src/components/family-only-home.tsx"
+      - "apps/web/src/components/family-public-studio.tsx"
+      - "apps/web/src/components/family-public-portfolio.tsx"
+      - "apps/web/src/lib/family-public-practice.ts"
+      - "apps/web/src/lib/family-public-practice.test.ts"
+      - "apps/web/src/state/store.tsx"
+      - "apps/web/src/mocks/learning.ts"
+      - "apps/web/src/components/illustrations/**"
       - "apps/web/src/components/family-agency-preview.tsx"
       - "apps/web/src/app/try/**"
       - "apps/web/package.json"
@@ -23,7 +30,7 @@ permissions:
 
 jobs:
   local-public-demo:
-    name: Public Family no-login iPhone WebKit (NO DEPLOY)
+    name: Public Family iPhone + desktop WebKit (NO DEPLOY)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -49,6 +56,14 @@ jobs:
         run: npx playwright test --config playwright.family-public.config.mjs
         env:
           NEXT_PUBLIC_CRESCO_API_URL: ""
+      - name: Keep fictional Parent and Child desktop UX screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: family-public-ux-${{ github.sha }}
+          path: apps/web/test-results/**/*.png
+          if-no-files-found: ignore
+          retention-days: 14
       - name: State evidence boundaries
         run: |
           echo "PUBLIC_DEMO_NO_LOGIN_LOCAL_WORKER_TEST=PASS"
