@@ -227,7 +227,7 @@ function ChildHome({ state, open, save, chooseGoal }: { state: FamilyPracticeSta
         <div className={panel}>
           <Compass aria-hidden className="size-6 text-green-strong" />
           <h3 className="mt-3 text-[19px] font-bold text-navy-strong">Explore and practice</h3>
-          <p className={small}>Research three fictional examples and make a decision within your Key.</p>
+          <p className={small}>Research six fictional examples, compare risks and try an eligible choice inside your Key.</p>
           <button type="button" className={`mt-4 ${secondary}`} onClick={() => open("explore")}>Explore companies</button>
         </div>
       </div>
@@ -317,8 +317,10 @@ function Requests({ state, decide }: {
     <section aria-labelledby="requests-title" className="space-y-4">
       <header>
         <p className="cresco-section-kicker">Parent · Practice requests</p>
-        <h2 id="requests-title" className="mt-2 font-display text-[34px] text-navy-strong">A conversation at the boundary.</h2>
-        <p className={small}>A one-time approval is an exact exception, never a change to standing limits.</p>
+        <h2 id="requests-title" className="mt-1 font-display text-[27px] leading-tight text-navy-strong md:mt-2 md:text-[34px]">A conversation at the boundary.</h2>
+        <p className="text-[12px] leading-5 text-ink-2 md:hidden">Review one exact fictional exception. Standing limits do not change.</p>
+        <p className="hidden text-[13px] leading-6 text-ink-2 md:block">A one-time approval is an exact exception, never a change to standing limits.</p>
+        <p className="text-[11px] leading-5 text-ink-3">Parent role switching is simulated here; no guardian identity or consent is verified.</p>
       </header>
       {state.requests.length === 0 ? <div className={panel}><p className={small}>No requests yet. Switch to Child, Explore and try 25 credits of MKT (above the current 15-credit limit).</p></div> : (
         <ul className="space-y-3">{state.requests.map(r => (
@@ -370,7 +372,7 @@ function Together({ role, state, childAnswer, parentAnswer, onComplete }: {
       </header>
       <div className={panel}>
         <h3 className="text-[19px] font-bold text-navy-strong">
-          {role === "child" ? "Child: what matters most for the bike goal?" : "Parent: how would you guide this goal?"}
+          {role === "child" ? "Child: what matters most for our saving goal?" : "Parent: how would you guide this goal?"}
         </h3>
         <div className="mt-3 grid gap-2" role="group" aria-label={role === "child" ? "Child family goal choices" : "Parent family guidance choices"}>
           <p className="mb-3 text-[12px] text-ink-2">Current shared goal: {goal.label} ({state.saved}/{goal.target} pretend credits).</p>
