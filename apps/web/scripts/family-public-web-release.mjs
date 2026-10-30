@@ -59,6 +59,14 @@ export function validateFamilyPublicRelease(source, built) {
 
 function main() {
   const args = process.argv.slice(2);
+  if (args.length === 1 && args[0] === "--validate-artifact") {
+    validateFamilyPublicRelease(
+      JSON.parse(readFileSync(SOURCE, "utf8")),
+      JSON.parse(readFileSync(BUILT, "utf8"))
+    );
+    console.log("FAMILY_PUBLIC_RELEASE_ARTIFACT_POLICY=PASS (no files written, no deploy)");
+    return;
+  }
   if (args.length !== 2 || args[0] !== "--expected-sha" || !/^[0-9a-f]{40}$/.test(args[1])) {
     throw new Error("USAGE: node scripts/family-public-web-release.mjs --expected-sha <40-char-commit-sha>");
   }
