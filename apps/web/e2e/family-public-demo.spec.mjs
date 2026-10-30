@@ -92,9 +92,10 @@ test("restores a sourced and illustrated original Cresco Child lesson behind the
   await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: "Learn", exact: true }).click();
   await page.getByRole("button", { name: /lesson 4.*what is a stock/i }).click();
   await expect(page.getByRole("heading", { name: "What Is a Stock?" })).toBeVisible();
-  await expect(page.getByText(/Educational reference:/i)).toBeVisible();
-  await expect(page.getByRole("link", { name: /Investor.gov/i })).toHaveAttribute("href", /investor.gov/);
-  await expect(page.getByText(/source checked 2026-09-25/i)).toBeVisible();
+  await expect(page.getByText(/Educational reference:/i).first()).toBeVisible();
+  await expect(page.getByRole("region", { name: "Original Cresco lesson concepts" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Investor.gov/i }).first()).toHaveAttribute("href", /investor.gov/);
+  await expect(page.getByText(/source checked 2026-09-25/i).first()).toBeVisible();
   await page.getByRole("button", { name: /a part owner/i }).click();
   await page.getByRole("button", { name: "Complete lesson" }).click();
   await expect(page.getByRole("progressbar", { name: "child learning progress" })).toHaveAttribute("aria-valuenow", "1");
