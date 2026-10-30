@@ -27,6 +27,19 @@
 | PR #114 GitHub `mergeable=false` | **UNRESOLVED; not proof of a file conflict** |
 | GitHub Actions check on exact SHA | **NOT ESTABLISHED**; connector only reports pull_request runs, not all push runs |
 
+
+### Verified GitHub Actions failure scope (2026-10-30)
+
+Read the actual **push-triggered** Actions run [41117354680](https://github.com/Faadil1/cresco/actions/runs/41117354680) on exact reviewed PR #114 SHA `878fad85...`. The `node` job **succeeded**. The distinct **Hosted Family contract observation (GET/OPTIONS only; NOT release proof)** job **failed**, because the *existing hosted historic Family API contract* does not yet advertise these three expected `/api/v0.4/worlds-fair/` routes:
+
+- `workspaces/{id}/roles/{role}/rotate`
+- `workspaces/{id}/principal/recovery/challenge`
+- `workspaces/{id}/principal/recovery/complete`
+
+The remote observation reported OpenAPI public GET 200, `no-store`, approved-origin CORS and blocked untrusted-origin CORS as PASS; it explicitly said **hosted commit not verified** and historic Web `/` and `/worlds-fair/desk` reachable. That is an operational gap in the **historical hosted environment**, not a failed 142-unit/8-WebKit browser-only candidate. **Do not redeploy or modify the frozen Colosseum/API Workers to make the checker green.** Keep the reported hosted contract failure visible and separate from the Family public no-backend test Worker release.
+
+A dedicated `.github/workflows/family-open-test-prep.yml` now independently checks only the frozen source diff and offline Node configuration safety tests on the separate preparation branch. It contains **no deployment job**. Its result must be read from its actual SHA and Actions run; do not claim green before it completes.
+
 ## Non-deploying release preparation (separate checkout)
 
 Do not run commands inside the original Colosseum checkout. The following commands build and check a local artifact **without any Cloudflare API calls**. Run only when the preparation PR has been reviewed:
@@ -84,7 +97,7 @@ No backend instrumentation is required for the first qualitative round; do not c
 ## PR sequence and mergeability
 
 - `#111` `family/public-one-click-practice-2026-10-30` is a **draft**, based on `family/sealed-first-install-2026-10-30`.
-- `#114` `family/dual-learning-paths-full-practice-2026-10-30` is a **draft**, based on the exact head of `#111` at `dbe9678c...`; GitHub comparison showed the head is a descendant (`ahead_by=82`, `behind_by=0`) while the connector nevertheless reports `mergeable=false`.
+- `#114` `family/dual-learning-paths-full-practice-2026-10-30` is a **draft**, based on the exact head of `#111` at `dbe9678c...`; GitHub comparison shows the head is a descendant (`ahead_by=82`, `behind_by=0`). The GitHub REST PR endpoint subsequently returned **`mergeable=true`, `mergeable_state=unstable`**. The simplified connector had reported `mergeable=false` while REST temporarily reported `mergeable=null`, `mergeable_state=unknown`; that was not proof of a merge conflict.
 - A draft state, a branch protection rule, an unknown API mergeability state, CI without an accessible PR-triggered run, and a true conflict are different cases. **Do not assume the reported Boolean explains which condition applies.** Check the PR's GitHub web UI / exact merge conflict text and repository rules, without changing base, marking ready or invoking a merge.
 - This new preparation PR should target the frozen #114 branch; it adds only documentation and no-deploy test Worker configuration tooling. Keep #114 source frozen until a distinct product defect is found.
 
