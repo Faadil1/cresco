@@ -30,6 +30,15 @@ function git(...args) {
   return execFileSync("git", ["-C", ROOT, ...args], { encoding: "utf8" }).trim();
 }
 
+function hasNoConfiguredBindings(value) {
+  if (value == null) return true;
+  if (Array.isArray(value)) return value.length === 0;
+  if (typeof value === "object") {
+    return Object.values(value).every(hasNoConfiguredBindings);
+  }
+  return false;
+}
+
 export function validateFamilyPublicRelease(source, built) {
   assert.equal(source.name, TARGET, "WRONG_FAMILY_SOURCE_WORKER");
   assert.equal(built.name, TARGET, "WRONG_BUILT_WORKER");
@@ -42,7 +51,7 @@ export function validateFamilyPublicRelease(source, built) {
     assert.ok(!cfg.zone_id && !cfg.account_id && !cfg.custom_domain, "EMBEDDED_ACCOUNT_OR_ZONE_FORBIDDEN");
     assert.ok(!cfg.durable_objects?.bindings?.length, "STATEFUL_FAMILY_API_FORBIDDEN");
     for (const field of ["services", "kv_namespaces", "d1_databases", "r2_buckets", "queues", "dispatch_namespaces", "hyperdrive"]) {
-      assert.ok(!cfg[field] || (Array.isArray(cfg[field]) && cfg[field].length === 0),
+      assert.ok(hasNoConfiguredBindings(cfg[field]),
         "UNEXPECTED_BACKEND_BINDING: " + field);
     }
     assert.ok(!Object.keys(cfg.vars ?? {}).length, "PUBLIC_DEMO_MUST_NOT_INCLUDE_VARS");
