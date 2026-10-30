@@ -22,14 +22,14 @@ export default function TryFamilyPage() {
             <ArrowLeft aria-hidden className="size-4"/> About Cresco Family
           </Link>
         </header>
-        <section className="mt-10 md:mt-12" aria-label="Public practice introduction">
+        <section className="mt-5 md:mt-7" aria-label="Public practice introduction">
           <span className="inline-flex items-center gap-2 rounded-full border border-green/30 bg-green-soft px-4 py-2 text-[12px] font-bold text-green-strong">
             <ShieldCheck aria-hidden className="size-4"/> Free public practice · No sign-in
           </span>
-          <h1 className="mt-5 max-w-[22ch] font-display text-[clamp(42px,5vw,68px)] leading-[1.04] text-navy-strong">
+          <h1 className="mt-3 max-w-[30ch] font-display text-[clamp(30px,3.5vw,44px)] leading-[1.1] text-navy-strong">
             A whole family can learn to decide.
           </h1>
-          <p className="mt-4 max-w-[75ch] text-[15px] leading-7 text-ink-2">
+          <p className="mt-2 max-w-[78ch] text-[13px] leading-6 text-ink-2">
             No invitation. No Parent or Teen codes. No wallet. Enter the Child or Parent
             experience with one click, explore lessons, set fictional limits and see the
             consequences together. This is not a real financial account.
