@@ -59,8 +59,11 @@ export function FamilyPublicExplore({ state, buy, save }: {
     <section aria-labelledby="explore-title" className="space-y-4" data-testid="family-research-explore">
       <header>
         <p className="cresco-section-kicker">Child · Explore and Practice</p>
-        <h2 id="explore-title" className="mt-2 font-display text-[34px] text-navy-strong">Investigate before you decide.</h2>
-        <p className="mt-2 text-[13px] leading-6 text-ink-2">
+        <h2 id="explore-title" className="mt-1 font-display text-[27px] leading-tight text-navy-strong md:mt-2 md:text-[34px]">Investigate before you decide.</h2>
+        <p className="mt-1 text-[12px] leading-5 text-ink-2 md:hidden">
+          Six fictional businesses. Search, compare and practice with pretend credits only.
+        </p>
+        <p className="mt-2 hidden text-[13px] leading-6 text-ink-2 md:block">
           Explore six completely invented businesses and funds. Compare how they work, ask a question
           about risk, then try an eligible choice with pretend credits. These are not real securities,
           quotes or recommendations.
