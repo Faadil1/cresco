@@ -36,6 +36,9 @@ test("public Family gives Child + Parent a complete practice loop without sign-i
   await expect(page.getByText(/No verified guardian identity, real consent or transfer of funds/i)).toBeVisible();
   await expect(page.getByRole("heading", { name: /25 practice credits · MKT/i })).toBeVisible();
   await testInfo.attach("family-parent-request-mobile.png", { body: await page.screenshot({ fullPage: false }), contentType: "image/png" });
+  // Also capture the actual decision controls, which are below the first fold.
+  await page.getByRole("button", { name: /approve once #2/i }).scrollIntoViewIfNeeded();
+  await testInfo.attach("family-parent-decision-mobile.png", { body: await page.screenshot({ fullPage: false }), contentType: "image/png" });
   await page.getByRole("button", { name: /approve once #2/i }).click();
   await expect(page.getByRole("status")).toHaveText(/Key did not widen/i);
 
@@ -190,6 +193,8 @@ test("Child Explore research has search, compare and risk questions without gran
   await expect(page.getByRole("button", { name: /Practice HBR choice/i })).toHaveCount(0);
   await page.getByRole("button", { name: "Research Harbor Medical Tools" }).click();
   await expect(page.getByText(/Does a useful health product automatically/i)).toBeVisible();
+  await page.getByRole("heading", { name: "Harbor Medical Tools" }).last().scrollIntoViewIfNeeded();
+  await testInfo.attach("family-child-research-mobile.png", { body: await page.screenshot({ fullPage: false }), contentType: "image/png" });
   await page.getByRole("button", { name: /No, quality, costs and customers still matter/i }).click();
   await expect(page.getByText(/Product usefulness and investment value are different/i)).toBeVisible();
 
