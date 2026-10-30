@@ -7,6 +7,7 @@ on:
     paths:
       - "apps/web/scripts/prepare-family-open-test.mjs"
       - "apps/web/scripts/prepare-family-open-test.test.mjs"
+      - "apps/web/scripts/family-open-test-windows-launch.ps1"
       - "docs/family/OPEN-TEST-*"
       - ".github/workflows/family-open-test-prep.yml"
 
@@ -31,7 +32,7 @@ jobs:
         run: |
           frozen=878fad8517c29b2ea778f8f82e18093a057cf1bc
           git merge-base --is-ancestor "$frozen" HEAD
-          unexpected="$(git diff --name-only "$frozen" HEAD | grep -Ev '^(docs/family/OPEN-TEST-|apps/web/scripts/prepare-family-open-test(\.test)?\.mjs$|\.github/workflows/family-open-test-prep\.yml$)' || true)"
+          unexpected="$(git diff --name-only "$frozen" HEAD | grep -Ev '^(docs/family/OPEN-TEST-|apps/web/scripts/prepare-family-open-test(\.test)?\.mjs$|apps/web/scripts/family-open-test-windows-launch\.ps1$|\.github/workflows/family-open-test-prep\.yml$)' || true)"
           if [ -n "$unexpected" ]; then
             printf 'FROZEN_FAMILY_PRODUCT_SOURCE_CHANGED:\n%s\n' "$unexpected"
             exit 1
@@ -39,6 +40,14 @@ jobs:
           echo "FROZEN_FAMILY_PRODUCT_SOURCE=UNCHANGED"
       - name: Verify offline-only config policy and negative cases
         run: node --test apps/web/scripts/prepare-family-open-test.test.mjs
+      - name: Parse Windows launch helper without executing any Cloudflare action
+        shell: pwsh
+        run: |
+          $tokens=$null
+          $errors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile("apps/web/scripts/family-open-test-windows-launch.ps1", [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -gt 0) { $errors | ForEach-Object { Write-Error $_.Message }; exit 1 }
+          Write-Host "WINDOWS_LAUNCH_SCRIPT_SYNTAX=PASS_NO_EXECUTION"
       - name: Build reviewed standalone Family Worker locally (NO DEPLOY)
         working-directory: apps/web
         env:
