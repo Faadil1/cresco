@@ -92,6 +92,7 @@ function checkProvenance() {
     "docs/family/OPEN-TEST-",
     "apps/web/scripts/prepare-family-open-test.mjs",
     "apps/web/scripts/prepare-family-open-test.test.mjs",
+    ".github/workflows/family-open-test-prep.yml",
   ];
   const unexpected = changed.split(/\r?\n/).filter(Boolean)
     .filter(path => !allowed.some(prefix => path.startsWith(prefix)));
