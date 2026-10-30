@@ -317,10 +317,18 @@ function Requests({ state, decide }: {
     <section aria-labelledby="requests-title" className="space-y-4">
       <header>
         <p className="cresco-section-kicker">Parent · Practice requests</p>
-        <h2 id="requests-title" className="mt-1 font-display text-[27px] leading-tight text-navy-strong md:mt-2 md:text-[34px]">A conversation at the boundary.</h2>
-        <p className="text-[12px] leading-5 text-ink-2 md:hidden">Review one exact fictional exception. Standing limits do not change.</p>
+        <h2 id="requests-title" className={state.requests.some(r => r.status === "pending")
+          ? "sr-only md:not-sr-only md:mt-2 md:font-display md:text-[34px] md:text-navy-strong"
+          : "mt-1 font-display text-[27px] leading-tight text-navy-strong md:mt-2 md:text-[34px]"}>
+          A conversation at the boundary.
+        </h2>
+        <p className="text-[12px] leading-5 text-ink-2 md:hidden">
+          {state.requests.some(r => r.status === "pending")
+            ? "Review the exact simulated choice below. Neither answer changes standing limits."
+            : "A one-time approval is an exact exception, not a change to standing limits."}
+        </p>
         <p className="hidden text-[13px] leading-6 text-ink-2 md:block">A one-time approval is an exact exception, never a change to standing limits.</p>
-        <p className="text-[11px] leading-5 text-ink-3">Parent role switching is simulated here; no guardian identity or consent is verified.</p>
+        <p className="hidden text-[11px] leading-5 text-ink-3 md:block">Parent role switching is simulated here; no guardian identity or consent is verified.</p>
       </header>
       {state.requests.length === 0 ? <div className={panel}><p className={small}>No requests yet. Switch to Child, Explore and try 25 credits of MKT (above the current 15-credit limit).</p></div> : (
         <ul className="space-y-3">{state.requests.map(r => (
@@ -328,6 +336,7 @@ function Requests({ state, decide }: {
             <p className="text-[11px] font-bold uppercase tracking-wider text-green-strong">Request #{r.id} · {r.status}</p>
             <h3 className="mt-2 text-[19px] font-bold text-navy-strong">{r.amount} practice credits · {r.asset}</h3>
             <p className={small}>Exact simulated action: buy {r.asset} for {r.amount} credits · Key v{r.version} / nonce {r.nonce}</p>
+            {r.status === "pending" ? <p className="mt-2 text-[11px] leading-5 text-ink-2">Simulated Parent choice only. No verified guardian identity, real consent or transfer of funds.</p> : null}
             {r.status === "pending" ? <div className="mt-4 flex flex-wrap gap-2">
               <button className={primary} type="button" onClick={() => decide(r.id, "approve")}>Approve once #{r.id}</button>
               <button className={secondary} type="button" onClick={() => decide(r.id, "decline")}>Decline #{r.id}</button>
@@ -430,7 +439,12 @@ export function FamilyPublicStudio() {
   const [childTab, setChildTab] = useState<ChildTab>("home");
   const [parentTab, setParentTab] = useState<ParentTab>("overview");
   const pending = state.requests.filter(r => r.status === "pending").length;
-  const mobileNextAction = pending > 0 || (role === "child" && state.requests.some(r => r.status === "approved-once"));
+  // Do not repeat a "review request" banner when already inside Requests, or
+  // repeat a "start learning" banner directly above the active lesson path.
+  const isAlreadyAtAction = (role === "parent" && (parentTab === "requests" || parentTab === "learn")) ||
+    (role === "child" && childTab === "learn");
+  const mobileNextAction = !isAlreadyAtAction &&
+    (pending > 0 || (role === "child" && state.requests.some(r => r.status === "approved-once")));
 
   return (
     <section data-testid="family-public-studio" className="mt-3 md:mt-5">
@@ -448,7 +462,7 @@ export function FamilyPublicStudio() {
         </div>
       </div>
 
-      <div data-testid="guided-next-step" className={`mt-2 flex-wrap items-center justify-between gap-2 rounded-[15px] border border-green/25 bg-green-soft px-3 py-2.5 md:mt-3 md:gap-3 md:rounded-[18px] md:px-4 md:py-3 ${mobileNextAction ? "flex" : "hidden md:flex"}`}>
+      <div data-testid="guided-next-step" className={`mt-2 flex-wrap items-center justify-between gap-2 rounded-[15px] border border-green/25 bg-green-soft px-3 py-2.5 md:mt-3 md:gap-3 md:rounded-[18px] md:px-4 md:py-3 ${isAlreadyAtAction ? "hidden" : mobileNextAction ? "flex" : "hidden md:flex"}`}>
         {mobileNextAction ? <p className="text-[12px] font-semibold text-navy-strong md:hidden">{pending ? "A fictional request needs review in Parent view." : "One exact fictional choice can now be retried."}</p> : null}
         <div>
           <p className="hidden text-[11px] font-bold uppercase tracking-wider text-green-strong md:block">Suggested next step · optional</p>
