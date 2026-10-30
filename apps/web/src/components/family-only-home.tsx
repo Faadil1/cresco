@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { FamilyAgencyPreview } from "@/components/family-agency-preview";
 import { FamilyParentTrustCenter } from "@/components/family-parent-trust-center";
 import { ArrowRight, HeartHandshake, ShieldCheck, Sprout } from "lucide-react";
 import { Wordmark } from "@/components/shell";
@@ -32,7 +31,7 @@ export function FamilyOnlyHome() {
             <p className="mt-6 max-w-[55ch] text-[16px] leading-7 text-ink-2">
               Young people see their practice balance, make choices and ask to
               explore new ideas. Parents can understand those choices and decide
-              when to say yes or no. Both learn together.
+              when to say yes or no. Both have their own Learning Path, and they learn together.
             </p>
             <p className="mt-3 max-w-[55ch] text-[13px] leading-6 text-ink-2">
               Explore Cresco right now, without signing in, entering a code,
@@ -70,7 +69,7 @@ export function FamilyOnlyHome() {
               </span>
             </div>
             <p className="mt-2 text-[12px] leading-5 text-ink-2">
-              A simple view of what you can try in the interactive practice section below.
+              An introduction to the full Parent and Child workspaces, available under Try Cresco.
             </p>
 
             <div className="mt-5 rounded-[21px] border border-green/20 bg-green-soft/40 p-4">
@@ -100,19 +99,19 @@ export function FamilyOnlyHome() {
                 <h3 className="text-[15px] font-bold">Parent view · I guide the boundaries</h3>
               </div>
               <p className="mt-2 text-[12px] leading-5 text-ink-2">
-                See what the young person chose and understand what a new request
-                means. Approve or decline the <strong>practice discussion</strong>,
-                without buying an asset.
+                Learn how the Key works, then review what the young person chose.
+                Approve or decline the <strong>exact fictional practice request</strong>,
+                or update the standing Key explicitly. No real investment occurs.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
-                <span className="rounded-full bg-green-soft px-3 py-2 text-[11px] font-bold text-green-strong">Discuss together</span>
+                <span className="rounded-full bg-green-soft px-3 py-2 text-[11px] font-bold text-green-strong">Parent learning path</span>
                 <span className="rounded-full border border-line bg-surface px-3 py-2 text-[11px] font-bold text-navy-strong">Not yet</span>
               </div>
             </div>
             <div className="mt-4 flex items-start gap-2 rounded-[15px] bg-yellow-soft p-3">
               <ShieldCheck aria-hidden className="mt-0.5 size-4 shrink-0 text-orange-text" />
               <p className="text-[11px] leading-5 text-navy">
-                Illustration only. The actual demo below is a single-browser simulation.
+                Illustration only. The full demo on Try Cresco is a single-browser simulation.
                 It does not prove separate accounts, legal guardianship, custody or
                 authority over real funds.
               </p>
@@ -133,7 +132,6 @@ export function FamilyOnlyHome() {
           </Link>
         </section>
         <FamilyParentTrustCenter />
-        <FamilyAgencyPreview />
       </div>
     </main>
   );
