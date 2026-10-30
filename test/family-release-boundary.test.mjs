@@ -53,3 +53,19 @@ test('family API cannot be prepared without mandatory Access flag on the only is
   rejects(x => { x.api.vars.CRESCO_FAMILY_STAGING_REQUIRE_ACCESS = 'unit-test-only'; });
   rejects(x => { x.api.vars.CRESCO_FAMILY_STAGING_REQUIRE_ACCESS = '0'; });
 });
+
+test('first installation must have no public, preview or custom routes', () => {
+  rejects(x => { x.api.workers_dev = true; });
+  rejects(x => { x.web.workers_dev = true; });
+  rejects(x => { delete x.api.preview_urls; });
+  rejects(x => { x.web.preview_urls = true; });
+  rejects(x => { delete x.web.workers_dev; });
+  rejects(x => { x.api.route = 'family.example.com/*'; });
+  rejects(x => { x.web.routes = [{pattern:'family.example.com/*'}]; });
+  rejects(x => { x.builtWeb = {name:'cresco-family-web',workers_dev:true,preview_urls:false}; });
+  rejects(x => { x.builtWeb = {name:'cresco-family-web',workers_dev:false,preview_urls:true}; });
+  rejects(x => { x.builtWeb = {name:'cresco-family-web',workers_dev:false,preview_urls:false,routes:['x/*']}; });
+  assert.equal(validateFamilyReleaseBoundary({...cloned(),builtWeb:{
+    name:'cresco-family-web',workers_dev:false,preview_urls:false
+  }}).deployApproved,false);
+});
