@@ -1,6 +1,6 @@
 "use client";
 
-import { useReducer, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import { LessonIllustration } from "@/components/illustrations/scenes";
 import { GoalArt } from "@/components/illustrations/objects";
 import { BadgeArt } from "@/components/illustrations/badges";
@@ -332,7 +332,7 @@ function Requests({ state, decide }: {
       </header>
       {state.requests.length === 0 ? <div className={panel}><p className={small}>No requests yet. Switch to Child, Explore and try 25 credits of MKT (above the current 15-credit limit).</p></div> : (
         <ul className="space-y-3">{state.requests.map(r => (
-          <li key={r.id} className={panel}>
+          <li key={r.id} className={panel} data-family-pending-request={r.status === "pending" ? "true" : undefined}>
             <p className="text-[11px] font-bold uppercase tracking-wider text-green-strong">Request #{r.id} · {r.status}</p>
             <h3 className="mt-2 text-[19px] font-bold text-navy-strong">{r.amount} practice credits · {r.asset}</h3>
             <p className={small}>Exact simulated action: buy {r.asset} for {r.amount} credits · Key v{r.version} / nonce {r.nonce}</p>
@@ -439,6 +439,17 @@ export function FamilyPublicStudio() {
   const [childTab, setChildTab] = useState<ChildTab>("home");
   const [parentTab, setParentTab] = useState<ParentTab>("overview");
   const pending = state.requests.filter(r => r.status === "pending").length;
+  // On a narrow screen, the user explicitly selected Requests to act on an
+  // exception. Bring the exact decision card into view instead of leaving
+  // Approve Once / Decline below the long /try introduction. The action is
+  // NOT performed by scrolling; it always requires a separate user click.
+  useEffect(() => {
+    if (role !== "parent" || parentTab !== "requests" || pending === 0) return;
+    if (!window.matchMedia("(max-width: 767px)").matches) return;
+    const target = document.querySelector('[data-family-pending-request="true"]');
+    target?.scrollIntoView({ behavior: "auto", block: "center" });
+  }, [role, parentTab, pending]);
+
   // Do not repeat a "review request" banner when already inside Requests, or
   // repeat a "start learning" banner directly above the active lesson path.
   const isAlreadyAtAction = (role === "parent" && (parentTab === "requests" || parentTab === "learn")) ||
