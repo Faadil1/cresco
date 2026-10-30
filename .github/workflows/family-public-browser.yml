@@ -10,6 +10,8 @@ on:
       - "apps/web/vite.config.ts"
       - "apps/web/wrangler.family.jsonc"
       - "apps/web/scripts/assert-family-public-build.mjs"
+      - "apps/web/scripts/build-public-family.mjs"
+      - "apps/web/scripts/family-public-web-release.mjs"
       - "apps/web/src/lib/family-web-route-guard.ts"
       - "apps/web/e2e/family-public-demo.spec.mjs"
       - "apps/web/playwright.family-public.config.mjs"
