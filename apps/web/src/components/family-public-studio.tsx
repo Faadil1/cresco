@@ -79,7 +79,7 @@ function LearningPath({ role, state, complete }: {
           <p className="cresco-section-kicker">Interactive lesson</p>
           <h3 className="mt-2 font-display text-[29px] text-navy-strong">{lesson.title}</h3>
           {lesson.sections?.length ? (
-            <div className="mt-4 space-y-4" aria-label="Original Cresco lesson concepts">
+            <div role="region" className="mt-4 space-y-4" aria-label="Original Cresco lesson concepts">
               {lesson.sections.map((section, index) => (
                 <section key={index} className="overflow-hidden rounded-[18px] border border-line-soft bg-surface">
                   <div className="p-4">
