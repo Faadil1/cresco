@@ -55,6 +55,8 @@ try {
     RunChecked "npm-dependencies" "npm.cmd" @("ci","--no-audit","--no-fund") (Join-Path $output "01-install.log")
     RunChecked "playwright-dependency" "npm.cmd" @("install","--no-save","--no-audit","--no-fund","@playwright/test") (Join-Path $output "02-playwright-dep.log")
   }
+  # Fail fast on invalid Playwright fixture scopes before expensive build/browser installation.
+  RunChecked "playwright-suite-collection" "npx.cmd" @("playwright","test","--config","playwright.family-public.config.mjs","--list") (Join-Path $output "02a-suite-collection.log")
   RunChecked "typecheck" "npm.cmd" @("run","typecheck") (Join-Path $output "03-typecheck.log")
   RunChecked "lint" "npm.cmd" @("run","lint") (Join-Path $output "04-lint.log")
   RunChecked "copy-lint" "npm.cmd" @("run","copy:lint") (Join-Path $output "05-copy-lint.log")
@@ -84,7 +86,7 @@ try {
     "Node: $nodeVersion",
     "Mode: NO DEPLOY, browser-only fictional Family Worker",
     "WebKit checks: PASS",
-    "Dependencies, typecheck, lint, copy-lint, unit tests, public build, isolation and historical Worker freeze: PASS",
+    "Playwright test collection, typecheck, lint, copy-lint, unit tests, public build, isolation and historical Worker freeze: PASS",
     "Browser screenshots: $shotDir (when attached by Playwright)",
     "HTML Playwright report: $(Join-Path $web "playwright-report")",
     "Evidence directory: $output",
