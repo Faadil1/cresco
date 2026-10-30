@@ -15,5 +15,7 @@
       "!/_next/static/*",
       "!/*/_next/static/*"
     ]
-  }
+  },
+  "workers_dev": false,
+  "preview_urls": false
 }

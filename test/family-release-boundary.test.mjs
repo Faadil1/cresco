@@ -33,7 +33,7 @@ test('guard refuses historical Worker as the Family deployment target', () => {
   rejects(x => { x.api.name = 'cresco-api-stocklana'; });
   rejects(x => { x.web.name = 'cresco'; });
   rejects(x => { x.builtWeb = { name: 'cresco' }; });
-  assert.equal(validateFamilyReleaseBoundary({...cloned(),builtWeb:{name:'cresco-family-web'}}).familyWeb, 'cresco-family-web');
+  assert.equal(validateFamilyReleaseBoundary({...cloned(),builtWeb:{name:'cresco-family-web',workers_dev:false,preview_urls:false}}).familyWeb, 'cresco-family-web');
 });
 test('guard refuses historical DO reuse, unknown entrypoint or web DO binding', () => {
   rejects(x => { x.api.durable_objects.bindings[0].class_name = 'FamilyState'; });
@@ -52,4 +52,20 @@ test('family API cannot be prepared without mandatory Access flag on the only is
   rejects(x => { delete x.api.vars.CRESCO_FAMILY_STAGING_REQUIRE_ACCESS; });
   rejects(x => { x.api.vars.CRESCO_FAMILY_STAGING_REQUIRE_ACCESS = 'unit-test-only'; });
   rejects(x => { x.api.vars.CRESCO_FAMILY_STAGING_REQUIRE_ACCESS = '0'; });
+});
+
+test('first installation must have no public, preview or custom routes', () => {
+  rejects(x => { x.api.workers_dev = true; });
+  rejects(x => { x.web.workers_dev = true; });
+  rejects(x => { delete x.api.preview_urls; });
+  rejects(x => { x.web.preview_urls = true; });
+  rejects(x => { delete x.web.workers_dev; });
+  rejects(x => { x.api.route = 'family.example.com/*'; });
+  rejects(x => { x.web.routes = [{pattern:'family.example.com/*'}]; });
+  rejects(x => { x.builtWeb = {name:'cresco-family-web',workers_dev:true,preview_urls:false}; });
+  rejects(x => { x.builtWeb = {name:'cresco-family-web',workers_dev:false,preview_urls:true}; });
+  rejects(x => { x.builtWeb = {name:'cresco-family-web',workers_dev:false,preview_urls:false,routes:['x/*']}; });
+  assert.equal(validateFamilyReleaseBoundary({...cloned(),builtWeb:{
+    name:'cresco-family-web',workers_dev:false,preview_urls:false
+  }}).deployApproved,false);
 });

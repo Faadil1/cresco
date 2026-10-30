@@ -67,7 +67,11 @@ export function validateFamilyReleaseBoundary({
     'Private invite token must be a Worker secret, not a plaintext variable');
 
   for (const [name, config] of [['API', api], ['WEB', web]]) {
-    for (const field of ['route', 'routes', 'zone_id', 'account_id']) {
+    assert.equal(config.workers_dev, false,
+      name + '_FIRST_INSTALL_EXPOSES_WORKERS_DEV: disabled until separate owner-approved Access review');
+    assert.equal(config.preview_urls, false,
+      name + '_FIRST_INSTALL_EXPOSES_PREVIEW_URLS: disabled until owner-approved access review');
+    for (const field of ['route', 'routes', 'zone_id', 'account_id', 'custom_domain', 'assets_public']) {
       assert.ok(config[field] == null, name + ' cannot bind routes/zones or embedded accounts');
     }
     for (const [key, value] of Object.entries(config.vars ?? {})) {
@@ -80,6 +84,12 @@ export function validateFamilyReleaseBoundary({
   if (builtWeb) {
     assert.equal(builtWeb.name, 'cresco-family-web',
       'BUILD_TARGET_MISMATCH: would publish the Colosseum Worker');
+    assert.equal(builtWeb.workers_dev, false,
+      'FAMILY_BUILD_EXPOSES_WORKERS_DEV: generated build is not sealed');
+    assert.equal(builtWeb.preview_urls, false,
+      'FAMILY_BUILD_EXPOSES_PREVIEW_URLS: generated build is not sealed');
+    assert.ok(!builtWeb.routes?.length && !builtWeb.route,
+      'FAMILY_BUILD_HAS_PUBLIC_ROUTE: generated build is not sealed');
   }
   return {
     historicApiSha, historicWebSha, familyApi: api.name, familyWeb: web.name,

@@ -3,7 +3,7 @@
   "name": "cresco-family-api",
   "main": "src/cloudflare-family-only-worker.mjs",
   "compatibility_date": "2026-10-28",
-  "workers_dev": true,
+  "workers_dev": false,
   "observability": {
     "enabled": true
   },
@@ -47,5 +47,6 @@
       "state": "created",
       "storage": "sqlite"
     }
-  }
+  },
+  "preview_urls": false
 }
