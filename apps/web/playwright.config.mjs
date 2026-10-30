@@ -2,6 +2,9 @@ import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./e2e",
+  // The no-login Family Worker is an independent build target. Its dedicated
+  // config tests the real Vite/Cloudflare artifact, not the canonical Next app.
+  testIgnore: "family-public-demo.spec.mjs",
   timeout: 30_000,
   retries: 1,
   use: {
