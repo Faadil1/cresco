@@ -12,7 +12,8 @@ test("public Family gives Child + Parent a complete practice loop without sign-i
 
   await page.goto("/try");
   await expect(page.getByRole("heading", { name: /a whole family can learn to decide/i })).toBeVisible();
-  await expect(page.getByText(/no invitation\. no parent or teen codes/i)).toBeVisible();
+  await expect(page.getByText(/two simulated perspectives\. pretend credits only/i)).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Child demo navigation" })).toBeInViewport();
   await expect(page.getByTestId("family-public-studio")).toBeVisible();
   await expect(page.getByTestId("practice-available")).toHaveText("100");
   await testInfo.attach("family-child-mobile.png", { body: await page.screenshot({ fullPage: false }), contentType: "image/png" });
@@ -151,7 +152,7 @@ test.describe("desktop Family UX audit evidence", () => {
 
 test("learning actions lead to relevant Parent and Child practice screens on mobile", async ({ page }) => {
   await page.goto("/try");
-  await expect(page.getByText("Swipe sideways to see all profile tabs.")).toBeVisible();
+  await expect(page.getByText(/Swipe to see more tabs · These roles are simulated/i)).toBeVisible();
   await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: "Learn", exact: true }).click();
   await page.getByRole("button", { name: /lesson 1 · 3 min save for a goal/i }).click();
   await page.getByRole("button", { name: "Practice this in Child view" }).click();
@@ -175,6 +176,7 @@ test("Child Explore research has search, compare and risk questions without gran
   await page.getByRole("navigation", { name: "Child demo navigation" })
     .getByRole("button", { name: "Explore" }).click();
   await expect(page.getByTestId("family-research-explore")).toBeVisible();
+  await expect(page.getByRole("searchbox", { name: "Search fictional research examples" })).toBeInViewport({ ratio: 0.2 });
   await testInfo.attach("family-child-explore-mobile.png", { body: await page.screenshot({ fullPage: false }), contentType: "image/png" });
   await expect(page.getByText(/6 fictional research examples shown/i)).toBeVisible();
 
