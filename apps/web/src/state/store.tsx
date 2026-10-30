@@ -313,6 +313,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useReducer(() => true, false);
 
   useEffect(() => {
+    // Public Family is a stateless teaching surface. Ignore old browser sessions.
+    if (process.env.NEXT_PUBLIC_CRESCO_FAMILY_ONLY === "1") {
+      setHydrated();
+      return;
+    }
     try {
       const restored = restoreState(window.localStorage.getItem(STORAGE_KEY));
       if (restored) dispatch({ type: "hydrate", state: restored });
@@ -324,7 +329,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || process.env.NEXT_PUBLIC_CRESCO_FAMILY_ONLY === "1") return;
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {
@@ -333,7 +338,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [state, hydrated]);
 
   useEffect(() => {
-    if (!hydrated || !crescoBackendConfigured()) return;
+    if (!hydrated || process.env.NEXT_PUBLIC_CRESCO_FAMILY_ONLY === "1" || !crescoBackendConfigured()) return;
 
     let cancelled = false;
     const sync = async () => {
