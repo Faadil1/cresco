@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  CHILD_LEARNING, PARENT_LEARNING, initialFamilyPractice, remainingCredits,
+  CHILD_LEARNING, PARENT_LEARNING, evaluatePracticeScenario, initialFamilyPractice, remainingCredits,
   transitionFamilyPractice as next,
 } from "./family-public-practice";
 
@@ -96,10 +96,44 @@ describe("Family public teaching sandbox — never a financial permission", () =
     expect(repeated.parentCompleted).toEqual([PARENT_LEARNING[0].id]);
     expect(repeated.key).toEqual(original.key);
   });
-  it("marks shared family learning without changing authority; resets everything", () => {
-    const s = next(next(initialFamilyPractice(), { type: "together" }), { type: "save" });
-    expect(s.togetherCompleted).toBe(true);
-    expect(s.key.version).toBe(1);
-    expect(next(s, { type: "reset" })).toEqual(initialFamilyPractice());
+  it("restores original illustrated, source-backed Child lessons without changing Key authority", () => {
+    const original = CHILD_LEARNING.filter(lesson => lesson.origin === "historical-cresco");
+    expect(original).toHaveLength(6);
+    for (const lesson of original) {
+      expect(lesson.source?.url).toMatch(/^https:\/\//);
+      expect(lesson.source?.verifiedAt).toBe("2026-09-25");
+      expect(lesson.illustration).toBeTruthy();
+      expect(lesson.choices).toHaveLength(3);
+      expect(lesson.choices[lesson.answer]).toBeTruthy();
+    }
+    const s = next(initialFamilyPractice(), { type: "complete", role: "child", lessonId: original[0].id });
+    expect(s.childCompleted).toEqual([original[0].id]);
+    expect(s.key).toEqual(initialFamilyPractice().key);
+  });
+  it("calculates transparent hypothetical values without changing actual practice credits", () => {
+    const s = next(next(initialFamilyPractice(), { type: "buy", asset: "ORC", amount: 10 }),
+      { type: "buy", asset: "MKT", amount: 5 });
+    const baseline = evaluatePracticeScenario(s, "base");
+    const downturn = evaluatePracticeScenario(s, "downturn");
+    expect(baseline.original).toBe(15);
+    expect(baseline.hypothetical).toBe(15);
+    expect(downturn.hypothetical).toBeCloseTo(11.5);
+    expect(downturn.assets.reduce((sum, a) => sum + a.weight, 0)).toBeCloseTo(1);
+    expect(remainingCredits(s)).toBe(85);
+    expect(s.receipts).toHaveLength(2);
+  });
+  it("requires independent Child and Parent voices for a shared family learning milestone", () => {
+    const original = initialFamilyPractice();
+    const incomplete = next(original, { type: "together" });
+    expect(incomplete.togetherCompleted).toBe(false);
+    const child = next(incomplete, { type: "discussion-child", choice: "save-first" });
+    expect(next(child, { type: "together" }).togetherCompleted).toBe(false);
+    const parent = next(child, { type: "discussion-parent", choice: "review-risk" });
+    const completed = next(parent, { type: "together" });
+    expect(completed.togetherCompleted).toBe(true);
+    expect(completed.discussion).toEqual({ child: "save-first", parent: "review-risk" });
+    expect(completed.key).toEqual(original.key);
+    expect(completed.receipts).toEqual([]);
+    expect(next(completed, { type: "reset" })).toEqual(initialFamilyPractice());
   });
 });
