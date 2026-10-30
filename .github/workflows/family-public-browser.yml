@@ -62,7 +62,7 @@ jobs:
           NEXT_PUBLIC_CRESCO_API_URL: ""
       - run: npx playwright install --with-deps webkit
       - name: Test actual local Wrangler Family Worker, no API requests
-        run: npx playwright test --config playwright.family-public.config.mjs
+        run: npx playwright test --config playwright.family-public.config.mjs --reporter=list,html
         env:
           NEXT_PUBLIC_CRESCO_API_URL: ""
       - name: Keep fictional Parent and Child desktop UX screenshots
@@ -70,7 +70,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: family-public-ux-${{ github.sha }}
-          path: apps/web/test-results/**/*.png
+          path: |
+            apps/web/playwright-report/data/*.png
+            apps/web/test-results/**/*.png
           if-no-files-found: ignore
           retention-days: 14
       - name: State evidence boundaries
