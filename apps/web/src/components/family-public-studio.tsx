@@ -10,7 +10,7 @@ import {
   RotateCcw, ShieldCheck, Sprout, Users, Wallet,
 } from "lucide-react";
 import {
-  CHILD_LEARNING, PARENT_LEARNING, PRACTICE_ASSETS,
+  CHILD_LEARNING, PARENT_LEARNING, PRACTICE_ASSETS, PRACTICE_GOALS, selectedPracticeGoal,
   initialFamilyPractice, remainingCredits, remainingPeriod, transitionFamilyPractice,
   type AssetCode, type FamilyPracticeState, type FamilyRole,
 } from "@/lib/family-public-practice";
@@ -148,7 +148,8 @@ function LearningPath({ role, state, complete }: {
   );
 }
 
-function ChildHome({ state, open, save }: { state: FamilyPracticeState; open: (tab: ChildTab) => void; save: () => void }) {
+function ChildHome({ state, open, save, chooseGoal }: { state: FamilyPracticeState; open: (tab: ChildTab) => void; save: () => void; chooseGoal: (goalId: FamilyPracticeState["goalId"]) => void }) {
+  const goal = selectedPracticeGoal(state);
   return (
     <div className="space-y-5">
       <header>
@@ -158,22 +159,42 @@ function ChildHome({ state, open, save }: { state: FamilyPracticeState; open: (t
       </header>
       <div className="grid gap-3 sm:grid-cols-3">
         <Metric label="Available credits" value={String(remainingCredits(state))} testId="practice-available" />
-        <Metric label="Set aside for a bike" value={String(state.saved)} testId="practice-saved" />
+        <Metric label={`Saved for ${goal.label}`} value={String(state.saved)} testId="practice-saved" />
         <Metric label="Child lessons" value={`${state.childCompleted.length}/${CHILD_LEARNING.length}`} />
       </div>
       <div className={panel}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="cresco-section-kicker">Saving goal · Bike</p>
+            <p className="cresco-section-kicker">Saving goal · {goal.label}</p>
             <h3 className="mt-2 font-display text-[26px] text-navy-strong">Small steps count.</h3>
-            <p className={small}>Set aside pretend credits independently. Your balance is fictional.</p>
+            <p className={small}>Choose a goal, then set aside pretend credits independently.</p>
           </div>
           <div className="flex items-center gap-3">
-            <GoalArt goal="bike" className="hidden h-16 w-20 sm:block"/>
+            <GoalArt goal={goal.id} className="hidden h-16 w-20 sm:block"/>
             <button type="button" className={primary} disabled={remainingCredits(state) < 20}
               onClick={save}>Set aside 20 <ArrowRight aria-hidden className="ml-1 inline size-4" /></button>
           </div>
         </div>
+        <fieldset className="mt-5">
+          <legend className="text-[12px] font-bold text-navy-strong">Choose a fictional saving goal</legend>
+          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+            {PRACTICE_GOALS.map(option => (
+              <button key={option.id} type="button"
+                aria-pressed={state.goalId === option.id}
+                className={`rounded-[12px] border px-3 py-3 text-left text-[12px] font-semibold ${state.goalId === option.id ? "border-green-strong bg-green-soft text-green-strong" : "border-line bg-surface text-ink-2"}`}
+                onClick={() => chooseGoal(option.id)}>
+                {option.label} <span className="block text-[11px]">{option.target} pretend credits</span>
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        <div className="mt-4 h-2 overflow-hidden rounded-full bg-surface-soft" role="progressbar"
+          aria-label="Fictional saving goal progress" aria-valuenow={Math.min(state.saved, goal.target)}
+          aria-valuemin={0} aria-valuemax={goal.target}>
+          <div className="h-full rounded-full bg-green-strong"
+            style={{ width: `${Math.min(100, state.saved / goal.target * 100)}%` }} />
+        </div>
+        <p className="mt-2 text-[12px] text-ink-2">{state.saved} of {goal.target} pretend credits saved for {goal.label}.</p>
       </div>
       <div className="grid gap-3 md:grid-cols-2">
         <div className={panel}>
@@ -351,6 +372,7 @@ function Together({ role, state, childAnswer, parentAnswer, onComplete }: {
   parentAnswer: (choice: ParentDiscussion) => void;
   onComplete: () => void;
 }) {
+  const goal = selectedPracticeGoal(state);
   const myChoices = role === "child" ? childChoices : parentChoices;
   const selected = role === "child" ? state.discussion.child : state.discussion.parent;
   const child = childChoices.find(choice => choice.id === state.discussion.child);
@@ -367,6 +389,7 @@ function Together({ role, state, childAnswer, parentAnswer, onComplete }: {
           {role === "child" ? "Child: what matters most for the bike goal?" : "Parent: how would you guide this goal?"}
         </h3>
         <div className="mt-3 grid gap-2" role="group" aria-label={role === "child" ? "Child family goal choices" : "Parent family guidance choices"}>
+          <p className="mb-3 text-[12px] text-ink-2">Current shared goal: {goal.label} ({state.saved}/{goal.target} pretend credits).</p>
           {myChoices.map(choice => (
             <button type="button" key={choice.id} aria-pressed={selected === choice.id}
               className={`rounded-[14px] border px-4 py-3 text-left ${selected === choice.id ? "border-green-strong bg-green-soft" : "border-line bg-surface"}`}
@@ -461,7 +484,7 @@ export function FamilyPublicStudio() {
         </nav>
         <div className="px-1 pb-2">
           {role === "child" ? (
-            childTab === "home" ? <ChildHome state={state} open={setChildTab} save={() => dispatch({ type: "save" })}/> :
+            childTab === "home" ? <ChildHome state={state} open={setChildTab} save={() => dispatch({ type: "save" })} chooseGoal={goalId => dispatch({ type: "set-goal", goalId })}/> :
             childTab === "learn" ? <LearningPath role="child" state={state} complete={id => dispatch({ type: "complete", role: "child", lessonId: id })}/> :
             childTab === "explore" ? <Explore state={state} save={() => dispatch({ type: "save" })}
               buy={(asset, amount) => dispatch({ type: "buy", asset, amount })}/> :
@@ -477,6 +500,11 @@ export function FamilyPublicStudio() {
                 <Metric label="Pending requests" value={String(pending)} />
                 <Metric label="Your learning" value={`${state.parentCompleted.length}/${PARENT_LEARNING.length}`} />
                 <Metric label="Child learning" value={`${state.childCompleted.length}/${CHILD_LEARNING.length}`} />
+              </div>
+              <div className={panel}>
+                <p className="cresco-section-kicker">Child's fictional saving goal</p>
+                <h3 className="mt-2 text-[19px] font-bold text-navy-strong">{selectedPracticeGoal(state).label}</h3>
+                <p className={small}>{state.saved} of {selectedPracticeGoal(state).target} credits set aside. Discuss the goal together; no approval needed to save fictional credits.</p>
               </div>
               <KeySummary state={state}/>
               <div className="flex flex-wrap gap-3">
