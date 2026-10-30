@@ -41,6 +41,12 @@ test("public Family gives Child + Parent a complete practice loop without sign-i
   await expect(page.getByRole("status")).toHaveText(/cannot be replayed/i);
   await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: /portfolio/i }).click();
   await expect(page.getByTestId("portfolio-available")).toHaveText("45");
+  await page.getByRole("button", { name: "Hypothetical downturn" }).click();
+  await expect(page.getByTestId("scenario-hypothetical")).toHaveText("29.50");
+  await expect(page.getByTestId("scenario-delta")).toHaveText("-5.50");
+  await expect(page.getByTestId("portfolio-available")).toHaveText("45");
+  await page.getByRole("button", { name: "Original sample prices" }).click();
+  await expect(page.getByTestId("scenario-hypothetical")).toHaveText("35.00");
 
   expect(outbound).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1)).toBe(false);
@@ -54,6 +60,9 @@ test("Parent and Child have independent interactive learning paths with the same
   await page.getByRole("button", { name: /choose a goal and a time horizon/i }).click();
   await page.getByRole("button", { name: "Complete lesson" }).click();
   await expect(page.getByRole("progressbar", { name: "child learning progress" })).toHaveAttribute("aria-valuenow", "1");
+  await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: "Together" }).click();
+  await page.getByRole("button", { name: /save first for the near-term bike goal/i }).click();
+  await expect(page.getByTestId("together-child-answer")).toHaveText(/save first for the near-term bike goal/i);
 
   await page.getByRole("button", { name: /parent view/i }).click();
   await page.getByRole("navigation", { name: "Parent demo navigation" }).getByRole("button", { name: "Learn", exact: true }).click();
@@ -63,6 +72,9 @@ test("Parent and Child have independent interactive learning paths with the same
   await page.getByRole("button", { name: "Complete lesson" }).click();
   await expect(page.getByRole("progressbar", { name: "parent learning progress" })).toHaveAttribute("aria-valuenow", "1");
   await page.getByRole("navigation", { name: "Parent demo navigation" }).getByRole("button", { name: /learn together/i }).click();
+  await expect(page.getByTestId("together-child-answer")).toHaveText(/save first for the near-term bike goal/i);
+  await page.getByRole("button", { name: /discuss risk before changing any limits/i }).click();
+  await expect(page.getByTestId("together-parent-answer")).toHaveText(/discuss risk before changing any limits/i);
   await page.getByRole("button", { name: /mark our discussion complete/i }).click();
   await expect(page.getByRole("status")).toHaveText(/no financial permission changed/i);
 
@@ -71,6 +83,22 @@ test("Parent and Child have independent interactive learning paths with the same
   await expect(page.getByRole("progressbar", { name: "child learning progress" })).toHaveAttribute("aria-valuenow", "1");
   await page.reload();
   await expect(page.getByTestId("practice-available")).toHaveText("100");
+  await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: "Learn", exact: true }).click();
+  await expect(page.getByRole("progressbar", { name: "child learning progress" })).toHaveAttribute("aria-valuenow", "0");
+});
+
+test("restores a sourced and illustrated original Cresco Child lesson behind the Family-only route", async ({ page }) => {
+  await page.goto("/try");
+  await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: "Learn", exact: true }).click();
+  await page.getByRole("button", { name: /lesson 4.*what is a stock/i }).click();
+  await expect(page.getByRole("heading", { name: "What Is a Stock?" })).toBeVisible();
+  await expect(page.getByText(/Educational reference:/i)).toBeVisible();
+  await expect(page.getByRole("link", { name: /Investor.gov/i })).toHaveAttribute("href", /investor.gov/);
+  await expect(page.getByText(/source checked 2026-09-25/i)).toBeVisible();
+  await page.getByRole("button", { name: /a part owner/i }).click();
+  await page.getByRole("button", { name: "Complete lesson" }).click();
+  await expect(page.getByRole("progressbar", { name: "child learning progress" })).toHaveAttribute("aria-valuenow", "1");
+  await page.reload();
   await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: "Learn", exact: true }).click();
   await expect(page.getByRole("progressbar", { name: "child learning progress" })).toHaveAttribute("aria-valuenow", "0");
 });
