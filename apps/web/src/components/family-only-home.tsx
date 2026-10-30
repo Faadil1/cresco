@@ -40,12 +40,12 @@ export function FamilyOnlyHome() {
             </p>
 
             <div className="mt-7 flex flex-wrap gap-3">
-              <a
-                href="#family-agency-preview-title"
+              <Link
+                href="/family-practice"
                 className="inline-flex min-h-12 items-center gap-3 rounded-full bg-green-strong px-6 text-[14px] font-bold text-white hover:bg-green"
               >
-                Try the family practice story <ArrowRight aria-hidden className="size-4" />
-              </a>
+                Start your invited practice <ArrowRight aria-hidden className="size-4" />
+              </Link>
               <a
                 href="#family-trust"
                 className="inline-flex min-h-12 items-center gap-3 rounded-full border border-green/40 bg-surface px-6 text-[14px] font-bold text-navy-strong hover:bg-green-soft"
@@ -119,17 +119,11 @@ export function FamilyOnlyHome() {
           </div>
         </section>
 
-        <div className="mt-6 text-[12px] leading-6 text-ink-2">
-          Technical developers can inspect the{" "}
-          <Link
-            href="/worlds-fair/desk?case=family"
-            className="font-bold text-green-strong underline underline-offset-4"
-          >
-            separate Family setup preview
-          </Link>
-          . Solana Devnet financial actions remain disabled in the standalone
-          Family release candidate pending independent review.
-        </div>
+        <p className="mt-6 text-[12px] leading-6 text-ink-2">
+          You can explore the illustrated story below without a code.
+          To try persistent two-device practice, use a one-time invitation from
+          the Cresco research team. No account or real money is involved.
+        </p>
 
         <section className="mt-8 rounded-[22px] border border-green/30 bg-green-soft p-5 md:p-6" aria-label="Separate multi-device practice">
           <h2 className="font-display text-[27px] text-navy-strong">Want to test with two devices?</h2>
