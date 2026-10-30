@@ -8,6 +8,7 @@
  * Usage from apps/web after npm run build:public-family:
  *   node scripts/prepare-family-open-test.mjs --validate-only
  *   node scripts/prepare-family-open-test.mjs --prepare-local-config
+ *   node scripts/prepare-family-open-test.mjs --verify-local-config
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -81,6 +82,19 @@ export function makeOpenTestConfigs(source, built) {
   return { opened, closed };
 }
 
+/**
+ * Verify the final, on-disk open/close configs against the validated build.
+ * JSON objects like {} are legitimate empty settings: do not use PowerShell's
+ * PSCustomObject truthiness to decide whether a backend binding exists.
+ * Reject any field drift, added endpoint, worker rename or unexpected binding.
+ */
+export function verifyPreparedOpenTestConfigs(source, built, opened, closed) {
+  const expected = makeOpenTestConfigs(source, built);
+  assert.deepStrictEqual(opened, expected.opened, "OPEN_TEST_CONFIG_DRIFT");
+  assert.deepStrictEqual(closed, expected.closed, "CLOSED_TEST_CONFIG_DRIFT");
+  return true;
+}
+
 function git(...args) {
   return execFileSync("git", ["-C", ROOT, ...args], { encoding: "utf8" }).trim();
 }
@@ -112,8 +126,8 @@ function checkProvenance() {
 function run() {
   const mode = process.argv[2];
   assert.ok(process.argv.length === 3 &&
-    ["--validate-only", "--prepare-local-config"].includes(mode),
-    "USAGE: --validate-only | --prepare-local-config");
+    ["--validate-only", "--prepare-local-config", "--verify-local-config"].includes(mode),
+    "USAGE: --validate-only | --prepare-local-config | --verify-local-config");
   assert.ok(!process.env.NEXT_PUBLIC_CRESCO_API_URL,
     "PUBLIC_TEST_MUST_NOT_INHERIT_BACKEND_API");
   checkProvenance();
@@ -124,12 +138,21 @@ function run() {
   if (mode === "--prepare-local-config") {
     writeFileSync(OPEN, JSON.stringify(opened, null, 2) + "\n");
     writeFileSync(CLOSED, JSON.stringify(closed, null, 2) + "\n");
+  } else if (mode === "--verify-local-config") {
+    verifyPreparedOpenTestConfigs(
+      source, built,
+      JSON.parse(readFileSync(OPEN, "utf8")),
+      JSON.parse(readFileSync(CLOSED, "utf8"))
+    );
   }
 
+  const verdict = mode === "--prepare-local-config"
+    ? "OPEN_TEST_CONFIG_PREPARED_NOT_DEPLOYED"
+    : mode === "--verify-local-config"
+      ? "OPEN_TEST_CONFIG_VERIFIED_NOT_DEPLOYED"
+      : "OPEN_TEST_CONFIG_VALIDATED_NOT_DEPLOYED";
   console.log(JSON.stringify({
-    verdict: mode === "--prepare-local-config"
-      ? "OPEN_TEST_CONFIG_PREPARED_NOT_DEPLOYED"
-      : "OPEN_TEST_CONFIG_VALIDATED_NOT_DEPLOYED",
+    verdict,
     reviewedProductSha: FROZEN_PRODUCT_SHA,
     targetWorker: OPEN_TEST_WORKER,
     existingFamilyWorkerUntouched: true,
