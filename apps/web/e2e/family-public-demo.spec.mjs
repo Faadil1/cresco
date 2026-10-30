@@ -43,3 +43,15 @@ test("visitor gets demo from landing and cannot navigate to invited or Devnet ro
   await page.goto("/worlds-fair/desk?case=family");
   await expect(page.locator("body")).toContainText("This deployment is Family-only.");
 });
+
+test("public Family Worker refuses historical API and finance routes on direct GET", async ({ request }) => {
+  for (const path of [
+    "/api/v0.4/worlds-fair/openapi",
+    "/api/v0.4/worlds-fair/workspaces/example",
+    "/worlds-fair/desk/capital",
+    "/family-practice",
+  ]) {
+    const response = await request.get(path);
+    expect(response.status(), `Historical route must be closed: ${path}`).toBe(404);
+  }
+});
