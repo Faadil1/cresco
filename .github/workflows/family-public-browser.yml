@@ -12,6 +12,7 @@ on:
       - "apps/web/src/lib/family-web-route-guard.ts"
       - "apps/web/e2e/family-public-demo.spec.mjs"
       - "apps/web/playwright.family-public.config.mjs"
+      - "apps/web/playwright.config.mjs"
       - ".github/workflows/family-public-browser.yml"
 
 permissions:
@@ -36,19 +37,18 @@ jobs:
           cache-dependency-path: apps/web/package-lock.json
       - run: npm install --no-audit --no-fund
       - run: npm install --no-save --no-audit --no-fund @playwright/test
-      - name: Build only public Family website, no real user sessions or API
-        run: npm run build
+      - name: Build exact public Family Cloudflare Worker (no deploy)
+        run: npm run build:public-family
         env:
-          NEXT_PUBLIC_CRESCO_FAMILY_ONLY: "1"
+          NEXT_PUBLIC_CRESCO_API_URL: ""
       - run: npx playwright install --with-deps webkit
-      - name: One-click public local simulation (verify NO API requests)
+      - name: Test actual local Wrangler Family Worker, no API requests
         run: npx playwright test --config playwright.family-public.config.mjs
         env:
-          NEXT_PUBLIC_CRESCO_FAMILY_ONLY: "1"
-          NEXT_PUBLIC_CRESCO_API_URL: https://cresco-family-api.faadil-casecraft.workers.dev
+          NEXT_PUBLIC_CRESCO_API_URL: ""
       - name: State evidence boundaries
         run: |
-          echo "PUBLIC_DEMO_NO_LOGIN_LOCAL_TEST=PASS"
+          echo "PUBLIC_DEMO_NO_LOGIN_LOCAL_WORKER_TEST=PASS"
           echo "LIVE_PUBLIC_WORKER_DEPLOYED=NO"
           echo "REAL_TWO_DEVICE_SYNC=NOT_SUPPORTED"
           echo "FINANCIAL_TRANSACTION_OR_CHILD_ACCOUNT=NONE"
