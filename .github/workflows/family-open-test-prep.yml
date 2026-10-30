@@ -64,6 +64,9 @@ jobs:
         run: |
           node scripts/prepare-family-open-test.mjs --validate-only
           node scripts/prepare-family-open-test.mjs --prepare-local-config
+          # This runs the exact structural check called by Windows PowerShell,
+          # including harmless {} vs malicious nested backend settings.
+          node scripts/prepare-family-open-test.mjs --verify-local-config
           node --input-type=module -e '
             import {readFileSync} from "node:fs";
             import assert from "node:assert/strict";
