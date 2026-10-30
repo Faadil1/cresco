@@ -55,21 +55,20 @@ export function familyWorkerPolicy(request, env = {}) {
 }
 
 export async function handleCrescoFamilyOnlyRequest(request, env = {}, services = {}, ctx = {}) {
-  // Fail closed even if someone accidentally removes the Wrangler Access flag.
-  // OPTIONS is harmless preflight and remains origin-restricted by the route handler.
-  if (env.CRESCO_FAMILY_STAGING_REQUIRE_ACCESS !== '1') {
-    return response(503, 'FAMILY_ACCESS_NOT_CONFIGURED',
-      'Private Family authentication is not configured', request, env);
+  // Adult-only research works without a Cloudflare Access login.
+  // Lock the full legacy Family/Devnet workflow router behind a source-enforced
+  // gate: in this release every non-fictional-practice URL is unreachable.
+  if (env.CRESCO_FAMILY_RESEARCH_ONLY !== '1') {
+    return response(503, 'FAMILY_RESEARCH_GATE_UNCONFIGURED',
+      'Adult-only fictional research gate required', request, env);
   }
-  if (env.CRESCO_FAMILY_STAGING_REQUIRE_ACCESS === '1' &&
-      request.method !== 'OPTIONS' && !ctx.access) {
-    return response(403, 'FAMILY_ACCESS_REQUIRED',
-      'Cloudflare Access authentication is required', request, env);
-  }
-  // The separate fictional-credit service never reaches the Devnet workflow router.
   if (new URL(request.url).pathname.startsWith(PRACTICE_PREFIX + '/')) {
     return handleFamilyPracticeRequest(request, env);
   }
+  return response(404, 'FAMILY_PRACTICE_ONLY',
+    'Only the invitation-controlled fictional-credit practice is available', request, env);
+  // The legacy Family Devnet router below stays unreachable for research builds.
+  // DO NOT remove this early return unless reviewed as a separate product release.
   const denied = familyWorkerPolicy(request, env);
   if (denied) return response(denied.status, denied.error, 'This isolated Family service cannot perform the requested action', request, env);
   const path = new URL(request.url).pathname;

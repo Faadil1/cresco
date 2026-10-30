@@ -9,8 +9,6 @@ const id = process.argv[2];
 const confirm = process.argv[3];
 const api = process.env.CRESCO_FAMILY_PRACTICE_API_URL;
 const secret = process.env.CRESCO_FAMILY_PRACTICE_OPERATOR_TOKEN;
-const accessId = process.env.CRESCO_FAMILY_ACCESS_SERVICE_CLIENT_ID;
-const accessSecret = process.env.CRESCO_FAMILY_ACCESS_SERVICE_CLIENT_SECRET;
 
 function refuse(message) {
   process.stderr.write(message + '\n');
@@ -21,9 +19,8 @@ if (confirm !== '--confirm-end-fictional-practice') {
   refuse('Refused: explicit --confirm-end-fictional-practice flag is required.');
 } else if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(id || '')) {
   refuse('Refused: exact fictional practice UUID required.');
-} else if (!api || !secret || secret.length < 32 || secret.length > 256 ||
-  !accessId || !accessSecret || accessId.length < 12 || accessSecret.length < 20) {
-  refuse('Refused: exact API, operator secret, and separate Cloudflare Access service credentials are all required.');
+} else if (!api || !secret || secret.length < 32 || secret.length > 256) {
+  refuse('Refused: exact API and strong separate operator secret are required.');
 } else {
   let url;
   try { url = new URL(api); } catch { url = null; }
@@ -42,8 +39,6 @@ if (confirm !== '--confirm-end-fictional-practice') {
           cache: 'no-store',
           headers: {
             'x-cresco-family-practice-operator': secret,
-            'CF-Access-Client-Id': accessId,
-            'CF-Access-Client-Secret': accessSecret,
             'content-type': 'application/json'
           },
           body: '{}',

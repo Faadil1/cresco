@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import {createHmac} from 'node:crypto';
 import { CrescoFamilyPracticeState } from '../src/cloudflare-family-practice-state.mjs';
 import { CrescoFamilyPracticeInviteGuard } from '../src/cloudflare-family-practice-invite-guard.mjs';
 import { handleCrescoFamilyOnlyRequest } from '../src/cloudflare-family-only-worker.mjs';
@@ -8,7 +9,15 @@ import { handleCrescoFamilyOnlyRequest } from '../src/cloudflare-family-only-wor
 const ORIGIN = 'https://cresco-family-web.faadil-casecraft.workers.dev';
 const HOST = 'https://cresco-family-api.faadil-casecraft.workers.dev';
 const PREFIX = '/api/family-practice/v1';
-const INVITE = 'a-long-private-research-invitation-token';
+const INVITE_SECRET = 'unique-test-owner-master-HMAC-secret-never-live-0123456789';
+let invitationCounter=0;
+const mintInvite = (hours=72) => {
+  const expires=Math.floor((Date.now()+hours*3600000)/1000).toString(36);
+  const nonce=(++invitationCounter).toString(16).padStart(32,'0');
+  const body='fi1.'+expires+'.'+nonce;
+  return body+'.'+createHmac('sha256',INVITE_SECRET).update(body).digest('hex');
+};
+const INVITE = mintInvite();
 const OPERATOR = 'a-distinct-very-long-operator-recovery-token-123';
 const id = (n) => '00000000-0000-4000-8000-' + String(n).padStart(12, '0');
 
@@ -17,8 +26,8 @@ function env() {
   const quotaBacking = new Map();
   return {
     CRESCO_FAMILY_WEB_ORIGIN: ORIGIN,
-    CRESCO_FAMILY_STAGING_REQUIRE_ACCESS: '1',
-    CRESCO_FAMILY_PRACTICE_INVITE_TOKEN: INVITE,
+    CRESCO_FAMILY_RESEARCH_ONLY: '1',
+    CRESCO_FAMILY_PRACTICE_INVITE_TOKEN: INVITE_SECRET,
     CRESCO_FAMILY_PRACTICE_OPERATOR_TOKEN: OPERATOR,
     FAMILY_PRACTICE_INVITE_GUARD: {
       idFromName: (name) => name,
@@ -95,7 +104,7 @@ async function api(e, method, path, options = {}) {
     },
     ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) })
   });
-  const response = await handleCrescoFamilyOnlyRequest(req, e, {}, { access: { aud: 'test-family-access' } });
+  const response = await handleCrescoFamilyOnlyRequest(req, e);
   return { status: response.status, headers: response.headers, body: response.status === 204 ? null : await response.json() };
 }
 
@@ -268,7 +277,7 @@ test('Seven-day alarm clears expired fictional research state and refuses all ol
 test('Global research quota rejects extra session creation even under simultaneous valid invitations', async () => {
   const e = env();
   const created = await Promise.all(Array.from({ length: 9 }, () =>
-    api(e,'POST','/sessions',{ invite: INVITE, body: {} })
+    api(e,'POST','/sessions',{ invite: mintInvite(), body: {} })
   ));
   assert.equal(created.filter(x=>x.status===201).length, 6);
   assert.equal(created.filter(x=>x.status===429).length, 3);
@@ -313,22 +322,39 @@ test('Independent operator secret can terminate a Parent-compromised practice an
   assert.equal((await api(e,'GET',route,{token:session.teenToken})).status,404);
 });
 
-test('practice API without real Access ctx rejects bearer tokens and authorized invites before invoking state', async () => {
+test('adult research requires no Cloudflare account; all legacy Devnet endpoints remain blocked', async () => {
   const e=env();
-  const request=new Request(HOST+PREFIX+'/sessions',{
-    method:'POST',
-    headers:{origin:ORIGIN,'x-cresco-family-practice-invite':INVITE,'content-type':'application/json'},
-    body:'{}'
-  });
-  const missing=await handleCrescoFamilyOnlyRequest(request,e);
-  assert.equal(missing.status,403);
-  assert.equal((await missing.json()).error,'FAMILY_ACCESS_REQUIRED');
-  const forged=await handleCrescoFamilyOnlyRequest(new Request(HOST+PREFIX+'/sessions',{
-    method:'POST',
-    headers:{origin:ORIGIN,'x-cresco-family-practice-invite':INVITE,
-      'CF-Access-Jwt-Assertion':'browser-forged', 'content-type':'application/json'},
-    body:'{}'
-  }),e);
-  assert.equal(forged.status,403);
-  assert.equal((await forged.json()).error,'FAMILY_ACCESS_REQUIRED');
+  const invited=await api(e,'POST','/sessions',{invite:mintInvite(),body:{}});
+  assert.equal(invited.status,201);
+  const createLegacy=await handleCrescoFamilyOnlyRequest(new Request(
+    HOST+'/api/v0.4/worlds-fair/workspaces',{method:'POST',headers:{origin:ORIGIN},body:'{}'}),e);
+  assert.equal(createLegacy.status,404);
+  assert.equal((await createLegacy.json()).error,'FAMILY_PRACTICE_ONLY');
+  const oldOpenApi=await handleCrescoFamilyOnlyRequest(new Request(
+    HOST+'/api/v0.4/worlds-fair/openapi',{method:'GET',headers:{origin:ORIGIN}}),e);
+  assert.equal(oldOpenApi.status,404);
+  const unconfigured=await handleCrescoFamilyOnlyRequest(new Request(
+    HOST+PREFIX+'/sessions',{method:'POST',headers:{origin:ORIGIN}}),{...e,CRESCO_FAMILY_RESEARCH_ONLY:null});
+  assert.equal(unconfigured.status,503);
+});
+
+test('individual invitations expire, cannot be tampered with or reused, and do not expose master key', async () => {
+  const e=env();
+  const invited=mintInvite();
+  const first=await api(e,'POST','/sessions',{invite:invited,body:{}});
+  assert.equal(first.status,201);
+  const replay=await api(e,'POST','/sessions',{invite:invited,body:{}});
+  assert.equal(replay.status,409);
+  assert.equal(replay.body.error,'PRACTICE_INVITE_ALREADY_USED');
+  const tampered=invited.slice(0,-1)+(invited.endsWith('0')?'a':'0');
+  assert.equal((await api(e,'POST','/sessions',{invite:tampered,body:{}})).status,401);
+  assert.equal((await api(e,'POST','/sessions',{invite:mintInvite(-1),body:{}})).status,401);
+  assert.ok(!JSON.stringify(first.body).includes(INVITE_SECRET));
+});
+
+test('two simultaneous uses of the same invitation create exactly one practice',async () => {
+  const e=env(),invite=mintInvite();
+  const a=await Promise.all(Array.from({length:3},()=>api(e,'POST','/sessions',{invite,body:{}})));
+  assert.equal(a.filter(x=>x.status===201).length,1);
+  assert.equal(a.filter(x=>x.status===409).length,2);
 });

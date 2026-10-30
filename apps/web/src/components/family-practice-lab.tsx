@@ -5,7 +5,7 @@ import { ArrowRight, BookOpen, CheckCircle2, Clock3, RefreshCw, ShieldCheck } fr
 import {
   closePracticeSession, createPracticeSession, decidePracticeDiscussion, loadPracticeState,
   requestPracticeDiscussion, rotatePracticeTeenCode, savePracticeCredits, type PracticeCredentials,
-  type PracticeInvitation, type PracticeReason, type PracticeSnapshot
+  type PracticeInvitation, type PracticeReason, type PracticeSnapshot, PracticeApiError
 } from "@/services/family-practice-client";
 
 const reasons: { value: PracticeReason; label: string }[] = [
@@ -79,8 +79,15 @@ export function FamilyPracticeLab() {
       setPracticeId(result.practiceId);
       setInvitationCode("");
       setNotice("Practice created. Write down the Parent and Teen access codes; they will not be shown again after leaving this page.");
-    } catch {
-      setNotice("The separate Family practice service is unavailable, or the invitation is invalid. No account was created here.");
+    } catch (error) {
+      const code = error instanceof PracticeApiError ? error.code : "";
+      setNotice(code === "PRACTICE_INVITE_ALREADY_USED"
+        ? "This invitation has already been used. Ask the researcher for a fresh single-use code."
+        : code === "PRACTICE_RESEARCH_CAP_REACHED"
+        ? "The small research group is full for now. Ask the researcher before trying again."
+        : code === "PRACTICE_INVITE_INVALID"
+        ? "This code is invalid or expired. Request a fresh invitation; no account login is needed."
+        : "The fictional practice could not be verified. No successful new session was confirmed.");
     } finally { setBusy(false); }
   }
 
@@ -202,8 +209,8 @@ export function FamilyPracticeLab() {
           <section aria-label="Create a practice" className="rounded-[24px] border border-line bg-surface p-5 md:p-6">
             <h2 className="text-xl font-bold text-navy-strong">Create a new practice</h2>
             <p className="mt-2 text-[13px] leading-6 text-ink-2">
-              For approved adult researchers only. A private invitation code is required.
-              This is not an account registration for a child.
+              No account or Cloudflare sign-in needed. Enter your personal, short-lived, single-use
+              research invitation. This is an adult-only fictional exercise, not an account for a child.
             </p>
             <label className="mt-5 block text-[13px] font-bold text-navy-strong" htmlFor="practice-invite">
               Research invitation code

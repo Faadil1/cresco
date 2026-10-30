@@ -8,9 +8,7 @@ const id = '00000000-0000-4000-8000-000000000042';
 const base = {
   ...process.env,
   CRESCO_FAMILY_PRACTICE_API_URL: 'https://cresco-family-api.faadil-casecraft.workers.dev',
-  CRESCO_FAMILY_PRACTICE_OPERATOR_TOKEN: 'test-secret-never-used-in-production-0123456789',
-  CRESCO_FAMILY_ACCESS_SERVICE_CLIENT_ID: 'fake-unit-test-access-client-id',
-  CRESCO_FAMILY_ACCESS_SERVICE_CLIENT_SECRET: 'fake-unit-test-service-secret-never-live'
+  CRESCO_FAMILY_PRACTICE_OPERATOR_TOKEN: 'test-secret-never-used-in-production-0123456789'
 };
 
 function inspect(args, env = base) {
@@ -51,15 +49,13 @@ test('Operator emergency command denies missing secrets and malformed IDs withou
   assert.equal(badId.status, 2);
 });
 
-test('Operator emergency command requires separate Cloudflare Access service credentials', () => {
-  const noAccessId = inspect([id, '--confirm-end-fictional-practice'], {
-    ...base, CRESCO_FAMILY_ACCESS_SERVICE_CLIENT_ID: ''
+test('operator needs only the separate long action secret, not Cloudflare Access', () => {
+  const attempted=inspect([id,'--confirm-end-fictional-practice'],{
+    ...base,CRESCO_FAMILY_PRACTICE_API_URL:'https://cresco-family-api.attacker.workers.dev',
+    CRESCO_FAMILY_ACCESS_SERVICE_CLIENT_ID:'',
+    CRESCO_FAMILY_ACCESS_SERVICE_CLIENT_SECRET:''
   });
-  assert.equal(noAccessId.status, 2);
-  assert.match(noAccessId.stderr,/Cloudflare Access/);
-  const noAccessSecret = inspect([id, '--confirm-end-fictional-practice'], {
-    ...base, CRESCO_FAMILY_ACCESS_SERVICE_CLIENT_SECRET: ''
-  });
-  assert.equal(noAccessSecret.status, 2);
-  assert.match(noAccessSecret.stderr,/Cloudflare Access/);
+  assert.equal(attempted.status,2);
+  assert.match(attempted.stderr,/only an independently identified/);
+  assert.doesNotMatch(attempted.stderr,/Cloudflare Access/);
 });

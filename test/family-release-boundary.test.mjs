@@ -48,10 +48,10 @@ test('guard refuses a historical frontend Origin, plain secret, enabled Devnet w
   rejects(x => { x.web.routes = [{pattern:'*',zone_name:'example.com'}]; });
 });
 
-test('family API cannot be prepared without mandatory Access flag on the only isolated Worker', () => {
-  rejects(x => { delete x.api.vars.CRESCO_FAMILY_STAGING_REQUIRE_ACCESS; });
-  rejects(x => { x.api.vars.CRESCO_FAMILY_STAGING_REQUIRE_ACCESS = 'unit-test-only'; });
-  rejects(x => { x.api.vars.CRESCO_FAMILY_STAGING_REQUIRE_ACCESS = '0'; });
+test('family API must run fictional research-only: old Devnet routes forbidden without Access login', () => {
+  rejects(x => { delete x.api.vars.CRESCO_FAMILY_RESEARCH_ONLY; });
+  rejects(x => { x.api.vars.CRESCO_FAMILY_RESEARCH_ONLY = '0'; });
+  rejects(x => { x.api.vars.CRESCO_FAMILY_STAGING_REQUIRE_ACCESS = '1'; });
 });
 
 test('first installation must have no public, preview or custom routes', () => {

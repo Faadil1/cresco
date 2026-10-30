@@ -3,6 +3,7 @@
  * No access to legacy Colosseum routes, Family Devnet tokens or money APIs.
  */
 import { practiceTokenHash } from './cloudflare-family-practice-state.mjs';
+import { verifyFamilyPracticeInvite } from './cloudflare-family-practice-invitation.mjs';
 
 export const PRACTICE_PREFIX = '/api/family-practice/v1';
 const originPattern = /^https:\/\/[-a-z0-9.]+$/i;
@@ -18,7 +19,7 @@ const serialize = (body, status, request, env) => {
   const o = request.headers.get('origin');
   if (o && o === env.CRESCO_FAMILY_WEB_ORIGIN) {
     headers.set('access-control-allow-origin', o);
-    headers.set('access-control-allow-credentials', 'true');
+    // No Cloudflare Access cookies are needed by adult research participants.
   }
   return new Response(JSON.stringify(body), { status, headers });
 };
@@ -72,9 +73,9 @@ export async function handleFamilyPracticeRequest(request, env) {
       return failure('PRACTICE_INVITE_UNCONFIGURED', 503, request, env);
     }
     const invite = request.headers.get('x-cresco-family-practice-invite');
-    // Compare digests rather than simple variable-length token strings.
-    if (!invite || invite.length < 16 || invite.length > 256 ||
-      await practiceTokenHash(invite) !== await practiceTokenHash(env.CRESCO_FAMILY_PRACTICE_INVITE_TOKEN)) {
+    // An individually signed 48-72h adult-only invitation, never a shared
+    // reusable research token. Even a leaked code can create at most 1 session.
+    if (!await verifyFamilyPracticeInvite(invite, env.CRESCO_FAMILY_PRACTICE_INVITE_TOKEN)) {
       return failure('PRACTICE_INVITE_INVALID', 401, request, env);
     }
     // One global persistent quota: concurrent valid invitations cannot bypass the cap.
@@ -83,7 +84,11 @@ export async function handleFamilyPracticeRequest(request, env) {
     try {
       const guard = env.FAMILY_PRACTICE_INVITE_GUARD.get(
         env.FAMILY_PRACTICE_INVITE_GUARD.idFromName('practice-invites-global-v1'));
-      const reservation = await guard.fetch('https://practice.internal/reserve', { method: 'POST' });
+      const reservation = await guard.fetch('https://practice.internal/reserve', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ codeHash: await practiceTokenHash(invite) })
+      });
+      if (reservation.status === 409) return failure('PRACTICE_INVITE_ALREADY_USED', 409, request, env);
       if (reservation.status === 429) return failure('PRACTICE_RESEARCH_CAP_REACHED', 429, request, env);
       if (reservation.status !== 200) return failure('PRACTICE_QUOTA_UNAVAILABLE', 503, request, env);
     } catch {
@@ -183,7 +188,7 @@ export async function handleFamilyPracticeRequest(request, env) {
     });
     if (origin === env.CRESCO_FAMILY_WEB_ORIGIN) {
       response.headers.set('access-control-allow-origin', origin);
-      response.headers.set('access-control-allow-credentials', 'true');
+      // No Cloudflare Access cookies are needed by adult research participants.
     }
     if (newTeenToken) {
       if (result.status !== 200) return response;
