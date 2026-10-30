@@ -45,7 +45,7 @@ export function FamilyOnlyHome() {
                 href="/try"
                 className="inline-flex min-h-12 items-center gap-3 rounded-full bg-green-strong px-6 text-[14px] font-bold text-white hover:bg-green"
               >
-                Try Cresco — no sign-in <ArrowRight aria-hidden className="size-4" />
+                Try Cresco - no sign-in <ArrowRight aria-hidden className="size-4" />
               </Link>
               <a
                 href="#family-trust"
