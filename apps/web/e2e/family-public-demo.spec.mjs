@@ -5,7 +5,7 @@ test.use({ ...devices["iPhone 13"] });
 test("public Family gives Child + Parent a complete practice loop without sign-in or backend", async ({ page }) => {
   const outbound = [];
   page.on("request", request => {
-    if (/cresco-family-api|keys-api-stocklana|api\\.solana|rpc\\.solana|\\/api\\/family-practice|\\/api\\/v0/.test(request.url())) {
+    if (["cresco-family-api", "keys-api-stocklana", "api.solana", "rpc.solana", "/api/family-practice", "/api/v0"].some(value => request.url().includes(value))) {
       outbound.push({ method: request.method(), url: request.url() });
     }
   });
