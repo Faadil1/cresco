@@ -37,6 +37,8 @@ export type LearningModule = {
   illustration?: IllustrationKey;
   source?: LearningSource;
   detail?: string;
+  quizPrompt?: string;
+  sections?: { title: string; body: string; illustration: IllustrationKey; realityCheck?: string; source?: LearningSource }[];
   origin?: "historical-cresco";
 };
 export const CHILD_LEARNING: LearningModule[] = [
@@ -66,6 +68,8 @@ for (const id of SOURCE_BACKED_CHILD_IDS) {
     concept: concepts[0].body,
     detail: concepts.map(step => step.realityCheck).filter(Boolean).join(" "),
     illustration: concepts[0].illustration,
+    sections: concepts.map(step => ({ title: step.title, body: step.body, illustration: step.illustration, realityCheck: step.realityCheck, source: step.source })),
+    quizPrompt: quiz.prompt,
     source,
     question: quiz.question,
     choices: quiz.options.map(option => option.label) as [string, string, string],
