@@ -32,6 +32,8 @@ test("public Family gives Child + Parent a complete practice loop without sign-i
 
   await page.getByRole("button", { name: /parent view/i }).click();
   await page.getByRole("navigation", { name: "Parent demo navigation" }).getByRole("button", { name: /requests/i }).click();
+  await expect(page.getByTestId("guided-next-step")).toBeHidden();
+  await expect(page.getByText(/No verified guardian identity, real consent or transfer of funds/i)).toBeVisible();
   await expect(page.getByRole("heading", { name: /25 practice credits · MKT/i })).toBeVisible();
   await testInfo.attach("family-parent-request-mobile.png", { body: await page.screenshot({ fullPage: false }), contentType: "image/png" });
   await page.getByRole("button", { name: /approve once #2/i }).click();
@@ -136,6 +138,7 @@ test.describe("desktop Family UX audit evidence", () => {
     await page.getByRole("navigation", { name: "Parent demo navigation" })
       .getByRole("button", { name: "Learn", exact: true }).click();
     await expect(page.getByText("Parent Learning Path")).toBeVisible();
+    await expect(page.getByTestId("guided-next-step")).toBeHidden();
     await testInfo.attach("family-parent-learning-desktop.png", { body: await page.screenshot({ fullPage: false }), contentType: "image/png" });
 
     await page.getByRole("button", { name: /child view/i }).click();
