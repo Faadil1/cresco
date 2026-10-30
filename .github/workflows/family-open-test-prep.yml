@@ -1,0 +1,86 @@
+name: family-open-test-preparation-no-deploy
+
+on:
+  push:
+    branches:
+      - family/open-one-click-tester-launch-prep-2026-10-30
+    paths:
+      - "apps/web/scripts/prepare-family-open-test.mjs"
+      - "apps/web/scripts/prepare-family-open-test.test.mjs"
+      - "apps/web/scripts/family-open-test-windows-launch.ps1"
+      - "docs/family/OPEN-TEST-*"
+      - ".github/workflows/family-open-test-prep.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify-open-test-preparation:
+    name: Verify separate public tester config policy (NO DEPLOY)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Confirm reviewed Family product source is unchanged
+        shell: bash
+        run: |
+          frozen=878fad8517c29b2ea778f8f82e18093a057cf1bc
+          git merge-base --is-ancestor "$frozen" HEAD
+          unexpected="$(git diff --name-only "$frozen" HEAD | grep -Ev '^(docs/family/OPEN-TEST-|apps/web/scripts/prepare-family-open-test(\.test)?\.mjs$|apps/web/scripts/family-open-test-windows-launch\.ps1$|\.github/workflows/family-open-test-prep\.yml$)' || true)"
+          if [ -n "$unexpected" ]; then
+            printf 'FROZEN_FAMILY_PRODUCT_SOURCE_CHANGED:\n%s\n' "$unexpected"
+            exit 1
+          fi
+          echo "FROZEN_FAMILY_PRODUCT_SOURCE=UNCHANGED"
+      - name: Verify offline-only config policy and negative cases
+        run: node --test apps/web/scripts/prepare-family-open-test.test.mjs
+      - name: Parse Windows launch helper without executing any Cloudflare action
+        shell: pwsh
+        run: |
+          $tokens=$null
+          $errors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile("apps/web/scripts/family-open-test-windows-launch.ps1", [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -gt 0) { $errors | ForEach-Object { Write-Error $_.Message }; exit 1 }
+          Write-Host "WINDOWS_LAUNCH_SCRIPT_SYNTAX=PASS_NO_EXECUTION"
+      - name: Build reviewed standalone Family Worker locally (NO DEPLOY)
+        working-directory: apps/web
+        env:
+          NEXT_PUBLIC_CRESCO_API_URL: ""
+        run: |
+          # Frozen product lockfile has a pre-existing Linux npm ci mismatch
+          # (missing utf-8-validate@5.0.10). Do not mutate its package-lock here.
+          npm install --no-save --package-lock=false --no-audit --no-fund
+          npm run build:public-family
+      - name: Validate and prepare distinct Worker configs locally (NO DEPLOY)
+        working-directory: apps/web
+        env:
+          NEXT_PUBLIC_CRESCO_API_URL: ""
+        run: |
+          node scripts/prepare-family-open-test.mjs --validate-only
+          node scripts/prepare-family-open-test.mjs --prepare-local-config
+          # This runs the exact structural check called by Windows PowerShell,
+          # including harmless {} vs malicious nested backend settings.
+          node scripts/prepare-family-open-test.mjs --verify-local-config
+          node --input-type=module -e '
+            import {readFileSync} from "node:fs";
+            import assert from "node:assert/strict";
+            const cfg=JSON.parse(readFileSync("dist/server/wrangler.family-open-test.json","utf8"));
+            const closed=JSON.parse(readFileSync("dist/server/wrangler.family-open-test-closed.json","utf8"));
+            assert.equal(cfg.name,"cresco-family-open-test-web");
+            assert.equal(cfg.workers_dev,true);
+            assert.equal(cfg.preview_urls,false);
+            assert.equal(closed.workers_dev,false);
+            console.log("ISOLATED_FAMILY_TEST_CONFIG=PASS_NO_DEPLOY");
+          '
+      - name: State release boundary
+        run: |
+          echo "FAMILY_TEST_WORKER_DEPLOYED=NO"
+          echo "HISTORIC_WORKERS_CHANGED=NO"
+          echo "CLOUDFLARE_CREDENTIALS_USED=NO"
+          echo "PUBLIC_TEST_URL_VERIFIED=NO"
