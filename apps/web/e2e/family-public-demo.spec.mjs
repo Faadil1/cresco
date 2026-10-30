@@ -157,6 +157,39 @@ test("learning actions lead to relevant Parent and Child practice screens on mob
   expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1)).toBe(false);
 });
 
+test("Child Explore research has search, compare and risk questions without granting authority", async ({ page }) => {
+  const outbound = [];
+  page.on("request", request => {
+    if (["cresco-family-api", "keys-api-stocklana", "api.solana", "rpc.solana", "/api/family-practice"].some(value => request.url().includes(value))) outbound.push(request.url());
+  });
+  await page.goto("/try");
+  await page.getByRole("navigation", { name: "Child demo navigation" })
+    .getByRole("button", { name: "Explore" }).click();
+  await expect(page.getByTestId("family-research-explore")).toBeVisible();
+  await expect(page.getByText(/6 fictional research examples shown/i)).toBeVisible();
+
+  const search = page.getByRole("searchbox", { name: "Search fictional research examples" });
+  await search.fill("clinics");
+  await expect(page.getByText(/1 fictional research example shown/i)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Harbor Medical Tools" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Practice HBR choice/i })).toHaveCount(0);
+  await page.getByRole("button", { name: "Research Harbor Medical Tools" }).click();
+  await expect(page.getByText(/Does a useful health product automatically/i)).toBeVisible();
+  await page.getByRole("button", { name: /No, quality, costs and customers still matter/i }).click();
+  await expect(page.getByText(/Product usefulness and investment value are different/i)).toBeVisible();
+
+  await search.fill("");
+  await page.getByRole("button", { name: "Compare Orchard Technology" }).click();
+  await page.getByRole("button", { name: "Compare Neighborhood Markets" }).click();
+  await expect(page.getByRole("region", { name: "Side-by-side example comparison" })).toBeVisible();
+  await page.getByRole("button", { name: "Clear comparison" }).click();
+  await expect(page.getByRole("region", { name: "Side-by-side example comparison" })).toHaveCount(0);
+  await page.getByRole("navigation", { name: "Child demo navigation" })
+    .getByRole("button", { name: "Home" }).click();
+  await expect(page.getByTestId("practice-available")).toHaveText("100");
+  expect(outbound).toEqual([]);
+});
+
 test("visitor enters both profiles and historical routes remain unavailable", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { name: /try cresco - no sign-in/i }).click();
