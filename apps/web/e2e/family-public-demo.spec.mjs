@@ -49,8 +49,7 @@ test("public Family Worker refuses historical API and finance routes on direct G
     "/api/v0.4/worlds-fair/openapi",
     "/api/v0.4/worlds-fair/workspaces/example",
     "/worlds-fair/desk/capital",
-    "/family-practice",
-  ]) {
+    "/family-practice",\n    "/_next/image?url=%2Ficon.svg&w=256&q=75",\n  ]) {
     const response = await request.get(path);
     expect(response.status(), `Historical route must be closed: ${path}`).toBe(404);
   }
