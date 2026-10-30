@@ -23,7 +23,7 @@ test("public Family gives Child + Parent a complete practice loop without sign-i
 
   await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: /portfolio/i }).click();
   await expect(page.getByTestId("portfolio-available")).toHaveText("70");
-  await expect(page.getByText(/PRACTICE ONLY — NOT EXECUTED ONCHAIN/i)).toBeVisible();
+  await expect(page.getByText(/PRACTICE ONLY - NOT EXECUTED ONCHAIN/i)).toBeVisible();
   await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: /explore/i }).click();
   await page.getByRole("button", { name: /practice MKT choice/i }).click();
   await expect(page.getByRole("status")).toHaveText(/outside My Key: blocked/i);
