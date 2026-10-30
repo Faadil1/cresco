@@ -22,21 +22,25 @@ process.env.NEXT_PUBLIC_CRESCO_BUILD_SHA ||= buildSha();
 // Missing or historic API origin must fail at build time, not fall back to the
 // submitted stocklana API. This branch does not deploy anything.
 const familyBuild = process.env.CRESCO_FAMILY_BUILD === "1";
+const publicDemo = familyBuild && process.env.CRESCO_FAMILY_PUBLIC_DEMO === "1";
 if (familyBuild) {
   const origin = process.env.NEXT_PUBLIC_CRESCO_API_URL ?? "";
-  if (!/^https:\/\/cresco-family-api\.[-a-z0-9.]+$/i.test(origin)) {
+  if (publicDemo && origin) {
+    throw new Error("PUBLIC_FAMILY_DEMO_MUST_NOT_CONNECT_TO_ANY_API");
+  }
+  if (!publicDemo && !/^https:\/\/cresco-family-api\.[-a-z0-9.]+$/i.test(origin)) {
     throw new Error("FAMILY_BUILD_REQUIRES_DEDICATED_API_ORIGIN");
   }
   process.env.NEXT_PUBLIC_CRESCO_FAMILY_ONLY = "1";
-  process.env.NEXT_PUBLIC_CRESCO_FAMILY_SETUP_ONLY = "1";
+  process.env.NEXT_PUBLIC_CRESCO_FAMILY_SETUP_ONLY = publicDemo ? "0" : "1";
 }
 
 export default defineConfig({
   define: {
     "process.env.NEXT_PUBLIC_CRESCO_BUILD_SHA": JSON.stringify(process.env.NEXT_PUBLIC_CRESCO_BUILD_SHA),
     "process.env.NEXT_PUBLIC_CRESCO_FAMILY_ONLY": JSON.stringify(familyBuild ? "1" : "0"),
-    "process.env.NEXT_PUBLIC_CRESCO_FAMILY_SETUP_ONLY": JSON.stringify(familyBuild ? "1" : "0"),
-    "process.env.NEXT_PUBLIC_CRESCO_API_URL": JSON.stringify(familyBuild ? process.env.NEXT_PUBLIC_CRESCO_API_URL : process.env.NEXT_PUBLIC_CRESCO_API_URL ?? ""),
+    "process.env.NEXT_PUBLIC_CRESCO_FAMILY_SETUP_ONLY": JSON.stringify(familyBuild && !publicDemo ? "1" : "0"),
+    "process.env.NEXT_PUBLIC_CRESCO_API_URL": JSON.stringify(publicDemo ? "" : (process.env.NEXT_PUBLIC_CRESCO_API_URL ?? "")),
   },
   resolve: {
     alias: {
