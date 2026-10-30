@@ -32,7 +32,7 @@ test("public Family gives Child + Parent a complete practice loop without sign-i
   await page.getByRole("navigation", { name: "Parent demo navigation" }).getByRole("button", { name: /requests/i }).click();
   await expect(page.getByRole("heading", { name: /25 practice credits · MKT/i })).toBeVisible();
   await page.getByRole("button", { name: /approve once #2/i }).click();
-  await expect(page.getByRole("status")).toHaveText(/standing Key did not widen/i);
+  await expect(page.getByRole("status")).toHaveText(/Key did not widen/i);
 
   await page.getByRole("button", { name: /child view/i }).click();
   await page.getByRole("button", { name: /practice MKT choice/i }).click();
@@ -49,7 +49,7 @@ test("public Family gives Child + Parent a complete practice loop without sign-i
 
 test("Parent and Child have independent interactive learning paths with the same family check-in", async ({ page }) => {
   await page.goto("/try");
-  await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: "Learn" }).click();
+  await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: "Learn", exact: true }).click();
   await page.getByRole("button", { name: /lesson 1 · 3 min save for a goal/i }).click();
   await page.getByRole("button", { name: /choose a goal and a time horizon/i }).click();
   await page.getByRole("button", { name: "Complete lesson" }).click();
