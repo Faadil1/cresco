@@ -6,7 +6,7 @@ import { FamilyAgencyPreview } from "@/components/family-agency-preview";
 import { Wordmark } from "@/components/shell";
 
 export const metadata: Metadata = {
-  title: "Try Cresco Family — free learning demo",
+  title: "Try Cresco Family - free learning demo",
   description: "Try a fictional Teen and Parent decision in one browser. No account, no invitation, no wallet, no money.",
 };
 
