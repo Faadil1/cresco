@@ -98,6 +98,17 @@ Never run that close config against any historical or existing Family worker. Ve
 
 **Safety properties:** No hidden automatic Cloudflare write, no deployment during CI, no temporary anonymous Cloudflare account, no account-token exchange inside ChatGPT. The only Cloudflare write is a direct, locally confirmed and user-triggered deployment of the newly named Worker.
 
+
+### Windows preflight incident and repair (2026-10-30)
+
+The owner independently ran the no-deploy PowerShell helper. Evidence from the terminal: npm install **PASS**, new standalone Family build **PASS**, seven isolated config safety tests **7/7 PASS**, `OPEN_TEST_CONFIG_PREPARED_NOT_DEPLOYED` with the correct distinct Worker name, then `FAMILY_OPEN_TEST_LAUNCH_NO_GO: UNSAFE_OPEN_TEST_CONFIG_NO_GO` **before Wrangler was called**. This is **not** a live Cloudflare failure and did not publish anything.
+
+**Cause isolated from source:** Windows PowerShell 5.1 `ConvertFrom-Json` produces PSCustomObjects for JSON object values; even empty `{}` structures can evaluate true in the old final `if ($cfg.vars -or $cfg.durable_objects ...)` test. The build's strict JavaScript validator had already allowed harmless empty structures. The additional PowerShell condition was therefore not equivalent to that validator. Rather than deleting the guard, the release tool now provides `--verify-local-config`, which loads both generated JSON files and performs a **deep structural exact comparison** against the validated sealed build's expected open/close configs. Extra backend bindings, aliases, target name changes, exposure/preview flag drift and any injected config values still cause NO_GO. Regression tests assert harmless empty `{}` / `[]` are accepted and actual malicious additions rejected.
+
+The Windows operator now reruns this exact structural check and, in publish mode, requires **two deliberate confirmations**: first that the target name is unused in the expected account, then the exact new Worker name for publication. Wrangler lookups remain read-only and inability to read a target does not prove absence. The separate GitHub preflight CI also runs `--verify-local-config`. **No change was made to the frozen product SHA or any historic Worker configuration.**
+
+**Next proof required:** run the updated PowerShell helper on latest PR #115 HEAD with `-SkipInstall` and inspect the result through Wrangler read-only checks; do not publish until the current no-deploy CI run passes, and verify uniqueness of the new Worker name in the dashboard before entering `-Publish`.
+
 ## Release approval gate — not yet cleared
 
 Before ever sharing a link with test users, independently verify on the **actual public URL**:
