@@ -35,7 +35,7 @@ test("public Cresco demo works immediately, on one phone, without accounts or AP
 
 test("visitor gets demo from landing and cannot navigate to invited or Devnet routes", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("link", { name: /try cresco — no sign-in/i }).click();
+  await page.getByRole("link", { name: /try cresco - no sign-in/i }).click();
   await expect(page).toHaveURL(/\/try$/);
   await expect(page.getByTestId("family-agency-preview")).toBeVisible();
   await page.goto("/family-practice");
