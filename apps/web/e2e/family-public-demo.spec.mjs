@@ -56,7 +56,7 @@ test("Parent and Child have independent interactive learning paths with the same
   await expect(page.getByRole("progressbar", { name: "child learning progress" })).toHaveAttribute("aria-valuenow", "1");
 
   await page.getByRole("button", { name: /parent view/i }).click();
-  await page.getByRole("navigation", { name: "Parent demo navigation" }).getByRole("button", { name: "Learn" }).click();
+  await page.getByRole("navigation", { name: "Parent demo navigation" }).getByRole("button", { name: "Learn", exact: true }).click();
   await expect(page.getByRole("progressbar", { name: "parent learning progress" })).toHaveAttribute("aria-valuenow", "0");
   await page.getByRole("button", { name: /lesson 1 · 3 min money & family conversations/i }).click();
   await page.getByRole("button", { name: /talk about goals and what money is for/i }).click();
@@ -67,11 +67,11 @@ test("Parent and Child have independent interactive learning paths with the same
   await expect(page.getByRole("status")).toHaveText(/no financial permission changed/i);
 
   await page.getByRole("button", { name: /child view/i }).click();
-  await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: "Learn" }).click();
+  await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: "Learn", exact: true }).click();
   await expect(page.getByRole("progressbar", { name: "child learning progress" })).toHaveAttribute("aria-valuenow", "1");
   await page.reload();
   await expect(page.getByTestId("practice-available")).toHaveText("100");
-  await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: "Learn" }).click();
+  await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: "Learn", exact: true }).click();
   await expect(page.getByRole("progressbar", { name: "child learning progress" })).toHaveAttribute("aria-valuenow", "0");
 });
 
