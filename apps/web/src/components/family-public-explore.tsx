@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { BookOpen, CheckCircle2, Compass, Search, ShieldAlert } from "lucide-react";
 import {
   FAMILY_EXPLORE_CASES, filterFamilyExploreCases, sampleTrendPath,
@@ -42,6 +42,7 @@ export function FamilyPublicExplore({ state, buy, save }: {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<Category>("All");
   const [selectedId, setSelectedId] = useState("orchard");
+  const researchRef = useRef<HTMLElement>(null);
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [amounts, setAmounts] = useState<Record<AssetCode, string>>({ ORC: "10", MKT: "25", BKT: "20" });
@@ -96,7 +97,7 @@ export function FamilyPublicExplore({ state, buy, save }: {
             <TeachingTrend item={item}/>
             <p className="mt-2 text-[12px] leading-6 text-navy"><strong>One key risk: </strong>{item.uncertainty}</p>
             <div className="mt-3 flex flex-wrap gap-2">
-              <button type="button" className={secondary} onClick={() => setSelectedId(item.id)}
+              <button type="button" className={secondary} onClick={() => { setSelectedId(item.id); researchRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
                 aria-label={`Research ${item.name}`}>Research</button>
               <button type="button" className={secondary} aria-pressed={compareIds.includes(item.id)}
                 onClick={() => toggleCompare(item.id)} aria-label={`Compare ${item.name}`}>
@@ -141,7 +142,7 @@ export function FamilyPublicExplore({ state, buy, save }: {
         </section>
       ) : null}
 
-      <section className={panel} aria-labelledby="research-detail-title">
+      <section ref={researchRef} className={panel} aria-labelledby="research-detail-title">
         <p className="cresco-section-kicker"><Compass aria-hidden className="mr-1 inline size-4"/> Research desk · Invented scenario</p>
         <h3 id="research-detail-title" className="mt-2 font-display text-[29px] text-navy-strong">{selected.name}</h3>
         <p className="mt-1 text-[12px] text-ink-2">Select Research on any card to learn how the example works.</p>
