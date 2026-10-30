@@ -98,6 +98,7 @@ function checkProvenance() {
     "docs/family/OPEN-TEST-",
     "apps/web/scripts/prepare-family-open-test.mjs",
     "apps/web/scripts/prepare-family-open-test.test.mjs",
+    "apps/web/scripts/family-open-test-windows-launch.ps1",
     ".github/workflows/family-open-test-prep.yml",
   ];
   const unexpected = changed.split(/\r?\n/).filter(Boolean)
