@@ -56,8 +56,10 @@ export function validateFamilyReleaseBoundary({
   assert.ok(!web.durable_objects?.bindings?.length, 'Family Web cannot bind historic DO');
   assert.ok(workersDevUrl('cresco-family-web', api.vars?.CRESCO_FAMILY_WEB_ORIGIN),
     'Family API must allow only the dedicated Family Web origin');
-  assert.equal(api.vars?.CRESCO_FAMILY_STAGING_REQUIRE_ACCESS, '1',
-    'CLOUDFARE_ACCESS_REQUIRED: Family API must demand authenticated Cloudflare Access before any real request');
+  assert.equal(api.vars?.CRESCO_FAMILY_RESEARCH_ONLY, '1',
+    'FAMILY_RESEARCH_GATE_REQUIRED: all old Devnet/Workspace routes must be inaccessible');
+  assert.ok(!Object.hasOwn(api.vars ?? {}, 'CRESCO_FAMILY_STAGING_REQUIRE_ACCESS'),
+    'FAMILY_ACCESS_LOGIN_NOT_REQUIRED: no Cloudflare Access account gate for adult testers');
   assert.ok(!Object.hasOwn(api.vars ?? {}, 'CRESCO_FAMILY_DEVNET_WRITES'),
     'Devnet writes must not be enabled via committed Wrangler vars');
   assert.ok(!Object.hasOwn(api.vars ?? {}, 'CRESCO_FAMILY_PRACTICE_OPERATOR_TOKEN'), 'operator recovery must be a secret, not a committed variable');
