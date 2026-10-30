@@ -502,6 +502,7 @@ export function FamilyPublicStudio() {
           </div>
           <span className="rounded-full bg-green-soft px-3 py-1.5 text-[11px] font-bold text-green-strong">Fictional scenario · 0 real funds</span>
         </div>
+        <p className="mb-2 px-2 text-[12px] text-ink-2 md:hidden">Swipe sideways to see all profile tabs.</p>
         <nav aria-label={role === "child" ? "Child demo navigation" : "Parent demo navigation"} className="mb-5 flex gap-2 overflow-x-auto pb-2">
           {role === "child" ? childTabs.map(tab => <button key={tab.id} type="button"
             aria-current={childTab === tab.id ? "page" : undefined}
