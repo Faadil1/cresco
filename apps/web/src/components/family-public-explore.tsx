@@ -84,7 +84,7 @@ export function FamilyPublicExplore({ state, buy, save }: {
           className={`min-h-10 rounded-full border px-3.5 py-2 text-[12px] font-bold ${category === item ? "border-green-strong bg-green-soft text-green-strong" : "border-line bg-surface text-navy-strong"}`}
           onClick={() => setCategory(item)}>{item}</button>)}
       </div>
-      <p className="text-[12px] text-ink-2" role="status">{cases.length} fictional research {cases.length === 1 ? "example" : "examples"} shown · {compareIds.length}/2 selected to compare.</p>
+      <p className="text-[12px] text-ink-2" aria-live="polite">{cases.length} fictional research {cases.length === 1 ? "example" : "examples"} shown · {compareIds.length}/2 selected to compare.</p>
 
       {cases.length ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {cases.map(item => {
@@ -175,7 +175,7 @@ export function FamilyPublicExplore({ state, buy, save }: {
           </div>
         </fieldset>
         {answers[selected.id] !== undefined ? (
-          <p role="status" className="mt-3 rounded-[12px] bg-surface-soft p-3 text-[13px] leading-6 text-navy-strong">
+          <p aria-live="polite" className="mt-3 rounded-[12px] bg-surface-soft p-3 text-[13px] leading-6 text-navy-strong">
             {answers[selected.id] === selected.correctAnswer ?
               <><CheckCircle2 aria-hidden className="mr-1 inline size-4 text-green-strong"/>Good research question. {selected.lesson}</> :
               "Not quite. Read how this fictional business earns money and what might affect it, then try again."}
