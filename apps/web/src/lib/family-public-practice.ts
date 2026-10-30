@@ -93,7 +93,6 @@ for (const lesson of PARENT_LEARNING) {
   const sourceById: Partial<Record<string, LearningSource>> = {
     "p-basics": LEARNING_SOURCES.studentSaving,
     "p-risk": LEARNING_SOURCES.risk,
-    "p-together": LEARNING_SOURCES.diversification,
   };
   lesson.source = sourceById[lesson.id];
   lesson.illustration = lesson.id === "p-risk" ? "scale" : lesson.id === "p-basics" ? "piggy" : "shares";
