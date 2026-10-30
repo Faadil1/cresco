@@ -78,26 +78,50 @@ function LearningPath({ role, state, complete }: {
         <article className={panel} aria-label={lesson.title + " lesson"}>
           <p className="cresco-section-kicker">Interactive lesson</p>
           <h3 className="mt-2 font-display text-[29px] text-navy-strong">{lesson.title}</h3>
-          {lesson.illustration ? (
-            <LessonIllustration kind={lesson.illustration} title={lesson.title + " illustrated learning concept"}
-              className="mt-3 h-auto max-h-[230px] w-full overflow-hidden rounded-[18px] border border-line-soft" />
-          ) : null}
-          <p className="mt-3 text-[15px] leading-7 text-navy">{lesson.concept}</p>
-          {lesson.detail ? (
-            <p className="mt-3 rounded-[14px] bg-blue-soft p-3 text-[13px] leading-6 text-navy">
-              <strong>Reality check: </strong>{lesson.detail}
-            </p>
-          ) : null}
-          {lesson.source ? (
-            <p className="mt-3 text-[12px] leading-6 text-ink-2">
-              <strong>Educational reference: </strong>
-              <a href={lesson.source.url} target="_blank" rel="noopener noreferrer"
-                className="font-semibold text-green-strong underline underline-offset-4">
-                {lesson.source.organization}: {lesson.source.title}
-              </a>
-              <span> · Source checked {lesson.source.verifiedAt} · U.S. educational context, not legal or personalized financial advice</span>
-            </p>
-          ) : <p className="mt-3 text-[12px] text-ink-3">Cresco practice explanation, not an external research citation.</p>}
+          {lesson.sections?.length ? (
+            <div className="mt-4 space-y-4" aria-label="Original Cresco lesson concepts">
+              {lesson.sections.map((section, index) => (
+                <section key={index} className="overflow-hidden rounded-[18px] border border-line-soft bg-surface">
+                  <div className="p-4">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-green-strong">Concept {index + 1} / {lesson.sections?.length}</p>
+                    <h4 className="mt-1 text-[17px] font-bold text-navy-strong">{section.title}</h4>
+                  </div>
+                  <LessonIllustration kind={section.illustration} title={section.title + " illustration"}
+                    className="h-auto max-h-[220px] w-full"/>
+                  <div className="p-4">
+                    <p className="text-[14px] leading-7 text-navy">{section.body}</p>
+                    {section.realityCheck ? <p className="mt-3 rounded-[14px] bg-blue-soft p-3 text-[12px] leading-6 text-navy">
+                      <strong>Reality check: </strong>{section.realityCheck}
+                    </p> : null}
+                    {section.source ? <p className="mt-3 text-[12px] leading-6 text-ink-2">
+                      <strong>Educational reference: </strong>
+                      <a href={section.source.url} rel="noopener noreferrer" target="_blank"
+                        className="font-semibold text-green-strong underline underline-offset-4">
+                        {section.source.organization}: {section.source.title}
+                      </a>
+                      <span> · Source checked {section.source.verifiedAt} · U.S. educational context, not legal or financial advice</span>
+                    </p> : null}
+                  </div>
+                </section>
+              ))}
+            </div>
+          ) : (
+            <>
+              {lesson.illustration ? <LessonIllustration kind={lesson.illustration}
+                title={lesson.title + " illustrated learning concept"}
+                className="mt-3 h-auto max-h-[230px] w-full overflow-hidden rounded-[18px] border border-line-soft" /> : null}
+              <p className="mt-3 text-[15px] leading-7 text-navy">{lesson.concept}</p>
+              {lesson.source ? <p className="mt-3 text-[12px] leading-6 text-ink-2">
+                <strong>Educational reference: </strong>
+                <a href={lesson.source.url} target="_blank" rel="noopener noreferrer"
+                  className="font-semibold text-green-strong underline underline-offset-4">
+                  {lesson.source.organization}: {lesson.source.title}
+                </a>
+                <span> · Source checked {lesson.source.verifiedAt} · U.S. educational context, not legal or financial advice</span>
+              </p> : <p className="mt-3 text-[12px] text-ink-3">Cresco practice explanation, not an external research citation.</p>}
+            </>
+          )}
+          {lesson.quizPrompt ? <p className="mt-5 rounded-[14px] bg-yellow-soft p-3 text-[13px] leading-6 text-navy">{lesson.quizPrompt}</p> : null}
           <fieldset className="mt-5 space-y-2">
             <legend className="mb-3 text-[15px] font-bold text-navy-strong">{lesson.question}</legend>
             {lesson.choices.map((choice, i) => (
