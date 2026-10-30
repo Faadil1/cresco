@@ -148,7 +148,7 @@ export function FamilyPublicExplore({ state, buy, save }: {
       <section ref={researchRef} className={panel} aria-labelledby="research-detail-title">
         <p className="cresco-section-kicker"><Compass aria-hidden className="mr-1 inline size-4"/> Research desk · Invented scenario</p>
         <h3 id="research-detail-title" className="mt-2 font-display text-[29px] text-navy-strong">{selected.name}</h3>
-        <p className="mt-1 text-[12px] text-ink-2">Select Research on any card to learn how the example works.</p>
+        <p className="mt-1 text-[12px] text-ink-2">This research desk explains a fictional example. Read its risks, then try the question below.</p>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <div>
             <h4 className="text-[15px] font-bold text-navy-strong">What does it do?</h4>
