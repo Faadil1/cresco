@@ -194,9 +194,9 @@ function ChildHome({ state, open, save }: { state: FamilyPracticeState; open: (t
         <div className="mt-3 flex flex-wrap gap-4">
           {([
             { badge: "first-investor", earned: state.receipts.length > 0, label: "First practice choice" },
-            { badge: "company-detective", earned: state.childCompleted.length >= 3, label: "Three lessons" },
+            { badge: "company-detective", earned: state.childCompleted.includes("original-what-is-a-stock"), label: "Know what a share is" },
             { badge: "diversification-pro", earned: Object.values(state.holdings).filter(shares => shares > 0).length >= 2, label: "Explore two holdings" },
-            { badge: "ten-lessons", earned: state.childCompleted.length >= 10, label: "Ten lessons" },
+            { badge: "money-master", earned: state.childCompleted.length === CHILD_LEARNING.length, label: "Complete Child learning" },
           ] as const).map(item => (
             <div key={item.badge} className="flex w-[120px] flex-col items-center gap-1 text-center">
               <BadgeArt badge={item.badge} earned={item.earned} className="size-14"/>
