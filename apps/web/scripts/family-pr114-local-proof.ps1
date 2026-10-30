@@ -61,8 +61,19 @@ try {
   RunChecked "unit-tests" "npm.cmd" @("test") (Join-Path $output "06-unit-tests.log")
   RunChecked "family-public-build" "npm.cmd" @("run","build:public-family") (Join-Path $output "07-build.log")
   RunChecked "public-artifact-isolation" "node" @("scripts/family-public-web-release.mjs","--validate-artifact") (Join-Path $output "08-isolation.log")
+  RunChecked "historical-worker-boundary" "node" @("../../scripts/family-release-boundary.mjs","--built-web") (Join-Path $output "08-historic-freeze.log")
   RunChecked "webkit-dependency" "npx.cmd" @("playwright","install","webkit") (Join-Path $output "09-webkit.log")
-  RunChecked "family-browser-webkit" "npx.cmd" @("playwright","test","--config","playwright.family-public.config.mjs","--reporter=list") (Join-Path $output "10-webkit.log")
+  RunChecked "family-browser-webkit" "npx.cmd" @("playwright","test","--config","playwright.family-public.config.mjs","--reporter=list,html") (Join-Path $output "10-webkit.log")
+  $shotDir = Join-Path $output "screenshots"
+  if (Test-Path (Join-Path $web "test-results")) {
+    $screenshots = @(Get-ChildItem (Join-Path $web "test-results") -Recurse -Filter "*.png" -File -ErrorAction SilentlyContinue)
+    if ($screenshots.Count -gt 0) {
+      New-Item -ItemType Directory -Path $shotDir -Force | Out-Null
+      foreach ($shot in $screenshots) {
+        Copy-Item -LiteralPath $shot.FullName -Destination (Join-Path $shotDir ($shot.Directory.Name + "-" + $shot.Name)) -Force
+      }
+    }
+  }
 
   $report = @(
     "# Family PR #114 local candidate verification",
@@ -73,7 +84,9 @@ try {
     "Node: $nodeVersion",
     "Mode: NO DEPLOY, browser-only fictional Family Worker",
     "WebKit checks: PASS",
-    "Dependencies, typecheck, lint, copy-lint, unit tests, public build, isolation: PASS",
+    "Dependencies, typecheck, lint, copy-lint, unit tests, public build, isolation and historical Worker freeze: PASS",
+    "Browser screenshots: $shotDir (when attached by Playwright)",
+    "HTML Playwright report: $(Join-Path $web "playwright-report")",
     "Evidence directory: $output",
     "",
     "Note: CLI PASS is not a human visual review, secure real guardian identity or proof of actual financial execution.",
