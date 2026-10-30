@@ -6,6 +6,8 @@ on:
       - "apps/web/src/components/family-only-home.tsx"
       - "apps/web/src/components/family-agency-preview.tsx"
       - "apps/web/src/app/try/**"
+      - "apps/web/vite.config.ts"
+      - "apps/web/scripts/assert-family-public-build.mjs"
       - "apps/web/src/lib/family-web-route-guard.ts"
       - "apps/web/e2e/family-public-demo.spec.mjs"
       - "apps/web/playwright.family-public.config.mjs"
@@ -37,7 +39,6 @@ jobs:
         run: npm run build
         env:
           NEXT_PUBLIC_CRESCO_FAMILY_ONLY: "1"
-          NEXT_PUBLIC_CRESCO_API_URL: https://cresco-family-api.faadil-casecraft.workers.dev
       - run: npx playwright install --with-deps webkit
       - name: One-click public local simulation (verify NO API requests)
         run: npx playwright test --config playwright.family-public.config.mjs
