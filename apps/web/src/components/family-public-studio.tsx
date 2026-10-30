@@ -106,7 +106,7 @@ function ChildHome({ state, open, save }: { state: FamilyPracticeState; open: (t
       <header>
         <p className="cresco-section-kicker">Your journey</p>
         <h2 className="mt-2 font-display text-[clamp(34px,4vw,48px)] leading-tight text-navy-strong">Hey, future explorer.</h2>
-        <p className={small}>Grow your knowledge, practice decisions and learn how your family's Key works.</p>
+        <p className={small}>Grow your knowledge, practice decisions and learn how your family&apos;s Key works.</p>
       </header>
       <div className="grid gap-3 sm:grid-cols-3">
         <Metric label="Available credits" value={String(remainingCredits(state))} testId="practice-available" />
@@ -127,7 +127,7 @@ function ChildHome({ state, open, save }: { state: FamilyPracticeState; open: (t
       <div className="grid gap-3 md:grid-cols-2">
         <div className={panel}>
           <BookOpen aria-hidden className="size-6 text-green-strong" />
-          <h3 className="mt-3 text-[19px] font-bold text-navy-strong">Today's learning mission</h3>
+          <h3 className="mt-3 text-[19px] font-bold text-navy-strong">Today&apos;s learning mission</h3>
           <p className={small}>Explore a lesson and answer its question. Your progress stays separate from permissions.</p>
           <button type="button" className={`mt-4 ${secondary}`} onClick={() => open("learn")}>Continue learning</button>
         </div>
@@ -310,8 +310,8 @@ function Together({ state, onComplete }: { state: FamilyPracticeState; onComplet
         <p className={small}>Discuss a saving goal and one practice decision, then review the consequence without treating a badge as permission.</p>
       </header>
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className={panel}><h3 className="text-[17px] font-bold text-navy-strong">Child's perspective</h3><p className={small}>What am I saving for? How much risk can I explain?</p><p className="mt-2 text-[12px]">Child progress: {state.childCompleted.length}/{CHILD_LEARNING.length}</p></div>
-        <div className={panel}><h3 className="text-[17px] font-bold text-navy-strong">Parent's perspective</h3><p className={small}>Can I explain the Key and the difference between one exception and changing a limit?</p><p className="mt-2 text-[12px]">Parent progress: {state.parentCompleted.length}/{PARENT_LEARNING.length}</p></div>
+        <div className={panel}><h3 className="text-[17px] font-bold text-navy-strong">Child&apos;s perspective</h3><p className={small}>What am I saving for? How much risk can I explain?</p><p className="mt-2 text-[12px]">Child progress: {state.childCompleted.length}/{CHILD_LEARNING.length}</p></div>
+        <div className={panel}><h3 className="text-[17px] font-bold text-navy-strong">Parent&apos;s perspective</h3><p className={small}>Can I explain the Key and the difference between one exception and changing a limit?</p><p className="mt-2 text-[12px]">Parent progress: {state.parentCompleted.length}/{PARENT_LEARNING.length}</p></div>
       </div>
       <div className={panel}>
         <h3 className="text-[19px] font-bold text-navy-strong">Our family practice check-in</h3>
