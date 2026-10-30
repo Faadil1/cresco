@@ -7,6 +7,7 @@ export function familyWebRouteAllowed(pathname: string): boolean {
     path === "/favicon.ico" ||
     path === "/robots.txt" ||
     path === "/icon.svg" ||
-    // Static assets are allowed, but the dynamic image optimizer is not.\n    path.startsWith("/_next/static/") ||
+    // Static assets are allowed, but the dynamic image optimizer is not.
+    path.startsWith("/_next/static/") ||
     path.startsWith("/_vinext/");
 }
