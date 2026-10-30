@@ -59,21 +59,31 @@ try {
   }
   $openConfig = "dist/server/wrangler.family-open-test.json"
   $closeConfig = "dist/server/wrangler.family-open-test-closed.json"
-  $cfg = Get-Content $openConfig -Raw | ConvertFrom-Json
-  $closed = Get-Content $closeConfig -Raw | ConvertFrom-Json
-  if ($cfg.name -ne $target -or $cfg.workers_dev -ne $true -or $cfg.preview_urls -ne $false -or
-      $closed.name -ne $target -or $closed.workers_dev -ne $false -or
-      $cfg.routes -or $cfg.route -or $cfg.durable_objects -or $cfg.services -or $cfg.vars) {
-    throw "UNSAFE_OPEN_TEST_CONFIG_NO_GO"
+  # PowerShell treats an empty PSCustomObject like {} as truthy. The old
+  # condition ($cfg.vars -or $cfg.durable_objects ...) incorrectly rejected
+  # generated configs with harmless empty objects even after Node had passed
+  # the strict validation. Recheck the actual two JSON files structurally
+  # against the validated build using the same fail-closed policy as CI.
+  RunChecked "verify exact open/closed Worker config content (NO DEPLOY)" {
+    & node .\scripts\prepare-family-open-test.mjs --verify-local-config
   }
-  Write-Host "ISOLATED_WORKER_CONFIG=PASS ($target)"
+  Write-Host "ISOLATED_WORKER_CONFIG=PASS ($target; no backend bindings, exact known Worker name)"
 
   # Only account-related operations are Cloudflare GET/read-only before -Publish.
   RunChecked "Wrangler Cloudflare account session (read-only)" { & npx --no-install wrangler whoami }
-  $knownDeployment = (& npx --no-install wrangler deployments list --name $target --json 2>&1 | Out-String)
-  $deploymentExit = $LASTEXITCODE
-  $knownVersions = (& npx --no-install wrangler versions list --name $target --json 2>&1 | Out-String)
-  $versionsExit = $LASTEXITCODE
+  # Native CLI errors can appear on stderr even when an unknown Worker is
+  # expected. Collect the exit codes rather than converting stderr into a
+  # terminating PowerShell error (especially on Windows PowerShell 5.1).
+  $priorErrorAction = $ErrorActionPreference
+  try {
+    $ErrorActionPreference = "Continue"
+    $knownDeployment = (& npx --no-install wrangler deployments list --name $target --json 2>&1 | Out-String)
+    $deploymentExit = $LASTEXITCODE
+    $knownVersions = (& npx --no-install wrangler versions list --name $target --json 2>&1 | Out-String)
+    $versionsExit = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $priorErrorAction
+  }
   if ($deploymentExit -eq 0 -or $versionsExit -eq 0) {
     throw "TARGET_NAME_ALREADY_RESPONDS_IN_CLOUDFLARE: abort rather than overwrite existing Worker. Check the correct Cloudflare account."
   }
@@ -86,6 +96,8 @@ try {
     Write-Host "NO DEPLOY. To publish only after confirming name unused, rerun with -Publish."
     exit 0
   }
+  $unused = Read-Host "After checking Workers & Pages in the intended account, type exactly: NAME UNUSED $target"
+  if ($unused -ne "NAME UNUSED $target") { throw "TARGET_ABSENCE_NOT_CONFIRMED" }
   $confirmation = Read-Host "To publish only the new Worker, type exactly: PUBLISH $target"
   if ($confirmation -ne "PUBLISH $target") { throw "PUBLISH_NOT_CONFIRMED" }
   RunChecked "DEPLOY $target ONLY" {
