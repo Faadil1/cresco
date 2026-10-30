@@ -13,6 +13,10 @@ try {
 if (configuration.name !== "cresco-family-web") {
   throw new Error(`FAMILY_BUILD_WRONG_WORKER: generated ${String(configuration.name)} instead of cresco-family-web`);
 }
+if (configuration.workers_dev !== false || configuration.preview_urls !== false ||
+    configuration.route || configuration.routes?.length) {
+  throw new Error("FAMILY_BUILD_NOT_SEALED: generated Worker has public or preview routing");
+}
 const origin = process.env.NEXT_PUBLIC_CRESCO_API_URL ?? "";
 if (!/^https:\/\/cresco-family-api\.[-a-z0-9.]+$/i.test(origin)) {
   throw new Error("FAMILY_BUILD_UNSAFE_API: dedicated Family API origin required");
