@@ -3,7 +3,7 @@
  * No tester identity, age, email or wallet is part of the code.
  */
 export const MAX_INVITE_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
-const valid = /^fi1\.([0-9a-z]{7,9})\.([a-f0-9]{32})\.([a-f0-9]{64})$/;
+const valid = /^fi1\.([0-9a-z]{5,9})\.([a-f0-9]{32})\.([a-f0-9]{64})$/;
 export async function verifyFamilyPracticeInvite(code, master, now = Date.now()) {
   if (typeof master !== 'string' || master.length < 32 || master.length > 256 ||
       typeof code !== 'string' || code.length > 160) return false;
