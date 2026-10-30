@@ -227,7 +227,7 @@ function Portfolio({ state }: { state: FamilyPracticeState }) {
           <ul className="mt-3 space-y-2">{state.receipts.map(r => (
             <li key={r.id} className="rounded-[12px] bg-green-soft p-3 text-[13px]">
               <strong>{r.amount} credits · {r.asset}</strong> · {r.permission === "allow-once" ? "Exact parent exception used" : "Within standing Key"}
-              <span className="mt-1 block text-[11px] font-semibold">PRACTICE ONLY — NOT EXECUTED ONCHAIN</span>
+              <span className="mt-1 block text-[11px] font-semibold">PRACTICE ONLY - NOT EXECUTED ONCHAIN</span>
             </li>
           ))}</ul>
         ) : <p className={small}>No practice receipts yet. Explore and make a practice choice.</p>}
