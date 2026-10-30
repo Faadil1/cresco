@@ -461,6 +461,39 @@ export function FamilyPublicStudio() {
         </div>
       </div>
 
+      <div data-testid="guided-next-step" className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-green/25 bg-green-soft px-4 py-3">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-green-strong">Suggested next step · optional</p>
+          <p className="mt-1 max-w-[70ch] text-[13px] font-semibold leading-6 text-navy-strong">
+            {role === "child"
+              ? state.requests.some(r => r.status === "pending")
+                ? "Your practice choice was blocked. A simulated Parent can review the exact request."
+                : state.requests.some(r => r.status === "approved-once")
+                  ? "Your Parent approved one exact fictional action. Return to Explore and retry it."
+                  : state.receipts.length
+                    ? "Your practice choice has a receipt. See how your fictional portfolio changed."
+                    : "Start with a short lesson, then explore and make a choice with your own Key."
+              : pending
+                ? "A fictional decision is waiting. Review the exact request before allowing anything."
+                : "Build your confidence with Parent Learning, then review My Key with your child."}
+          </p>
+        </div>
+        {role === "child" ? (
+          state.requests.some(r => r.status === "pending") ?
+            <button className={secondary} type="button"
+              onClick={() => { setRole("parent"); setParentTab("requests"); }}>Switch to Parent to review</button> :
+          state.requests.some(r => r.status === "approved-once") ?
+            <button className={secondary} type="button" onClick={() => setChildTab("explore")}>Retry approved practice choice</button> :
+          state.receipts.length ?
+            <button className={secondary} type="button" onClick={() => setChildTab("portfolio")}>See my portfolio</button> :
+            <button className={secondary} type="button" onClick={() => setChildTab("learn")}>Start Child learning</button>
+        ) : (
+          <button className={secondary} type="button" onClick={() => setParentTab(pending ? "requests" : "learn")}>
+            {pending ? "Review exact request" : "Start Parent learning"}
+          </button>
+        )}
+      </div>
+
       <div className="mt-5 rounded-[26px] border border-line-soft bg-surface-soft p-3 md:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3 px-2 pb-4">
           <div className="flex items-center gap-2">
