@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { validateFamilyReleaseBoundary, gitBlobSha, checkFamilyReleaseBoundary,
+import { validateFamilyReleaseBoundary, gitBlobSha, canonicalConfigBlobSha, checkFamilyReleaseBoundary,
   FROZEN_COLOSSEUM_BLOBS } from '../scripts/family-release-boundary.mjs';
 
 const config = (f) => JSON.parse(readFileSync(new URL('../' + f, import.meta.url), 'utf8'));
@@ -10,8 +10,8 @@ const baseline = {
   oldWeb: config('apps/web/wrangler.jsonc'),
   api: config('wrangler.family-api.jsonc'),
   web: config('apps/web/wrangler.family.jsonc'),
-  historicApiSha: gitBlobSha(readFileSync(new URL('../wrangler.jsonc', import.meta.url))),
-  historicWebSha: gitBlobSha(readFileSync(new URL('../apps/web/wrangler.jsonc', import.meta.url)))
+  historicApiSha: canonicalConfigBlobSha(readFileSync(new URL('../wrangler.jsonc', import.meta.url))),
+  historicWebSha: canonicalConfigBlobSha(readFileSync(new URL('../apps/web/wrangler.jsonc', import.meta.url)))
 };
 const cloned = () => structuredClone(baseline);
 const rejects = (mutate) => {
@@ -25,6 +25,29 @@ test('standalone Family boundary permits only isolated configs and pins original
   assert.equal(checkFamilyReleaseBoundary().familyWeb, 'cresco-family-web');
   assert.equal(validateFamilyReleaseBoundary(baseline).devnetWrites, 'default-off');
 });
+test('Windows CRLF checkout is allowed without weakening the historic exact-content pin', () => {
+  for (const [file, expected] of [
+    ['wrangler.jsonc', FROZEN_COLOSSEUM_BLOBS.api],
+    ['apps/web/wrangler.jsonc', FROZEN_COLOSSEUM_BLOBS.web]
+  ]) {
+    const original = readFileSync(new URL('../' + file, import.meta.url), 'utf8');
+    const lf = original.replace(/\r\n/g, '\n');
+    const crlf = lf.replace(/\n/g, '\r\n');
+    assert.equal(canonicalConfigBlobSha(Buffer.from(lf)), expected);
+    assert.equal(canonicalConfigBlobSha(Buffer.from(crlf)), expected);
+    assert.equal(gitBlobSha(Buffer.from(lf)), expected);
+    assert.notEqual(gitBlobSha(Buffer.from(crlf)), expected,
+      'raw Windows checkout hash would incorrectly block a clean config');
+    const modified = lf.replace(/"name":\s*"([^"]+)"/, '"name": "untrusted-worker"');
+    assert.notEqual(canonicalConfigBlobSha(Buffer.from(modified)), expected,
+      'real config edits must still fail the pinned blob check');
+  }
+  assert.throws(
+    () => canonicalConfigBlobSha(Buffer.from('historic\rconfig')),
+    /UNEXPECTED_CARRIAGE_RETURN/
+  );
+});
+
 test('guard refuses any change to historical Colosseum API or Web Wrangler contents', () => {
   rejects(x => { x.historicApiSha = 'changed'; });
   rejects(x => { x.historicWebSha = 'changed'; });

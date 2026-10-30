@@ -16,7 +16,8 @@
     "build:vinext": "vite build",
     "build:family": "CRESCO_FAMILY_BUILD=1 vite build && node scripts/assert-family-build.mjs",
     "start:vinext": "wrangler dev --config dist/server/wrangler.json",
-    "deploy:vinext": "vinext-cloudflare deploy --config dist/server/wrangler.json"
+    "deploy:vinext": "vinext-cloudflare deploy --config dist/server/wrangler.json",
+    "build:public-family": "node scripts/build-public-family.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "5.2.8",
@@ -24,14 +25,14 @@
     "@solana/web3.js": "1.98.4",
     "@vinext/cloudflare": "1.0.1",
     "lucide-react": "^1.47.0",
-    "next": "16.3.6",
+    "next": "16.4.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-server-dom-webpack": "19.2.8",
     "vinext": "1.0.1"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "1.50.0",
+    "@cloudflare/vite-plugin": "1.66.0",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
@@ -43,13 +44,13 @@
     "@vitejs/plugin-react": "^6.1.1",
     "@vitejs/plugin-rsc": "0.5.34",
     "eslint": "^9",
-    "eslint-config-next": "16.3.6",
+    "eslint-config-next": "16.4.3",
     "jsdom": "^29.1.1",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vite": "8.3.0",
+    "vite": "8.3.5",
     "vitest": "^5.0.1",
-    "wrangler": "4.118.0"
+    "wrangler": "4.156.0"
   },
   "engines": {
     "node": ">=22"

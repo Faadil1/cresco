@@ -1,0 +1,57 @@
+name: family-public-browser-no-login
+
+on:
+  pull_request:
+    paths:
+      - "apps/web/src/components/family-only-home.tsx"
+      - "apps/web/src/components/family-agency-preview.tsx"
+      - "apps/web/src/app/try/**"
+      - "apps/web/package.json"
+      - "apps/web/vite.config.ts"
+      - "apps/web/wrangler.family.jsonc"
+      - "apps/web/scripts/assert-family-public-build.mjs"
+      - "apps/web/scripts/build-public-family.mjs"
+      - "apps/web/scripts/family-public-web-release.mjs"
+      - "apps/web/src/lib/family-web-route-guard.ts"
+      - "apps/web/e2e/family-public-demo.spec.mjs"
+      - "apps/web/playwright.family-public.config.mjs"
+      - "apps/web/playwright.config.mjs"
+      - ".github/workflows/family-public-browser.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  local-public-demo:
+    name: Public Family no-login iPhone WebKit (NO DEPLOY)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: npm install --no-audit --no-fund
+      - run: npm install --no-save --no-audit --no-fund @playwright/test
+      - name: Build exact public Family Cloudflare Worker (no deploy)
+        run: npm run build:public-family
+        env:
+          NEXT_PUBLIC_CRESCO_API_URL: ""
+      - run: npx playwright install --with-deps webkit
+      - name: Test actual local Wrangler Family Worker, no API requests
+        run: npx playwright test --config playwright.family-public.config.mjs
+        env:
+          NEXT_PUBLIC_CRESCO_API_URL: ""
+      - name: State evidence boundaries
+        run: |
+          echo "PUBLIC_DEMO_NO_LOGIN_LOCAL_WORKER_TEST=PASS"
+          echo "LIVE_PUBLIC_WORKER_DEPLOYED=NO"
+          echo "REAL_TWO_DEVICE_SYNC=NOT_SUPPORTED"
+          echo "FINANCIAL_TRANSACTION_OR_CHILD_ACCOUNT=NONE"

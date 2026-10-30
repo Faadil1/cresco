@@ -11,7 +11,7 @@ export function FamilyOnlyHome() {
         <header className="flex items-center justify-between gap-4">
           <Wordmark size="md" />
           <span className="rounded-full border border-green/40 bg-green-soft px-4 py-2 text-[12px] font-bold text-green-strong">
-            Family practice prototype
+            Open demo · fictional credits
           </span>
         </header>
 
@@ -35,17 +35,18 @@ export function FamilyOnlyHome() {
               when to say yes or no. Both learn together.
             </p>
             <p className="mt-3 max-w-[55ch] text-[13px] leading-6 text-ink-2">
-              Today this is a no-money learning illustration, not a real family
-              account, savings product or service for buying stocks or crypto.
+              Explore Cresco right now, without signing in, entering a code,
+              or connecting a wallet. This is a fictional learning exercise,
+              not a real financial account or investment service.
             </p>
 
             <div className="mt-7 flex flex-wrap gap-3">
-              <a
-                href="#family-agency-preview-title"
+              <Link
+                href="/try"
                 className="inline-flex min-h-12 items-center gap-3 rounded-full bg-green-strong px-6 text-[14px] font-bold text-white hover:bg-green"
               >
-                Try the family practice story <ArrowRight aria-hidden className="size-4" />
-              </a>
+                Try Cresco - no sign-in <ArrowRight aria-hidden className="size-4" />
+              </Link>
               <a
                 href="#family-trust"
                 className="inline-flex min-h-12 items-center gap-3 rounded-full border border-green/40 bg-surface px-6 text-[14px] font-bold text-navy-strong hover:bg-green-soft"
@@ -119,28 +120,16 @@ export function FamilyOnlyHome() {
           </div>
         </section>
 
-        <div className="mt-6 text-[12px] leading-6 text-ink-2">
-          Technical developers can inspect the{" "}
-          <Link
-            href="/worlds-fair/desk?case=family"
-            className="font-bold text-green-strong underline underline-offset-4"
-          >
-            separate Family setup preview
-          </Link>
-          . Solana Devnet financial actions remain disabled in the standalone
-          Family release candidate pending independent review.
-        </div>
-
-        <section className="mt-8 rounded-[22px] border border-green/30 bg-green-soft p-5 md:p-6" aria-label="Separate multi-device practice">
-          <h2 className="font-display text-[27px] text-navy-strong">Want to test with two devices?</h2>
+        <section className="mt-8 rounded-[22px] border border-green/30 bg-green-soft p-5 md:p-6" aria-label="Open public learning demo">
+          <h2 className="font-display text-[27px] text-navy-strong">Curious? Try it right away.</h2>
           <p className="mt-2 max-w-[72ch] text-[13px] leading-6 text-ink-2">
-            Invited adult researchers can explore separate Parent and Teen roles with an
-            independent fictional-credit history. Access codes do not prove parenthood,
-            and this is not a live financial account.
+            No registration, invitation or access code. Play both roles in one browser,
+            using only pretend credits. Your choices are temporary and are not sent
+            to a financial service. Each visitor starts with a fresh simulation.
           </p>
-          <Link href="/family-practice"
+          <Link href="/try"
             className="mt-4 inline-flex min-h-12 items-center gap-2 rounded-full bg-green-strong px-5 py-3 text-[13px] font-bold text-white">
-            Explore invited practice <ArrowRight aria-hidden className="size-4"/>
+            Start free demo <ArrowRight aria-hidden className="size-4"/>
           </Link>
         </section>
         <FamilyParentTrustCenter />

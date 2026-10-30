@@ -22,6 +22,16 @@ export function gitBlobSha(buffer) {
     .digest('hex');
 }
 
+// Git stores these tracked text configs with LF, while Windows checkouts can
+// use CRLF under the repository's "* text=auto" .gitattributes policy.
+// Canonicalize ONLY line endings before comparing with the pinned Git blobs.
+// This still rejects every substantive modification to either historic config.
+export function canonicalConfigBlobSha(buffer) {
+  const text = Buffer.from(buffer).toString('utf8').replace(/\r\n/g, '\n');
+  assert.ok(!text.includes('\r'), 'UNEXPECTED_CARRIAGE_RETURN_IN_HISTORIC_CONFIG');
+  return gitBlobSha(Buffer.from(text, 'utf8'));
+}
+
 const readConfig = (root, name) => JSON.parse(readFileSync(join(root, name), 'utf8'));
 const workersDevUrl = (workerName, value) =>
   typeof value === 'string' &&
@@ -108,8 +118,8 @@ export function checkFamilyReleaseBoundary(root = ROOT, { checkBuiltWeb = false 
     oldWeb: readConfig(root, 'apps/web/wrangler.jsonc'),
     api: readConfig(root, 'wrangler.family-api.jsonc'),
     web: readConfig(root, 'apps/web/wrangler.family.jsonc'),
-    historicApiSha: gitBlobSha(legacyApiBuffer),
-    historicWebSha: gitBlobSha(legacyWebBuffer),
+    historicApiSha: canonicalConfigBlobSha(legacyApiBuffer),
+    historicWebSha: canonicalConfigBlobSha(legacyWebBuffer),
     builtWeb: checkBuiltWeb ? JSON.parse(readFileSync(artifact, 'utf8')) : undefined
   });
 }
