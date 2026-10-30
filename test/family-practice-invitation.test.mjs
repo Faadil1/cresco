@@ -18,7 +18,8 @@ test('individually minted invite verifies in Worker WebCrypto without shared tok
   assert.notEqual(code,b.stdout.trim());
   assert.ok(!code.includes(master));
   assert.equal(await verifyFamilyPracticeInvite(code,'another-very-long-test-owner-master-987654'),false);
-  assert.equal(await verifyFamilyPracticeInvite(code.slice(0,-1)+'0',master),false);
+  const tampered=code.slice(0,-1)+(code.endsWith('0')?'1':'0');
+  assert.equal(await verifyFamilyPracticeInvite(tampered,master),false);
 });
 test('expiry is enforced and cannot extend beyond 7 days',async()=>{
   const r=issue('1');assert.equal(r.status,0);
