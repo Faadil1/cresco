@@ -50,8 +50,14 @@ export function makeOpenTestConfigs(source, built) {
   validateFamilyPublicRelease(source, built);
   assert.equal(PROTECTED_NAMES.has(OPEN_TEST_WORKER), false,
     "PROTECTED_WORKER_NAME");
-  for (const field of EXTRA_FORBIDDEN_BINDINGS) {
-    assert.ok(empty(built[field]), "FORBIDDEN_TEST_BINDING: " + field);
+  // Existing release policy detects a conventional durable_objects.bindings
+  // array. Reject *any* non-empty/malformed object as well, rather than only
+  // looking at its optional .bindings path (the negative CI caught this).
+  for (const config of [source, built]) {
+    assert.ok(empty(config.durable_objects), "DURABLE_OBJECTS_FORBIDDEN");
+    for (const field of EXTRA_FORBIDDEN_BINDINGS) {
+      assert.ok(empty(config[field]), "FORBIDDEN_TEST_BINDING: " + field);
+    }
   }
   assert.ok(!Object.keys(built.env ?? {}).length,
     "NO_WORKER_ENVIRONMENTS_ALLOWED");
