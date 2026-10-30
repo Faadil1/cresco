@@ -103,6 +103,7 @@ describe("Family public teaching sandbox — never a financial permission", () =
       expect(lesson.source?.url).toMatch(/^https:\/\//);
       expect(lesson.source?.verifiedAt).toBe("2026-09-25");
       expect(lesson.illustration).toBeTruthy();
+      expect(lesson.sections?.length).toBeGreaterThan(0);
       expect(lesson.choices).toHaveLength(3);
       expect(lesson.choices[lesson.answer]).toBeTruthy();
     }
