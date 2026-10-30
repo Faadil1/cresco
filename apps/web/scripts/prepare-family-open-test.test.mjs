@@ -56,6 +56,20 @@ test("rejects backend bindings, application vars and cross-service routing", () 
   }
 });
 
+test("rejects any malformed or canonical Durable Object declaration in source or build", () => {
+  for (const key of ["source", "built"]) {
+    for (const declaration of [
+      [{ binding: "STATE" }],
+      { bindings: [{ name: "STATE", class_name: "Counter" }] },
+      { unexpected: { binding: "STATE" } },
+    ]) {
+      const x = fixture();
+      x[key].durable_objects = declaration;
+      assert.throws(() => makeOpenTestConfigs(x.source, x.built), key);
+    }
+  }
+});
+
 test("rejects less common execution/storage bindings, routes and scheduled triggers", () => {
   for (const field of ["ai", "vectorize", "unsafe", "workflows", "pipelines"]) {
     const x = fixture();
