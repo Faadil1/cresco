@@ -108,7 +108,16 @@ test("restores a sourced and illustrated original Cresco Child lesson behind the
 
 
 test.describe("desktop Family UX audit evidence", () => {
-  test.use({ ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 } });
+  // The project already runs WebKit. Overriding defaultBrowserType inside
+  // describe() prevents Playwright from collecting ANY tests on Windows.
+  // Use only context-level desktop emulation options here.
+  test.use({
+    viewport: { width: 1440, height: 900 },
+    deviceScaleFactor: 1,
+    isMobile: false,
+    hasTouch: false,
+    userAgent: devices["Desktop Safari"].userAgent,
+  });
 
   test("shows a personalized Child goal in the Parent dashboard with distinct desktop learning paths", async ({ page }, testInfo) => {
     await page.goto("/try");
