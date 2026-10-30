@@ -69,15 +69,30 @@ try {
   RunChecked "historical-worker-boundary" "node" @("../../scripts/family-release-boundary.mjs","--built-web") (Join-Path $output "08-historic-freeze.log")
   RunChecked "webkit-dependency" "npx.cmd" @("playwright","install","webkit") (Join-Path $output "09-webkit.log")
   RunChecked "family-browser-webkit" "npx.cmd" @("playwright","test","--config","playwright.family-public.config.mjs","--reporter=list,html") (Join-Path $output "10-webkit.log")
+  # Attached screenshots belong to Playwright's HTML reporter in playwright-report/data,
+  # not necessarily test-results. Collect both without modifying the tested source.
   $shotDir = Join-Path $output "screenshots"
-  if (Test-Path (Join-Path $web "test-results")) {
-    $screenshots = @(Get-ChildItem (Join-Path $web "test-results") -Recurse -Filter "*.png" -File -ErrorAction SilentlyContinue)
-    if ($screenshots.Count -gt 0) {
-      New-Item -ItemType Directory -Path $shotDir -Force | Out-Null
-      foreach ($shot in $screenshots) {
-        Copy-Item -LiteralPath $shot.FullName -Destination (Join-Path $shotDir ($shot.Directory.Name + "-" + $shot.Name)) -Force
+  $shotSources = @(
+    (Join-Path $web "playwright-report/data"),
+    (Join-Path $web "test-results")
+  )
+  $screenshots = @(
+    foreach ($source in $shotSources) {
+      if (Test-Path $source) {
+        Get-ChildItem -LiteralPath $source -Recurse -Filter "*.png" -File -ErrorAction SilentlyContinue
       }
     }
+  )
+  if ($screenshots.Count -gt 0) {
+    New-Item -ItemType Directory -Path $shotDir -Force | Out-Null
+    foreach ($shot in $screenshots) {
+      Copy-Item -LiteralPath $shot.FullName -Destination (Join-Path $shotDir $shot.Name) -Force
+    }
+    Compress-Archive -Path (Join-Path $shotDir "*.png") -DestinationPath (Join-Path $output "family-ux-screenshots.zip") -Force
+    Write-Host ("UX_SCREENSHOTS_FOUND=" + $screenshots.Count)
+    Write-Host ("UX_SCREENSHOTS_ZIP=" + (Join-Path $output "family-ux-screenshots.zip"))
+  } else {
+    Write-Host "UX_SCREENSHOTS_FOUND=0 (functional proof only; visual review pending)"
   }
 
   $report = @(
