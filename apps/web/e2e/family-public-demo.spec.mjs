@@ -2,7 +2,7 @@ import { test, expect, devices } from "@playwright/test";
 
 test.use({ ...devices["iPhone 13"] });
 
-test("public Family gives Child + Parent a complete practice loop without sign-in or backend", async ({ page }) => {
+test("public Family gives Child + Parent a complete practice loop without sign-in or backend", async ({ page }, testInfo) => {
   const outbound = [];
   page.on("request", request => {
     if (["cresco-family-api", "keys-api-stocklana", "api.solana", "rpc.solana", "/api/family-practice", "/api/v0"].some(value => request.url().includes(value))) {
@@ -15,6 +15,7 @@ test("public Family gives Child + Parent a complete practice loop without sign-i
   await expect(page.getByText(/no invitation\. no parent or teen codes/i)).toBeVisible();
   await expect(page.getByTestId("family-public-studio")).toBeVisible();
   await expect(page.getByTestId("practice-available")).toHaveText("100");
+  await testInfo.attach("family-child-mobile.png", { body: await page.screenshot({ fullPage: false }), contentType: "image/png" });
 
   await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: /explore/i }).click();
   await page.getByRole("button", { name: /set aside 20 practice credits/i }).click();
@@ -31,6 +32,7 @@ test("public Family gives Child + Parent a complete practice loop without sign-i
   await page.getByRole("button", { name: /parent view/i }).click();
   await page.getByRole("navigation", { name: "Parent demo navigation" }).getByRole("button", { name: /requests/i }).click();
   await expect(page.getByRole("heading", { name: /25 practice credits · MKT/i })).toBeVisible();
+  await testInfo.attach("family-parent-request-mobile.png", { body: await page.screenshot({ fullPage: false }), contentType: "image/png" });
   await page.getByRole("button", { name: /approve once #2/i }).click();
   await expect(page.getByRole("status")).toHaveText(/Key did not widen/i);
 
