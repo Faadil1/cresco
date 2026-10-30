@@ -159,7 +159,7 @@ export function FamilyPublicExplore({ state, buy, save }: {
             <h4 className="text-[15px] font-bold text-navy-strong">What might go wrong?</h4>
             <p className="mt-1 text-[13px] leading-6 text-navy">{selected.uncertainty}</p>
             <div className="mt-3 rounded-[16px] bg-green-soft p-4">
-              <h4 className="text-[13px] font-bold text-navy-strong"><BookOpen aria-hidden className="mr-1 inline size-4"/> An investor's research question</h4>
+              <h4 className="text-[13px] font-bold text-navy-strong"><BookOpen aria-hidden className="mr-1 inline size-4"/> An investor&apos;s research question</h4>
               <p className="mt-2 text-[13px] leading-6 text-navy">{selected.researchPrompt}</p>
             </div>
           </div>
