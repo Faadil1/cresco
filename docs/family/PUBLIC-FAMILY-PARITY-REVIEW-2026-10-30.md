@@ -127,3 +127,26 @@ The owner's recorded browser session (reviewed 2026-10-30) provides a visual bas
 - Add browser regression assertions that the duplicate suggested-step callout is hidden when the Parent request or learning screen is active. The exact transaction binding/version/nonce, approve-once and decline semantics remain unchanged.
 
 **Verification status:** `5b46df60` passed the user's independent Windows local suite with 8/8 WebKit and an overall `LOCAL_PROOF=PASS`. These *newer follow-up changes* have not been rerun. No public Family Worker or original Colosseum Worker has been edited, and PR #114 must remain DRAFT until current SHA is rerun and actually rendered again. This is a **visual hierarchy correction**, not authentication, actual consent or financial capability.
+
+## Seven-screenshot visual closeout — owner proof `f8b1c377`
+
+The owner supplied `cresco-family-ux-v3.zip` with **seven actual Playwright WebKit PNGs**, following `FAMILY_PR114_LOCAL_PROOF=PASS` at exact `f8b1c37717d35a4887d902c826c4fce182e9201f`: TypeScript PASS, ESLint before/after build PASS (only historical unrelated React Hook warning), 22 Vitest files / 142 tests PASS, Worker artifact + historical Colosseum boundaries PASS, WebKit 8/8 PASS, no deployment.
+
+| Captured image prefix | View shown | Visual finding |
+| --- | --- | --- |
+| `7cd178ed` | Child landing, iPhone | Role toggle, Child navigation and home heading are visible without scrolling; first metric enters near the bottom. |
+| `8fe52154` | Explore landing, iPhone | Sector research headline and the search box are visible inside the first viewport. |
+| `8cdf3a28` | Parent Requests after tab selection, iPhone | Redundant green guidance is gone; request #2/25 fictional MKT credits is visible, **but Approve Once/Decline are still below the first viewport**. |
+| `384068a1` | Parent Requests after scrolling to action, iPhone | Both exact one-time approval and refusal buttons are legible, separated and usable; explicit no-real-guardian-consent caveat appears before actions. A screenshot does not verify real guardian identity. |
+| `c9d48839` | Harbor Medical Tools selected research, iPhone | Business model, customer, upside, risk and research prompt are legible; stale “Select Research on any card” instruction is inaccurate because the panel is already selected. Quiz continues below screenshot; not missing. |
+| `923fb83b` | Child dashboard, desktop | Three metrics, selected saving goal, progress bar and Learn/Explore actions retained. |
+| `e5bdb266` | Parent Learning, desktop | No repeated generic guidance; suggested lesson and curriculum cards now take priority. |
+
+**Disposition at screenshot-tested SHA `f8b1c377`:** no blocking visual breakage, but two limited P1 usability issues remained. The Parent's decision is not on the first mobile viewport after clicking Requests, and Explore has misleading selected-panel instruction. The screenshots do *not* warrant a full redesign or a claim of real parent verification.
+
+**Follow-up limited code fixes after reviewing the screenshot ZIP (NOT yet runtime-tested):**
+1. On entering `Parent > Requests` with at least one pending exact request on narrow viewports, scroll the **existing pending request card** into view. No permission/action is triggered by this scroll; Approve Once and Decline still require a deliberate separate click. Do not auto-scroll on desktop, empty Requests, or unrelated tabs. Guard browser-only APIs for test environments.
+2. Replace the stale Explore detail instruction with copy describing the **already selected fictional case** and what to read next.
+3. Add a mobile Playwright regression assertion that **both exact decision buttons are in the viewport immediately after choosing Requests**, without a manual `scrollIntoView`, and a test that the updated Explore copy is visible.
+
+**Evidence gate:** the seven screenshots and all prior 142+8 green checks prove the **former exact SHA** only. Newer PR HEAD requires fresh 142-unit / 8-WebKit and screenshot inspection before release. The existing no-login, no-backend, no-wallet, memory-only learning scope remains unchanged. No Colosseum or public Family Worker was modified.
