@@ -5,6 +5,7 @@ import { LessonIllustration } from "@/components/illustrations/scenes";
 import { GoalArt } from "@/components/illustrations/objects";
 import { BadgeArt } from "@/components/illustrations/badges";
 import { FamilyPracticePortfolio } from "@/components/family-public-portfolio";
+import { FamilyPublicExplore } from "@/components/family-public-explore";
 import {
   ArrowRight, BookOpen, CheckCircle2, Compass, Home, KeyRound,
   RotateCcw, ShieldCheck, Sprout, Users, Wallet,
@@ -269,43 +270,6 @@ function KeySummary({ state }: { state: FamilyPracticeState }) {
     </div>
   );
 }
-function Explore({ state, buy, save }: {
-  state: FamilyPracticeState;
-  buy: (asset: AssetCode, amount: number) => void;
-  save: () => void;
-}) {
-  const [amounts, setAmounts] = useState<Record<AssetCode, string>>({ ORC: "10", MKT: "25", BKT: "20" });
-  return (
-    <section aria-labelledby="explore-title" className="space-y-4">
-      <header>
-        <p className="cresco-section-kicker">Child · Explore & Practice</p>
-        <h2 id="explore-title" className="mt-2 font-display text-[34px] text-navy-strong">Learn by making choices.</h2>
-        <p className={small}>All companies, prices and investments below are fictional examples, not live offers.</p>
-      </header>
-      <button type="button" className={secondary} disabled={remainingCredits(state) < 20} onClick={save}>
-        Set aside 20 practice credits
-      </button>
-      <div className="grid gap-4 lg:grid-cols-3">
-        {PRACTICE_ASSETS.map(a => (
-          <article key={a.code} className={panel}>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-green-strong">{a.category} · Fictional</p>
-            <h3 className="mt-2 text-[19px] font-bold text-navy-strong">{a.name}</h3>
-            <p className="mt-1 text-[12px] text-ink-2">{a.code} · Sample price {a.price} credits/share</p>
-            <p className={`mt-3 ${small}`}>{a.description}</p>
-            <p className="mt-2 text-[12px] text-orange-text">{a.risk}</p>
-            <label htmlFor={`amount-${a.code}`} className="mt-4 block text-[12px] font-bold text-navy-strong">Practice amount (whole credits)</label>
-            <input id={`amount-${a.code}`} type="number" min="1" max="100" step="1" inputMode="numeric"
-              value={amounts[a.code]} onChange={e => setAmounts(v => ({ ...v, [a.code]: e.target.value }))}
-              className="mt-1 w-full rounded-[12px] border border-line bg-surface px-3 py-3 text-[15px] text-navy-strong" />
-            <button type="button" className={`mt-3 w-full ${primary}`}
-              onClick={() => buy(a.code, Number(amounts[a.code]))}>Practice {a.code} choice</button>
-          </article>
-        ))}
-      </div>
-      <KeySummary state={state} />
-    </section>
-  );
-}
 function ParentKey({ state, update }: {
   state: FamilyPracticeState;
   update: (perAction: number, period: number, allowed: AssetCode[]) => void;
@@ -542,7 +506,7 @@ export function FamilyPublicStudio() {
             childTab === "learn" ? <LearningPath role="child" state={state}
               complete={id => dispatch({ type: "complete", role: "child", lessonId: id })}
               onApply={id => setChildTab(id === "c-save" ? "home" : id === "c-risk" ? "portfolio" : "explore")}/> :
-            childTab === "explore" ? <Explore state={state} save={() => dispatch({ type: "save" })}
+            childTab === "explore" ? <FamilyPublicExplore state={state} save={() => dispatch({ type: "save" })}
               buy={(asset, amount) => dispatch({ type: "buy", asset, amount })}/> :
             childTab === "portfolio" ? <FamilyPracticePortfolio state={state}/> :
             childTab === "key" ? <KeySummary state={state}/> :
