@@ -129,6 +129,7 @@ export type FamilyPracticeState = {
   childCompleted: string[];
   parentCompleted: string[];
   togetherCompleted: boolean;
+  discussion: { child: "save-first" | "practice-small" | "ask-together" | null; parent: "protect-goal" | "small-limit" | "review-risk" | null };
   feedback: string;
   nextId: number;
 };
@@ -137,12 +138,35 @@ export function initialFamilyPractice(): FamilyPracticeState {
     saved: 0, spent: 0, holdings: { ORC: 0, MKT: 0, BKT: 0 },
     key: { version: 1, nonce: 1, maxPerAction: 15, maxPeriod: 60, allowed: ["ORC", "MKT", "BKT"] },
     requests: [], receipts: [], childCompleted: [], parentCompleted: [],
-    togetherCompleted: false, feedback: "Choose a role to explore a fictional family scenario.",
+    togetherCompleted: false, discussion: { child: null, parent: null }, feedback: "Choose a role to explore a fictional family scenario.",
     nextId: 1,
   };
 }
 export const remainingCredits = (s: FamilyPracticeState) => 100 - s.saved - s.spent;
 export const remainingPeriod = (s: FamilyPracticeState) => Math.max(0, s.key.maxPeriod - s.spent);
+
+// A fixed, explicitly fictional stress test; never fetches market prices and
+// never changes receipts, balances, holdings or permissions.
+export type PracticeScenario = "base" | "downturn" | "mixed";
+const SCENARIO_MULTIPLIERS: Record<PracticeScenario, Record<AssetCode, number>> = {
+  base: { ORC: 1, MKT: 1, BKT: 1 },
+  downturn: { ORC: 0.7, MKT: 0.9, BKT: 0.85 },
+  mixed: { ORC: 1.1, MKT: 0.8, BKT: 1.02 },
+};
+export function evaluatePracticeScenario(s: FamilyPracticeState, scenario: PracticeScenario) {
+  const multipliers = SCENARIO_MULTIPLIERS[scenario];
+  const assets = PRACTICE_ASSETS.map(a => {
+    const cost = s.holdings[a.code] * a.price;
+    const hypothetical = cost * multipliers[a.code];
+    return { ...a, cost, hypothetical, weight: s.spent > 0 ? cost / s.spent : 0 };
+  });
+  return {
+    assets,
+    original: s.spent,
+    hypothetical: assets.reduce((sum, item) => sum + item.hypothetical, 0),
+  };
+}
+
 
 type Action =
   | { type: "save" }
@@ -150,6 +174,8 @@ type Action =
   | { type: "respond"; id: number; choice: "approve" | "decline" }
   | { type: "set-key"; maxPerAction: number; maxPeriod: number; allowed: AssetCode[] }
   | { type: "complete"; role: LearningRole; lessonId: string }
+  | { type: "discussion-child"; choice: "save-first" | "practice-small" | "ask-together" }
+  | { type: "discussion-parent"; choice: "protect-goal" | "small-limit" | "review-risk" }
   | { type: "together" }
   | { type: "reset" };
 
@@ -186,8 +212,17 @@ export function transitionFamilyPractice(s: FamilyPracticeState, action: Action)
       feedback: "Lesson completed. Learning never changes My Key.",
     };
   }
+  if (action.type === "discussion-child") {
+    return { ...s, togetherCompleted: false, discussion: { ...s.discussion, child: action.choice }, feedback: "Child perspective recorded. The Parent can add their guidance." };
+  }
+  if (action.type === "discussion-parent") {
+    return { ...s, togetherCompleted: false, discussion: { ...s.discussion, parent: action.choice }, feedback: "Parent guidance recorded. The family can review both perspectives." };
+  }
   if (action.type === "together") {
-    return { ...s, togetherCompleted: true, feedback: "Family discussion marked complete. No financial permission changed." };
+    if (!s.discussion.child || !s.discussion.parent) {
+      return reject(s, "Both perspectives are needed to complete the family check-in.");
+    }
+    return { ...s, togetherCompleted: true, feedback: "Family discussion reviewed together. No financial permission changed." };
   }
   if (action.type === "set-key") {
     const { maxPerAction, maxPeriod, allowed } = action;
