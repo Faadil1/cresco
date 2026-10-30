@@ -107,3 +107,23 @@ The owner's recorded browser session (reviewed 2026-10-30) provides a visual bas
 7. The local proof script now collects actual PNGs from Playwright **`playwright-report/data`** (previously it checked only `test-results` and returned no files) into its evidence directory and a ZIP.
 
 **Do not interpret the five old PNGs as verification of this revised UI.** They are diagnostic evidence for concrete source changes. No screenshot of the new HEAD has been inspected; visual release approval remains **NO_GO**. Before advancing the PR, rerun Windows proof on the latest exact SHA, inspect the new iPhone first fold plus Parent Requests and Explore and verify the simulated parent role cannot be mistaken for real authorization. Any claim of automated first-fold success must come from a passing test on the revised SHA, not from source inspection.
+
+## Verified before/after screenshot comparison — candidate `5b46df60`
+
+**Evidence lineage:** Five first-round Playwright PNGs from `10e3463b` were compared visually against the five newly provided Playwright PNGs from owner-tested `5b46df60176e6218c8ed1f49e41cb0082c59a663` (`FAMILY_PR114_LOCAL_PROOF=PASS`, 8/8 WebKit). Same test-capture types: three 1170×1992 physical-pixel iPhone WebKit viewport images and two 1440×900 desktop WebKit viewport images. These are images, not recordings or a full accessibility audit.
+
+| View | Earlier actual screenshot | Later actual screenshot | Direct observation |
+| --- | --- | --- | --- |
+| First Child screen, iPhone | `ddd141be` | `7cd178ed` | Clear improvement: simulated role buttons, Child navigation, and the 'Hey, future explorer' heading are visible in the viewport. Initial instructional green callout no longer takes the first screen. The available-credits card starts only near the bottom: **still content-dense**. |
+| Explore, iPhone | `bc091d55` | `8fe52154` | The search input is now visible in the capture, whereas before the contextual callout and long description pushed it offscreen. The six-case grid remains below the first captured viewport; do not confuse that with missing data. |
+| Parent Requests, iPhone | `7325ff3b` | `fb3dd7a9` | Contextual green callout is smaller, headings/labels are more compact and guardian verification caveat is added. But the callout now **duplicates** the active Requests tab and the exact request action buttons are still below this screenshot's viewport. **Remaining P1 UX defect.** |
+| Parent Learning, desktop | `accedb18` | `f3d09a42` | Consistent premium hierarchy, but both generic 'Suggested next step' and 'Suggested next lesson' guidance appear consecutively, wasting vertical space before lessons. **Remaining P2 defect.** |
+| Child Home, desktop | `df68b42` | `923fb83b` | Clear goal/credits context and lesson/explore actions retained; no new visual regression apparent in these viewport captures. |
+
+**Targeted follow-up repair after reviewing exact `5b46df60` screenshots (authored, unverified new HEAD):**
+- Hide the generic suggested-step callout whenever Parent already has **Requests** or **Learn** active, or Child has **Learn** active, while retaining useful reminders in other contexts.
+- For a pending Parent request on mobile, shorten the heading to an accessible screen-reader heading and a concise visible instruction, moving the exact request card closer to the role tabs.
+- Put the explicit no-verified-guardian warning immediately into the pending request card before the exact Approve/Decline buttons. This is clearer than merely putting a longer caution above the pending request.
+- Add browser regression assertions that the duplicate suggested-step callout is hidden when the Parent request or learning screen is active. The exact transaction binding/version/nonce, approve-once and decline semantics remain unchanged.
+
+**Verification status:** `5b46df60` passed the user's independent Windows local suite with 8/8 WebKit and an overall `LOCAL_PROOF=PASS`. These *newer follow-up changes* have not been rerun. No public Family Worker or original Colosseum Worker has been edited, and PR #114 must remain DRAFT until current SHA is rerun and actually rendered again. This is a **visual hierarchy correction**, not authentication, actual consent or financial capability.
