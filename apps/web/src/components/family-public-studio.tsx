@@ -445,9 +445,11 @@ export function FamilyPublicStudio() {
   // NOT performed by scrolling; it always requires a separate user click.
   useEffect(() => {
     if (role !== "parent" || parentTab !== "requests" || pending === 0) return;
-    if (!window.matchMedia("(max-width: 767px)").matches) return;
+    if (typeof window.matchMedia !== "function" || !window.matchMedia("(max-width: 767px)").matches) return;
     const target = document.querySelector('[data-family-pending-request="true"]');
-    target?.scrollIntoView({ behavior: "auto", block: "center" });
+    if (target && typeof target.scrollIntoView === "function") {
+      target.scrollIntoView({ behavior: "auto", block: "center" });
+    }
   }, [role, parentTab, pending]);
 
   // Do not repeat a "review request" banner when already inside Requests, or
