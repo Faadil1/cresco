@@ -33,7 +33,7 @@ test('guard refuses historical Worker as the Family deployment target', () => {
   rejects(x => { x.api.name = 'cresco-api-stocklana'; });
   rejects(x => { x.web.name = 'cresco'; });
   rejects(x => { x.builtWeb = { name: 'cresco' }; });
-  assert.equal(validateFamilyReleaseBoundary({...cloned(),builtWeb:{name:'cresco-family-web'}}).familyWeb, 'cresco-family-web');
+  assert.equal(validateFamilyReleaseBoundary({...cloned(),builtWeb:{name:'cresco-family-web',workers_dev:false,preview_urls:false}}).familyWeb, 'cresco-family-web');
 });
 test('guard refuses historical DO reuse, unknown entrypoint or web DO binding', () => {
   rejects(x => { x.api.durable_objects.bindings[0].class_name = 'FamilyState'; });
