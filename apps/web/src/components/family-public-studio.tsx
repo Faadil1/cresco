@@ -428,27 +428,29 @@ export function FamilyPublicStudio() {
   const [childTab, setChildTab] = useState<ChildTab>("home");
   const [parentTab, setParentTab] = useState<ParentTab>("overview");
   const pending = state.requests.filter(r => r.status === "pending").length;
+  const mobileNextAction = pending > 0 || (role === "child" && state.requests.some(r => r.status === "approved-once"));
 
   return (
-    <section data-testid="family-public-studio" className="mt-4 md:mt-5">
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-[23px] border border-line-soft bg-surface p-4 md:p-5">
+    <section data-testid="family-public-studio" className="mt-3 md:mt-5">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-[18px] border border-line-soft bg-surface p-3 md:gap-4 md:rounded-[23px] md:p-5">
         <div>
-          <p className="cresco-section-kicker">A family story, two real perspectives</p>
-          <h2 className="mt-1 font-display text-[27px] text-navy-strong">Choose the view you want to explore.</h2>
-          <p className="mt-1 text-[12px] text-ink-2">Switch roles freely; both use the same fictional practice state.</p>
+          <p className="hidden md:block cresco-section-kicker">A family story, two simulated perspectives</p>
+          <h2 className="font-display text-[19px] leading-tight text-navy-strong md:mt-1 md:text-[27px]">Choose the view you want to explore.</h2>
+          <p className="mt-1 hidden text-[12px] text-ink-2 md:block">Switch simulated roles freely; both use the same fictional practice state. No identities are verified.</p>
         </div>
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Choose demo profile">
+        <div className="grid w-full grid-cols-2 gap-2 md:flex md:w-auto" role="group" aria-label="Choose demo profile">
           <button type="button" aria-pressed={role === "child"} onClick={() => setRole("child")}
-            className={role === "child" ? primary : secondary}>Child view</button>
+            className={`${role === "child" ? primary : secondary} min-w-0`}>Child view</button>
           <button type="button" aria-pressed={role === "parent"} onClick={() => setRole("parent")}
-            className={role === "parent" ? primary : secondary}>Parent view {pending ? `(${pending})` : ""}</button>
+            className={`${role === "parent" ? primary : secondary} min-w-0`}>Parent view {pending ? `(${pending})` : ""}</button>
         </div>
       </div>
 
-      <div data-testid="guided-next-step" className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-green/25 bg-green-soft px-4 py-3">
+      <div data-testid="guided-next-step" className={`mt-2 flex-wrap items-center justify-between gap-2 rounded-[15px] border border-green/25 bg-green-soft px-3 py-2.5 md:mt-3 md:gap-3 md:rounded-[18px] md:px-4 md:py-3 ${mobileNextAction ? "flex" : "hidden md:flex"}`}>
+        {mobileNextAction ? <p className="text-[12px] font-semibold text-navy-strong md:hidden">{pending ? "A fictional request needs review in Parent view." : "One exact fictional choice can now be retried."}</p> : null}
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-wider text-green-strong">Suggested next step · optional</p>
-          <p className="mt-1 max-w-[70ch] text-[13px] font-semibold leading-6 text-navy-strong">
+          <p className="hidden text-[11px] font-bold uppercase tracking-wider text-green-strong md:block">Suggested next step · optional</p>
+          <p className="mt-1 hidden max-w-[70ch] text-[13px] font-semibold leading-6 text-navy-strong md:block">
             {role === "child"
               ? state.requests.some(r => r.status === "pending")
                 ? "Your practice choice was blocked. A simulated Parent can review the exact request."
@@ -478,20 +480,20 @@ export function FamilyPublicStudio() {
         )}
       </div>
 
-      <div className="mt-5 rounded-[26px] border border-line-soft bg-surface-soft p-3 md:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3 px-2 pb-4">
+      <div className="mt-3 rounded-[20px] border border-line-soft bg-surface-soft p-2 md:mt-5 md:rounded-[26px] md:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-2 pb-2 md:gap-3 md:pb-4">
           <div className="flex items-center gap-2">
             {role === "child" ? <Sprout aria-hidden className="size-6 text-green-strong"/> : <ShieldCheck aria-hidden className="size-6 text-green-strong"/>}
-            <span className="text-[16px] font-bold text-navy-strong">{role === "child" ? "Child profile · Practice" : "Parent profile · Guidance"}</span>
+            <span className="text-[14px] font-bold text-navy-strong md:text-[16px]">{role === "child" ? "Child profile · Practice" : "Parent profile · Guidance"}</span>
           </div>
-          <span className="rounded-full bg-green-soft px-3 py-1.5 text-[11px] font-bold text-green-strong">Fictional scenario · 0 real funds</span>
+          <span className="rounded-full bg-green-soft px-2 py-1 text-[10px] font-bold text-green-strong md:px-3 md:py-1.5 md:text-[11px]">Fictional scenario · 0 real funds</span>
         </div>
-        <p className="mb-2 px-2 text-[12px] text-ink-2 md:hidden">Swipe sideways to see all profile tabs.</p>
-        <nav aria-label={role === "child" ? "Child demo navigation" : "Parent demo navigation"} className="mb-5 flex gap-2 overflow-x-auto pb-2">
+        <p className="mb-1 px-2 text-[11px] text-ink-2 md:hidden">Swipe to see more tabs · These roles are simulated.</p>
+        <nav aria-label={role === "child" ? "Child demo navigation" : "Parent demo navigation"} className="mb-3 flex gap-1.5 overflow-x-auto pb-2 md:mb-5 md:gap-2">
           {role === "child" ? childTabs.map(tab => <button key={tab.id} type="button"
             aria-current={childTab === tab.id ? "page" : undefined}
             onClick={() => setChildTab(tab.id)}
-            className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-[12px] font-bold ${childTab === tab.id ? "bg-navy-strong text-white" : "bg-surface text-navy-strong"}`}>
+            className={`flex min-h-11 shrink-0 items-center gap-2 rounded-full px-3 py-2.5 text-[12px] font-bold md:px-4 ${childTab === tab.id ? "bg-navy-strong text-white" : "bg-surface text-navy-strong"}`}>
             <tab.icon aria-hidden className="size-4" /> {tab.label}</button>) :
             parentTabs.map(tab => <button key={tab.id} type="button"
               aria-current={parentTab === tab.id ? "page" : undefined}
