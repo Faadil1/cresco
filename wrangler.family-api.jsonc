@@ -13,7 +13,7 @@
   "vars": {
     "CRESCO_FAMILY_WEB_ORIGIN": "https://cresco-family-web.faadil-casecraft.workers.dev",
     "CRESCO_FAMILY_MAX_WORKSPACES": "15",
-    "CRESCO_FAMILY_STAGING_REQUIRE_ACCESS": "1"
+    "CRESCO_FAMILY_RESEARCH_ONLY": "1"
   },
   "durable_objects": {
     "bindings": [
