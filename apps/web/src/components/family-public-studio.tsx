@@ -466,7 +466,7 @@ export function FamilyPublicStudio() {
   const pending = state.requests.filter(r => r.status === "pending").length;
 
   return (
-    <section data-testid="family-public-studio" className="mt-8">
+    <section data-testid="family-public-studio" className="mt-4 md:mt-5">
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-[23px] border border-line-soft bg-surface p-4 md:p-5">
         <div>
           <p className="cresco-section-kicker">A family story, two real perspectives</p>
