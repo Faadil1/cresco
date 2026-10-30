@@ -37,10 +37,11 @@ const small = "text-[13px] leading-6 text-ink-2";
 const primary = "rounded-full bg-green-strong px-5 py-3 text-[13px] font-bold text-white hover:bg-green disabled:opacity-50";
 const secondary = "rounded-full border border-line bg-surface px-5 py-3 text-[13px] font-bold text-navy-strong hover:bg-green-soft disabled:opacity-50";
 
-function LearningPath({ role, state, complete }: {
+function LearningPath({ role, state, complete, onApply }: {
   role: FamilyRole;
   state: FamilyPracticeState;
   complete: (id: string) => void;
+  onApply: (id: string) => void;
 }) {
   const lessons = role === "parent" ? PARENT_LEARNING : CHILD_LEARNING;
   const done = role === "parent" ? state.parentCompleted : state.childCompleted;
@@ -138,6 +139,9 @@ function LearningPath({ role, state, complete }: {
           <button type="button" className={`mt-5 ${primary}`} disabled={answer !== lesson.answer || done.includes(lesson.id)}
             onClick={() => complete(lesson.id)}>
             {done.includes(lesson.id) ? "Lesson completed" : "Complete lesson"}
+          </button>
+          <button type="button" className={`mt-3 ml-0 sm:ml-3 ${secondary}`} onClick={() => onApply(lesson.id)}>
+            {role === "parent" ? "Apply this in Parent view" : "Practice this in Child view"}
           </button>
         </article>
       ) : (
