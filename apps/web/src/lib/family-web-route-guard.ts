@@ -3,8 +3,7 @@
 export function familyWebRouteAllowed(pathname: string): boolean {
   const path = pathname.split("?")[0];
   return path === "/" ||
-    path === "/family-practice" ||
-    path === "/worlds-fair/desk" ||
+    path === "/try" ||
     path === "/favicon.ico" ||
     path === "/robots.txt" ||
     path === "/icon.svg" ||
