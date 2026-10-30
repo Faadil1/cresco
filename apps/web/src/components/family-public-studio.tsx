@@ -3,12 +3,12 @@
 import { useReducer, useState } from "react";
 import {
   ArrowRight, BookOpen, CheckCircle2, Compass, Home, KeyRound,
-  RotateCcw, ShieldCheck, Sprout, TrendingUp, Users, Wallet,
+  RotateCcw, ShieldCheck, Sprout, Users, Wallet,
 } from "lucide-react";
 import {
   CHILD_LEARNING, PARENT_LEARNING, PRACTICE_ASSETS,
   initialFamilyPractice, remainingCredits, remainingPeriod, transitionFamilyPractice,
-  type AssetCode, type FamilyPracticeState, type LearningModule, type FamilyRole,
+  type AssetCode, type FamilyPracticeState, type FamilyRole,
 } from "@/lib/family-public-practice";
 
 type ChildTab = "home" | "learn" | "explore" | "portfolio" | "key";
@@ -100,7 +100,7 @@ function LearningPath({ role, state, complete }: {
   );
 }
 
-function ChildHome({ state, open }: { state: FamilyPracticeState; open: (tab: ChildTab) => void }) {
+function ChildHome({ state, open, save }: { state: FamilyPracticeState; open: (tab: ChildTab) => void; save: () => void }) {
   return (
     <div className="space-y-5">
       <header>
@@ -121,7 +121,7 @@ function ChildHome({ state, open }: { state: FamilyPracticeState; open: (tab: Ch
             <p className={small}>Set aside pretend credits independently. Your balance is fictional.</p>
           </div>
           <button type="button" className={primary} disabled={remainingCredits(state) < 20}
-            onClick={() => open("portfolio")} data-cta="goal-portfolio">See progress <ArrowRight aria-hidden className="ml-1 inline size-4" /></button>
+            onClick={save}>Set aside 20 <ArrowRight aria-hidden className="ml-1 inline size-4" /></button>
         </div>
       </div>
       <div className="grid gap-3 md:grid-cols-2">
@@ -372,7 +372,7 @@ export function FamilyPublicStudio() {
         </nav>
         <div className="px-1 pb-2">
           {role === "child" ? (
-            childTab === "home" ? <ChildHome state={state} open={setChildTab}/> :
+            childTab === "home" ? <ChildHome state={state} open={setChildTab} save={() => dispatch({ type: "save" })}/> :
             childTab === "learn" ? <LearningPath role="child" state={state} complete={id => dispatch({ type: "complete", role: "child", lessonId: id })}/> :
             childTab === "explore" ? <Explore state={state} save={() => dispatch({ type: "save" })}
               buy={(asset, amount) => dispatch({ type: "buy", asset, amount })}/> :
