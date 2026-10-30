@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  makeOpenTestConfigs, FROZEN_PRODUCT_SHA, OPEN_TEST_WORKER
+  makeOpenTestConfigs, verifyPreparedOpenTestConfigs, FROZEN_PRODUCT_SHA, OPEN_TEST_WORKER
 } from "./prepare-family-open-test.mjs";
 
 function fixture() {
@@ -89,5 +89,33 @@ test("refuses embedded custom account/zone IDs and preview URLs", () => {
     const x = fixture();
     x.built[field] = value;
     assert.throws(() => makeOpenTestConfigs(x.source, x.built), field);
+  }
+});
+
+test("accepts actual harmless empty JSON settings but rejects changes to the generated Worker configs", () => {
+  const x = fixture();
+  // Generated Wrangler/Vinext configs may include these empty structures.
+  x.source.vars = {};
+  x.built.vars = {};
+  x.built.services = [];
+  x.built.durable_objects = { bindings: [] };
+  const { opened, closed } = makeOpenTestConfigs(x.source, x.built);
+  assert.equal(verifyPreparedOpenTestConfigs(x.source, x.built, opened, closed), true);
+
+  const cases = [
+    [{ ...opened, name: "cresco" }, closed],
+    [{ ...opened, workers_dev: false }, closed],
+    [{ ...opened, vars: { EXFIL: "enabled" } }, closed],
+    [{ ...opened, durable_objects: { bindings: [{ name: "X", class_name: "X" }] } }, closed],
+    [{ ...opened, route: "example.com/*" }, closed],
+    [{ ...opened, services: [{ binding: "API", service: "cresco-api-stocklana" }] }, closed],
+    [opened, { ...closed, workers_dev: true }],
+    [opened, { ...closed, name: "cresco-family-web" }],
+  ];
+  for (const [o, lock] of cases) {
+    assert.throws(
+      () => verifyPreparedOpenTestConfigs(x.source, x.built, o, lock),
+      "must reject unexpected generated-config change"
+    );
   }
 });
