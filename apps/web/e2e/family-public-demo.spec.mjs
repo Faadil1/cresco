@@ -35,8 +35,12 @@ test("public Family gives Child + Parent a complete practice loop without sign-i
   await expect(page.getByTestId("guided-next-step")).toBeHidden();
   await expect(page.getByText(/No verified guardian identity, real consent or transfer of funds/i)).toBeVisible();
   await expect(page.getByRole("heading", { name: /25 practice credits · MKT/i })).toBeVisible();
+  // Navigating to Requests on iPhone should reveal both decisions without
+  // requiring the visitor to hunt below the long page introduction.
+  await expect(page.getByRole("button", { name: /approve once #2/i })).toBeInViewport({ ratio: 0.5 });
+  await expect(page.getByRole("button", { name: /decline #2/i })).toBeInViewport({ ratio: 0.5 });
   await testInfo.attach("family-parent-request-mobile.png", { body: await page.screenshot({ fullPage: false }), contentType: "image/png" });
-  // Also capture the actual decision controls, which are below the first fold.
+  // Capture the exact decision controls again after explicitly ensuring their position.
   await page.getByRole("button", { name: /approve once #2/i }).scrollIntoViewIfNeeded();
   await testInfo.attach("family-parent-decision-mobile.png", { body: await page.screenshot({ fullPage: false }), contentType: "image/png" });
   await page.getByRole("button", { name: /approve once #2/i }).click();
@@ -192,6 +196,8 @@ test("Child Explore research has search, compare and risk questions without gran
   await expect(page.getByRole("heading", { name: "Harbor Medical Tools" })).toBeVisible();
   await expect(page.getByRole("button", { name: /Practice HBR choice/i })).toHaveCount(0);
   await page.getByRole("button", { name: "Research Harbor Medical Tools" }).click();
+  await expect(page.getByText(/This research desk explains a fictional example/i)).toBeVisible();
+  await expect(page.getByText(/Select Research on any card to learn how/i)).toHaveCount(0);
   await expect(page.getByText(/Does a useful health product automatically/i)).toBeVisible();
   await page.getByRole("heading", { name: "Harbor Medical Tools" }).last().scrollIntoViewIfNeeded();
   await testInfo.attach("family-child-research-mobile.png", { body: await page.screenshot({ fullPage: false }), contentType: "image/png" });
