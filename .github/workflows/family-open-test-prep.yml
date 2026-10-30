@@ -1,0 +1,47 @@
+name: family-open-test-preparation-no-deploy
+
+on:
+  push:
+    branches:
+      - family/open-one-click-tester-launch-prep-2026-10-30
+    paths:
+      - "apps/web/scripts/prepare-family-open-test.mjs"
+      - "apps/web/scripts/prepare-family-open-test.test.mjs"
+      - "docs/family/OPEN-TEST-*"
+      - ".github/workflows/family-open-test-prep.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify-open-test-preparation:
+    name: Verify separate public tester config policy (NO DEPLOY)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Confirm reviewed Family product source is unchanged
+        shell: bash
+        run: |
+          frozen=878fad8517c29b2ea778f8f82e18093a057cf1bc
+          git merge-base --is-ancestor "$frozen" HEAD
+          unexpected="$(git diff --name-only "$frozen" HEAD | grep -Ev '^(docs/family/OPEN-TEST-|apps/web/scripts/prepare-family-open-test(\.test)?\.mjs$|\.github/workflows/family-open-test-prep\.yml$)' || true)"
+          if [ -n "$unexpected" ]; then
+            printf 'FROZEN_FAMILY_PRODUCT_SOURCE_CHANGED:\n%s\n' "$unexpected"
+            exit 1
+          fi
+          echo "FROZEN_FAMILY_PRODUCT_SOURCE=UNCHANGED"
+      - name: Verify offline-only config policy and negative cases
+        run: node --test apps/web/scripts/prepare-family-open-test.test.mjs
+      - name: State release boundary
+        run: |
+          echo "FAMILY_TEST_WORKER_DEPLOYED=NO"
+          echo "HISTORIC_WORKERS_CHANGED=NO"
+          echo "CLOUDFLARE_CREDENTIALS_USED=NO"
+          echo "PUBLIC_TEST_URL_VERIFIED=NO"
