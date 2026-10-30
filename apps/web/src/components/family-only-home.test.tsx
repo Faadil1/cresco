@@ -29,9 +29,10 @@ describe("Family-only landing first impression", () => {
     expect(screen.getByText(/no-money learning illustration, not a real family account/i)).toBeInTheDocument();
     expect(screen.getByText(/single-browser simulation/i)).toBeInTheDocument();
     expect(screen.getByText(/does not prove separate accounts, legal guardianship/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /try the family practice story/i })).toHaveAttribute("href", "#family-agency-preview-title");
+    expect(screen.getByRole("link", { name: /start your invited practice/i })).toHaveAttribute("href", "/family-practice");
     expect(screen.getByRole("link", { name: /what parents should know/i })).toHaveAttribute("href", "#family-trust");
     expect(screen.queryByRole("link", { name: /invest now|buy stocks|earn yield/i })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /separate family setup preview/i })).toHaveAttribute("href", "/worlds-fair/desk?case=family");
+    expect(screen.queryByRole("link", { name: /separate family setup preview/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/no account or real money is involved/i)).toBeInTheDocument();
   });
 });
