@@ -36,3 +36,31 @@ Record exact **HEAD SHA** and CI conclusions in PR #114 after the final run; gre
 5. Independent human tester observations: can a child explain Practice vs Money, can a parent distinguish Approve Once from raising the standing Key, and can both find their Learning Paths without instructions?
 
 **Current verdict:** Better feature coverage than the 1-minute preview; **not yet proven as full historical Cresco parity or production-ready service.**
+
+## Historical owner-video UX review (frames inspected, not a new live UI capture)
+
+The owner's recorded browser session (reviewed 2026-10-30) provides a visual baseline, not evidence that the latest Family PR has been rendered visually. Representative observations:
+
+| Recorded timestamp (approx.) | Actual visual evidence in original recorded browser | Current draft Family candidate | Assessment |
+| --- | --- | --- | --- |
+| 24-28 sec | Child `/profile` with user identity and goal selection; `/home` with sidebar, Home, Learn, Explore, Portfolio and Profile | Anonymous practice Child view, shared goal chooser and progress in Home; Parent sees same goal | **Partial:** fictional goals restored, named profile and durable settings intentionally absent |
+| 28-33 sec | Full-screen child Home: large balance card, Practice/Money switch, My Key explanation, mission, lesson cards and badges | Child Home and Key summary, badges, learning, portfolio, optional contextual help in `/try` | **Partial:** feature logic present; full-screen hierarchy and left sidebar not yet visually reverified; **do not fake Money Mode** in public |
+| 36-48 sec | Illustrated multi-step lesson about stock ownership with blue action buttons, progress, source checks, completion | Original six source-backed lessons with their illustrated concept sections, question and progress | **Meaningful restoration**, but teaching screen navigation and animation fidelity still need screenshot comparison |
+| 51-54 sec | Company discovery grid, small trend charts, search/filter and contextual explanation | Three **fictional** examples with amount inputs and risk notes | **Major remaining gap:** discovery controls and company depth; live quotes excluded deliberately |
+| 57 sec | Portfolio screen with explicit Practice/Money distinction | Practice-only holdings, allocation, made-up risk scenarios and non-execution receipts | **Partial:** richer teaching data now but no original multi-period charts or live financial state |
+
+### Code-level UX findings addressed in this draft revision
+- Child saving goal was hard-coded as Bike; switched to three selectable, fictional goal targets and synced parent visibility without exposing personal info.
+- An unguided user could lose the next action between Child and Parent; optional contextual action now responds to learning, receipts, pending requests and one-time approvals.
+- The horizontal phone tab row had no clue that more sections existed; a small mobile-only swipe explanation was added.
+- The lesson player previously ended after a quiz with no contextual pathway to Practice or My Key; explicit role-aware **Apply** actions now route to matching screens.
+- Added desktop WebKit role/goal checks alongside iPhone, with screenshot attachments. This is **capture instrumentation**, not human approval. Workflow run artifacts need inspection before any claim of visual parity.
+
+### Remaining visual review gates
+1. Inspect **actual** candidate screenshots, not only the owner's old video; compare Home, Child Learn, Parent Learn, My Key, Parent Requests and Portfolio at phone and desktop widths.
+2. Verify buttons/tabs are touch-sized, color contrast, text truncation, overlays, semantic headings, scroll behavior and keyboard navigation. A code-level assertion for no horizontal overflow does not prove a comfortable experience.
+3. Restore a curated deeper Explore and useful teaching visuals before treating product parity as complete, using only fictional/local data in this Worker.
+4. Parent and Child testers must independently understand Practice vs any real Money/Devnet capability, one-time permission versus permanent Key and the lack of real authentication.
+5. The **newest HEAD needs its own successful CI**; no claim may inherit results from the earlier `2283c8ed` commit.
+
+**Release status remains CLOSED** until latest-commit checks, real screenshot comparison, UX comprehension and explicit publication decision.
