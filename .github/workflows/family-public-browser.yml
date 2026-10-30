@@ -1,6 +1,12 @@
 name: family-public-browser-no-login
 
 on:
+  push:
+    branches:
+      - family/dual-learning-paths-full-practice-2026-10-30
+    paths:
+      - ".github/workflows/family-public-browser.yml"
+      - "apps/web/**"
   pull_request:
     paths:
       - "apps/web/src/components/family-only-home.tsx"
