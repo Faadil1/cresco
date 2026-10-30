@@ -104,6 +104,40 @@ test("restores a sourced and illustrated original Cresco Child lesson behind the
   await expect(page.getByRole("progressbar", { name: "child learning progress" })).toHaveAttribute("aria-valuenow", "0");
 });
 
+
+test.describe("desktop Family UX audit evidence", () => {
+  test.use({ ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 } });
+
+  test("shows a personalized Child goal in the Parent dashboard with distinct desktop learning paths", async ({ page }, testInfo) => {
+    await page.goto("/try");
+    await expect(page.getByTestId("guided-next-step")).toBeVisible();
+    await page.getByRole("button", { name: /gaming setup.*80 pretend credits/i }).click();
+    await expect(page.getByRole("progressbar", { name: "Fictional saving goal progress" })).toHaveAttribute("aria-valuemax", "80");
+    await page.getByRole("button", { name: /set aside 20/i }).click();
+    await expect(page.getByTestId("practice-saved")).toHaveText("20");
+    await testInfo.attach("family-child-desktop.png", { body: await page.screenshot({ fullPage: false }), contentType: "image/png" });
+
+    await page.getByRole("button", { name: /parent view/i }).click();
+    await expect(page.getByRole("heading", { name: "Guide with confidence." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Gaming setup" })).toBeVisible();
+    await expect(page.getByText(/20 of 80 credits set aside/i)).toBeVisible();
+    await page.getByRole("navigation", { name: "Parent demo navigation" })
+      .getByRole("button", { name: "Learn", exact: true }).click();
+    await expect(page.getByText("Parent Learning Path")).toBeVisible();
+    await testInfo.attach("family-parent-learning-desktop.png", { body: await page.screenshot({ fullPage: false }), contentType: "image/png" });
+
+    await page.getByRole("button", { name: /child view/i }).click();
+    await page.getByRole("navigation", { name: "Child demo navigation" })
+      .getByRole("button", { name: "Home" }).click();
+    await expect(page.getByText(/20 of 80 pretend credits saved for gaming setup/i)).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth >
+      document.documentElement.clientWidth + 1)).toBe(false);
+    await page.reload();
+    await expect(page.getByText(/Saving goal · New bike/i)).toBeVisible();
+    await expect(page.getByTestId("practice-saved")).toHaveText("0");
+  });
+});
+
 test("visitor enters both profiles and historical routes remain unavailable", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { name: /try cresco - no sign-in/i }).click();
