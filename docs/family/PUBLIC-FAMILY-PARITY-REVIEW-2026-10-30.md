@@ -84,3 +84,26 @@ The owner's recorded browser session (reviewed 2026-10-30) provides a visual bas
 **Residual parity gap:** This is educationally meaningful discovery, not a restoration of the historic live provider/issuer data, extensive public company universe, real multi-period charting or money-rail capability. Only owner review and controlled feedback can determine whether the presentation is intuitive to real parents/children.
 
 **Validation boundary:** The GitHub connector has not surfaced fresh CI runs for this latest-commit sequence. Tests are **authored, not claimed passed**. Live visual screenshots on this revision have **not been inspected**. No merge or deployment has taken place.
+
+## Visual audit from actual Playwright screenshots — 2026-10-30
+
+**Evidence:** The owner provided five PNGs from Playwright's HTML report on Windows. These are **actual screenshots** of the exact locally tested Family Worker candidate `10e3463b2ecc41e1d1fe8e0a53678559e580d030` (that version has 142/142 unit and 8/8 WebKit tests PASS). The images are **viewport captures**, not full-page recordings, and do not demonstrate interaction usability beyond the test results. 3 are iPhone WebKit 1170×1992 physical pixels; 2 are desktop WebKit 1440×900.
+
+| Screenshot file prefix | Visible scene | Grounded UX observation |
+| --- | --- | --- |
+| `ddd141be` | iPhone, initial `/try` | Masthead, intro, large role selector and suggested next-step callout consume the full captured first screen; no Child workspace/nav is visible yet. The default experience looks like an introduction rather than the product. |
+| `bc091d55` | iPhone, Child Explore | Suggested next-step box sits above Child navigation, then a very large title and description; the interactive company search/cards are not visible within the captured viewport. The screenshot **does not prove they are missing below**. |
+| `7325ff3b` | iPhone, Parent Requests | Suggested next-step box and large heading take up room; the pending 25-credit MKT request is visible at the bottom but the decision buttons are outside the captured area. This is a discoverability/hierarchy problem, **not a permission-engine failure**. |
+| `accedb18` | Desktop, Parent Learning | Clear role-specific navigation and first lesson guidance, but two consecutive green instruction cards before the actual lessons increase vertical density. |
+| `df68b42` | Desktop, Child Home | Clean three-metric row, goal selector and saving progress, visible Learning/Explore actions; original UI visual style is meaningfully present. Not a full parity proof. |
+
+**P0 changes authored on Family draft AFTER screenshots (need a new exact HEAD run and NEW screenshots):**
+1. Compress mobile `/try` hero and use a concise mobile-only fictional disclaimer while retaining fuller desktop explanation.
+2. Compress mobile profile selector, name the roles **simulated** rather than claiming "two real perspectives", and prioritize actual Child/Parent workspace navigation in the first screen.
+3. Only show the contextual suggestion above the mobile workspace when a pending exact request or one-time exception actually needs attention; leave existing feature buttons to guide normal actions. Compact that banner on phones.
+4. Reduce mobile workspace card/navigation spacing, Explorer heading/disclaimer and Parent Requests heading/disclaimer. Keep the explicit simulated-not-verified guardian disclosure in Requests.
+5. Fix obsolete Child Home description ("three fictional examples") now that Explore contains six.
+6. Expand the Playwright mobile checks: require Child navigation to be in the **viewport on initial load** and the Explore search box to be **in the viewport** when its tab opens.
+7. The local proof script now collects actual PNGs from Playwright **`playwright-report/data`** (previously it checked only `test-results` and returned no files) into its evidence directory and a ZIP.
+
+**Do not interpret the five old PNGs as verification of this revised UI.** They are diagnostic evidence for concrete source changes. No screenshot of the new HEAD has been inspected; visual release approval remains **NO_GO**. Before advancing the PR, rerun Windows proof on the latest exact SHA, inspect the new iPhone first fold plus Parent Requests and Explore and verify the simulated parent role cannot be mistaken for real authorization. Any claim of automated first-fold success must come from a passing test on the revised SHA, not from source inspection.
