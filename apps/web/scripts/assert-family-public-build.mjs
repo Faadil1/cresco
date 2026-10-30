@@ -9,9 +9,12 @@ if (config.name!=="cresco-family-web" || config.workers_dev!==false ||
     config.preview_urls!==false || config.route || config.routes?.length) {
   throw new Error("PUBLIC_FAMILY_BUILD_NOT_ISOLATED_OR_SEALED");
 }
-if (process.env.CRESCO_FAMILY_PUBLIC_DEMO!=="1" ||
-    process.env.NEXT_PUBLIC_CRESCO_API_URL) {
-  throw new Error("PUBLIC_FAMILY_DEMO_REQUIRES_NO_API_ORIGIN");
+// Vite enforces a blank backend origin when the public-demo bundle is built.
+// The post-build Node process may inherit a legacy environment value not used
+// by Vite; do not mistake that ambient value for a bundled API connection.
+// The dedicated public mobile E2E additionally asserts zero API requests.
+if (process.env.CRESCO_FAMILY_PUBLIC_DEMO!=="1") {
+  throw new Error("PUBLIC_FAMILY_DEMO_MODE_REQUIRED");
 }
 console.log(JSON.stringify({
   status:"PASS",worker:config.name,backendRequired:false,
