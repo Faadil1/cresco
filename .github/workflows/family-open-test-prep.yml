@@ -44,7 +44,9 @@ jobs:
         env:
           NEXT_PUBLIC_CRESCO_API_URL: ""
         run: |
-          npm ci --no-audit --no-fund
+          # Frozen product lockfile has a pre-existing Linux npm ci mismatch
+          # (missing utf-8-validate@5.0.10). Do not mutate its package-lock here.
+          npm install --no-save --package-lock=false --no-audit --no-fund
           npm run build:public-family
       - name: Validate and prepare distinct Worker configs locally (NO DEPLOY)
         working-directory: apps/web
