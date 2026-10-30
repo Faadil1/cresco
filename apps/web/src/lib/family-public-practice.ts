@@ -1,3 +1,6 @@
+import { LEARNING_SOURCES, LESSONS } from "@/mocks/learning";
+import type { IllustrationKey, LearningSource } from "@/domain/types";
+
 /**
  * Public Family teaching sandbox. This module is deliberately pure:
  * no sessions, persistence, fetch, wallet, RPC or financial authority.
@@ -31,12 +34,47 @@ export type LearningModule = {
   choices: [string, string, string];
   answer: number;
   explanation: string;
+  illustration?: IllustrationKey;
+  source?: LearningSource;
+  detail?: string;
+  origin?: "historical-cresco";
 };
 export const CHILD_LEARNING: LearningModule[] = [
   { id: "c-save", title: "Save for a goal", minutes: 3, concept: "Saving sets credits aside for a future goal. Money needed soon may not belong in a risky investment.", question: "What helps before deciding how to save?", choices: ["Pick a random stock", "Choose a goal and a time horizon", "Assume prices always rise"], answer: 1, explanation: "A goal and timeframe help you understand how much uncertainty you can accept." },
   { id: "c-explore", title: "Know what you own", minutes: 4, concept: "A share represents ownership in a company. A fictional practice purchase is not a real share or token.", question: "What happens in this public demo?", choices: ["You own a security", "A wallet receives tokens", "Only pretend credits and a practice receipt change"], answer: 2, explanation: "The demo never places an order or creates an ownership right." },
   { id: "c-risk", title: "Practice with risk", minutes: 4, concept: "Prices can go down. Spreading investments across assets can reduce concentration but cannot guarantee returns.", question: "Does diversification eliminate the possibility of a loss?", choices: ["No", "Yes", "Only after a lesson"], answer: 0, explanation: "Different investments can decline together; learning does not guarantee any result." },
 ];
+// Restore the original illustrated and primary-source-backed CRESCO curriculum
+// without unlocking its backend-dependent routes, auth or lesson persistence.
+const SOURCE_BACKED_CHILD_IDS = [
+  "what-is-a-stock", "why-companies-sell-shares", "stock-vs-tokenized-security",
+  "why-prices-move", "risk-and-reward", "build-your-portfolio",
+];
+for (const id of SOURCE_BACKED_CHILD_IDS) {
+  const original = LESSONS.find(item => item.id === id);
+  if (!original) throw new Error(`Missing original Cresco lesson ${id}`);
+  const concepts = original.steps.filter(step => step.kind === "concept");
+  const quiz = original.steps.find(step => step.kind === "quiz");
+  const source = concepts.find(step => step.source)?.source;
+  if (!quiz || !concepts.length || !source || quiz.options.length !== 3) {
+    throw new Error(`Incomplete source-backed lesson ${id}`);
+  }
+  CHILD_LEARNING.push({
+    id: `original-${id}`,
+    title: original.title,
+    minutes: original.minutes,
+    concept: concepts[0].body,
+    detail: concepts.map(step => step.realityCheck).filter(Boolean).join(" "),
+    illustration: concepts[0].illustration,
+    source,
+    question: quiz.question,
+    choices: quiz.options.map(option => option.label) as [string, string, string],
+    answer: quiz.options.findIndex(option => option.id === quiz.correctId),
+    explanation: quiz.correctExplanation,
+    origin: "historical-cresco",
+  });
+}
+
 export const PARENT_LEARNING: LearningModule[] = [
   { id: "p-basics", title: "Money & family conversations", minutes: 3, concept: "Begin with goals, needs and wants, and a conversation about what the child wants to learn. Progress is not permission.", question: "What is a good first family conversation?", choices: ["Promise guaranteed returns", "Talk about goals and what money is for", "Require a wallet"], answer: 1, explanation: "The conversation builds context without creating financial authority." },
   { id: "p-key", title: "Understand My Key", minutes: 4, concept: "A standing Key defines the amount per action, total spending this practice period, and eligible instruments. The child acts alone inside it.", question: "When a practice action is inside the standing Key, does it need a new Parent approval?", choices: ["Always", "No", "Only if the child has no badge"], answer: 1, explanation: "The point of the Key is bounded autonomy, not approval of every action." },
@@ -44,6 +82,19 @@ export const PARENT_LEARNING: LearningModule[] = [
   { id: "p-boundary", title: "Decide at the boundary", minutes: 5, concept: "Above a limit, the child is blocked. You can decline, allow one exact action, or separately edit the standing Key. They have different consequences.", question: "What does Approve once change?", choices: ["Only the precise pending practice request", "Every future spending limit", "The child's learning score"], answer: 0, explanation: "An exact single-use exception leaves the standing Key unchanged and cannot be replayed." },
   { id: "p-together", title: "Grow autonomy together", minutes: 4, concept: "Review choices and outcomes with the child. You may explicitly update the Key, but a quiz, badge or recommendation must never widen it automatically.", question: "Who changes the standing Key in a real family product?", choices: ["The child's quiz", "A badge algorithm", "An authorized parent through an explicit action"], answer: 2, explanation: "Learning and authorization remain separate." },
 ];
+
+// The parent's separate path uses the existing verified educational sources
+// for financial concepts, not for Family Key rules (which are demo-specific).
+for (const lesson of PARENT_LEARNING) {
+  const sourceById: Partial<Record<string, LearningSource>> = {
+    "p-basics": LEARNING_SOURCES.studentSaving,
+    "p-risk": LEARNING_SOURCES.risk,
+    "p-together": LEARNING_SOURCES.diversification,
+  };
+  lesson.source = sourceById[lesson.id];
+  lesson.illustration = lesson.id === "p-risk" ? "scale" : lesson.id === "p-basics" ? "piggy" : "shares";
+}
+
 
 export type PracticeKey = {
   version: number;
