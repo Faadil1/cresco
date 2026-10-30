@@ -100,6 +100,16 @@ for (const lesson of PARENT_LEARNING) {
 }
 
 
+export type PracticeGoalId = "bike" | "gaming" | "trip";
+export const PRACTICE_GOALS = [
+  { id: "bike", label: "New bike", target: 60, description: "Something useful for exploring." },
+  { id: "gaming", label: "Gaming setup", target: 80, description: "Plan for a bigger purchase." },
+  { id: "trip", label: "Family trip", target: 100, description: "Save toward an experience together." },
+] as const satisfies readonly { id: PracticeGoalId; label: string; target: number; description: string }[];
+export function selectedPracticeGoal(state: FamilyPracticeState) {
+  return PRACTICE_GOALS.find(goal => goal.id === state.goalId)!;
+}
+
 export type PracticeKey = {
   version: number;
   nonce: number;
@@ -124,6 +134,7 @@ export type PracticeReceipt = {
   label: "PRACTICE_ONLY_NOT_EXECUTED";
 };
 export type FamilyPracticeState = {
+  goalId: PracticeGoalId;
   saved: number;
   spent: number;
   holdings: Record<AssetCode, number>;
@@ -139,7 +150,7 @@ export type FamilyPracticeState = {
 };
 export function initialFamilyPractice(): FamilyPracticeState {
   return {
-    saved: 0, spent: 0, holdings: { ORC: 0, MKT: 0, BKT: 0 },
+    goalId: "bike", saved: 0, spent: 0, holdings: { ORC: 0, MKT: 0, BKT: 0 },
     key: { version: 1, nonce: 1, maxPerAction: 15, maxPeriod: 60, allowed: ["ORC", "MKT", "BKT"] },
     requests: [], receipts: [], childCompleted: [], parentCompleted: [],
     togetherCompleted: false, discussion: { child: null, parent: null }, feedback: "Choose a role to explore a fictional family scenario.",
@@ -173,6 +184,7 @@ export function evaluatePracticeScenario(s: FamilyPracticeState, scenario: Pract
 
 
 type Action =
+  | { type: "set-goal"; goalId: PracticeGoalId }
   | { type: "save" }
   | { type: "buy"; asset: AssetCode; amount: number }
   | { type: "respond"; id: number; choice: "approve" | "decline" }
@@ -203,6 +215,11 @@ function execute(s: FamilyPracticeState, asset: PracticeAsset, amount: number, p
 /** Pure state transition; parent decisions can NEVER authorize real execution. */
 export function transitionFamilyPractice(s: FamilyPracticeState, action: Action): FamilyPracticeState {
   if (action.type === "reset") return initialFamilyPractice();
+  if (action.type === "set-goal") {
+    const goal = PRACTICE_GOALS.find(item => item.id === action.goalId);
+    if (!goal) return reject(s, "Unknown practice goal.");
+    return { ...s, goalId: goal.id, togetherCompleted: false, feedback: `Goal selected: ${goal.label}. Practice balances and My Key are unchanged.` };
+  }
   if (action.type === "save") {
     if (remainingCredits(s) < 20) return reject(s, "Not enough available practice credits to save 20.");
     return { ...s, saved: s.saved + 20, feedback: "20 fictional credits set aside for a goal. No real savings created." };
