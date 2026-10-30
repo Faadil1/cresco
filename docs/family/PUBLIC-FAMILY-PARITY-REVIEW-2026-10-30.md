@@ -64,3 +64,23 @@ The owner's recorded browser session (reviewed 2026-10-30) provides a visual bas
 5. The **newest HEAD needs its own successful CI**; no claim may inherit results from the earlier `2283c8ed` commit.
 
 **Release status remains CLOSED** until latest-commit checks, real screenshot comparison, UX comprehension and explicit publication decision.
+
+## Explore restoration, candidate revision — 2026-10-30
+
+**Previous code-reviewed limitation:** The Family `Explore` tab exposed only three name/price/risk cards and trade amount controls. The historical owner video showed an exploratory workflow with more discovery, comparisons, graphics and context. Existing market-dependent historical pages could not be safely unlocked on the public browser-only Worker.
+
+**Additive browser-only candidate:**
+- Dedicated `family-public-explore.tsx` and `family-public-explore-data.ts`, with **six explicitly invented case studies**: technology, consumer products, a diversified fictional fund, services, energy and health.
+- Search and sector filters; detail sheets describing fictional customers, business models, upside, uncertainty and research questions.
+- Eight-step illustrative static trend lines with an accessibility description and labels explaining that they are **not actual historic, live or predicted prices**.
+- Compare up to two cases through business model, risk and open research question. No recommendation/ranking or automated investing signal.
+- Each case has a simple research comprehension question; answering does not modify credits, family progress, receipts, My Key or approved permissions.
+- The first three existing fictional examples (ORC, MKT, BKT) retain the already-tested pure Practice state transitions. The other three are **research only**, with no buy action, not added to allowed instruments and no hidden order path.
+- Selecting Research brings the explanatory card into view.
+- Unit tests cover fixed catalog, research-only boundary, filter behavior and deterministic trend generation. iPhone WebKit test added for search, compare, research quiz and unchanged credit balance.
+
+**Safety and UX requirements retained:** No external company feeds; no live prices; no custody/guardian verification; no network requests or browser persistence introduced; no historical routes unsealed. The broader Family workflow path allowlist now also includes the new Explore files.
+
+**Residual parity gap:** This is educationally meaningful discovery, not a restoration of the historic live provider/issuer data, extensive public company universe, real multi-period charting or money-rail capability. Only owner review and controlled feedback can determine whether the presentation is intuitive to real parents/children.
+
+**Validation boundary:** The GitHub connector has not surfaced fresh CI runs for this latest-commit sequence. Tests are **authored, not claimed passed**. Live visual screenshots on this revision have **not been inspected**. No merge or deployment has taken place.
