@@ -14,6 +14,17 @@ describe("Family public teaching sandbox — never a financial permission", () =
     expect(CHILD_LEARNING.length).toBeGreaterThan(0);
     expect(PARENT_LEARNING.length).toBe(5);
   });
+  it("keeps personalized fictional saving goals shared without changing parental permission", () => {
+    const original = initialFamilyPractice();
+    expect(original.goalId).toBe("bike");
+    const chosen = next(original, { type: "set-goal", goalId: "gaming" });
+    expect(chosen.goalId).toBe("gaming");
+    expect(chosen.key).toEqual(original.key);
+    const saved = next(chosen, { type: "save" });
+    expect(saved.saved).toBe(20);
+    expect(saved.goalId).toBe("gaming");
+    expect(next(saved, { type: "reset" }).goalId).toBe("bike");
+  });
   it("records an autonomous within-Key practice buy with a non-execution receipt", () => {
     const s = next(initialFamilyPractice(), { type: "buy", asset: "ORC", amount: 10 });
     expect(s.spent).toBe(10);
