@@ -2,42 +2,86 @@ import { test, expect, devices } from "@playwright/test";
 
 test.use({ ...devices["iPhone 13"] });
 
-test("public Cresco demo works immediately, on one phone, without accounts or API calls", async ({ page }) => {
+test("public Family gives Child + Parent a complete practice loop without sign-in or backend", async ({ page }) => {
   const outbound = [];
-  page.on("request", (request) => {
-    if (/cresco-family-api|keys-api-stocklana|api\.solana|rpc\.solana|\/api\/family-practice/.test(request.url())) {
+  page.on("request", request => {
+    if (/cresco-family-api|keys-api-stocklana|api\\.solana|rpc\\.solana|\\/api\\/family-practice|\\/api\\/v0/.test(request.url())) {
       outbound.push({ method: request.method(), url: request.url() });
     }
   });
+
   await page.goto("/try");
-  await expect(page.getByRole("heading", { name: /experience cresco in one minute/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /a whole family can learn to decide/i })).toBeVisible();
   await expect(page.getByText(/no invitation\. no parent or teen codes/i)).toBeVisible();
+  await expect(page.getByTestId("family-public-studio")).toBeVisible();
   await expect(page.getByTestId("practice-available")).toHaveText("100");
+
+  await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: /explore/i }).click();
   await page.getByRole("button", { name: /set aside 20 practice credits/i }).click();
-  await expect(page.getByTestId("practice-available")).toHaveText("80");
-  await expect(page.getByTestId("practice-saved")).toHaveText("20");
-  await page.getByRole("button", { name: /ask to explore a diversified fund/i }).click();
-  await expect(page.getByRole("status")).toHaveText(/waiting for a Parent decision/i);
-  await page.getByRole("button", { name: /approve practice discussion/i }).click();
-  await expect(page.getByRole("status")).toHaveText(/nothing was purchased/i);
-  await page.getByRole("button", { name: /reset practice/i }).click();
-  await page.getByRole("button", { name: /ask to explore a diversified fund/i }).click();
-  await page.getByRole("button", { name: /decline practice discussion/i }).click();
-  await expect(page.getByRole("status")).toHaveText(/parent declined/i);
-  await page.reload();
-  await expect(page.getByTestId("practice-available")).toHaveText("100");
-  await expect(page.getByTestId("practice-saved")).toHaveText("0");
+  await page.getByRole("button", { name: /practice ORC choice/i }).click();
+  await expect(page.getByRole("status")).toHaveText(/independent practice action recorded/i);
+
+  await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: /portfolio/i }).click();
+  await expect(page.getByTestId("portfolio-available")).toHaveText("70");
+  await expect(page.getByText(/PRACTICE ONLY — NOT EXECUTED ONCHAIN/i)).toBeVisible();
+  await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: /explore/i }).click();
+  await page.getByRole("button", { name: /practice MKT choice/i }).click();
+  await expect(page.getByRole("status")).toHaveText(/outside My Key: blocked/i);
+
+  await page.getByRole("button", { name: /parent view/i }).click();
+  await page.getByRole("navigation", { name: "Parent demo navigation" }).getByRole("button", { name: /requests/i }).click();
+  await expect(page.getByRole("heading", { name: /25 practice credits · MKT/i })).toBeVisible();
+  await page.getByRole("button", { name: /approve once #2/i }).click();
+  await expect(page.getByRole("status")).toHaveText(/standing Key did not widen/i);
+
+  await page.getByRole("button", { name: /child view/i }).click();
+  await page.getByRole("button", { name: /practice MKT choice/i }).click();
+  await expect(page.getByRole("status")).toHaveText(/exact one-time practice approval used/i);
+  await page.getByRole("button", { name: /practice MKT choice/i }).click();
+  await expect(page.getByRole("status")).toHaveText(/cannot be replayed/i);
+  await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: /portfolio/i }).click();
+  await expect(page.getByTestId("portfolio-available")).toHaveText("45");
+
   expect(outbound).toEqual([]);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth >
-    document.documentElement.clientWidth + 1)).toBe(false);
-  expect(await page.evaluate(() => JSON.stringify(localStorage))).not.toContain("pr_");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1)).toBe(false);
+  expect(await page.evaluate(() => JSON.stringify(localStorage))).not.toContain("family-public-practice");
 });
 
-test("visitor gets demo from landing and cannot navigate to invited or Devnet routes", async ({ page }) => {
+test("Parent and Child have independent interactive learning paths with the same family check-in", async ({ page }) => {
+  await page.goto("/try");
+  await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: "Learn" }).click();
+  await page.getByRole("button", { name: /lesson 1 · 3 min save for a goal/i }).click();
+  await page.getByRole("button", { name: /choose a goal and a time horizon/i }).click();
+  await page.getByRole("button", { name: "Complete lesson" }).click();
+  await expect(page.getByRole("progressbar", { name: "child learning progress" })).toHaveAttribute("aria-valuenow", "1");
+
+  await page.getByRole("button", { name: /parent view/i }).click();
+  await page.getByRole("navigation", { name: "Parent demo navigation" }).getByRole("button", { name: "Learn" }).click();
+  await expect(page.getByRole("progressbar", { name: "parent learning progress" })).toHaveAttribute("aria-valuenow", "0");
+  await page.getByRole("button", { name: /lesson 1 · 3 min money & family conversations/i }).click();
+  await page.getByRole("button", { name: /talk about goals and what money is for/i }).click();
+  await page.getByRole("button", { name: "Complete lesson" }).click();
+  await expect(page.getByRole("progressbar", { name: "parent learning progress" })).toHaveAttribute("aria-valuenow", "1");
+  await page.getByRole("navigation", { name: "Parent demo navigation" }).getByRole("button", { name: /learn together/i }).click();
+  await page.getByRole("button", { name: /mark our discussion complete/i }).click();
+  await expect(page.getByRole("status")).toHaveText(/no financial permission changed/i);
+
+  await page.getByRole("button", { name: /child view/i }).click();
+  await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: "Learn" }).click();
+  await expect(page.getByRole("progressbar", { name: "child learning progress" })).toHaveAttribute("aria-valuenow", "1");
+  await page.reload();
+  await expect(page.getByTestId("practice-available")).toHaveText("100");
+  await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: "Learn" }).click();
+  await expect(page.getByRole("progressbar", { name: "child learning progress" })).toHaveAttribute("aria-valuenow", "0");
+});
+
+test("visitor enters both profiles and historical routes remain unavailable", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { name: /try cresco - no sign-in/i }).click();
   await expect(page).toHaveURL(/\/try$/);
-  await expect(page.getByTestId("family-agency-preview")).toBeVisible();
+  await expect(page.getByTestId("family-public-studio")).toBeVisible();
+  await page.getByRole("button", { name: /parent view/i }).click();
+  await expect(page.getByRole("heading", { name: /guide with confidence/i })).toBeVisible();
   await page.goto("/family-practice");
   await expect(page.locator("body")).toContainText("This deployment is Family-only.");
   await page.goto("/worlds-fair/desk?case=family");
