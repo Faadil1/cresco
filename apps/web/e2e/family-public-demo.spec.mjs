@@ -140,6 +140,23 @@ test.describe("desktop Family UX audit evidence", () => {
   });
 });
 
+test("learning actions lead to relevant Parent and Child practice screens on mobile", async ({ page }) => {
+  await page.goto("/try");
+  await expect(page.getByText("Swipe sideways to see all profile tabs.")).toBeVisible();
+  await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: "Learn", exact: true }).click();
+  await page.getByRole("button", { name: /lesson 1 · 3 min save for a goal/i }).click();
+  await page.getByRole("button", { name: "Practice this in Child view" }).click();
+  await expect(page.getByRole("heading", { name: /hey, future explorer/i })).toBeVisible();
+
+  await page.getByRole("button", { name: /parent view/i }).click();
+  await page.getByRole("navigation", { name: "Parent demo navigation" }).getByRole("button", { name: "Learn", exact: true }).click();
+  await page.getByRole("button", { name: /lesson 2 · 4 min understand my key/i }).click();
+  await page.getByRole("button", { name: "Apply this in Parent view" }).click();
+  await expect(page.getByRole("heading", { name: /set the room to decide/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /explicitly update standing key/i })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1)).toBe(false);
+});
+
 test("visitor enters both profiles and historical routes remain unavailable", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { name: /try cresco - no sign-in/i }).click();
