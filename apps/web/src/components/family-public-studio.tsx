@@ -48,6 +48,7 @@ function LearningPath({ role, state, complete, onApply }: {
   const [active, setActive] = useState<string | null>(null);
   const [answer, setAnswer] = useState<number | null>(null);
   const lesson = lessons.find(l => l.id === active);
+  const nextLesson = lessons.find(item => !done.includes(item.id));
   return (
     <section aria-labelledby="learning-title" className="space-y-4">
       <div>
@@ -55,6 +56,21 @@ function LearningPath({ role, state, complete, onApply }: {
         <h2 id="learning-title" className="mt-2 font-display text-[32px] text-navy-strong">Learn at your own pace</h2>
         <p className={small}>Progress: {done.length} of {lessons.length} modules · Short lessons, practical examples, no financial authority.</p>
       </div>
+      {nextLesson ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-green/25 bg-green-soft p-4">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-green-strong">Suggested next lesson · {nextLesson.minutes} minutes</p>
+            <p className="mt-1 text-[16px] font-bold text-navy-strong">{nextLesson.title}</p>
+            <p className="mt-1 text-[12px] text-ink-2">You may explore any lesson. Learning never widens the practice Key.</p>
+          </div>
+          <button type="button" className={secondary}
+            onClick={() => { setActive(nextLesson.id); setAnswer(null); }}>Continue learning path</button>
+        </div>
+      ) : (
+        <p className="rounded-[16px] bg-green-soft p-4 text-[13px] font-semibold text-green-strong">
+          Learning path completed. Review any lesson or apply your knowledge in Practice.
+        </p>
+      )}
       <div className="h-2 w-full overflow-hidden rounded-full bg-green-soft" role="progressbar" aria-label={role + " learning progress"} aria-valuenow={done.length} aria-valuemin={0} aria-valuemax={lessons.length}>
         <div className="h-full rounded-full bg-green-strong" style={{ width: `${100 * done.length / lessons.length}%` }} />
       </div>
