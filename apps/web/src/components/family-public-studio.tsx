@@ -523,7 +523,9 @@ export function FamilyPublicStudio() {
         <div className="px-1 pb-2">
           {role === "child" ? (
             childTab === "home" ? <ChildHome state={state} open={setChildTab} save={() => dispatch({ type: "save" })} chooseGoal={goalId => dispatch({ type: "set-goal", goalId })}/> :
-            childTab === "learn" ? <LearningPath role="child" state={state} complete={id => dispatch({ type: "complete", role: "child", lessonId: id })}/> :
+            childTab === "learn" ? <LearningPath role="child" state={state}
+              complete={id => dispatch({ type: "complete", role: "child", lessonId: id })}
+              onApply={id => setChildTab(id === "c-save" ? "home" : id === "c-risk" ? "portfolio" : "explore")}/> :
             childTab === "explore" ? <Explore state={state} save={() => dispatch({ type: "save" })}
               buy={(asset, amount) => dispatch({ type: "buy", asset, amount })}/> :
             childTab === "portfolio" ? <FamilyPracticePortfolio state={state}/> :
@@ -550,7 +552,9 @@ export function FamilyPublicStudio() {
                 <button className={secondary} type="button" onClick={() => setParentTab("requests")}>Review requests {pending ? `(${pending})` : ""}</button>
               </div>
             </div> :
-            parentTab === "learn" ? <LearningPath role="parent" state={state} complete={id => dispatch({ type: "complete", role: "parent", lessonId: id })}/> :
+            parentTab === "learn" ? <LearningPath role="parent" state={state}
+              complete={id => dispatch({ type: "complete", role: "parent", lessonId: id })}
+              onApply={id => setParentTab(id === "p-basics" ? "overview" : id === "p-boundary" ? "requests" : id === "p-together" ? "together" : "key")}/> :
             parentTab === "key" ? <ParentKey state={state} update={(maxPerAction, maxPeriod, allowed) => dispatch({ type: "set-key", maxPerAction, maxPeriod, allowed })}/> :
             parentTab === "requests" ? <Requests state={state} decide={(id, choice) => dispatch({ type: "respond", id, choice })}/> :
             <Together role="parent" state={state} childAnswer={choice => dispatch({ type: "discussion-child", choice })}
