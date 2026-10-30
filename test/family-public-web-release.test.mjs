@@ -22,6 +22,9 @@ test("public activation changes only the Family Web's public routing flag", () =
   assert.equal(result.closedConfig.workers_dev, false);
   assert.equal(result.closedConfig.preview_urls, false);
   assert.equal(result.publicConfig.assets.directory, "../client");
+  assert.doesNotThrow(() => validateFamilyPublicRelease(sealed(), {
+    ...sealed(), queues: { producers: [], consumers: [] }
+  }));
 });
 
 test("reject historical Workers, public source, unintended APIs, persistent stores and routes", () => {
@@ -35,6 +38,7 @@ test("reject historical Workers, public source, unintended APIs, persistent stor
     { account_id: "unexpected" },
     { durable_objects: { bindings: [{ name: "STATE", class_name: "Legacy" }] } },
     { services: [{ binding: "API", service: "keys-api-stocklana" }] },
+    { queues: { producers: [{ binding: "ATTACKER_QUEUE", queue: "legacy" }], consumers: [] } },
     { vars: { NEXT_PUBLIC_CRESCO_API_URL: "https://keys-api-stocklana.example" } }
   ]) {
     assert.throws(() => validateFamilyPublicRelease(sealed(), { ...sealed(), ...mutation }),
