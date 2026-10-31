@@ -70,7 +70,7 @@ export function GoalChapter() {
       </section>
 
       <ChapterNav back={{ href: "/try", label: "Welcome" }}
-        next={{ href: "/try/learn", label: "My learning path", onClick: () => { dispatch({ type: "confirm-goal" }); }, disabled: false }}/>
+        next={{ href: "/try/learn", label: story.goalChosen ? "My learning path" : "Choose a goal to continue", disabled: !story.goalChosen }}/>
     </div>
   );
 }
