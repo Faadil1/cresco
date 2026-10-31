@@ -41,6 +41,8 @@ export type StoryState = {
   viewed: string[];
   researched: string[];
   episodeChoices: Record<string, 0 | 1>;
+  // Immutable per-request snapshot: Parent always sees what was answered at ask time.
+  requestEpisodeChoices: Record<number, 0 | 1>;
   pick: AssetCode | null;
   reasons: Record<number, ReasonId>;
   declineReasons: Record<number, DeclineReasonId>;
@@ -48,7 +50,7 @@ export type StoryState = {
 export function initialStory(): StoryState {
   return {
     practice: initialFamilyPractice(), goalChosen: false, interests: [], viewed: [], researched: [],
-    episodeChoices: {}, pick: null, reasons: {}, declineReasons: {},
+    episodeChoices: {}, requestEpisodeChoices: {}, pick: null, reasons: {}, declineReasons: {},
   };
 }
 
@@ -68,11 +70,16 @@ export function transitionStory(s: StoryState, action: StoryAction): StoryState 
   if (action.type === "practice") {
     if (action.action.type === "reset") return initialStory();
     const next = transitionFamilyPractice(s.practice, action.action);
-    let { reasons, declineReasons, goalChosen } = s;
+    let { reasons, declineReasons, goalChosen, requestEpisodeChoices } = s;
     if (action.action.type === "set-goal" && next.goalId === action.action.goalId) goalChosen = true;
     if (action.action.type === "buy") {
       const made = next.requests.find(r => !s.practice.requests.some(old => old.id === r.id));
-      if (made) reasons = { ...reasons, [made.id]: action.reason ?? "curious" };
+      if (made) {
+        reasons = { ...reasons, [made.id]: action.reason ?? "curious" };
+        const company = FAMILY_EXPLORE_CASES.find(item => item.practiceCode === made.asset);
+        const chosen = company ? s.episodeChoices[company.id] : undefined;
+        if (chosen !== undefined) requestEpisodeChoices = { ...requestEpisodeChoices, [made.id]: chosen };
+      }
     }
     if (action.action.type === "respond" && action.action.choice === "decline") {
       const target = next.requests.find(r => r.id === (action.action as { id: number }).id);
@@ -81,7 +88,7 @@ export function transitionStory(s: StoryState, action: StoryAction): StoryState 
         declineReasons = { ...declineReasons, [target.id]: action.declineReason ?? "talk-first" };
       }
     }
-    return { ...s, practice: next, reasons, declineReasons, goalChosen };
+    return { ...s, practice: next, reasons, declineReasons, goalChosen, requestEpisodeChoices };
   }
   if (action.type === "toggle-interest") {
     if (!INTERESTS.some(item => item.id === action.id)) return s;
