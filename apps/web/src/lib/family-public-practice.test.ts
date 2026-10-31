@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  CHILD_LEARNING, PARENT_LEARNING, evaluatePracticeScenario, initialFamilyPractice, remainingCredits,
+  CHILD_LEARNING, PARENT_LEARNING, evaluatePracticeScenario, initialFamilyPractice, previewPracticeChoice, remainingCredits,
   transitionFamilyPractice as next,
 } from "./family-public-practice";
 
@@ -147,5 +147,38 @@ describe("Family public teaching sandbox — never a financial permission", () =
     expect(completed.key).toEqual(original.key);
     expect(completed.receipts).toEqual([]);
     expect(next(completed, { type: "reset" })).toEqual(initialFamilyPractice());
+  });
+});
+
+describe("previewPracticeChoice (forecast shown before the Child clicks)", () => {
+  const base = initialFamilyPractice();
+  it("says inside-key, needs-parent and invalid without changing state", () => {
+    const snapshot = JSON.stringify(base);
+    expect(previewPracticeChoice(base, "ORC", 10).kind).toBe("inside-key");
+    const over = previewPracticeChoice(base, "MKT", 25);
+    expect(over.kind).toBe("needs-parent");
+    expect(over.message).toMatch(/over your 15-credit limit/);
+    expect(previewPracticeChoice(base, "MKT", 2.5).kind).toBe("invalid");
+    expect(previewPracticeChoice(base, "MKT", 101).kind).toBe("invalid");
+    expect(JSON.stringify(base)).toBe(snapshot);
+  });
+  it("tracks the request lifecycle: pending, approved once, used and declined", () => {
+    let s = next(base, { type: "buy", asset: "MKT", amount: 25 });
+    expect(previewPracticeChoice(s, "MKT", 25).kind).toBe("pending");
+    s = next(s, { type: "respond", id: 1, choice: "approve" });
+    expect(previewPracticeChoice(s, "MKT", 25).kind).toBe("approved-once");
+    s = next(s, { type: "buy", asset: "MKT", amount: 25 });
+    expect(previewPracticeChoice(s, "MKT", 25).kind).toBe("used");
+    let d = next(base, { type: "buy", asset: "BKT", amount: 30 });
+    d = next(d, { type: "respond", id: 1, choice: "decline" });
+    expect(previewPracticeChoice(d, "BKT", 30).kind).toBe("declined");
+    expect(previewPracticeChoice(d, "BKT", 15).kind).toBe("inside-key");
+  });
+  it("explains a disallowed asset and an exhausted practice period", () => {
+    const noOrc = next(base, { type: "set-key", maxPerAction: 15, maxPeriod: 60, allowed: ["MKT", "BKT"] });
+    expect(previewPracticeChoice(noOrc, "ORC", 10).message).toMatch(/ORC is not allowed/);
+    const tight = next(base, { type: "set-key", maxPerAction: 15, maxPeriod: 20, allowed: ["ORC", "MKT", "BKT"] });
+    const spent = next(tight, { type: "buy", asset: "ORC", amount: 15 });
+    expect(previewPracticeChoice(spent, "ORC", 10).message).toMatch(/past the 5 left/);
   });
 });

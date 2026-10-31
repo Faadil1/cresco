@@ -243,3 +243,68 @@ test("public Family Worker refuses historical API and finance routes on direct G
     expect(response.status(), `Historical route must be closed: ${path}`).toBe(404);
   }
 });
+
+// Product acceptance for the live-audit defects (issue #116). Each assertion
+// below failed on the previously deployed build.
+async function blockedApprovedLoop(page) {
+  const nav = page.getByRole("navigation", { name: "Child demo navigation" });
+  await page.goto("/try");
+  await expect(page.getByTestId("key-in-one-line")).toContainText(/up to 15 credits at a time/i);
+  await expect(page.getByTestId("practice-loop")).toBeInViewport();
+  await nav.getByRole("button", { name: "Explore" }).click();
+  // The limit is explained BEFORE the click, not discovered by being blocked.
+  await expect(page.getByTestId("explore-key-chip")).toContainText(/up to 15 credits/i);
+  await expect(page.getByTestId("limit-preview-MKT")).toContainText(/over your 15-credit limit/i);
+  await expect(page.getByTestId("limit-preview-ORC")).toContainText(/inside my key/i);
+  await page.getByRole("button", { name: /practice MKT choice/i }).click();
+  // The outcome is visible where the click happened, with a next action.
+  await expect(page.getByRole("status")).toHaveText(/outside My Key: blocked/i);
+  await expect(page.getByRole("status")).toBeInViewport();
+  await expect(page.getByTestId("limit-preview-MKT")).toContainText(/already sent to your parent/i);
+  await page.getByRole("button", { name: "Go to my Parent's request" }).click();
+  await expect(page.getByRole("heading", { name: /25 practice credits · MKT/i })).toBeVisible();
+  await page.getByRole("button", { name: /approve once #1/i }).click();
+  await expect(page.getByRole("status")).toBeInViewport();
+  await page.getByRole("button", { name: "Back to the Child to retry" }).click();
+  await expect(page.getByTestId("limit-preview-MKT")).toContainText(/approved exactly this choice once/i);
+  await page.getByRole("button", { name: "Use the approval: 25 MKT" }).click();
+  await expect(page.getByRole("status")).toHaveText(/exact one-time practice approval used/i);
+  await expect(page.getByRole("status")).toBeInViewport();
+  await page.getByRole("button", { name: "See my receipt" }).click();
+  await expect(page.getByTestId("child-request-history")).toContainText(/approval used/i);
+  await expect(page.getByTestId("portfolio-available")).toHaveText("75");
+  await expect(page.getByRole("button", { name: "Use the approval: 25 MKT" })).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1)).toBe(false);
+}
+
+test("outcome, limit preview and recovery are visible on iPhone", async ({ page }) => {
+  await blockedApprovedLoop(page);
+});
+
+test.describe("desktop product acceptance", () => {
+  test.use({ viewport: { width: 1440, height: 900 }, isMobile: false, hasTouch: false, userAgent: devices["Desktop Safari"].userAgent });
+  test("outcome, limit preview and recovery are visible on desktop", async ({ page }) => {
+    await blockedApprovedLoop(page);
+  });
+  test("a declined request tells the Child what happened and how to recover", async ({ page }) => {
+    await page.goto("/try");
+    await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: "Explore" }).click();
+    await page.getByRole("button", { name: /practice MKT choice/i }).click();
+    await page.getByRole("button", { name: "Go to my Parent's request" }).click();
+    await page.getByRole("button", { name: /decline #1/i }).click();
+    await page.getByRole("button", { name: /child view/i }).click();
+    await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: "Portfolio" }).click();
+    await expect(page.getByTestId("child-request-history")).toContainText(/declined/i);
+    await expect(page.getByTestId("child-request-history")).toContainText(/inside your Key limit/i);
+    await page.getByRole("button", { name: "Back to Explore" }).click();
+    await expect(page.getByTestId("limit-preview-MKT")).toContainText(/declined this exact choice/i);
+    await page.getByLabel("Practice amount (whole credits)").nth(1).fill("10");
+    await expect(page.getByTestId("limit-preview-MKT")).toContainText(/inside my key/i);
+  });
+});
+
+test("landing explains the whole idea and shows the main action on first screen on iPhone", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: /try cresco - no sign-in/i })).toBeInViewport({ ratio: 1 });
+  await expect(page.getByTestId("family-three-steps")).toBeVisible();
+});

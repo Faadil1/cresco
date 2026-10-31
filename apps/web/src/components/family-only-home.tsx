@@ -16,30 +16,24 @@ export function FamilyOnlyHome() {
 
         <section
           aria-labelledby="family-hero-title"
-          className="mt-12 grid gap-9 md:mt-16 md:grid-cols-[1.05fr_0.95fr] md:items-center"
+          className="mt-6 grid gap-7 md:mt-16 md:gap-9 md:grid-cols-[1.05fr_0.95fr] md:items-center"
         >
           <div>
-            <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-green-strong">
+            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-green-strong md:text-[12px] md:tracking-[0.16em]">
               Cresco Family · Learn through your own decisions
             </p>
             <h1
               id="family-hero-title"
-              className="mt-5 max-w-[15ch] font-display text-[clamp(46px,5.8vw,80px)] leading-[0.98] text-navy-strong"
+              className="mt-3 max-w-[15ch] font-display text-[clamp(38px,5.8vw,80px)] leading-[0.98] text-navy-strong"
             >
               Your child takes the lead. <em className="text-green-strong">You set the boundaries.</em>
             </h1>
-            <p className="mt-6 max-w-[55ch] text-[16px] leading-7 text-ink-2">
-              Young people see their practice balance, make choices and ask to
-              explore new ideas. Parents can understand those choices and decide
-              when to say yes or no. Both have their own Learning Path, and they learn together.
-            </p>
-            <p className="mt-3 max-w-[55ch] text-[13px] leading-6 text-ink-2">
-              Explore Cresco right now, without signing in, entering a code,
-              or connecting a wallet. This is a fictional learning exercise,
-              not a real financial account or investment service.
+            <p className="mt-4 max-w-[55ch] text-[16px] leading-7 text-ink-2 md:mt-6">
+              A teen practices investing with pretend credits. Inside a limit
+              the parent sets, the teen decides alone. Above it, the parent says yes or no.
             </p>
 
-            <div className="mt-7 flex flex-wrap gap-3">
+            <div className="mt-5 flex flex-wrap gap-3 md:mt-7">
               <Link
                 href="/try"
                 className="inline-flex min-h-12 items-center gap-3 rounded-full bg-green-strong px-6 text-[14px] font-bold text-white hover:bg-green"
@@ -53,6 +47,23 @@ export function FamilyOnlyHome() {
                 What parents should know
               </a>
             </div>
+            <ol data-testid="family-three-steps" className="mt-6 grid max-w-[58ch] gap-2 text-[13px] leading-5 text-navy-strong">
+              {[
+                "The teen saves pretend credits toward a goal and researches six invented companies.",
+                "Inside the Key limit, the teen makes the practice choice alone.",
+                "Above the limit, it is blocked. A simulated parent approves it once or declines it.",
+              ].map((text, index) => (
+                <li key={text} className="flex items-start gap-3">
+                  <span aria-hidden className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-green-soft text-[12px] font-bold text-green-strong">{index + 1}</span>
+                  <span>{text}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="mt-4 max-w-[55ch] text-[13px] leading-6 text-ink-2">
+              Explore Cresco right now, without signing in, entering a code,
+              or connecting a wallet. This is a fictional learning exercise,
+              not a real financial account or investment service.
+            </p>
           </div>
 
           <div
@@ -103,10 +114,7 @@ export function FamilyOnlyHome() {
                 Approve or decline the <strong>exact fictional practice request</strong>,
                 or update the standing Key explicitly. No real investment occurs.
               </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <span className="rounded-full bg-green-soft px-3 py-2 text-[11px] font-bold text-green-strong">Parent learning path</span>
-                <span className="rounded-full border border-line bg-surface px-3 py-2 text-[11px] font-bold text-navy-strong">Not yet</span>
-              </div>
+              <p className="mt-3 text-[11px] font-bold text-green-strong">Parent learning path · 5 short lessons</p>
             </div>
             <div className="mt-4 flex items-start gap-2 rounded-[15px] bg-yellow-soft p-3">
               <ShieldCheck aria-hidden className="mt-0.5 size-4 shrink-0 text-orange-text" />

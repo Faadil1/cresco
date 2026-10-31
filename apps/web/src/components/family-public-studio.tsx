@@ -177,6 +177,10 @@ function ChildHome({ state, open, save, chooseGoal }: { state: FamilyPracticeSta
         <p className="cresco-section-kicker">Your journey</p>
         <h2 className="mt-2 font-display text-[clamp(34px,4vw,48px)] leading-tight text-navy-strong">Hey, future explorer.</h2>
         <p className={small}>Grow your knowledge, practice decisions and learn how your family&apos;s Key works.</p>
+        <p data-testid="key-in-one-line" className="mt-2 rounded-[14px] bg-green-soft px-4 py-2.5 text-[13px] font-semibold leading-6 text-navy-strong">
+          <KeyRound aria-hidden className="mr-1.5 inline size-4 text-green-strong"/>
+          Your Key in one line: you decide alone up to {state.key.maxPerAction} credits at a time. Above that, a simulated Parent decides.
+        </p>
       </header>
       <div className="grid gap-3 sm:grid-cols-3">
         <Metric label="Available credits" value={String(remainingCredits(state))} testId="practice-available" />
@@ -459,8 +463,43 @@ export function FamilyPublicStudio() {
   const mobileNextAction = !isAlreadyAtAction &&
     (pending > 0 || (role === "child" && state.requests.some(r => r.status === "approved-once")));
 
+  // The next step after an action is derived from state, never from the
+  // feedback sentence, so it cannot go stale when the visitor changes view.
+  const pendingRequest = state.requests.find(r => r.status === "pending");
+  const approvedRequest = state.requests.find(r => r.status === "approved-once");
+  const outcomeAction: { label: string; run: () => void } | null =
+    role === "child"
+      ? pendingRequest
+        ? { label: "Go to my Parent's request", run: () => { setRole("parent"); setParentTab("requests"); } }
+        : approvedRequest
+          ? { label: `Use the approval: ${approvedRequest.amount} ${approvedRequest.asset}`, run: () => dispatch({ type: "buy", asset: approvedRequest.asset, amount: approvedRequest.amount }) }
+          : state.receipts.length > 0 && childTab !== "portfolio"
+            ? { label: "See my receipt", run: () => setChildTab("portfolio") }
+            : null
+      : pendingRequest
+        ? parentTab !== "requests" ? { label: "Review the request", run: () => setParentTab("requests") } : null
+        : approvedRequest
+          ? { label: "Back to the Child to retry", run: () => { setRole("child"); setChildTab("explore"); } }
+          : null;
+  const loopSteps = [
+    { label: "Save credits", done: state.saved > 0 },
+    { label: "Make a practice choice", done: state.receipts.length > 0 || state.requests.length > 0 },
+    { label: "Parent decides if blocked", done: state.requests.some(r => r.status !== "pending") },
+    { label: "Talk it through", done: state.togetherCompleted },
+  ];
+  const nextLoopStep = loopSteps.findIndex(step => !step.done);
+
   return (
     <section data-testid="family-public-studio" className="mt-3 md:mt-5">
+      <ol data-testid="practice-loop" aria-label="Practice loop progress" className={`mb-2 gap-1.5 md:mb-3 md:grid md:grid-cols-4 md:gap-2 ${(role === "child" ? childTab === "home" : parentTab === "overview") ? "flex" : "hidden md:grid"}`}>
+        {loopSteps.map((step, index) => (
+          <li key={step.label} aria-current={index === nextLoopStep ? "step" : undefined}
+            className={`flex items-center gap-1.5 rounded-[12px] border px-2 py-1.5 text-[11px] font-bold leading-4 md:px-3 md:py-2 md:text-[12px] ${index === nextLoopStep ? "min-w-0 flex-1" : "shrink-0"} md:flex-none ${step.done ? "border-green/30 bg-green-soft text-green-strong" : index === nextLoopStep ? "border-green-strong bg-surface text-navy-strong" : "border-line-soft bg-surface-soft text-ink-3"}`}>
+            <span aria-hidden className={`grid size-5 shrink-0 place-items-center rounded-full text-[10px] ${step.done ? "bg-green-strong text-white" : "bg-surface text-navy-strong"}`}>{step.done ? "✓" : index + 1}</span>
+            <span className={index === nextLoopStep ? "" : "hidden md:inline"}><span className="sr-only">{step.done ? "Done: " : index === nextLoopStep ? "Next: " : "Later: "}</span>{step.label}</span>
+          </li>
+        ))}
+      </ol>
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-[18px] border border-line-soft bg-surface p-3 md:gap-4 md:rounded-[23px] md:p-5">
         <div>
           <p className="hidden md:block cresco-section-kicker">A family story, two simulated perspectives</p>
@@ -539,7 +578,7 @@ export function FamilyPublicStudio() {
               onApply={id => setChildTab(id === "c-save" ? "home" : id === "c-risk" ? "portfolio" : "explore")}/> :
             childTab === "explore" ? <FamilyPublicExplore state={state} save={() => dispatch({ type: "save" })}
               buy={(asset, amount) => dispatch({ type: "buy", asset, amount })}/> :
-            childTab === "portfolio" ? <FamilyPracticePortfolio state={state}/> :
+            childTab === "portfolio" ? <FamilyPracticePortfolio state={state} onExplore={() => setChildTab("explore")}/> :
             childTab === "key" ? <KeySummary state={state}/> :
             <Together role="child" state={state} childAnswer={choice => dispatch({ type: "discussion-child", choice })}
               parentAnswer={choice => dispatch({ type: "discussion-parent", choice })} onComplete={() => dispatch({ type: "together" })}/>
@@ -573,11 +612,14 @@ export function FamilyPublicStudio() {
           )}
         </div>
       </div>
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-line bg-surface px-4 py-3">
-        <p aria-live="polite" role="status" className="max-w-[70ch] text-[13px] font-semibold leading-6 text-navy-strong">{state.feedback}</p>
-        <button type="button" className={secondary} onClick={() => { dispatch({ type: "reset" }); setRole("child"); setChildTab("home"); setParentTab("overview"); }}>
-          <RotateCcw aria-hidden className="mr-1 inline size-4"/> Reset whole demo
-        </button>
+      <div data-testid="outcome-bar" className={`${state.feedback === initialFamilyPractice().feedback ? "" : "sticky bottom-2 z-20 "}mt-4 flex flex-wrap items-center justify-between gap-2 rounded-[18px] border border-green/30 bg-surface px-4 py-2.5 shadow-soft md:gap-3 md:py-3`}>
+        <p aria-live="polite" role="status" className="min-w-0 flex-1 basis-[14rem] text-[12px] font-semibold leading-5 md:text-[13px] text-navy-strong md:leading-6">{state.feedback}</p>
+        <div className="flex w-full items-center gap-2 md:w-auto">
+          {outcomeAction ? <button type="button" className={`${primary} !px-4 !py-2 md:!px-5 md:!py-3`} onClick={outcomeAction.run}>{outcomeAction.label}</button> : null}
+          <button type="button" aria-label="Reset whole demo" className={`${secondary} !px-4 !py-2 md:!px-5 md:!py-3`} onClick={() => { dispatch({ type: "reset" }); setRole("child"); setChildTab("home"); setParentTab("overview"); }}>
+            <RotateCcw aria-hidden className="mr-1 inline size-4"/> Reset<span className="hidden md:inline">&nbsp;whole demo</span>
+          </button>
+        </div>
       </div>
       <p className="mt-3 text-[12px] leading-5 text-ink-3">Public educational simulation in this browser tab only. Refreshing resets all lessons, balances, requests and badges. No sign-in, third-party finance data, wallet, server write, blockchain execution or real Parent verification. Sample companies and sample prices are not investment advice.</p>
     </section>
