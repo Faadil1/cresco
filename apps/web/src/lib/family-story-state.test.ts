@@ -17,7 +17,7 @@ describe("story layer never carries authority", () => {
   it("goal, interests, lessons, views and research leave key, requests and receipts untouched", () => {
     const start = initialStory();
     const after = run(start,
-      practice({ type: "set-goal", goalId: "trip" }), { type: "confirm-goal" },
+      practice({ type: "set-goal", goalId: "trip" }),
       { type: "toggle-interest", id: "food" }, { type: "toggle-interest", id: "planet" },
       practice({ type: "complete", role: "child", lessonId: "c-save" }),
       practice({ type: "complete", role: "parent", lessonId: "p-key" }),
@@ -140,7 +140,7 @@ describe("personalization and consequences are real", () => {
   it("chapters become done only because something real happened", () => {
     let s = initialStory();
     expect(Object.values(chapterStatus(s)).every(done => !done)).toBe(true);
-    s = run(s, { type: "confirm-goal" }, practice({ type: "complete", role: "child", lessonId: "c-save" }), { type: "view-case", id: "markets" });
+    s = run(s, practice({ type: "set-goal", goalId: "bike" }), practice({ type: "complete", role: "child", lessonId: "c-save" }), { type: "view-case", id: "markets" });
     expect(chapterStatus(s)).toMatchObject({ goal: true, learn: true, explore: true, decision: false, parent: false, outcome: false });
     s = run(s, practice({ type: "buy", asset: "MKT", amount: 25 }));
     expect(chapterStatus(s)).toMatchObject({ decision: true, parent: false, outcome: false });
