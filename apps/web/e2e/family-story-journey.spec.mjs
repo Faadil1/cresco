@@ -486,3 +486,41 @@ test("the first mobile story decision and a fictional person's problem are visib
   await expect(page.getByTestId("episode-reflection")).toContainText(/more customers can help/i);
   expectCleanNetwork(net);
 });
+
+
+// Facilitated sessions use one computer and one browser tab. A *new* family's
+// session must start from a clean slate without carrying a prior child's goal,
+// fictional company response, Parent approval, receipt or spending into it.
+test("a new local family session never inherits the previous simulated family's decisions", async ({ page }) => {
+  const net = watch(page);
+  await page.goto("/try/goal");
+  await page.getByRole("radio", { name: /family trip/i }).click();
+  await page.getByRole("button", { name: /set aside 20 credits/i }).click();
+  await page.getByRole("link", { name: /my learning path/i }).last().click();
+  await page.getByRole("link", { name: /explore companies/i }).last().click();
+  await page.getByRole("link", { name: "Open Neighborhood Markets" }).click();
+  await page.getByRole("button", { name: /compare food, wages and delivery costs with sales/i }).click();
+  await page.getByTestId("practice-this").click();
+  await page.getByRole("button", { name: /a bigger choice \\(25\\)/i }).click();
+  await page.getByTestId("make-choice").click();
+  await page.getByTestId("to-parent").click();
+  await page.getByTestId("approve-once").click();
+  await page.getByTestId("hand-back").click();
+  await page.getByTestId("use-approval").click();
+  await expect(page.getByTestId("receipt-line")).toContainText("25 credits");
+  await expect(page.getByTestId("episode-takeaway")).toContainText("Mina");
+  await expect(page.getByTestId("outcome-saved")).toContainText("20 / 100");
+  // The facilitator starts the next participant with a full reload, rather
+  // than client-side chapter navigation which correctly retains the story.
+  await page.reload();
+  await expect(page.getByTestId("outcome-hero")).toContainText(/nothing has happened yet/i);
+  await expect(page.getByTestId("outcome-spent")).toHaveText("0");
+  await expect(page.getByTestId("episode-takeaway")).toHaveCount(0);
+  await page.locator('a[href="/try/parent"]').first().click();
+  await expect(page.getByTestId("parent-no-pending")).toContainText(/nothing is waiting/i);
+  await page.locator('a[href="/try/goal"]').first().click();
+  await expect(page.getByRole("radio", { name: /family trip/i })).toHaveAttribute("aria-checked", "false");
+  await expect(page.getByRole("navigation", { name: "Previous and next chapter" })
+    .getByText("Choose a goal to continue")).toHaveAttribute("aria-disabled", "true");
+  expectCleanNetwork(net);
+});
