@@ -1,6 +1,6 @@
 # Cresco Family: story-led multipage journey (issue #118)
 
-Branch `family/story-led-multipage-2026-10-31`, stacked on PR #117 (product `e3e616f`). **Tested product SHA: `2ee59c24d18d898f7cc365d0cc843bffbd1a3587`**; later commits on this branch change documentation and screenshots only. Nothing is deployed and nothing is merged. The live test Worker `cresco-family-open-test-web` still runs `cb3a6ad5-d579-43fa-a8e4-f8e2d5f38aee` (rollback `42900c64`).
+Branch `family/story-led-multipage-2026-10-31`, stacked on PR #117 (product `e3e616f`). **Tested product SHA: `a8b27810afb3fd14040944ca661fa9591e676bef`**; later commits on this branch change documentation and screenshots only. (Rebased once onto the docs commit `c7dac70` from the remote branch; the product tree is byte-identical to the tree that was tested as `2ee59c2`.) Nothing is deployed and nothing is merged. The live test Worker `cresco-family-open-test-web` still runs `cb3a6ad5-d579-43fa-a8e4-f8e2d5f38aee` (rollback `42900c64`).
 
 ## What was wrong
 
