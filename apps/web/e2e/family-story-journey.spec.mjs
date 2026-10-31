@@ -408,3 +408,19 @@ test("a second identical ask is blocked as already sent, and a Key change shows 
   await expect(page.getByTestId("limit-preview")).toContainText(/MKT is not allowed by your Key/i);
   expectCleanNetwork(net);
 });
+
+test("the goal chapter records an actual Child choice rather than silently accepting the default", async ({ page }) => {
+  const net = watch(page);
+  await page.goto("/try/goal");
+  const chapterNav = page.getByRole("navigation", { name: "Previous and next chapter" });
+  await expect(page.getByText("Choose one to continue. You can change it any time.")).toBeVisible();
+  await expect(chapterNav.getByText("Choose a goal to continue")).toHaveAttribute("aria-disabled", "true");
+  await expect(chapterNav.getByRole("link", { name: "My learning path" })).toHaveCount(0);
+  await page.getByRole("radio", { name: /family trip/i }).click();
+  await expect(page.getByTestId("goal-result")).toContainText(/family trip/i);
+  await expect(chapterNav.getByRole("link", { name: "My learning path" })).toBeVisible();
+  await chapterNav.getByRole("link", { name: "My learning path" }).click();
+  await expect(page).toHaveURL(/\/try\/learn$/);
+  await expect(page.getByRole("heading", { level: 1, name: /learn, one small step at a time/i })).toBeVisible();
+  expectCleanNetwork(net);
+});
