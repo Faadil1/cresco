@@ -424,3 +424,25 @@ test("the goal chapter records an actual Child choice rather than silently accep
   await expect(page.getByRole("heading", { level: 1, name: /learn, one small step at a time/i })).toBeVisible();
   expectCleanNetwork(net);
 });
+
+test("a fictional person's dilemma stays with the Child, Parent and receipt without granting authority", async ({ page }) => {
+  const net = watch(page);
+  await page.goto("/try/explore/markets");
+  await expect(page.getByTestId("fictional-episode")).toContainText("Mina");
+  await page.getByRole("button", { name: /compare food, wages and delivery costs with sales/i }).click();
+  await expect(page.getByTestId("episode-reflection")).toContainText(/more customers can help/i);
+  await page.getByTestId("practice-this").click();
+  await page.getByRole("button", { name: /a bigger choice \(25\)/i }).click();
+  await expect(page.getByTestId("limit-preview")).toHaveAttribute("data-preview-kind", "needs-parent");
+  await page.getByTestId("make-choice").click();
+  await expect(page.getByTestId("outcome-hero")).toContainText(/blocked by my key/i);
+  await page.getByTestId("to-parent").click();
+  await expect(page.getByTestId("parent-human-story")).toContainText("Mina");
+  await expect(page.getByTestId("parent-episode-choice")).toContainText(/compare food, wages and delivery costs with sales/i);
+  await page.getByTestId("approve-once").click();
+  await page.getByTestId("hand-back").click();
+  await page.getByTestId("use-approval").click();
+  await expect(page.getByTestId("receipt-line")).toContainText("25 credits");
+  await expect(page.getByTestId("episode-takeaway")).toContainText(/more customers can help/i);
+  expectCleanNetwork(net);
+});
