@@ -19,7 +19,7 @@ Prérequis : Git, Node.js **22 ou plus** et accès au dépôt GitHub autorisé. 
 git clone https://github.com/Faadil1/cresco.git
 cd cresco
 git fetch origin family/story-led-multipage-2026-10-31
-git checkout --detach ebdbee4abafedf597b1865dabdcabbc0cbaebce0
+git checkout --detach 9cc2152643ab7f6b9eb137f42da2efc8f04ac594
 cd apps/web
 Remove-Item Env:NEXT_PUBLIC_CRESCO_API_URL -ErrorAction SilentlyContinue
 npm ci --no-audit --no-fund
@@ -39,7 +39,7 @@ Avant d'inviter qui que ce soit : vérifier à l'écran la page `/try`, le choix
 2. Avant d'accueillir la famille suivante, contrôler que « Mon objectif » n'a plus de choix sélectionné, que le Parent n'a **aucune demande en attente** et que « Résultat » annonce que rien ne s'est passé. Ne jamais afficher à la famille suivante les choix/résultats de la précédente.
 3. Revenir sur `/try` puis remettre la souris à l'enfant, **sans entrer de nom ni créer de compte**.
 
-Le test navigateur `a new local family session never inherits the previous simulated family's decisions` répète cette sécurité sur un cycle approuvé puis réinitialisé (WebKit et Chromium). Ce contrôle automatisé **ne remplace pas** le constat visuel de l'animateur ni le test avec une vraie famille.
+Le test navigateur `a new local family session never inherits the previous simulated family's decisions` répète cette sécurité sur un cycle approuvé puis réinitialisé (WebKit et Chromium). **Commit applicatif et tests vérifiés : `9cc21526` — 44/44 tests navigateur, quatre workflows réussis (GitHub Actions, build local isolé, aucun déploiement).** Ce contrôle automatisé **ne remplace pas** le constat visuel de l'animateur ni le test avec une vraie famille.
 
 ## 2. Déroulé : 12 à 18 minutes, non dirigé
 
