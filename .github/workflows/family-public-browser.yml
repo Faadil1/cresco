@@ -39,7 +39,7 @@ permissions:
 
 jobs:
   local-public-demo:
-    name: Public Family iPhone + desktop WebKit (NO DEPLOY)
+    name: Public Family iPhone WebKit + desktop Chromium (NO DEPLOY)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -60,7 +60,10 @@ jobs:
         run: npm run build:public-family
         env:
           NEXT_PUBLIC_CRESCO_API_URL: ""
-      - run: npx playwright install --with-deps webkit
+      # Both configured Playwright projects must have browser binaries on the CI runner.
+      # The story suite adds Desktop Chrome; previously only WebKit was installed,
+      # causing 12 launch failures before any desktop assertion could execute.
+      - run: npx playwright install --with-deps webkit chromium
       - name: Test actual local Wrangler Family Worker, no API requests
         run: npx playwright test --config playwright.family-public.config.mjs --reporter=list,html
         env:
