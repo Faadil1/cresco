@@ -438,6 +438,10 @@ test("a fictional person's dilemma stays with the Child, Parent and receipt with
   await expect(page.getByTestId("outcome-hero")).toContainText(/blocked by my key/i);
   await page.getByTestId("to-parent").click();
   await expect(page.getByTestId("parent-human-story")).toContainText("Mina");
+  // The discussion is expandable: it should never push the exact approval
+  // action off the iPhone's first screen by default.
+  await expect(page.getByTestId("approve-once")).toBeInViewport({ ratio: 0.5 });
+  await page.getByTestId("parent-human-story").locator("summary").click();
   await expect(page.getByTestId("parent-episode-choice")).toContainText(/compare food, wages and delivery costs with sales/i);
   await page.getByTestId("approve-once").click();
   await page.getByTestId("hand-back").click();
