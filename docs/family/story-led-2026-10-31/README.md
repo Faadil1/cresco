@@ -92,6 +92,15 @@ See **[moderated Parent–Child pilot and observation template](FAMILY_USABILITY
 
 Mobile story work on PR #119 after initial visual review: the fictional company's introductory heading was shortened, the scene tightened without removing its financial-research sections, and the first answer is now an explicit initial-viewport browser assertion on both iPhone WebKit and desktop Chromium. Treat this as **implementation under test**, not proof of child comprehension. Refresh still clears progress and no tester access has been published. Exact product/test commits and CI results should be read from the PR; earlier 36/36 counts above describe the original baseline.
 
+## 2026-10-31 — local pilot session reset verified (NO DEPLOY)
+
+For consecutive sessions on a shared local computer, a new browser test exercises a fictional 25-credit request, Parent one-time approval, receipt, Mina's reflection, then a **hard reload**, and verifies no receipts, goal selection or pending Parent request remain for the next participant. Navigating among story chapters *without* reloading intentionally retains the current family's story. The French [field kit](FIELD_TEST_KIT_FR.md) now explicitly requires and checks the reload between separate families.
+
+- **Last source/test commit:** `9cc2152643ab7f6b9eb137f42da2efc8f04ac594`.
+- **[Exact GitHub Actions proof](https://github.com/Faadil1/cresco/actions/runs/41229834927):** 44/44 Family-only Playwright tests successful (simulated iPhone WebKit and desktop Chromium). `test`, `family-isolation-build`, and historic `web` all SUCCESS for the same tested commit.
+- First run of the new scenario had 42/44 pass; both failures selected a hidden duplicate mobile chapter link using `.first()`. It was corrected by scoping to the visible `Story chapters` navigation; the scenario's reset checks remained unchanged.
+- Changes after that tested commit only update documentation. No deployment, no merge, no verified Parent identity, no persistent progress or real money. **0 real family sessions run**. This is software rehearsal evidence, not user-study evidence.
+
 ## Three questions for 5 to 10 adults
 
 1. In your own words, what does "My Key" do? (comprehension)
