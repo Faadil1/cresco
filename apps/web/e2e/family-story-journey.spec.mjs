@@ -461,18 +461,21 @@ test("a fictional person's dilemma stays with the Child, Parent and receipt with
   expectCleanNetwork(net);
 });
 
-test("the first mobile story decision and a fictional person's problem are visible without scrolling", async ({ page }) => {
+test("the first mobile story decision and a fictional person's problem are visible without scrolling", async ({ page }, testInfo) => {
   const net = watch(page);
   await page.goto("/try/goal");
   // The old Cresco's illustrated personal choices are once again the first
   // thing to interact with, not buried below a large decorative plant.
   await expect(page.getByRole("radio", { name: /new bike/i })).toBeInViewport({ ratio: 0.5 });
   await expect(page.getByRole("radio", { name: /family trip/i })).toBeInViewport({ ratio: 0.5 });
+  // Acceptance evidence, exact test-head local Worker, viewport-sized (not full-page).
+  await testInfo.attach("goal-first-screen.png", { body: await page.screenshot(), contentType: "image/png" });
   await page.goto("/try/explore/markets");
   // Match the character heading only: the dilemma's h3 can also mention Mina.
   await expect(page.getByTestId("fictional-episode").getByRole("heading", { level: 2, name: /^mina,/i }))
     .toBeInViewport({ ratio: 0.5 });
   await expect(page.getByTestId("fictional-episode")).toContainText(/supplier has raised delivery prices/i);
+  await testInfo.attach("mina-first-screen.png", { body: await page.screenshot(), contentType: "image/png" });
   // The invitation to consider the business is a *story-first* question,
   // not an implied real investment decision.
   await page.getByRole("button", { name: /compare food, wages and delivery costs with sales/i }).click();
