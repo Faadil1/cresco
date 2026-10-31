@@ -11,25 +11,32 @@
 - Ne pas utiliser [le site Cresco historique](https://cresco-lac.vercel.app/) ni la Worker V2 pour cette validation : ils ne montrent pas la V3 de cette PR.
 - Ne pas ouvrir de port public, installer Cloudflare Access, inventer un lien testeur, fusionner, déployer, activer de comptes ou stocker des informations sur des enfants.
 
-## 1. Faire tourner V3 en local sur Windows — sans déploiement
+## 1. Faire tourner V3 sur Windows, sans déploiement
 
-Prérequis : Git, Node.js **22 ou plus** et accès au dépôt GitHub autorisé. Exécuter dans PowerShell sur l'ordinateur du facilitateur, pas sur une machine de production.
+Prérequis : **Git**, **Node.js 22+**, un ordinateur Windows et accès au dépôt GitHub. Un **nouveau clone propre** est recommandé pour ne pas risquer de toucher au travail de développement existant.
+
+Dans **PowerShell**, à partir d'un dossier où créer le clone :
 
 ```powershell
 git clone https://github.com/Faadil1/cresco.git
 cd cresco
 git fetch origin family/story-led-multipage-2026-10-31
-git checkout --detach 9cc2152643ab7f6b9eb137f42da2efc8f04ac594
-cd apps/web
-Remove-Item Env:NEXT_PUBLIC_CRESCO_API_URL -ErrorAction SilentlyContinue
-npm ci --no-audit --no-fund
-npm run build:public-family
-npm run start:vinext -- --ip 127.0.0.1 --port 3100
+git switch --track origin/family/story-led-multipage-2026-10-31
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\apps\web\scripts\family-v3-local-pilot.ps1 -CheckOnly
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\apps\web\scripts\family-v3-local-pilot.ps1
 ```
 
-Ouvrir **http://127.0.0.1:3100/try** sur le *même ordinateur*. Le serveur doit rester lancé. Le lien `127.0.0.1` n'est **pas** une URL partageable avec une famille à distance. Si une autre version occupe le port 3100, ne pas réutiliser son serveur : arrêter l'ancien processus et relancer la V3 vérifiée. Les commandes ont été vérifiées contre les scripts `package.json`, `build-public-family.mjs` et la configuration Playwright du dépôt; la recette terrain elle-même n'a pas été exécutée sur un Windows physique ici.
+Le **lanceur de séance blanche** ([source](../../../apps/web/scripts/family-v3-local-pilot.ps1)) :
+- exige un clone propre et le commit applicatif `9cc21526` comme ancêtre; refuse tout changement applicatif non testé depuis ce SHA. Les changements de documentation et le lanceur local sont les seules exceptions prévues;
+- vérifie les outils et Node.js, puis bloque le démarrage si le port local 3100 est déjà occupé;
+- installe les dépendances, construit **uniquement** l'artefact Family isolé, vide `NEXT_PUBLIC_CRESCO_API_URL` pour le processus puis démarre le serveur **127.0.0.1 seulement**;
+- n'appelle ni `wrangler deploy`, ni `Cloudflare Access`, ni `git merge`. Aucune invitation ou compte n'est nécessaire. Si les prérequis échouent, le lanceur s'arrête avant le build.
 
-Avant d'inviter qui que ce soit : vérifier à l'écran la page `/try`, le choix du rêve, Mina, la limite de crédits, et qu'aucun écran ne prétend traiter de l'argent réel. Faire une **séance blanche avec un adulte**, enregistrée « dry-run », distincte des séances avec enfant.
+Après le message de disponibilité **du serveur Wrangler** dans le terminal, ouvrir **http://127.0.0.1:3100/try** sur le *même ordinateur*. Le lien `127.0.0.1` n'est **pas partageable à distance**. Garder PowerShell ouvert durant l'essai et faire **Ctrl+C** pour l'arrêter.
+
+La commande `-CheckOnly` fait uniquement les contrôles préalables : elle ne démarre aucun serveur et ne prouve pas, à elle seule, que la séance fonctionne. Le contrôle PowerShell sous Windows dans GitHub Actions est distinct d'un véritable essai avec une famille et ne valide pas l'ergonomie sur téléphone physique.
+
+Avant d'inviter qui que ce soit, vérifier à l'écran l'accueil, les objectifs, Mina, My Key et la mention explicite de crédits fictifs. Faire une **séance blanche avec un adulte**, enregistrée « dry-run », distincte des séances avec enfant.
 
 ### Entre deux familles : réinitialiser réellement l'essai
 
