@@ -501,7 +501,7 @@ test("a new local family session never inherits the previous simulated family's 
   await page.getByRole("link", { name: "Open Neighborhood Markets" }).click();
   await page.getByRole("button", { name: /compare food, wages and delivery costs with sales/i }).click();
   await page.getByTestId("practice-this").click();
-  await page.getByRole("button", { name: /a bigger choice \\(25\\)/i }).click();
+  await page.getByRole("button", { name: /a bigger choice \(25\)/i }).click();
   await page.getByTestId("make-choice").click();
   await page.getByTestId("to-parent").click();
   await page.getByTestId("approve-once").click();
