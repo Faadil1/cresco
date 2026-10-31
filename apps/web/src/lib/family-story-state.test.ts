@@ -45,6 +45,25 @@ describe("story layer never carries authority", () => {
     expect(s.practice.receipts.length).toBe(before);
   });
 
+  it("remembers fictional dilemma decisions without altering any permission, balance or request", () => {
+    const start = initialStory();
+    let s = run(start, { type: "view-case", id: "markets" }, { type: "choose-episode", id: "markets", option: 0 });
+    expect(s.episodeChoices.markets).toBe(0);
+    expect(s.practice).toEqual(start.practice);
+    expect(s.practice.key).toEqual(start.practice.key);
+    expect(s.practice.requests).toEqual([]);
+    expect(s.practice.receipts).toEqual([]);
+    s = run(s, { type: "choose-episode", id: "markets", option: 1 });
+    expect(s.episodeChoices.markets).toBe(1);
+    const unchanged = s;
+    expect(run(s, { type: "choose-episode", id: "unknown", option: 0 })).toBe(unchanged);
+    expect(run(s, { type: "choose-episode", id: "markets", option: 5 as 0 })).toBe(unchanged);
+    s = run(s, practice({ type: "buy", asset: "MKT", amount: 25 }));
+    expect(s.practice.requests[0].status).toBe("pending");
+    expect(s.episodeChoices.markets).toBe(1);
+    expect(run(s, practice({ type: "reset" })).episodeChoices).toEqual({});
+  });
+
   it("stores the Parent's decline reason only for a request that was pending and declined", () => {
     let s = run(initialStory(), practice({ type: "buy", asset: "MKT", amount: 25 }));
     const id = s.practice.requests[0].id;
