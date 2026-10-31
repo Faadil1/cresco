@@ -31,15 +31,15 @@ try {
     if (-not (Get-Command $tool -ErrorAction SilentlyContinue)) { throw "MISSING_TOOL: $tool. Install Git and Node.js 22+." }
   }
   $version = (& node -v).Trim()
-  if ($LASTEXITCODE -ne 0 -or $version -notmatch '^v([0-9]+)\.') { throw "Cannot determine Node.js version." }
-  if ([int]$Matches[1] -lt 22) { throw "Node.js 22+ required (found $version)." }
+  if ($LASTEXITCODE -ne 0 -or $version -notmatch '^v[0-9]+\.') { throw "Cannot determine Node.js version." }
+  if ([int]($version.Substring(1).Split('.')[0]) -lt 22) { throw "Node.js 22+ required (found $version)." }
 
-  $branch = GitValue @("branch", "--show-current")
+  $branch = GitValue -GitArgs @("branch", "--show-current")
   if ($branch -and $branch -ne $expectedBranch) {
     throw "WRONG_BRANCH: '$branch'. Use the isolated PR #119 branch, never Colosseum/main or a historic Family branch."
   }
-  $actualSha = GitValue @("rev-parse", "HEAD")
-  $dirty = GitValue @("status", "--porcelain", "--untracked-files=all")
+  $actualSha = GitValue -GitArgs @("rev-parse", "HEAD")
+  $dirty = GitValue -GitArgs @("status", "--porcelain", "--untracked-files=all")
   if ($dirty) { throw "DIRTY_CHECKOUT: use a clean worktree. No install or build started." }
   & git -C $repoRoot merge-base --is-ancestor $testedSourceSha HEAD 2>$null
   if ($LASTEXITCODE -ne 0) { throw "UNVERIFIED_SOURCE: required tested commit is not an ancestor. No pilot allowed." }
@@ -79,7 +79,7 @@ try {
   if ($LASTEXITCODE -ne 0) { throw "ISOLATED_BUILD_FAILED" }
 
   Write-Host ""
-  Write-Host "LOCAL_V3_READY: open $pilotURL in a browser on THIS computer." -ForegroundColor Green
+  Write-Host "Starting localhost-only V3; open $pilotURL after Wrangler reports the server is ready." -ForegroundColor Green
   Write-Host "Keep this window open during the session. Press Ctrl+C to stop."
   Write-Host "Before EACH new family, reload once and verify goal, Parent and Result are empty."
   Write-Host "This is NOT a remotely shareable URL, and no real Parent identity or payment exists."
