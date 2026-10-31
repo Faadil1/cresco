@@ -469,7 +469,8 @@ test("the first mobile story decision and a fictional person's problem are visib
   await expect(page.getByRole("radio", { name: /new bike/i })).toBeInViewport({ ratio: 0.5 });
   await expect(page.getByRole("radio", { name: /family trip/i })).toBeInViewport({ ratio: 0.5 });
   await page.goto("/try/explore/markets");
-  await expect(page.getByTestId("fictional-episode").getByRole("heading", { name: /mina/i }))
+  // Match the character heading only: the dilemma's h3 can also mention Mina.
+  await expect(page.getByTestId("fictional-episode").getByRole("heading", { level: 2, name: /^mina,/i }))
     .toBeInViewport({ ratio: 0.5 });
   await expect(page.getByTestId("fictional-episode")).toContainText(/supplier has raised delivery prices/i);
   // The invitation to consider the business is a *story-first* question,
