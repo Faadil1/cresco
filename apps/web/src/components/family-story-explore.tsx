@@ -106,6 +106,32 @@ export function CompanyChapter({ id }: { id: string }) {
         intro={item.model}
         art={<CompanyArt id={item.id} name={item.name} className="block h-auto w-full overflow-hidden rounded-[20px] border border-line-soft"/>}/>
       {match ? <p className="rounded-[14px] bg-yellow-soft px-4 py-2 text-[13px] font-semibold text-navy-strong">You said you like {match.label.toLowerCase()}, so this one came first.</p> : null}
+      <section className={panel} aria-labelledby="human-story" data-testid="fictional-episode">
+        <p className="cresco-section-kicker">A person behind the numbers · fictional story</p>
+        <h2 id="human-story" className="mt-2 font-display text-[26px] text-navy-strong">{item.episode.person}</h2>
+        <p className="mt-2 text-[15px] leading-7 text-navy">{item.episode.scene}</p>
+        <div className="mt-4 rounded-[18px] bg-yellow-soft p-4">
+          <h3 className="text-[17px] font-bold leading-6 text-navy-strong">{item.episode.dilemma}</h3>
+          <div role="group" aria-label="Your response to the fictional dilemma" className="mt-3 grid gap-2">
+            {item.episode.options.map((option, index) => (
+              <button type="button" key={option} aria-pressed={story.episodeChoices[item.id] === index}
+                className={`min-h-12 rounded-[14px] border p-3 text-left text-[14px] font-semibold ${story.episodeChoices[item.id] === index ? "border-green-strong bg-green-soft text-navy-strong" : "border-line bg-surface text-navy-strong"}`}
+                onClick={() => dispatch({ type: "choose-episode", id: item.id, option: index as 0 | 1 })}>
+                {option}
+              </button>
+            ))}
+          </div>
+        </div>
+        {story.episodeChoices[item.id] !== undefined ? (
+          <div className="mt-3" data-testid="episode-reflection">
+            <ResultCard tone="info" title="What your choice helps you notice">
+              {item.episode.reflection[story.episodeChoices[item.id]]} You can reconsider this answer. It does not grant permission or spend credits.
+            </ResultCard>
+          </div>
+        ) : (
+          <p className="mt-3 text-[12px] leading-5 text-ink-2">Choose how you would respond. There is no permission or credit attached to the answer.</p>
+        )}
+      </section>
       <section className={panel} aria-label="Research notes">
         <dl className="grid gap-4 md:grid-cols-2">
           <div><dt className="text-[14px] font-bold text-navy-strong">Who is the customer?</dt><dd className="mt-1 text-[14px] leading-6 text-navy">{item.customer}</dd></div>
