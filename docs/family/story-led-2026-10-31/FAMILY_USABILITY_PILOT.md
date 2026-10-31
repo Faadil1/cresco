@@ -2,6 +2,14 @@
 
 **Purpose:** Check whether the narrative feels like a *story the family can explain*, not just seven functioning routes. This is a proposed protocol, **not field results**, recruitment, a live release approval, or proof that real families have tested V3.
 
+## Field-ready operational material
+
+- **[Guide animateur en français (PowerShell/local-only, six tâches, consentement et questions)](FIELD_TEST_KIT_FR.md)**.
+- **[Modèle CSV vide et anonyme](SESSION_OBSERVATIONS_TEMPLATE.csv)** : télécharger et renseigner en local uniquement; **ne jamais committer les données des participants**, même si elles semblent anonymes.
+- Test delivery is currently **one local computer, one browser tab**. **There is no public V3 URL**; the public V2 must not be used as a substitute. No Cloudflare Access, private invitations, deployment or remote testing infrastructure is required or authorized by this guide.
+- The V3 interface is currently **English**. For the first comprehension pilot, select people comfortable reading English and record language friction separately. A French-language product study is a different question.
+- The optional invitation text in the field guide is **draft only**, not outreach already sent. **0 sessions have occurred.**
+
 ## Release and safety boundary
 
 - Pilot only on an owner-controlled **local Family-only build** after passing its exact-commit browser tests. No V3 public Cloudflare publication, merge, historical Worker change, or use of the SHA-pinned V2 release scripts.
