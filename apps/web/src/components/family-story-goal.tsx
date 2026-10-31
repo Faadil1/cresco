@@ -1,7 +1,6 @@
 "use client";
 
 import { GoalArt } from "@/components/illustrations/objects";
-import { PlantPot } from "@/components/illustrations/objects";
 import { useFamilyStory } from "@/components/family-story-provider";
 import { ChapterHeading, ChapterNav, ResultCard, panel, secondaryBtn } from "@/components/family-story-ui";
 import { PRACTICE_GOALS, remainingCredits } from "@/lib/family-public-practice";
@@ -16,9 +15,11 @@ export function GoalChapter() {
   const g = GOAL_STORY[goal.id];
   return (
     <div className="space-y-6">
+      {/* In the older Cresco, the illustrated goals themselves were the
+          discovery moment. Keep them above the mobile fold rather than putting
+          a large generic plant between the question and its answers. */}
       <ChapterHeading kicker="Chapter 1 · My goal" title="What are you saving for?"
-        intro="Pick a goal. The lessons and the companies you meet next will point back to it. No name or age needed."
-        art={<PlantPot className="mx-auto h-auto w-40 motion-safe:animate-bloom md:w-48"/>}/>
+        intro="A bike, a gaming setup or a family trip? Pick the dream you want to work toward. Your lessons and decisions will connect back to it. No name or age needed."/>
 
       <div role="radiogroup" aria-label="Saving goal" className="grid grid-cols-3 gap-2 md:gap-4">
         {PRACTICE_GOALS.map(option => {
