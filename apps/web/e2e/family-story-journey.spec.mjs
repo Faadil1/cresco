@@ -360,6 +360,9 @@ test("the header always names the right lens, including Parent lessons and Toget
 test("exhausted credits and a duplicate request are explained before the click and cannot be sent", async ({ page }) => {
   const net = watch(page);
   await page.goto("/try/goal");
+  // The chapter now requires an explicit goal choice; test the empty-credit
+  // edge case through the real story, not a synthetic unchosen default.
+  await page.getByRole("radio", { name: /family trip/i }).click();
   for (let i = 0; i < 5; i++) await page.getByRole("button", { name: /set aside 20 credits/i }).click();
   await expect(page.getByTestId("goal-progress")).toContainText("0 still available");
   await expect(page.getByRole("button", { name: /set aside 20 credits/i })).toBeDisabled();
