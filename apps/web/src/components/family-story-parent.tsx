@@ -13,6 +13,7 @@ import {
   PARENT_LEARNING, remainingPeriod, selectedPracticeGoal, type PracticeRequest,
 } from "@/lib/family-public-practice";
 import { DECLINE_REASONS, GOAL_STORY, REASONS, parentLessonNote } from "@/lib/family-story-state";
+import { FAMILY_EXPLORE_CASES } from "@/lib/family-public-explore-data";
 
 const SIMULATED = "Parent role is simulated in this one browser. No guardian identity or consent is verified, and nothing real is approved.";
 
@@ -120,6 +121,8 @@ export function ParentRequest() {
       </div>
     );
   }
+  const company = FAMILY_EXPLORE_CASES.find(item => item.practiceCode === request.asset);
+  const episodeChoice = company ? story.episodeChoices[company.id] : undefined;
   const reason = REASONS.find(item => item.id === story.reasons[request.id]);
   const declineReason = DECLINE_REASONS.find(item => item.id === story.declineReasons[request.id]);
   const copy = requestStatusCopy(request, declineReason?.explain);
@@ -138,6 +141,23 @@ export function ParentRequest() {
           <div><dt className="text-ink-2">Your standing Key</dt><dd className="font-bold text-navy-strong">{p.key.maxPerAction} per choice (v{p.key.version})</dd></div>
           <div><dt className="text-ink-2">Asked under</dt><dd className="font-bold text-navy-strong">v{request.version} / nonce {request.nonce}{current ? "" : " (old)"}</dd></div>
         </dl>
+        {company ? (
+          <section className="mt-3 rounded-[18px] border border-green/20 bg-green-soft/40 p-4" data-testid="parent-human-story" aria-label="The story behind the request">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-green-strong">Before you decide, talk about the story</p>
+            <p className="mt-1 text-[14px] font-bold text-navy-strong">{company.episode.person}</p>
+            <p className="mt-1 text-[13px] leading-6 text-navy">{company.episode.dilemma}</p>
+            {episodeChoice !== undefined ? (
+              <p className="mt-2 text-[13px] leading-6 text-navy" data-testid="parent-episode-choice">
+                <strong>Your child said:</strong> {company.episode.options[episodeChoice]}.
+                <span className="mt-1 block"><strong>Ask together:</strong> What could change your mind if the situation got worse?</span>
+              </p>
+            ) : (
+              <p className="mt-2 text-[13px] leading-6 text-navy" data-testid="parent-episode-empty">
+                Your child has not answered this dilemma. Ask what they would want to know before making a choice.
+              </p>
+            )}
+          </section>
+        ) : null}
         <p className="mt-2 text-[11px] leading-4 text-ink-2">{SIMULATED}</p>
         {request.status === "pending" ? (
           <>
