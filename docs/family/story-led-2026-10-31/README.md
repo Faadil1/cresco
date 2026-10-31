@@ -1,6 +1,6 @@
 # Cresco Family: story-led multipage journey (issue #118)
 
-Branch `family/story-led-multipage-2026-10-31`, stacked on PR #117 (product `e3e616f`). Nothing is deployed and nothing is merged. The live test Worker `cresco-family-open-test-web` still runs `cb3a6ad5-d579-43fa-a8e4-f8e2d5f38aee` (rollback `42900c64`).
+Branch `family/story-led-multipage-2026-10-31`, stacked on PR #117 (product `e3e616f`). **Tested product SHA: `2ee59c24d18d898f7cc365d0cc843bffbd1a3587`**; later commits on this branch change documentation and screenshots only. Nothing is deployed and nothing is merged. The live test Worker `cresco-family-open-test-web` still runs `cb3a6ad5-d579-43fa-a8e4-f8e2d5f38aee` (rollback `42900c64`).
 
 ## What was wrong
 
@@ -39,6 +39,26 @@ One in-memory story state lives in `src/app/try/layout.tsx`. Every page below is
 
 Before: `v2-before/` (the deployed V2) and `old-cresco/` (the older site, read-only GETs; no write request was sent). After: `after/mobile` (iPhone 13 WebKit, 2x) and `after/desktop` (Chromium 1280x900), one screenshot per chapter in journey order.
 
+Landing: old Cresco, V2, and the new story start.
+
+| Old Cresco | V2 (deployed) | Story |
+| --- | --- | --- |
+| ![old](old-cresco/mobile-landing.png) | ![v2](v2-before/mobile-landing.png) | ![story](after/mobile/01-welcome.png) |
+
+Goal: old onboarding step, and the new goal chapter.
+
+| Old Cresco | Story |
+| --- | --- |
+| ![old goal](old-cresco/mobile-onboarding-goal.png) | ![goal](after/mobile/02-goal.png) |
+
+Playing it: V2 one-page tabs, the decision with its forecast, the Parent's request, the receipt.
+
+| V2 `/try` | Decision | Parent request | Receipt |
+| --- | --- | --- | --- |
+| ![v2 try](v2-before/mobile-try.png) | ![decision](after/mobile/09-decision-blocked-preview.png) | ![parent](after/mobile/11-parent-request.png) | ![receipt](after/mobile/14-outcome-receipt.png) |
+
+Desktop: [welcome](after/desktop/01-welcome.png), [explore](after/desktop/06-explore.png), [company](after/desktop/07-company.png), [decision](after/desktop/09-decision-blocked-preview.png), [Parent request](after/desktop/11-parent-request.png), [receipt](after/desktop/14-outcome-receipt.png). Old and V2 desktop: [old](old-cresco/desktop-landing.png), [V2](v2-before/desktop-try.png).
+
 | Step | V2 `/try` | Story |
 | --- | --- | --- |
 | Landing to first action | one page, role buttons and six tabs | `/try` welcome, one primary button, then `/try/goal` |
@@ -48,8 +68,8 @@ Before: `v2-before/` (the deployed V2) and `old-cresco/` (the older site, read-o
 
 ## Tests (local build of this branch, `npm run build:public-family`, served by `wrangler dev`)
 
-- Unit: 164/164 (19 new): closed route set and its denials, story reducer (no authority leak, reasons, decline reasons, reset), personalization, chapter status from real state.
-- Playwright: 30/30 = 21 on iPhone 13 WebKit (the 12 V2 tests repointed to `/try/lab`, plus 9 story tests) and the same 9 story tests on desktop Chromium. The story tests: full journey, one client-side document across pages with Back and Forward, decline and recovery, stale Key, Parent first, deep links and bad ids, no horizontal overflow, landing to story, lab and story share state.
+- Unit: 165/165 (20 new): closed route set and its denials, story reducer (no authority leak, reasons, decline reasons, reset), personalization, chapter status from real state.
+- Playwright: 36/36 = 24 on iPhone 13 WebKit (the 12 V2 tests repointed to `/try/lab`, plus 12 story tests) and the same 12 story tests on desktop Chromium. The story tests: full journey, one client-side document across pages with Back and Forward, decline and recovery, stale Key, Parent first, the right lens in the header (including Parent lessons and Together), the phone menu closing after a chapter is chosen, exhausted credits, a duplicate ask, an asset the Key no longer allows, an expired ask shown to the Child, deep links and bad ids, no horizontal overflow, landing to story, lab and story share state. The journey tests also assert that no response failed (only the known WebKit manifest 404 is tolerated), so a denied prefetch cannot hide behind a full reload.
 - Direct GET: `/try/explore/nope`, `/try/explore/ORCHARD`, `/try/learn/unknown`, `/try/api`, `/home`, `/parent/sign-in`, `/onboarding/goal`, `/invest/ORC`, `/api/health` all 404.
 - Network: no request to any API, RPC, wallet or non-local host in any story test.
 - `typecheck`, `lint` (two existing warnings), `copy:lint`, `scripts/family-release-boundary.mjs --built-web` pass.
@@ -58,7 +78,7 @@ Before: `v2-before/` (the deployed V2) and `old-cresco/` (the older site, read-o
 ## Known limits
 
 - Not run on a real phone; WebKit emulation only. No real tester has used it.
-- `next build` of the full app was not run; the Family public build was.
+- `next build` of the full app passes (run once on the tested SHA); the Family public build and its assertions pass too.
 - `/try/goal/` (trailing slash) is answered by the framework with a 308 to `/try/goal`; every other denial is a 404.
 - `/manifest.webmanifest` still 404s on WebKit (console noise only).
 - The goal notes, decline reasons and company-goal lines are Cresco practice copy, not source-cited; source-backed lessons keep their references.
