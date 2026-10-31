@@ -101,25 +101,26 @@ export function CompanyChapter({ id }: { id: string }) {
   const neighbour = FAMILY_EXPLORE_CASES[(index + 1) % FAMILY_EXPLORE_CASES.length];
   const researched = story.researched.includes(item.id);
   return (
-    <div className="space-y-5">
+    <div className="space-y-3 md:space-y-5">
       <Link href="/try/explore" className="inline-flex min-h-11 items-center text-[13px] font-bold text-green-strong underline underline-offset-4">All companies</Link>
-      <ChapterHeading kicker={`${item.category} · Invented company`} title={item.name}
-        intro="Every invented company starts with a person facing a choice. Discover their problem before looking at the numbers."/>
-      <section className={panel} aria-labelledby="human-story" data-testid="fictional-episode">
-        <p className="cresco-section-kicker">A person behind the numbers · fictional story</p>
+      {/* Keep context, then the fictional person and decision. Avoid repeating the
+          same long introduction before the first mobile decision. */}
+      <ChapterHeading kicker={`${item.category} · Invented company`} title={item.name}/>
+      <section className={`${panel} !p-4 md:!p-6`} aria-labelledby="human-story" data-testid="fictional-episode">
+        <p className="cresco-section-kicker">Meet the person · fictional story</p>
         <div className="mt-2 flex items-start gap-3">
           <div className="min-w-0 flex-1">
-            <h2 id="human-story" className="font-display text-[26px] leading-tight text-navy-strong">{item.episode.person}</h2>
-            <p className="mt-2 text-[15px] leading-7 text-navy">{item.episode.scene}</p>
+            <h2 id="human-story" className="font-display text-[24px] leading-tight text-navy-strong md:text-[26px]">{item.episode.person}</h2>
+            <p className="mt-1.5 text-[14px] leading-6 text-navy md:mt-2 md:text-[15px] md:leading-7">{item.episode.scene}</p>
           </div>
-          <CompanyArt id={item.id} name={item.name} className="block h-auto w-20 shrink-0 rounded-[14px] border border-line-soft sm:w-28 md:w-36"/>
+          <CompanyArt id={item.id} name={item.name} className="block h-auto w-16 shrink-0 rounded-[14px] border border-line-soft sm:w-28 md:w-36"/>
         </div>
-        <div className="mt-4 rounded-[18px] bg-yellow-soft p-4">
-          <h3 className="text-[17px] font-bold leading-6 text-navy-strong">{item.episode.dilemma}</h3>
-          <div role="group" aria-label="Your response to the fictional dilemma" className="mt-3 grid gap-2">
+        <div className="mt-3 rounded-[18px] bg-yellow-soft p-3 md:mt-4 md:p-4">
+          <h3 className="text-[16px] font-bold leading-6 text-navy-strong md:text-[17px]">{item.episode.dilemma}</h3>
+          <div role="group" aria-label="Your response to the fictional dilemma" className="mt-2 grid gap-2 sm:grid-cols-2">
             {item.episode.options.map((option, index) => (
               <button type="button" key={option} aria-pressed={story.episodeChoices[item.id] === index}
-                className={`min-h-12 rounded-[14px] border p-3 text-left text-[14px] font-semibold ${story.episodeChoices[item.id] === index ? "border-green-strong bg-green-soft text-navy-strong" : "border-line bg-surface text-navy-strong"}`}
+                className={`min-h-12 rounded-[14px] border p-3 text-left text-[13px] font-semibold leading-5 md:text-[14px] ${story.episodeChoices[item.id] === index ? "border-green-strong bg-green-soft text-navy-strong" : "border-line bg-surface text-navy-strong"}`}
                 onClick={() => dispatch({ type: "choose-episode", id: item.id, option: index as 0 | 1 })}>
                 {option}
               </button>
