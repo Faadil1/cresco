@@ -112,7 +112,7 @@ export function CompanyChapter({ id }: { id: string }) {
             <h2 id="human-story" className="font-display text-[26px] leading-tight text-navy-strong">{item.episode.person}</h2>
             <p className="mt-2 text-[15px] leading-7 text-navy">{item.episode.scene}</p>
           </div>
-          <CompanyArt id={item.id} name={item.name} className="hidden h-auto w-28 shrink-0 rounded-[14px] border border-line-soft sm:block md:w-36"/>
+          <CompanyArt id={item.id} name={item.name} className="block h-auto w-20 shrink-0 rounded-[14px] border border-line-soft sm:w-28 md:w-36"/>
         </div>
         <div className="mt-4 rounded-[18px] bg-yellow-soft p-4">
           <h3 className="text-[17px] font-bold leading-6 text-navy-strong">{item.episode.dilemma}</h3>
