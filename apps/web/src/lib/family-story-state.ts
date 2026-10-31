@@ -54,7 +54,6 @@ export function initialStory(): StoryState {
 type PracticeAction = Parameters<typeof transitionFamilyPractice>[1];
 export type StoryAction =
   | { type: "practice"; action: PracticeAction; reason?: ReasonId; declineReason?: DeclineReasonId }
-  | { type: "confirm-goal" }
   | { type: "toggle-interest"; id: InterestId }
   | { type: "view-case"; id: string }
   | { type: "research-correct"; id: string }
@@ -82,7 +81,6 @@ export function transitionStory(s: StoryState, action: StoryAction): StoryState 
     }
     return { ...s, practice: next, reasons, declineReasons, goalChosen };
   }
-  if (action.type === "confirm-goal") return { ...s, goalChosen: true };
   if (action.type === "toggle-interest") {
     if (!INTERESTS.some(item => item.id === action.id)) return s;
     return { ...s, interests: s.interests.includes(action.id) ? s.interests.filter(id => id !== action.id) : [...s.interests, action.id] };
