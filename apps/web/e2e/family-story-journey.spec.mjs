@@ -516,9 +516,12 @@ test("a new local family session never inherits the previous simulated family's 
   await expect(page.getByTestId("outcome-hero")).toContainText(/nothing has happened yet/i);
   await expect(page.getByTestId("outcome-spent")).toHaveText("0");
   await expect(page.getByTestId("episode-takeaway")).toHaveCount(0);
-  await page.locator('a[href="/try/parent"]').first().click();
+  // Scope navigation to the visible chapter rail; the mobile chapter menu
+  // contains a *hidden* duplicate link and must not be selected with .first().
+  const chapterRail = page.getByRole("navigation", { name: "Story chapters" });
+  await chapterRail.getByRole("link", { name: /parent/i }).click();
   await expect(page.getByTestId("parent-no-pending")).toContainText(/nothing is waiting/i);
-  await page.locator('a[href="/try/goal"]').first().click();
+  await chapterRail.getByRole("link", { name: /goal/i }).click();
   await expect(page.getByRole("radio", { name: /family trip/i })).toHaveAttribute("aria-checked", "false");
   await expect(page.getByRole("navigation", { name: "Previous and next chapter" })
     .getByText("Choose a goal to continue")).toHaveAttribute("aria-disabled", "true");
