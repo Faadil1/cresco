@@ -475,6 +475,10 @@ test("the first mobile story decision and a fictional person's problem are visib
   await expect(page.getByTestId("fictional-episode").getByRole("heading", { level: 2, name: /^mina,/i }))
     .toBeInViewport({ ratio: 0.5 });
   await expect(page.getByTestId("fictional-episode")).toContainText(/supplier has raised delivery prices/i);
+  // The first response must be genuinely reachable above the initial fold:
+  // visible heading alone is not enough for a story-led decision.
+  await expect(page.getByRole("group", { name: "Your response to the fictional dilemma" })
+    .getByRole("button").first()).toBeInViewport({ ratio: 0.5 });
   await testInfo.attach("mina-first-screen.png", { body: await page.screenshot(), contentType: "image/png" });
   // The invitation to consider the business is a *story-first* question,
   // not an implied real investment decision.
