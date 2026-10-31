@@ -3,7 +3,7 @@
 import { useState } from "react";
 import {
   PRACTICE_ASSETS, evaluatePracticeScenario, remainingCredits,
-  type FamilyPracticeState, type PracticeScenario,
+  type FamilyPracticeState, type PracticeRequest, type PracticeScenario,
 } from "@/lib/family-public-practice";
 
 const panel = "rounded-[24px] border border-line-soft bg-surface p-5 shadow-sm md:p-6";
@@ -19,7 +19,15 @@ const explanation: Record<PracticeScenario, string> = {
 };
 const asCredits = (value: number) => value.toFixed(2);
 
-export function FamilyPracticePortfolio({ state }: { state: FamilyPracticeState }) {
+const requestOutcome: Record<PracticeRequest["status"], { title: string; next: string }> = {
+  pending: { title: "waiting for my Parent", next: "Nothing was bought. A simulated Parent can approve it once or decline it." },
+  "approved-once": { title: "approved once", next: "Go to Explore and practice exactly this choice. The approval is used up when you do." },
+  declined: { title: "declined", next: "Nothing was bought and nothing changed. Try an amount inside your Key limit, or talk it through in Together." },
+  used: { title: "approval used", next: "The receipt is below. This approval cannot be replayed." },
+  stale: { title: "no longer valid", next: "The Parent changed My Key after this ask, so it expired. You can choose again." },
+};
+
+export function FamilyPracticePortfolio({ state, onExplore }: { state: FamilyPracticeState; onExplore?: () => void }) {
   const [scenario, setScenario] = useState<PracticeScenario>("base");
   const result = evaluatePracticeScenario(state, scenario);
   const delta = result.hypothetical - result.original;
@@ -108,6 +116,22 @@ export function FamilyPracticePortfolio({ state }: { state: FamilyPracticeState 
           Your actual fictional credits and recorded practice receipts do not change when you switch scenarios.
         </p>
       </article>
+
+      {state.requests.length ? (
+        <article className={panel} data-testid="child-request-history">
+          <h3 className="text-[19px] font-bold text-navy-strong">Asks sent to my Parent</h3>
+          <ul className="mt-3 space-y-2">{state.requests.map(request => (
+            <li key={request.id} className="rounded-[12px] bg-surface-soft p-3 text-[13px] leading-6 text-navy-strong">
+              <strong>{request.amount} credits · {request.asset}</strong> · {requestOutcome[request.status].title}
+              <span className="mt-1 block text-[12px] font-normal text-ink-2">{requestOutcome[request.status].next}</span>
+            </li>
+          ))}</ul>
+          {onExplore ? <button type="button" onClick={onExplore}
+            className="mt-3 min-h-11 rounded-full border border-line bg-surface px-5 py-3 text-[13px] font-bold text-navy-strong hover:bg-green-soft">
+            Back to Explore
+          </button> : null}
+        </article>
+      ) : null}
 
       <article className={panel}>
         <h3 className="text-[19px] font-bold text-navy-strong">Practice receipts</h3>

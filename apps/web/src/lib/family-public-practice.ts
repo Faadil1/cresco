@@ -211,6 +211,45 @@ function execute(s: FamilyPracticeState, asset: PracticeAsset, amount: number, p
       : "Inside My Key: independent practice action recorded. No Parent approval needed.",
   };
 }
+export type ChoicePreviewKind =
+  | "invalid" | "insufficient" | "inside-key" | "needs-parent"
+  | "pending" | "approved-once" | "declined" | "used";
+export type ChoicePreview = { kind: ChoicePreviewKind; message: string };
+/**
+ * Read-only forecast of what a practice choice would do, mirroring the `buy`
+ * transition without changing anything. Shown BEFORE the Child clicks so a
+ * blocked choice is never a surprise. It never grants or implies authority.
+ */
+export function previewPracticeChoice(s: FamilyPracticeState, code: AssetCode, amount: number): ChoicePreview {
+  const asset = PRACTICE_ASSETS.find(a => a.code === code);
+  if (!asset || !exact(amount)) return { kind: "invalid", message: "Enter a whole number of credits from 1 to 100." };
+  if (amount > remainingCredits(s)) {
+    return { kind: "insufficient", message: `Only ${remainingCredits(s)} practice credits are available. Choose a smaller amount.` };
+  }
+  const sameKey = (r: PracticeRequest) => r.asset === code && r.amount === amount && r.version === s.key.version && r.nonce === s.key.nonce;
+  if (s.requests.some(r => sameKey(r) && r.status === "approved-once")) {
+    return { kind: "approved-once", message: "Your Parent approved exactly this choice once. Practicing it now uses up that approval." };
+  }
+  if (s.key.allowed.includes(code) && amount <= s.key.maxPerAction && s.spent + amount <= s.key.maxPeriod) {
+    return { kind: "inside-key", message: "Inside My Key: you can do this on your own, no approval needed." };
+  }
+  if (s.requests.some(r => sameKey(r) && r.status === "pending")) {
+    return { kind: "pending", message: "Already sent to your Parent. Waiting for their answer." };
+  }
+  if (s.requests.some(r => sameKey(r) && r.status === "declined")) {
+    return { kind: "declined", message: "Your Parent declined this exact choice. Try an amount inside your limit instead." };
+  }
+  if (s.requests.some(r => sameKey(r) && r.status === "used")) {
+    return { kind: "used", message: "That approval was already used and cannot be replayed. Try an amount inside your limit." };
+  }
+  const reason = !s.key.allowed.includes(code)
+    ? `${code} is not allowed by your Key`
+    : amount > s.key.maxPerAction
+      ? `${amount} is over your ${s.key.maxPerAction}-credit limit per choice`
+      : `${amount} credits would go past the ${remainingPeriod(s)} left in this practice period`;
+  return { kind: "needs-parent", message: `${reason}. Practicing it will not buy anything: it asks your simulated Parent to decide.` };
+}
+
 /** Pure state transition; parent decisions can NEVER authorize real execution. */
 export function transitionFamilyPractice(s: FamilyPracticeState, action: Action): FamilyPracticeState {
   if (action.type === "reset") return initialFamilyPractice();

@@ -7,7 +7,7 @@ import {
   type FamilyExploreCase,
 } from "@/lib/family-public-explore-data";
 import {
-  PRACTICE_ASSETS, remainingCredits,
+  PRACTICE_ASSETS, previewPracticeChoice, remainingCredits, remainingPeriod,
   type AssetCode, type FamilyPracticeState,
 } from "@/lib/family-public-practice";
 
@@ -89,6 +89,10 @@ export function FamilyPublicExplore({ state, buy, save }: {
           onClick={() => setCategory(item)}>{item}</button>)}
       </div>
       <p className="text-[12px] text-ink-2" aria-live="polite">{cases.length} fictional research {cases.length === 1 ? "example" : "examples"} shown · {compareIds.length}/2 selected to compare.</p>
+      <p data-testid="explore-key-chip" className="rounded-[14px] border border-green/25 bg-green-soft px-3 py-1.5 text-[12px] font-semibold leading-5 md:px-4 md:py-2.5 md:text-[13px] md:leading-6 text-navy-strong">
+        My Key: choose alone up to <strong>{state.key.maxPerAction} credits</strong> at a time
+        <span className="hidden md:inline"> ({remainingPeriod(state)} left this practice period). Above that, your simulated Parent decides.</span>
+      </p>
 
       {cases.length ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {cases.map(item => {
@@ -118,6 +122,14 @@ export function FamilyPublicExplore({ state, buy, save }: {
                 value={amounts[practice.code]}
                 onChange={event => setAmounts(previous => ({ ...previous, [practice.code]: event.target.value }))}
                 className="mt-1 min-h-11 w-full rounded-[12px] border border-line bg-surface px-3 py-2 text-[14px] text-navy-strong"/>
+              {(() => {
+                const preview = previewPracticeChoice(state, practice.code, Number(amounts[practice.code]));
+                const tone = preview.kind === "inside-key" || preview.kind === "approved-once"
+                  ? "bg-green-soft text-green-strong"
+                  : preview.kind === "needs-parent" || preview.kind === "pending" ? "bg-yellow-soft text-navy-strong" : "bg-surface-soft text-navy-strong";
+                return <p data-testid={`limit-preview-${practice.code}`} data-preview-kind={preview.kind}
+                  className={`mt-2 rounded-[12px] px-3 py-2 text-[12px] font-semibold leading-5 ${tone}`}>{preview.message}</p>;
+              })()}
               <button className={`mt-3 w-full ${primary}`} type="button"
                 onClick={() => buy(practice.code, Number(amounts[practice.code]))}>
                 Practice {practice.code} choice
