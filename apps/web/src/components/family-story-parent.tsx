@@ -133,6 +133,16 @@ export function ParentRequest() {
     <div className="space-y-5">
       <ChapterHeading kicker="Chapter 5 · The Parent's moment" title={`${request.amount} practice credits · ${request.asset}`}
         intro={<span className="hidden md:inline">Your child asked for more than the Key allows. Read the exact request, then decide once.</span>}/>
+      {/* A decision should put the outcome within the first phone viewport, not
+          below a request summary whose actions have disappeared. */}
+      {copy ? (
+        <ResultCard tone={copy.tone} title={copy.title} testId="parent-result">
+          {copy.body}
+          <span className="mt-3 flex flex-col gap-2 sm:flex-row">
+            <Link href="/try/outcome" className={primaryBtn} data-testid="hand-back">Hand back to the Child</Link>
+          </span>
+        </ResultCard>
+      ) : null}
       <article className={panel} data-family-pending-request={request.status === "pending" ? "true" : undefined} data-testid="request-detail">
         <p className="text-[11px] font-bold uppercase tracking-wider text-green-strong">Request #{request.id} · {request.status}</p>
         <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-[13px]">
@@ -183,14 +193,6 @@ export function ParentRequest() {
           </>
         ) : null}
       </article>
-      {copy ? (
-        <ResultCard tone={copy.tone} title={copy.title} testId="parent-result">
-          {copy.body}
-          <span className="mt-3 flex flex-col gap-2 sm:flex-row">
-            <Link href="/try/outcome" className={primaryBtn} data-testid="hand-back">Hand back to the Child</Link>
-          </span>
-        </ResultCard>
-      ) : null}
       {others.length ? (
         <section className={panel} aria-label="Other requests">
           <h2 className="text-[16px] font-bold text-navy-strong">Other requests</h2>
