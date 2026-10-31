@@ -448,5 +448,12 @@ test("a fictional person's dilemma stays with the Child, Parent and receipt with
   await page.getByTestId("use-approval").click();
   await expect(page.getByTestId("receipt-line")).toContainText("25 credits");
   await expect(page.getByTestId("episode-takeaway")).toContainText(/more customers can help/i);
+  await page.getByRole("link", { name: /talk it through/i }).last().click();
+  await page.getByRole("button", { name: /practice a small fictional choice/i }).click();
+  await page.getByRole("button", { name: /answering as the parent/i }).click();
+  await page.getByRole("button", { name: /agree on a small practice boundary/i }).click();
+  await page.getByRole("button", { name: /mark our discussion complete/i }).click();
+  await expect(page.getByTestId("together-story-memory")).toContainText("Mina");
+  await expect(page.getByTestId("together-story-memory")).toContainText(/new fact could change your mind/i);
   expectCleanNetwork(net);
 });
