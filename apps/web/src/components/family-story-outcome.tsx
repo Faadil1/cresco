@@ -26,7 +26,11 @@ export function OutcomeChapter() {
   // financial outcome or making it part of permission enforcement.
   const storyAsset = lastReceipt?.asset ?? lastRequest?.asset;
   const episodeCompany = FAMILY_EXPLORE_CASES.find(item => item.practiceCode === storyAsset);
-  const episodeChoice = episodeCompany ? story.episodeChoices[episodeCompany.id] : undefined;
+  const episodeChoice = episodeCompany
+    ? lastRequest?.asset === storyAsset
+      ? story.requestEpisodeChoices[lastRequest.id]
+      : story.episodeChoices[episodeCompany.id]
+    : undefined;
   const newestIsRequest = lastRequest && (!lastReceipt || lastRequest.id > lastReceipt.id);
   const name = (code: string) => PRACTICE_ASSETS.find(a => a.code === code)?.name ?? code;
   const downturn = evaluatePracticeScenario(p, "downturn");
