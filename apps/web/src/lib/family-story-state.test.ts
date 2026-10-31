@@ -61,7 +61,15 @@ describe("story layer never carries authority", () => {
     s = run(s, practice({ type: "buy", asset: "MKT", amount: 25 }));
     expect(s.practice.requests[0].status).toBe("pending");
     expect(s.episodeChoices.markets).toBe(1);
-    expect(run(s, practice({ type: "reset" })).episodeChoices).toEqual({});
+    const id = s.practice.requests[0].id;
+    expect(s.requestEpisodeChoices[id]).toBe(1);
+    s = run(s, { type: "choose-episode", id: "markets", option: 0 });
+    expect(s.episodeChoices.markets).toBe(0);
+    expect(s.requestEpisodeChoices[id]).toBe(1);
+    expect(s.practice.requests[0].status).toBe("pending");
+    const reset = run(s, practice({ type: "reset" }));
+    expect(reset.episodeChoices).toEqual({});
+    expect(reset.requestEpisodeChoices).toEqual({});
   });
 
   it("stores the Parent's decline reason only for a request that was pending and declined", () => {
