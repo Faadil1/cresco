@@ -1,0 +1,37 @@
+name: family-v3-local-pilot-windows-preflight
+
+on:
+  pull_request:
+    paths:
+      - "apps/web/scripts/family-v3-local-pilot.ps1"
+      - ".github/workflows/family-v3-local-pilot-windows.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  no-deploy-powershell-preflight:
+    name: Windows PowerShell 5.1 local-only pilot guard (NO DEPLOY)
+    runs-on: windows-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify guarded V3 local launcher without building or opening a port
+        shell: powershell
+        run: |
+          & .\apps\web\scripts\family-v3-local-pilot.ps1 -CheckOnly
+          if ($LASTEXITCODE -ne 0) { throw "LOCAL_PILOT_PREFLIGHT_FAILED" }
+      - name: State exact evidence boundaries
+        shell: powershell
+        run: |
+          Write-Host "WINDOWS_POWERSHELL_5_1_PREFLIGHT=PASS"
+          Write-Host "INSTALL_OR_BUILD_PERFORMED=NO"
+          Write-Host "LOCAL_SERVER_STARTED=NO"
+          Write-Host "LIVE_CLOUDFLARE_DEPLOYED=NO"
+          Write-Host "HUMAN_FAMILY_TEST=NOT_PERFORMED"

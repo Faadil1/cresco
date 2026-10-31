@@ -10,7 +10,7 @@ test("public Family gives Child + Parent a complete practice loop without sign-i
     }
   });
 
-  await page.goto("/try");
+  await page.goto("/try/lab");
   await expect(page.getByRole("heading", { name: /a whole family can learn to decide/i })).toBeVisible();
   await expect(page.getByText(/two simulated perspectives\. pretend credits only/i)).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Child demo navigation" })).toBeInViewport();
@@ -66,7 +66,7 @@ test("public Family gives Child + Parent a complete practice loop without sign-i
 });
 
 test("Parent and Child have independent interactive learning paths with the same family check-in", async ({ page }) => {
-  await page.goto("/try");
+  await page.goto("/try/lab");
   await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: "Learn", exact: true }).click();
   await page.getByRole("button", { name: /lesson 1 · 3 min save for a goal/i }).click();
   await page.getByRole("button", { name: /choose a goal and a time horizon/i }).click();
@@ -100,7 +100,7 @@ test("Parent and Child have independent interactive learning paths with the same
 });
 
 test("restores a sourced and illustrated original Cresco Child lesson behind the Family-only route", async ({ page }) => {
-  await page.goto("/try");
+  await page.goto("/try/lab");
   await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: "Learn", exact: true }).click();
   await page.getByRole("button", { name: /lesson 4.*what is a stock/i }).click();
   await expect(page.getByRole("heading", { name: "What Is a Stock?" })).toBeVisible();
@@ -130,7 +130,7 @@ test.describe("desktop Family UX audit evidence", () => {
   });
 
   test("shows a personalized Child goal in the Parent dashboard with distinct desktop learning paths", async ({ page }, testInfo) => {
-    await page.goto("/try");
+    await page.goto("/try/lab");
     await expect(page.getByTestId("guided-next-step")).toBeVisible();
     await page.getByRole("button", { name: /gaming setup.*80 pretend credits/i }).click();
     await expect(page.getByRole("progressbar", { name: "Fictional saving goal progress" })).toHaveAttribute("aria-valuemax", "80");
@@ -161,7 +161,7 @@ test.describe("desktop Family UX audit evidence", () => {
 });
 
 test("learning actions lead to relevant Parent and Child practice screens on mobile", async ({ page }) => {
-  await page.goto("/try");
+  await page.goto("/try/lab");
   await expect(page.getByText(/Swipe to see more tabs · These roles are simulated/i)).toBeVisible();
   await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: "Learn", exact: true }).click();
   await page.getByRole("button", { name: /lesson 1 · 3 min save for a goal/i }).click();
@@ -182,7 +182,7 @@ test("Child Explore research has search, compare and risk questions without gran
   page.on("request", request => {
     if (["cresco-family-api", "keys-api-stocklana", "api.solana", "rpc.solana", "/api/family-practice"].some(value => request.url().includes(value))) outbound.push(request.url());
   });
-  await page.goto("/try");
+  await page.goto("/try/lab");
   await page.getByRole("navigation", { name: "Child demo navigation" })
     .getByRole("button", { name: "Explore" }).click();
   await expect(page.getByTestId("family-research-explore")).toBeVisible();
@@ -222,6 +222,8 @@ test("visitor enters both profiles and historical routes remain unavailable", as
   await page.goto("/");
   await page.getByRole("link", { name: /try cresco - no sign-in/i }).click();
   await expect(page).toHaveURL(/\/try$/);
+  await expect(page.getByRole("heading", { level: 1, name: /learn to decide/i })).toBeVisible();
+  await page.goto("/try/lab");
   await expect(page.getByTestId("family-public-studio")).toBeVisible();
   await page.getByRole("button", { name: /parent view/i }).click();
   await expect(page.getByRole("heading", { name: /guide with confidence/i })).toBeVisible();
@@ -248,7 +250,7 @@ test("public Family Worker refuses historical API and finance routes on direct G
 // below failed on the previously deployed build.
 async function blockedApprovedLoop(page) {
   const nav = page.getByRole("navigation", { name: "Child demo navigation" });
-  await page.goto("/try");
+  await page.goto("/try/lab");
   await expect(page.getByTestId("key-in-one-line")).toContainText(/up to 15 credits at a time/i);
   await expect(page.getByTestId("practice-loop")).toBeInViewport();
   await nav.getByRole("button", { name: "Explore" }).click();
@@ -287,7 +289,7 @@ test.describe("desktop product acceptance", () => {
     await blockedApprovedLoop(page);
   });
   test("a declined request tells the Child what happened and how to recover", async ({ page }) => {
-    await page.goto("/try");
+    await page.goto("/try/lab");
     await page.getByRole("navigation", { name: "Child demo navigation" }).getByRole("button", { name: "Explore" }).click();
     await page.getByRole("button", { name: /practice MKT choice/i }).click();
     await page.getByRole("button", { name: "Go to my Parent's request" }).click();

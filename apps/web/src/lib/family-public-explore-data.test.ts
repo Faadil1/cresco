@@ -26,6 +26,13 @@ describe("Family fictional research catalog", () => {
       expect(item.researchPrompt.length).toBeGreaterThan(10);
       expect(item.answers).toHaveLength(3);
       expect(item.answers[item.correctAnswer]).toBeTruthy();
+      expect(item.episode.person.length).toBeGreaterThan(8);
+      expect(item.episode.scene.length).toBeGreaterThan(60);
+      expect(item.episode.dilemma.length).toBeGreaterThan(30);
+      expect(item.episode.options).toHaveLength(2);
+      expect(item.episode.reflection).toHaveLength(2);
+      expect(item.episode.options.every(option => option.length > 15)).toBe(true);
+      expect(item.episode.reflection.every(explanation => explanation.length > 40)).toBe(true);
       expect(sampleTrendPath(item.examplePath)).toMatch(/^M0\.0 /);
     }
   });
