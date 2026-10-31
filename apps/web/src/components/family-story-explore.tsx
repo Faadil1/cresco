@@ -73,8 +73,9 @@ export function ExploreChapter() {
                   {seen ? <span className="rounded-full bg-green-soft px-2.5 py-1 text-[11px] font-bold text-green-strong">{seen}</span> : null}
                 </div>
                 <h2 className="mt-2 text-[19px] font-bold leading-6 text-navy-strong">{item.name}</h2>
-                <p className="mt-1 text-[13px] leading-6 text-ink-2">{item.model}</p>
-                <p className="mt-2 flex-1 text-[12px] leading-5 text-navy"><strong>One risk: </strong>{item.uncertainty}</p>
+                <p className="mt-1 text-[13px] font-semibold leading-6 text-green-strong">Meet {item.episode.person}</p>
+                <p className="mt-1 flex-1 text-[13px] leading-5 text-navy">{item.episode.dilemma}</p>
+                <p className="mt-2 text-[12px] leading-5 text-ink-2"><strong>Behind the story: </strong>{item.model}</p>
                 <p className="mt-2 text-[12px] text-ink-3">{practice ? `Practice price: ${practice.price} credits per unit` : "Research only: no practice choice"}</p>
                 <Link href={`/try/explore/${item.id}`} className={`mt-3 ${secondaryBtn}`} aria-label={`Open ${item.name}`}>Open the research page</Link>
               </li>
@@ -103,13 +104,16 @@ export function CompanyChapter({ id }: { id: string }) {
     <div className="space-y-5">
       <Link href="/try/explore" className="inline-flex min-h-11 items-center text-[13px] font-bold text-green-strong underline underline-offset-4">All companies</Link>
       <ChapterHeading kicker={`${item.category} · Invented company`} title={item.name}
-        intro={item.model}
-        art={<CompanyArt id={item.id} name={item.name} className="block h-auto w-full overflow-hidden rounded-[20px] border border-line-soft"/>}/>
-      {match ? <p className="rounded-[14px] bg-yellow-soft px-4 py-2 text-[13px] font-semibold text-navy-strong">You said you like {match.label.toLowerCase()}, so this one came first.</p> : null}
+        intro="Every invented company starts with a person facing a choice. Discover their problem before looking at the numbers."/>
       <section className={panel} aria-labelledby="human-story" data-testid="fictional-episode">
         <p className="cresco-section-kicker">A person behind the numbers · fictional story</p>
-        <h2 id="human-story" className="mt-2 font-display text-[26px] text-navy-strong">{item.episode.person}</h2>
-        <p className="mt-2 text-[15px] leading-7 text-navy">{item.episode.scene}</p>
+        <div className="mt-2 flex items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <h2 id="human-story" className="font-display text-[26px] leading-tight text-navy-strong">{item.episode.person}</h2>
+            <p className="mt-2 text-[15px] leading-7 text-navy">{item.episode.scene}</p>
+          </div>
+          <CompanyArt id={item.id} name={item.name} className="hidden h-auto w-28 shrink-0 rounded-[14px] border border-line-soft sm:block md:w-36"/>
+        </div>
         <div className="mt-4 rounded-[18px] bg-yellow-soft p-4">
           <h3 className="text-[17px] font-bold leading-6 text-navy-strong">{item.episode.dilemma}</h3>
           <div role="group" aria-label="Your response to the fictional dilemma" className="mt-3 grid gap-2">
@@ -132,6 +136,7 @@ export function CompanyChapter({ id }: { id: string }) {
           <p className="mt-3 text-[12px] leading-5 text-ink-2">Choose how you would respond. There is no permission or credit attached to the answer.</p>
         )}
       </section>
+      {match ? <p className="rounded-[14px] bg-yellow-soft px-4 py-2 text-[13px] font-semibold text-navy-strong">You said you like {match.label.toLowerCase()}, so this story came first.</p> : null}
       <section className={panel} aria-label="Research notes">
         <dl className="grid gap-4 md:grid-cols-2">
           <div><dt className="text-[14px] font-bold text-navy-strong">Who is the customer?</dt><dd className="mt-1 text-[14px] leading-6 text-navy">{item.customer}</dd></div>
