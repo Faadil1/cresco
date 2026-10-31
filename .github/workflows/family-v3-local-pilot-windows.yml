@@ -18,6 +18,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 0 # The tested source SHA must exist for the fail-closed ancestor check.
           ref: ${{ github.event.pull_request.head.sha }}
       - uses: actions/setup-node@v4
         with:
