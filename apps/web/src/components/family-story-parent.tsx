@@ -122,7 +122,8 @@ export function ParentRequest() {
     );
   }
   const company = FAMILY_EXPLORE_CASES.find(item => item.practiceCode === request.asset);
-  const episodeChoice = company ? story.episodeChoices[company.id] : undefined;
+  // Read the answer recorded when the exact request was made, not a later edit.
+  const episodeChoice = story.requestEpisodeChoices[request.id];
   const reason = REASONS.find(item => item.id === story.reasons[request.id]);
   const declineReason = DECLINE_REASONS.find(item => item.id === story.declineReasons[request.id]);
   const copy = requestStatusCopy(request, declineReason?.explain);
