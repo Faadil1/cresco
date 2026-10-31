@@ -25,9 +25,14 @@ export function OutcomeChapter() {
   // Keep the Child's earlier reflection in the outcome, without claiming a real
   // financial outcome or making it part of permission enforcement.
   const storyAsset = lastReceipt?.asset ?? lastRequest?.asset;
-  const episodeCompany = FAMILY_EXPLORE_CASES.find(item => item.practiceCode === storyAsset);
+  // Research-only fictional cases have no practiceCode. Without this guard,
+  // an empty storyAsset (no receipt/request yet) can accidentally match the
+  // first research-only case and crash the empty /try/outcome deep link.
+  const episodeCompany = storyAsset
+    ? FAMILY_EXPLORE_CASES.find(item => item.practiceCode === storyAsset)
+    : undefined;
   const episodeChoice = episodeCompany
-    ? lastRequest?.asset === storyAsset
+    ? lastRequest && lastRequest.asset === storyAsset
       ? story.requestEpisodeChoices[lastRequest.id]
       : story.episodeChoices[episodeCompany.id]
     : undefined;
