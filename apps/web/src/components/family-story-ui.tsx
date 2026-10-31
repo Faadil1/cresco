@@ -11,7 +11,7 @@ import { ArrowLeft, ArrowRight, Check, Menu, ShieldCheck } from "lucide-react";
 import { Wordmark } from "@/components/shell";
 import { LessonIllustration } from "@/components/illustrations/scenes";
 import { useFamilyStory } from "@/components/family-story-provider";
-import { STORY_CHAPTERS, type StoryChapterId } from "@/lib/family-story-routes";
+import { STORY_CHAPTERS, lensOfPath, type StoryChapterId } from "@/lib/family-story-routes";
 import { chapterStatus } from "@/lib/family-story-state";
 import { sampleTrendPath, type FamilyExploreCase } from "@/lib/family-public-explore-data";
 import type { IllustrationKey } from "@/domain/types";
@@ -40,7 +40,7 @@ export function StoryFrame({ children }: { children: ReactNode }) {
   const status = chapterStatus(story);
   const rail = STORY_CHAPTERS.filter(chapter => chapter.id !== "welcome");
   const index = rail.findIndex(chapter => chapter.id === current);
-  const isParentLens = current === "parent";
+  const lens = lensOfPath(pathname);
   const doneCount = rail.filter(chapter => status[chapter.id as keyof typeof status]).length;
   return (
     <div className="cresco-app-workspace min-h-dvh">
@@ -49,11 +49,11 @@ export function StoryFrame({ children }: { children: ReactNode }) {
           <Link href="/try" aria-label="Cresco Family story start" className="inline-flex min-h-11 items-center"><Wordmark size="sm"/></Link>
           <div className="flex items-center gap-2">
             {current !== "welcome" ? (
-              <span data-testid="story-lens" className={`rounded-full px-3 py-1.5 text-[11px] font-bold ${isParentLens ? "bg-lavender-soft text-navy-strong" : "bg-green-soft text-green-strong"}`}>
-                {isParentLens ? "Parent's view · simulated" : "Child's view · practice"}
+              <span data-testid="story-lens" data-lens={lens} className={`rounded-full px-3 py-1.5 text-[11px] font-bold ${lens === "parent" ? "bg-lavender-soft text-navy-strong" : lens === "both" ? "bg-yellow-soft text-navy-strong" : "bg-green-soft text-green-strong"}`}>
+                {lens === "parent" ? "Parent's view · simulated" : lens === "both" ? "Child + Parent · together" : "Child's view · practice"}
               </span>
             ) : null}
-            <details className="relative md:hidden">
+            <details key={pathname} className="relative md:hidden">
               <summary aria-label="All chapters" className="flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-center rounded-full border border-line bg-surface text-navy-strong [&::-webkit-details-marker]:hidden">
                 <Menu aria-hidden className="size-5"/>
               </summary>

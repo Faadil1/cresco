@@ -43,3 +43,10 @@ export function familyStoryRouteAllowed(pathname: string): boolean {
   if (lesson) return LESSON_IDS.has(lesson[1]);
   return false;
 }
+
+/** Whose lens a page is written for: the Parent's pages and lessons, or the Child's. Together belongs to both. */
+export function lensOfPath(pathname: string): "child" | "parent" | "both" {
+  if (pathname.startsWith("/try/parent") || pathname.startsWith("/try/learn/p-")) return "parent";
+  if (pathname.startsWith("/try/together")) return "both";
+  return "child";
+}

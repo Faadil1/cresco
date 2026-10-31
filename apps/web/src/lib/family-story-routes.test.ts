@@ -1,8 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { FAMILY_EXPLORE_CASES } from "./family-public-explore-data";
 import { CHILD_LEARNING, PARENT_LEARNING } from "./family-public-practice";
-import { STORY_CHAPTERS, STORY_EXPLORE_IDS, STORY_LESSON_IDS, familyStoryRouteAllowed } from "./family-story-routes";
+import { STORY_CHAPTERS, STORY_EXPLORE_IDS, STORY_LESSON_IDS, familyStoryRouteAllowed, lensOfPath } from "./family-story-routes";
 import { familyWebRouteAllowed } from "./family-web-route-guard";
+
+describe("lens of a page", () => {
+  it("Parent pages and Parent lessons use the Parent lens, Child lessons do not, Together is shared", () => {
+    for (const path of ["/try/parent", "/try/parent/request", "/try/parent/key", "/try/parent/learn", "/try/learn/p-basics", "/try/learn/p-boundary"]) {
+      expect(lensOfPath(path), path).toBe("parent");
+    }
+    for (const path of ["/try/goal", "/try/learn", "/try/learn/c-save", "/try/learn/original-risk-and-reward", "/try/explore/markets", "/try/decision", "/try/outcome"]) {
+      expect(lensOfPath(path), path).toBe("child");
+    }
+    expect(lensOfPath("/try/together")).toBe("both");
+    for (const id of STORY_LESSON_IDS) expect(lensOfPath(`/try/learn/${id}`)).toBe(id.startsWith("p-") ? "parent" : "child");
+  });
+});
 
 describe("closed public story routes", () => {
   it("allows each enumerated story path and nothing near it", () => {

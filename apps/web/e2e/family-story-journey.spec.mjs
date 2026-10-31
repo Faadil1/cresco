@@ -5,12 +5,20 @@ const FORBIDDEN = ["cresco-family-api", "keys-api-stocklana", "api.solana", "rpc
 function watch(page) {
   const outbound = [];
   const external = [];
+  const bad = [];
+  page.on("response", response => { if (response.status() >= 400) bad.push(response.url().replace("http://127.0.0.1:3100", "")); });
   page.on("request", request => {
     const url = request.url();
     if (FORBIDDEN.some(value => url.includes(value)) || !["GET", "HEAD"].includes(request.method())) outbound.push(`${request.method()} ${url}`);
     if (!url.startsWith("http://127.0.0.1:3100")) external.push(url);
   });
-  return { outbound, external };
+  return { outbound, external, bad };
+}
+// The only tolerated failure is the known WebKit manifest 404 (console noise, no user effect).
+function expectCleanNetwork(net) {
+  expect(net.outbound, "no API, wallet or write requests").toEqual([]);
+  expect(net.external, "no external hosts").toEqual([]);
+  expect(net.bad.filter(url => url !== "/manifest.webmanifest"), "no failed response, so no denied prefetch or fallback").toEqual([]);
 }
 const inViewport = locator => expect(locator).toBeInViewport({ ratio: 0.5 });
 async function answerUntilCorrect(page, scope, feedback = "lesson-feedback") {
@@ -183,8 +191,7 @@ test("one client-side journey keeps a single state across real pages, Back and F
 
   // Never reloaded: one document for the whole client-side story.
   expect(await page.evaluate(() => window.__marker)).toBe("same-document");
-  expect(net.outbound).toEqual([]);
-  expect(net.external).toEqual([]);
+  expectCleanNetwork(net);
 });
 
 test("a declined request teaches the Child why and leads to a smaller choice", async ({ page }) => {
@@ -278,6 +285,12 @@ test("the story is reachable and readable without horizontal scroll or hidden ch
       await expect(nav.getByRole("link", { name: label, exact: true })).toBeVisible();
     }
     await expect(nav.getByRole("link", { name: /free practice lab/i })).toBeVisible();
+    // Choosing a chapter from the menu navigates and closes the sheet.
+    await nav.getByRole("link", { name: "Explore", exact: true }).click();
+    await expect(page).toHaveURL(/\/try\/explore$/);
+    await expect(page.locator("details:has(summary[aria-label='All chapters'])")).not.toHaveAttribute("open", "");
+    await expect(page.getByRole("navigation", { name: "All chapters" })).toBeHidden();
+    await expect(page.getByRole("heading", { level: 1, name: /investigate before you decide/i })).toBeInViewport();
   } else {
     for (const label of ["Goal", "Learn", "Explore", "Choose", "Parent", "Result", "Together"]) {
       await expect(page.getByTestId("story-rail").getByRole("link", { name: label, exact: true })).toBeVisible();
@@ -327,6 +340,71 @@ test("a Parent can start first, with their own lens, and nothing is pre-filled f
   await expect(page.getByText(/decides alone up to 15 credits/i)).toBeVisible();
   await page.getByRole("link", { name: /what happened/i }).last().click();
   await expect(page.getByTestId("outcome-hero")).toContainText(/nothing has happened yet/i);
-  expect(net.outbound).toEqual([]);
-  expect(net.external).toEqual([]);
+  expectCleanNetwork(net);
+});
+
+test("the header always names the right lens, including Parent lessons and Together", async ({ page }) => {
+  const lens = page.getByTestId("story-lens");
+  await page.goto("/try/learn/p-basics");
+  await expect(lens).toHaveAttribute("data-lens", "parent");
+  await expect(lens).toContainText(/parent's view/i);
+  await page.goto("/try/learn/c-save");
+  await expect(lens).toHaveAttribute("data-lens", "child");
+  await page.goto("/try/parent/request");
+  await expect(lens).toHaveAttribute("data-lens", "parent");
+  await page.goto("/try/together");
+  await expect(lens).toHaveAttribute("data-lens", "both");
+  await expect(lens).toContainText(/together/i);
+});
+
+test("exhausted credits and a duplicate request are explained before the click and cannot be sent", async ({ page }) => {
+  const net = watch(page);
+  await page.goto("/try/goal");
+  for (let i = 0; i < 5; i++) await page.getByRole("button", { name: /set aside 20 credits/i }).click();
+  await expect(page.getByTestId("goal-progress")).toContainText("0 still available");
+  await expect(page.getByRole("button", { name: /set aside 20 credits/i })).toBeDisabled();
+  await page.getByRole("link", { name: /explore companies|my learning path/i }).last().click();
+  await page.getByRole("link", { name: /explore companies/i }).last().click();
+  await page.getByRole("link", { name: "Open Neighborhood Markets" }).click();
+  await page.getByTestId("practice-this").click();
+  await expect(page.getByTestId("limit-preview")).toHaveAttribute("data-preview-kind", "insufficient");
+  await expect(page.getByTestId("limit-preview")).toContainText(/only 0 practice credits/i);
+  await expect(page.getByTestId("make-choice")).toBeDisabled();
+  await page.getByRole("link", { name: /what happened/i }).last().click();
+  await expect(page.getByTestId("outcome-hero")).toContainText(/nothing has happened yet/i);
+  await expect(page.getByTestId("outcome-spent")).toHaveText("0");
+  expectCleanNetwork(net);
+});
+
+test("a second identical ask is blocked as already sent, and a Key change shows the Child an expired ask", async ({ page }) => {
+  const net = watch(page);
+  await page.goto("/try/explore/markets");
+  await page.getByTestId("practice-this").click();
+  await page.getByRole("button", { name: /a bigger choice \(25\)/i }).click();
+  await page.getByTestId("make-choice").click();
+  await expect(page.getByTestId("outcome-hero")).toContainText(/blocked by my key/i);
+  // Duplicate: same company, same amount.
+  await page.getByRole("link", { name: /make another choice/i }).click();
+  await page.getByRole("button", { name: /a bigger choice \(25\)/i }).click();
+  await expect(page.getByTestId("limit-preview")).toHaveAttribute("data-preview-kind", "pending");
+  await expect(page.getByTestId("limit-preview")).toContainText(/already sent to your parent/i);
+  await expect(page.getByTestId("make-choice")).toBeDisabled();
+  await page.getByRole("link", { name: /open the request/i }).click();
+  await expect(page.getByTestId("request-detail")).toContainText("Practice MKT for 25 credits");
+  // The Parent changes the Key and removes MKT from the allowed list.
+  await page.getByRole("link", { name: /^parent home$/i }).first().click();
+  await page.getByRole("link", { name: /change the key on purpose/i }).click();
+  await page.getByRole("checkbox", { name: "MKT" }).uncheck();
+  await page.getByRole("button", { name: /explicitly update standing key/i }).click();
+  await expect(page.getByTestId("key-result")).toContainText(/previous requests became stale/i);
+  await page.getByRole("link", { name: /what happened/i }).last().click();
+  await inViewport(page.getByTestId("outcome-hero"));
+  await expect(page.getByTestId("outcome-hero")).toContainText(/that ask expired/i);
+  await expect(page.getByTestId("outcome-spent")).toHaveText("0");
+  // An asset the Key no longer allows is named before the click.
+  await page.getByRole("link", { name: /make another choice/i }).click();
+  await page.getByRole("button", { name: /a small choice/i }).click();
+  await expect(page.getByTestId("limit-preview")).toHaveAttribute("data-preview-kind", "needs-parent");
+  await expect(page.getByTestId("limit-preview")).toContainText(/MKT is not allowed by your Key/i);
+  expectCleanNetwork(net);
 });
