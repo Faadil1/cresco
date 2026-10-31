@@ -76,7 +76,7 @@ export function hashTree(dir) {
   const walk = current => {
     for (const entry of readdirSync(current, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
       const full = join(current, entry.name);
-      if (entry.isDirectory()) walk(full);
+      if (entry.isDirectory()) { if (entry.name !== ".wrangler") walk(full); }
       else if (!/wrangler\.family-open-test|family-open-test-117|wrangler\.family-public/.test(entry.name)) files.push(full);
     }
   };

@@ -57,3 +57,18 @@ test("rollback and lockdown commands name only the dedicated Worker", () => {
   assert.match(verify, new RegExp(TARGET_WORKER));
   for (const text of [rollback, lockdown, verify]) assert.doesNotMatch(text, /stocklana|cresco-family-api|\bcresco\b(?!-family-open)/);
 });
+
+test("build hash ignores local Wrangler dev state but detects real file changes", async () => {
+  const { mkdtempSync, mkdirSync, writeFileSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const { hashTree } = await import("./prepare-family-open-test-117.mjs");
+  const dir = mkdtempSync(join(tmpdir(), "hash-"));
+  writeFileSync(join(dir, "index.js"), "a");
+  const before = JSON.stringify(hashTree(dir));
+  mkdirSync(join(dir, ".wrangler/state"), { recursive: true });
+  writeFileSync(join(dir, ".wrangler/state/x.sqlite"), "state");
+  assert.equal(JSON.stringify(hashTree(dir)), before);
+  writeFileSync(join(dir, "index.js"), "b");
+  assert.notEqual(JSON.stringify(hashTree(dir)), before);
+});
