@@ -27,6 +27,7 @@ function GoalCard() {
         <p className="cresco-section-kicker">Your child&apos;s goal</p>
         <p className="text-[19px] font-bold text-navy-strong">{goal.label} · {GOAL_STORY[goal.id].horizon} away</p>
         <p className="text-[13px] text-ink-2">{p.saved} of {goal.target} pretend credits set aside. {p.childCompleted.length} Child lessons done.</p>
+        {!story.goalChosen ? <p className="mt-1 text-[12px] text-ink-3" data-testid="goal-default-note">Your child has not chosen yet, so this is the default. <Link href="/try/goal" className="font-bold text-green-strong underline underline-offset-4">Choose it together</Link>.</p> : null}
       </div>
     </div>
   );

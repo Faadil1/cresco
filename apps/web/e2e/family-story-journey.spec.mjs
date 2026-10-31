@@ -305,3 +305,28 @@ test("the lab and the story share one practice state", async ({ page }) => {
   await expect(page.getByTestId("practice-saved")).toHaveText("20");
   await expect(page.getByText("Saved for Family trip", { exact: true })).toBeVisible();
 });
+
+test("a Parent can start first, with their own lens, and nothing is pre-filled for them", async ({ page }) => {
+  const net = watch(page);
+  await page.goto("/try");
+  await page.getByTestId("start-as-parent").click();
+  await expect(page).toHaveURL(/\/try\/parent$/);
+  await expect(page.getByTestId("story-lens")).toContainText(/parent's view/i);
+  await expect(page.getByTestId("parent-no-pending")).toContainText(/nothing is waiting/i);
+  await expect(page.getByTestId("goal-default-note")).toBeVisible();
+  await page.getByRole("link", { name: /your learning path/i }).click();
+  await expect(page).toHaveURL(/\/try\/parent\/learn$/);
+  await page.getByRole("link", { name: /money & family conversations/i }).click();
+  await expect(page.getByTestId("goal-note")).toContainText(/your child is saving for/i);
+  await expect(page.getByText(/parent's lens/i).first()).toBeVisible();
+  await finishLesson(page);
+  await expect(page.getByTestId("lesson-feedback")).toContainText(/correct/i);
+  await page.getByRole("link", { name: /back to the parent/i }).click();
+  await expect(page.getByText(/1 of 5 Parent lessons done/i)).toBeVisible();
+  // Parent learning never touched the Child's chapters or the Key.
+  await expect(page.getByText(/decides alone up to 15 credits/i)).toBeVisible();
+  await page.getByRole("link", { name: /what happened/i }).last().click();
+  await expect(page.getByTestId("outcome-hero")).toContainText(/nothing has happened yet/i);
+  expect(net.outbound).toEqual([]);
+  expect(net.external).toEqual([]);
+});

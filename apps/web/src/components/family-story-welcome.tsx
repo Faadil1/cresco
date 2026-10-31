@@ -58,11 +58,13 @@ export function WelcomeChapter() {
           <StoryVignette role="teen" className="mb-3 block h-auto w-full rounded-[16px]"/>
           <h2 className="font-display text-[26px] text-navy-strong">The teen decides</h2>
           <p className="mt-1 text-[13px] leading-6 text-ink-2">Saves toward a goal, learns, researches, and makes small practice choices alone inside the Key.</p>
+          <Link href="/try/goal" className={`mt-3 ${secondaryBtn}`} data-testid="start-as-teen">Start as the teen</Link>
         </article>
         <article className={panel}>
           <StoryVignette role="parent" className="mb-3 block h-auto w-full rounded-[16px]"/>
           <h2 className="font-display text-[26px] text-navy-strong">The Parent guides</h2>
           <p className="mt-1 text-[13px] leading-6 text-ink-2">Sees the goal and the reason, approves once or declines with a reason, and can change the Key on purpose. Simulated here: no identity is verified.</p>
+          <Link href="/try/parent" className={`mt-3 ${secondaryBtn}`} data-testid="start-as-parent">Start as the Parent</Link>
         </article>
       </section>
 

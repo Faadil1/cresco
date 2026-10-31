@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FamilyParentTrustCenter } from "@/components/family-parent-trust-center";
 import { ArrowRight, HeartHandshake, ShieldCheck, Sprout } from "lucide-react";
 import { Wordmark } from "@/components/shell";
+import { FamilyStoryScene } from "@/components/illustrations/family-story";
 
 export function FamilyOnlyHome() {
   return (
@@ -71,6 +72,9 @@ export function FamilyOnlyHome() {
             data-testid="family-hero-role-comparison"
             className="rounded-[28px] border border-green/20 bg-surface p-5 shadow-soft md:p-6"
           >
+            <div className="mb-4 hidden overflow-hidden rounded-[20px] border border-line-soft md:block">
+              <FamilyStoryScene className="block h-auto w-full" title="An illustrated parent and teenager exploring Cresco together at home. Fictional practice only."/>
+            </div>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="font-display text-[27px] leading-tight text-navy-strong">
                 Two views. Shared understanding.
