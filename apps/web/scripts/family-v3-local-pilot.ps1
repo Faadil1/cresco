@@ -52,7 +52,8 @@ try {
     if (-not $file) { continue }
     $allowedDoc = $file.StartsWith("docs/family/story-led-2026-10-31/")
     $allowedLauncher = $file -eq "apps/web/scripts/family-v3-local-pilot.ps1"
-    if (-not ($allowedDoc -or $allowedLauncher)) {
+    $allowedPreflight = $file -eq ".github/workflows/family-v3-local-pilot-windows.yml"
+    if (-not ($allowedDoc -or $allowedLauncher -or $allowedPreflight)) {
       throw "UNTESTED_CHANGE: $file differs from tested product. No local pilot started."
     }
   }
