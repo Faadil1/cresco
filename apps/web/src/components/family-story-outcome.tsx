@@ -10,6 +10,7 @@ import {
   CHILD_LEARNING, PRACTICE_ASSETS, evaluatePracticeScenario, remainingCredits, selectedPracticeGoal,
 } from "@/lib/family-public-practice";
 import { DECLINE_REASONS } from "@/lib/family-story-state";
+import { FAMILY_EXPLORE_CASES } from "@/lib/family-public-explore-data";
 
 const credits = (value: number) => value.toFixed(2);
 
@@ -21,6 +22,11 @@ export function OutcomeChapter() {
   const pending = p.requests.find(r => r.status === "pending");
   const lastRequest = p.requests[0];
   const lastReceipt = p.receipts[0];
+  // Keep the Child's earlier reflection in the outcome, without claiming a real
+  // financial outcome or making it part of permission enforcement.
+  const storyAsset = lastReceipt?.asset ?? lastRequest?.asset;
+  const episodeCompany = FAMILY_EXPLORE_CASES.find(item => item.practiceCode === storyAsset);
+  const episodeChoice = episodeCompany ? story.episodeChoices[episodeCompany.id] : undefined;
   const newestIsRequest = lastRequest && (!lastReceipt || lastRequest.id > lastReceipt.id);
   const name = (code: string) => PRACTICE_ASSETS.find(a => a.code === code)?.name ?? code;
   const downturn = evaluatePracticeScenario(p, "downturn");
@@ -89,6 +95,16 @@ export function OutcomeChapter() {
       <ChapterHeading kicker="Chapter 6 · What happened" title="See where your choice led"
         art={<StoryVignette role={approved ? "approved" : "request"} className="block h-auto w-full rounded-[20px]" title="An illustrated teenager and parent after a practice decision"/>}/>
       {hero}
+      {episodeCompany && episodeChoice !== undefined ? (
+        <section className={panel} data-testid="episode-takeaway" aria-label="Remember your earlier choice">
+          <p className="cresco-section-kicker">Your story, not just a receipt</p>
+          <h2 className="mt-1 font-display text-[24px] text-navy-strong">Remember {episodeCompany.episode.person}?</h2>
+          <p className="mt-2 text-[14px] leading-6 text-navy"><strong>You chose:</strong> {episodeCompany.episode.options[episodeChoice]}.</p>
+          <p className="mt-1 text-[14px] leading-6 text-navy">{episodeCompany.episode.reflection[episodeChoice]}</p>
+          <p className="mt-2 text-[12px] leading-5 text-ink-2">Think about what you would ask next. This story answer did not change your Key, approval or pretend balance.</p>
+          <Link className="mt-3 inline-block text-[13px] font-bold text-green-strong underline underline-offset-4" href={`/try/explore/${episodeCompany.id}`}>Return to the fictional company</Link>
+        </section>
+      ) : null}
 
       <section aria-label="Consequences for your goal" className="grid gap-3 sm:grid-cols-3" data-testid="outcome-numbers">
         <div className={panel}>
