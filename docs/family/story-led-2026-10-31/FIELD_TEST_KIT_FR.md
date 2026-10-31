@@ -31,6 +31,16 @@ Ouvrir **http://127.0.0.1:3100/try** sur le *même ordinateur*. Le serveur doit 
 
 Avant d'inviter qui que ce soit : vérifier à l'écran la page `/try`, le choix du rêve, Mina, la limite de crédits, et qu'aucun écran ne prétend traiter de l'argent réel. Faire une **séance blanche avec un adulte**, enregistrée « dry-run », distincte des séances avec enfant.
 
+### Entre deux familles : réinitialiser réellement l'essai
+
+**Important :** cliquer sur « Welcome », sur le logo ou sur un autre chapitre conserve normalement le même état, ce qui est utile pendant **une** histoire, mais **ne sépare pas deux familles**.
+
+1. Une fois la séance terminée, utiliser **Ctrl+R** (ou fermer l'onglet et rouvrir `http://127.0.0.1:3100/try`).
+2. Avant d'accueillir la famille suivante, contrôler que « Mon objectif » n'a plus de choix sélectionné, que le Parent n'a **aucune demande en attente** et que « Résultat » annonce que rien ne s'est passé. Ne jamais afficher à la famille suivante les choix/résultats de la précédente.
+3. Revenir sur `/try` puis remettre la souris à l'enfant, **sans entrer de nom ni créer de compte**.
+
+Le test navigateur `a new local family session never inherits the previous simulated family's decisions` répète cette sécurité sur un cycle approuvé puis réinitialisé (WebKit et Chromium). Ce contrôle automatisé **ne remplace pas** le constat visuel de l'animateur ni le test avec une vraie famille.
+
 ## 2. Déroulé : 12 à 18 minutes, non dirigé
 
 Accueillir un adulte et un enfant ensemble. Demander l'autorisation explicite à l'adulte et vérifier que l'enfant souhaite participer. Participation libre, arrêt immédiat à la demande, questions sautables. Ne pas noter nom, prénom, âge précis, courriel, coordonnées, identifiant, situation financière ni image/voix.
