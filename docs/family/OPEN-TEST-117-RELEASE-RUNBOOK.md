@@ -42,3 +42,9 @@ npx --no-install wrangler deployments list --name cresco-family-open-test-web
 ```
 
 Rollback restores the stored version; it was checked to be retrievable (`versions view`) but not executed. If it fails, take the Worker offline with `wrangler deploy --config dist\server\wrangler.family-open-test-117-closed.json` (`workers_dev` off) and verify the URL no longer answers. Roll back on any safety or behavior regression.
+
+## Released (2026-10-31, owner-approved)
+
+- New version `cb3a6ad5-d579-43fa-a8e4-f8e2d5f38aee` at 100% on `cresco-family-open-test-web` (product commit `e3e616f`, release tooling `153d3a2`, build digest `945fe39d...1ed7`, no rebuild between verify and deploy). Previous version `42900c64` kept as rollback target; rollback was not needed or run.
+- Live checks: `/` and `/try` 200; 11 historic, API and finance paths 404; full WebKit suite 12/12 against the public URL (no outbound API, no replay); status visible after blocked, approve and retry on desktop and iPhone; no console error on desktop; only `/manifest.webmanifest` 404 on WebKit.
+- `cresco`, `keys-api-stocklana` and `cresco-family-web` still on `8b2fcbb9`, `cb798053`, `57db966c`.
