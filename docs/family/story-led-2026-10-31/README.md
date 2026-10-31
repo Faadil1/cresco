@@ -86,6 +86,12 @@ Desktop: [welcome](after/desktop/01-welcome.png), [explore](after/desktop/06-exp
 - The Parent is still one browser; no identity or consent is verified.
 - A release needs a new scoped artifact gate and explicit owner approval. Rollback target stays `42900c64`, current `cb3a6ad5`.
 
+## V3 next acceptance gate: story comprehension (2026-10-31)
+
+See **[moderated Parent–Child pilot and observation template](FAMILY_USABILITY_PILOT.md)**. This is a plan for five exploratory adult–child pairs, **not** research already conducted. A Parent-only dry run is counted separately. It specifically probes whether a child can recount **Mina's rising delivery costs versus growing sales**, explain My Key's 15-credit boundary and the 25-credit Parent decision, and discuss a next question without coaching. Stop-release criteria include any misunderstanding that real investments or verified guardian consent occurred.
+
+Mobile story work on PR #119 after initial visual review: the fictional company's introductory heading was shortened, the scene tightened without removing its financial-research sections, and the first answer is now an explicit initial-viewport browser assertion on both iPhone WebKit and desktop Chromium. Treat this as **implementation under test**, not proof of child comprehension. Refresh still clears progress and no tester access has been published. Exact product/test commits and CI results should be read from the PR; earlier 36/36 counts above describe the original baseline.
+
 ## Three questions for 5 to 10 adults
 
 1. In your own words, what does "My Key" do? (comprehension)
