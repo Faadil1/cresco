@@ -40,6 +40,7 @@ export type StoryState = {
   interests: InterestId[];
   viewed: string[];
   researched: string[];
+  episodeChoices: Record<string, 0 | 1>;
   pick: AssetCode | null;
   reasons: Record<number, ReasonId>;
   declineReasons: Record<number, DeclineReasonId>;
@@ -47,7 +48,7 @@ export type StoryState = {
 export function initialStory(): StoryState {
   return {
     practice: initialFamilyPractice(), goalChosen: false, interests: [], viewed: [], researched: [],
-    pick: null, reasons: {}, declineReasons: {},
+    episodeChoices: {}, pick: null, reasons: {}, declineReasons: {},
   };
 }
 
@@ -57,6 +58,7 @@ export type StoryAction =
   | { type: "toggle-interest"; id: InterestId }
   | { type: "view-case"; id: string }
   | { type: "research-correct"; id: string }
+  | { type: "choose-episode"; id: string; option: 0 | 1 }
   | { type: "pick-asset"; code: AssetCode | null };
 
 const knownCase = (id: string) => FAMILY_EXPLORE_CASES.some(item => item.id === id);
@@ -87,6 +89,11 @@ export function transitionStory(s: StoryState, action: StoryAction): StoryState 
   }
   if (action.type === "view-case") return knownCase(action.id) ? { ...s, viewed: add(s.viewed, action.id) } : s;
   if (action.type === "research-correct") return knownCase(action.id) ? { ...s, researched: add(s.researched, action.id) } : s;
+  // An interpretation is just a teaching moment. It cannot alter financial state.
+  if (action.type === "choose-episode") {
+    if (!knownCase(action.id) || (action.option !== 0 && action.option !== 1)) return s;
+    return { ...s, episodeChoices: { ...s.episodeChoices, [action.id]: action.option } };
+  }
   if (action.type === "pick-asset") {
     if (action.code !== null && !PRACTICE_ASSETS.some(a => a.code === action.code)) return s;
     return { ...s, pick: action.code };
