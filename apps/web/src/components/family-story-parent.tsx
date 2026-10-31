@@ -143,9 +143,8 @@ export function ParentRequest() {
           <div><dt className="text-ink-2">Asked under</dt><dd className="font-bold text-navy-strong">v{request.version} / nonce {request.nonce}{current ? "" : " (old)"}</dd></div>
         </dl>
         {company ? (
-          <section className="mt-3 rounded-[18px] border border-green/20 bg-green-soft/40 p-4" data-testid="parent-human-story" aria-label="The story behind the request">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-green-strong">Before you decide, talk about the story</p>
-            <p className="mt-1 text-[14px] font-bold text-navy-strong">{company.episode.person}</p>
+          <details className="mt-3 rounded-[18px] border border-green/20 bg-green-soft/40 px-3 py-2" data-testid="parent-human-story">
+            <summary className="min-h-10 cursor-pointer py-2 text-[13px] font-bold text-navy-strong">Talk about {company.episode.person} before deciding</summary>
             <p className="mt-1 text-[13px] leading-6 text-navy">{company.episode.dilemma}</p>
             {episodeChoice !== undefined ? (
               <p className="mt-2 text-[13px] leading-6 text-navy" data-testid="parent-episode-choice">
@@ -157,7 +156,7 @@ export function ParentRequest() {
                 Your child has not answered this dilemma. Ask what they would want to know before making a choice.
               </p>
             )}
-          </section>
+          </details>
         ) : null}
         <p className="mt-2 text-[11px] leading-4 text-ink-2">{SIMULATED}</p>
         {request.status === "pending" ? (
