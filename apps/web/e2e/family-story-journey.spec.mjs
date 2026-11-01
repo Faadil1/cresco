@@ -813,6 +813,10 @@ test("lessons teach with multi-step content and an applied choice before their f
   await expect(page.getByTestId("applied-feedback")).toContainText(/mercy of a price/i);
   await page.getByRole("button", { name: /next idea/i }).click();
   await expect(page.getByTestId("lesson-slide")).toContainText("Work backward from the goal");
+  await expect(page.getByTestId("lesson-math-lab")).toContainText("Build your own saving plan");
+  await expect(page.getByTestId("lab-savings-result")).toContainText("15 pretend credits each period");
+  await page.getByRole("slider", { name: "Practice periods" }).press("ArrowLeft");
+  await expect(page.getByTestId("lab-savings-result")).toContainText("20 pretend credits each period");
   await page.getByRole("button", { name: /quick check/i }).click();
   await expect(page.getByTestId("lesson-quiz")).toBeVisible();
   await testInfo.attach("lesson-substantive-scene.png", { body: await page.screenshot(), contentType: "image/png" });
@@ -838,5 +842,31 @@ test("empty Portfolio teaches real portfolio mechanics without inventing a holdi
   await tab(page, "Portfolio").click();
   await expect(page.getByTestId("portfolio-empty")).toBeVisible();
   await expect(page.getByTestId("portfolio-available")).toHaveText("100");
+  expectCleanNetwork(net);
+});
+
+
+test("hands-on grocery and price-risk labs calculate consequences without changing the child's credit balance", async ({ page }) => {
+  const net = watch(page);
+  for (const part of [
+    { id: "c-explore", title: /mina.s grocery cover its costs/i, slider: "Delivery cost", testid: "lab-grocery-result", initial: /15 pretend credits left after costs/, changed: /25 pretend credits short after costs/ },
+    { id: "c-risk", title: /what could a price drop mean/i, slider: "Hypothetical price drop", testid: "lab-risk-result", initial: /20 credits become 15.00/, changed: /20 credits become 10.00/ },
+  ]) {
+    await page.goto("/try/learn/" + part.id);
+    await page.getByRole("button", { name: /next idea/i }).click();
+    const exercise = page.getByTestId("lesson-applied-exercise");
+    await expect(exercise).toBeVisible();
+    await exercise.getByRole("button").first().click();
+    await expect(page.getByTestId("applied-feedback")).toBeVisible();
+    await page.getByRole("button", { name: /next idea/i }).click();
+    await expect(page.getByTestId("lesson-math-lab")).toContainText(part.title);
+    await expect(page.getByTestId(part.testid)).toContainText(part.initial);
+    await page.getByRole("slider", { name: part.slider }).press("End");
+    await expect(page.getByTestId(part.testid)).toContainText(part.changed);
+  }
+  await page.goto("/try/portfolio");
+  await expect(page.getByTestId("portfolio-spent")).toContainText("0");
+  await expect(page.getByTestId("portfolio-available")).toHaveText("100");
+  await expect(page.getByTestId("portfolio-empty")).toBeVisible();
   expectCleanNetwork(net);
 });
