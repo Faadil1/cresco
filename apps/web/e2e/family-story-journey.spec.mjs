@@ -807,10 +807,10 @@ test("empty Portfolio teaches real portfolio mechanics without inventing a holdi
   await example.getByRole("button", { name: /a bad month/i }).click();
   await expect(page.getByTestId("example-scenario-total")).toContainText(/60.00 invested → 49.00 scenario value/i);
   await testInfo.attach("portfolio-guided-example.png", { body: await page.screenshot(), contentType: "image/png" });
-  await page.getByRole("navigation", { name: "Main" }).last().getByRole("link", { name: "Home", exact: true }).click();
+  await tab(page, "Home").click();
   await expect(page.getByTestId("home-key")).toContainText("15 credits");
   await expect(page.getByTestId("home-goal-saved")).toHaveText("0/60");
-  await page.getByRole("navigation", { name: "Main" }).last().getByRole("link", { name: "Portfolio", exact: true }).click();
+  await tab(page, "Portfolio").click();
   await expect(page.getByTestId("portfolio-empty")).toBeVisible();
   await expect(page.getByTestId("portfolio-available")).toHaveText("100");
   expectCleanNetwork(net);
