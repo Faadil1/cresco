@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { FOUNDATION_SCENES, LESSON_ACTIVITIES } from "./family-learning-depth";
 import {
   CHILD_LEARNING, PARENT_LEARNING, evaluatePracticeScenario, initialFamilyPractice, previewPracticeChoice, remainingCredits,
   transitionFamilyPractice as next,
@@ -180,5 +181,40 @@ describe("previewPracticeChoice (forecast shown before the Child clicks)", () =>
     const tight = next(base, { type: "set-key", maxPerAction: 15, maxPeriod: 20, allowed: ["ORC", "MKT", "BKT"] });
     const spent = next(tight, { type: "buy", asset: "ORC", amount: 15 });
     expect(previewPracticeChoice(spent, "ORC", 10).message).toMatch(/past the 5 left/);
+  });
+});
+
+
+describe("Family course depth and practice fidelity", () => {
+  it("all Child and Parent courses offer an applied scenario separate from the recall quiz", () => {
+    for (const lesson of [...CHILD_LEARNING, ...PARENT_LEARNING]) {
+      const exercise = LESSON_ACTIVITIES[lesson.id];
+      expect(exercise, lesson.id).toBeDefined();
+      expect(exercise.situation.length).toBeGreaterThan(45);
+      expect(exercise.options).toHaveLength(2);
+      expect(exercise.outcomes.every(message => message.length > 25)).toBe(true);
+      expect(exercise.insight.length).toBeGreaterThan(20);
+    }
+  });
+
+  it("foundation and Parent lessons have three distinct teaching scenes instead of a one-card quiz", () => {
+    for (const [id, scenes] of Object.entries(FOUNDATION_SCENES)) {
+      const lesson = [...CHILD_LEARNING, ...PARENT_LEARNING].find(item => item.id === id);
+      expect(lesson, id).toBeDefined();
+      expect(scenes).toHaveLength(3);
+      expect(lesson?.sections).toEqual(scenes);
+      expect(new Set(scenes.map(scene => scene.title)).size).toBe(3);
+      expect(scenes.every(scene => scene.body.length > 95 && scene.realityCheck.length > 40)).toBe(true);
+    }
+  });
+
+  it("studying and applying a teaching exercise never spends credits or changes My Key", () => {
+    const practice = initialFamilyPractice();
+    const lesson = CHILD_LEARNING.find(item => item.id === "c-save")!;
+    const completed = next(practice, { type: "complete", role: "child", lessonId: lesson.id });
+    expect(completed.key).toEqual(practice.key);
+    expect(completed.spent).toBe(0);
+    expect(completed.receipts).toEqual([]);
+    expect(completed.holdings).toEqual(practice.holdings);
   });
 });
