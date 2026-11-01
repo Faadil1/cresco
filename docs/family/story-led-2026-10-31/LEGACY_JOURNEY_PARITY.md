@@ -59,3 +59,7 @@ The original source-based **first journey** is being implemented, not by reusing
 The first speculative three-scene edit was reversed before this old-source-derived implementation began. The new onboarding scenes deliberately follow the verified `OnboardingFrame` pattern. **App + browser-test commit `88733c05204bde5e5ca776a8229e06ae3e3c9f97` passed 44/44 dedicated Family browser tests (iPhone WebKit, desktop Chromium), plus isolated build, tests and historical web workflow.** The visual artifact from [the exact test run](https://github.com/Faadil1/cresco/actions/runs/41343405556) shows distinct centered Dream → Interests → Ready screens. This is **layout/functional evidence**, not family comprehension. The Windows local launcher was subsequently pinned to that tested SHA and has its own Windows `-CheckOnly` validation gate.
 
 **NO MERGE. NO PUBLIC V3 DEPLOY. NO alteration of V2 or historical Colosseum/Stocklana Workers.**
+
+## Follow-up 2026-11-01: durable app shell (branch `family/legacy-product-shell-rebuild-2026-11-01`)
+
+The seven-chapter rail has been replaced by the original product shell: Home / Learn / Explore / Portfolio / Profile (bottom bar on phones, side rail on desktop), a personal Home with a state-derived mission, dedicated Portfolio and Profile routes, a focus-mode lesson reader and a separate simulated Parent navigation. Decisions, route map, evidence and limitations: `docs/family/LEGACY_SHELL_REBUILD_DECISIONS.md`. Candidate only: NO MERGE, NO DEPLOY, no founder approval yet.
