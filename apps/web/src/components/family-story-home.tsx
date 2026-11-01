@@ -205,25 +205,49 @@ function WinsCard() {
 export function HomeScreen() {
   const { story } = useFamilyStory();
   const mission = nextMission(story);
+  const p = story.practice;
+  const waiting = p.requests.some(request => request.status === "pending" || request.status === "approved-once");
   return (
-    <div className="space-y-4 md:space-y-5" data-testid="home-screen">
+    <div className="mx-auto max-w-[850px] space-y-5" data-testid="home-screen">
       <header>
-        <h1 className="font-display text-[26px] leading-tight text-navy-strong md:text-[32px]">Hi there <span aria-hidden>👋</span></h1>
-        <p className="text-[13px] text-ink-2">Your practice home · pretend credits, learning first</p>
+        <h1 className="font-display text-[28px] leading-tight text-navy-strong md:text-[34px]">Your space <span aria-hidden>✳</span></h1>
+        <p className="mt-1 text-[13px] text-ink-2">One goal. One next step. Learn at your own pace.</p>
       </header>
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-6">
-        <div className="space-y-4">
-          <GoalCard/>
-          <MissionCard/>
+
+      <GoalCard/>
+      <MissionCard/>
+
+      {/* Home is a wayfinder, not six dashboards stacked into one page. The
+          dedicated destinations own lessons, companies, holdings and badges. */}
+      <nav aria-label="Go deeper" data-testid="home-quick-links" className="grid grid-cols-3 gap-2">
+        <Link href="/try/learn" className="flex min-h-[68px] flex-col items-center justify-center rounded-[18px] border border-line-soft bg-surface px-2 text-center text-[13px] font-bold text-navy-strong hover:border-family-action">
+          <BookOpen aria-hidden className="mb-1 size-5 text-family-action"/>Learn
+        </Link>
+        <Link href="/try/explore" className="flex min-h-[68px] flex-col items-center justify-center rounded-[18px] border border-line-soft bg-surface px-2 text-center text-[13px] font-bold text-navy-strong hover:border-family-action">
+          <Target aria-hidden className="mb-1 size-5 text-family-action"/>Explore
+        </Link>
+        <Link href="/try/portfolio" className="flex min-h-[68px] flex-col items-center justify-center rounded-[18px] border border-line-soft bg-surface px-2 text-center text-[13px] font-bold text-navy-strong hover:border-family-action">
+          <PiggyBank aria-hidden className="mb-1 size-5 text-family-action"/>Portfolio
+        </Link>
+      </nav>
+
+      <div className="rounded-[16px] border border-green/20 bg-green-soft px-4 py-3 text-[13px] leading-5 text-navy-strong" data-testid="home-key">
+        <KeyRound aria-hidden className="mr-1 inline size-4 text-green-strong"/>
+        <strong>My Key:</strong> up to {p.key.maxPerAction} credits per choice · {remainingPeriod(p)} credits left this practice period.
+        <span className="block text-[11px] text-ink-2">All credits are fictional. Only a simulated Parent can decide above your Key.</span>
+      </div>
+
+      {waiting ? <ParentPreview/> : null}
+
+      <details className="rounded-[20px] border border-line-soft bg-surface p-4" data-testid="home-more">
+        <summary className="cursor-pointer text-[14px] font-bold text-navy-strong">More progress and family details</summary>
+        <div className="mt-4 space-y-5">
           <ContinueLearning skip={mission.href}/>
           <MeetNext skip={mission.href}/>
-        </div>
-        <div className="space-y-4">
-          <KeyCard/>
-          <ParentPreview/>
+          {!waiting ? <ParentPreview/> : null}
           <WinsCard/>
         </div>
-      </div>
+      </details>
     </div>
   );
 }
