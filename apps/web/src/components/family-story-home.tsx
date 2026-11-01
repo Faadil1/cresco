@@ -205,8 +205,6 @@ export function HomeScreen() {
       <GoalCard/>
       <MissionCard/>
 
-      <p className="text-[13px] leading-5 text-ink-2">Go to <strong>Learn</strong> for lessons, <strong>Explore</strong> to meet people, or <strong>Portfolio</strong> to review your practice. Use the main navigation anytime.</p>
-
       <div className="rounded-[16px] border border-green/20 bg-green-soft px-4 py-3 text-[13px] leading-5 text-navy-strong" data-testid="home-key">
         <KeyRound aria-hidden className="mr-1 inline size-4 text-green-strong"/>
         <strong>My Key:</strong> up to {p.key.maxPerAction} credits per choice · {remainingPeriod(p)} credits left this practice period.
