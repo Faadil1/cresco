@@ -59,7 +59,9 @@ export function LearnChapter() {
           </div>
         ) : <p className="mt-4 rounded-[14px] bg-green-soft p-3 text-[13px] font-semibold text-green-strong">Path complete. Review any lesson, or go and explore.</p>}
       </div>
-      <ol className="grid gap-3 md:grid-cols-2" aria-label="All Child lessons">
+      <details className="rounded-[20px] border border-line-soft bg-surface p-4" data-testid="optional-lesson-catalog">
+        <summary className="min-h-11 cursor-pointer font-semibold text-navy-strong">Browse all Child lessons (optional)</summary>
+        <ol className="mt-3 grid gap-3 md:grid-cols-2" aria-label="All Child lessons">
         {path.map((lesson, index) => (
           <li key={lesson.id}>
             <Link href={`/try/learn/${lesson.id}`} className="flex min-h-24 items-center gap-3 rounded-[18px] border border-line bg-surface p-3 hover:border-green">
@@ -73,7 +75,8 @@ export function LearnChapter() {
             </Link>
           </li>
         ))}
-      </ol>
+        </ol>
+      </details>
       <p className="text-[13px] text-ink-2">A Parent has a separate path: <Link className="font-semibold text-green-strong underline underline-offset-4" href="/try/parent/learn">Parent lessons</Link>.</p>
       <ChapterNav back={{ href: "/try/goal", label: "My goal" }} next={{ href: "/try/explore", label: "Explore companies" }}/>
     </div>
