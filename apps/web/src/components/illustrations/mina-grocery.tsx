@@ -65,7 +65,7 @@ export function MinaGroceryArt({
       </g>
       <path d="M223 236l11-18 13 13-6 17z" fill="#DB8A60"/>
       <rect x="29" y="270" width="83" height="24" rx="12" fill="#FAE5B9"/>
-      <text x="70" y="286" textAnchor="middle" fontSize="12" fontWeight="800" fontFamily="Arial,sans-serif" fill="#285F53">MINA'S SHOP</text>
+      <text x="70" y="286" textAnchor="middle" fontSize="12" fontWeight="800" fontFamily="Arial,sans-serif" fill="#285F53">MINA&apos;S SHOP</text>
     </svg>
   );
 }
