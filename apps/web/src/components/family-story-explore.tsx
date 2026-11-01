@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, CheckCircle2, KeyRound, Search, ShieldAlert } from "lucide-react";
 import { useFamilyStory } from "@/components/family-story-provider";
+import { MinaGroceryArt } from "@/components/illustrations/mina-grocery";
 import {
   ChapterHeading, CompanyArt, ResultCard, TeachingTrend, panel, primaryBtn, secondaryBtn,
 } from "@/components/family-story-ui";
@@ -53,7 +54,11 @@ export function ExploreChapter() {
           <p className="mt-1 text-[14px] leading-6 text-navy">{featured.episode.dilemma}</p>
           <Link href={`/try/explore/${featured.id}`} className={`mt-3 w-full sm:w-auto ${primaryBtn}`}>Meet {personName(featured)}<ArrowRight aria-hidden className="size-4"/></Link>
         </div>
-        <CompanyArt id={featured.id} name={featured.name} className="hidden h-auto w-full overflow-hidden rounded-[18px] md:block"/>
+        {featured.id === "markets" ? (
+          <MinaGroceryArt className="mx-auto block h-[156px] w-full max-w-[240px] overflow-hidden rounded-[18px] md:h-auto" />
+        ) : (
+          <CompanyArt id={featured.id} name={featured.name} className="hidden h-auto w-full overflow-hidden rounded-[18px] md:block"/>
+        )}
       </section>
       <KeyChip/>
       <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
@@ -127,7 +132,11 @@ export function CompanyChapter({ id }: { id: string }) {
             <h2 id="human-story" className="font-display text-[24px] leading-tight text-navy-strong md:text-[26px]">{item.episode.person}</h2>
             <p className="mt-1.5 text-[14px] leading-6 text-navy md:mt-2 md:text-[15px] md:leading-7">{item.episode.scene}</p>
           </div>
-          <CompanyArt id={item.id} name={item.name} className="block h-auto w-16 shrink-0 rounded-[14px] border border-line-soft sm:w-28 md:w-36"/>
+          {item.id === "markets" ? (
+            <MinaGroceryArt className="block h-[124px] w-[108px] shrink-0 overflow-hidden rounded-[14px] border border-line-soft sm:h-[175px] sm:w-[154px]" />
+          ) : (
+            <CompanyArt id={item.id} name={item.name} className="block h-auto w-16 shrink-0 rounded-[14px] border border-line-soft sm:w-28 md:w-36"/>
+          )}
         </div>
         <div className="mt-3 rounded-[18px] bg-yellow-soft p-3 md:mt-4 md:p-4">
           <h3 className="text-[16px] font-bold leading-6 text-navy-strong md:text-[17px]">{item.episode.dilemma}</h3>
