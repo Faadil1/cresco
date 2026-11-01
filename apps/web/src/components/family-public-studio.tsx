@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useReducer, useState } from "react";
+import { useEffect, useState } from "react";
+import { useFamilyStory } from "@/components/family-story-provider";
 import { LessonIllustration } from "@/components/illustrations/scenes";
 import { GoalArt } from "@/components/illustrations/objects";
 import { BadgeArt } from "@/components/illustrations/badges";
@@ -274,7 +275,7 @@ function KeySummary({ state }: { state: FamilyPracticeState }) {
     </div>
   );
 }
-function ParentKey({ state, update }: {
+export function ParentKey({ state, update }: {
   state: FamilyPracticeState;
   update: (perAction: number, period: number, allowed: AssetCode[]) => void;
 }) {
@@ -364,7 +365,7 @@ const parentChoices: { id: ParentDiscussion; title: string; why: string }[] = [
   { id: "small-limit", title: "Agree on a small practice boundary", why: "Let the child practice independently inside an explicit Key." },
   { id: "review-risk", title: "Discuss risk before changing any limits", why: "Understand possible losses; this answer does not change My Key." },
 ];
-function Together({ role, state, childAnswer, parentAnswer, onComplete }: {
+export function Together({ role, state, childAnswer, parentAnswer, onComplete }: {
   role: FamilyRole;
   state: FamilyPracticeState;
   childAnswer: (choice: ChildDiscussion) => void;
@@ -438,7 +439,10 @@ function Together({ role, state, childAnswer, parentAnswer, onComplete }: {
 
 /** Full two-role public practice studio. No backend, auth, storage or financial execution. */
 export function FamilyPublicStudio() {
-  const [state, dispatch] = useReducer(transitionFamilyPractice, undefined, initialFamilyPractice);
+  // One shared in-memory state with the guided story pages under /try.
+  const { story, dispatch: dispatchStory } = useFamilyStory();
+  const state = story.practice;
+  const dispatch = (action: Parameters<typeof transitionFamilyPractice>[1]) => dispatchStory({ type: "practice", action });
   const [role, setRole] = useState<FamilyRole>("child");
   const [childTab, setChildTab] = useState<ChildTab>("home");
   const [parentTab, setParentTab] = useState<ParentTab>("overview");

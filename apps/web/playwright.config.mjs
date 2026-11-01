@@ -4,7 +4,12 @@ export default defineConfig({
   testDir: "./e2e",
   // The no-login Family Worker is an independent build target. Its dedicated
   // config tests the real Vite/Cloudflare artifact, not the canonical Next app.
-  testIgnore: "family-public-demo.spec.mjs",
+  // Both Family-only suites require NEXT_PUBLIC_CRESCO_FAMILY_ONLY=1 and
+  // the separate sealed Cloudflare build. They are fully exercised by
+  // playwright.family-public.config.mjs (iPhone WebKit + desktop Chromium).
+  // The canonical Next app must not expose /try/*; don't accidentally test
+  // Family-only pages against its intentionally closed routes.
+  testIgnore: ["family-public-demo.spec.mjs", "family-story-journey.spec.mjs"],
   timeout: 30_000,
   retries: 1,
   use: {

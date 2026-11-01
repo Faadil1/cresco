@@ -36,8 +36,15 @@ export default function TryFamilyPage() {
             consequences together. This is not a real financial account.
           </p>
         </section>
+        <p className="mt-3 hidden text-[13px] leading-6 text-ink-2 md:block">
+          This is the free practice lab, with every tab in one place. Prefer a guided path?{" "}
+          <Link href="/try" className="font-bold text-green-strong underline underline-offset-4">Take the illustrated story</Link>. Both share the same practice state.
+        </p>
         <FamilyPublicStudio/>
-        <Link href="/" className="mt-8 inline-flex min-h-11 items-center gap-2 text-[13px] font-bold text-green-strong underline underline-offset-4">
+        <Link href="/try" className="mt-6 inline-flex min-h-11 items-center gap-2 text-[13px] font-bold text-green-strong underline underline-offset-4 md:hidden">
+          Prefer a guided path? Take the illustrated story
+        </Link>
+        <Link href="/" className="mt-2 md:mt-8 inline-flex min-h-11 items-center gap-2 text-[13px] font-bold text-green-strong underline underline-offset-4">
           <ArrowLeft aria-hidden className="size-4"/> Back to Cresco Family
         </Link>
       </div>

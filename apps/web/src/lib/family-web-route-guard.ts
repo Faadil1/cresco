@@ -1,9 +1,12 @@
+import { familyStoryRouteAllowed } from "./family-story-routes";
+
 // Pure route gate for the independently built Cresco Family site.
 // This never affects the canonical Colosseum build.
 export function familyWebRouteAllowed(pathname: string): boolean {
   const path = pathname.split("?")[0];
   return path === "/" ||
-    path === "/try" ||
+    // Closed, enumerated set of public story pages (no prefix match).
+    familyStoryRouteAllowed(path) ||
     path === "/favicon.ico" ||
     path === "/robots.txt" ||
     path === "/icon.svg" ||
