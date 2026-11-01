@@ -1,6 +1,6 @@
 # Local-only Cresco Family V3 facilitator launcher (Windows PowerShell 5.1+).
 # No deploy, no remote Worker access, no Cloudflare credentials or tester invitations.
-# Run from the checked-out PR #119 branch (any working directory):
+# Run from the checked-out PR #120 old-style Family app branch (any working directory):
 # powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\apps\web\scripts\family-v3-local-pilot.ps1
 param(
   [switch]$CheckOnly,
@@ -9,8 +9,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
-$expectedBranch = "family/story-led-multipage-2026-10-31"
-$testedSourceSha = "88733c05204bde5e5ca776a8229e06ae3e3c9f97"
+$expectedBranch = "family/legacy-product-shell-rebuild-2026-11-01"
+$testedSourceSha = "5a2cc70eb519c06618c67ed8a531cbc6274412b6"
 $webRoot = Split-Path -Parent $PSScriptRoot
 $repoRoot = (Resolve-Path (Join-Path $webRoot "../..")).Path
 $pilotURL = "http://127.0.0.1:3100/try"
@@ -36,7 +36,7 @@ try {
 
   $branch = GitValue -GitArgs @("branch", "--show-current")
   if ($branch -and $branch -ne $expectedBranch) {
-    throw "WRONG_BRANCH: '$branch'. Use the isolated PR #119 branch, never Colosseum/main or a historic Family branch."
+    throw "WRONG_BRANCH: '$branch'. Use the isolated PR #120 branch, never Colosseum/main or a historic Family branch."
   }
   $actualSha = GitValue -GitArgs @("rev-parse", "HEAD")
   $dirty = GitValue -GitArgs @("status", "--porcelain", "--untracked-files=all")
@@ -50,7 +50,7 @@ try {
   if ($LASTEXITCODE -ne 0) { throw "Unable to verify product tree against the tested commit." }
   foreach ($file in $changed) {
     if (-not $file) { continue }
-    $allowedDoc = $file.StartsWith("docs/family/story-led-2026-10-31/")
+    $allowedDoc = $file.StartsWith("docs/family/") -and $file.EndsWith(".md")
     $allowedLauncher = $file -eq "apps/web/scripts/family-v3-local-pilot.ps1"
     $allowedPreflight = $file -eq ".github/workflows/family-v3-local-pilot-windows.yml"
     if (-not ($allowedDoc -or $allowedLauncher -or $allowedPreflight)) {
