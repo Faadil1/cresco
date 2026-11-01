@@ -667,6 +667,8 @@ test("child first: lesson, Mina, blocked ask, Parent once, receipt, Portfolio, e
   await page.getByTestId("lesson-back-home").click();
   await expect(page).toHaveURL(/\/try\/home$/);
   await expect(page.getByTestId("home-learning")).toContainText("1 of 9 done");
+  await expect(page.getByTestId("home-more")).not.toHaveAttribute("open", "");
+  await expect(page.getByTestId("home-quick-links").getByRole("link")).toHaveCount(3);
   await expect(page.getByTestId("home-mission")).toHaveAttribute("data-mission", "meet-person");
   await expect(page.getByTestId("home-mission")).toContainText("Meet Mina");
 
@@ -706,6 +708,8 @@ test("child first: lesson, Mina, blocked ask, Parent once, receipt, Portfolio, e
   await tab(page, "Portfolio").click();
   await expect(page.getByTestId("portfolio-receipts")).toContainText(/parent's one-time approval/i);
   await expect(page.getByTestId("portfolio-what-if")).toBeVisible();
+  await expect(page.getByTestId("portfolio-allocation")).toContainText("25 invested");
+  await expect(page.getByTestId("portfolio-weights")).toContainText("100% in the largest position");
   await page.getByRole("button", { name: "A bad month" }).click();
   await expect(page.getByTestId("scenario-hypothetical")).toHaveText("22.50");
   await tab(page, "Home").click();
@@ -765,4 +769,25 @@ test("Profile can start over for a new family without a reload, and nothing carr
   await expect(page.getByTestId("welcome-start")).toHaveText(/let's begin/i);
   await page.getByTestId("start-as-parent").click();
   await expect(page.getByTestId("goal-default-note")).toBeVisible();
+});
+
+
+test("lessons teach with multi-step content and an applied choice before their final recall check", async ({ page }, testInfo) => {
+  const net = watch(page);
+  await page.goto("/try/learn/c-save");
+  await expect(page.getByTestId("lesson-slide")).toContainText("Give a dream a deadline");
+  await page.getByRole("button", { name: /next idea/i }).click();
+  await expect(page.getByTestId("lesson-slide")).toContainText("Keep the bike money safe");
+  const exercise = page.getByTestId("lesson-applied-exercise");
+  await expect(exercise).toContainText(/bike costs 60 pretend credits/i);
+  await exercise.getByRole("button", { name: /plan to save the remaining 40/i }).click();
+  await expect(page.getByTestId("applied-feedback")).toContainText(/planning gives you a number/i);
+  await exercise.getByRole("button", { name: /put the bike credits into one risky company/i }).click();
+  await expect(page.getByTestId("applied-feedback")).toContainText(/mercy of a price/i);
+  await page.getByRole("button", { name: /next idea/i }).click();
+  await expect(page.getByTestId("lesson-slide")).toContainText("Work backward from the goal");
+  await page.getByRole("button", { name: /quick check/i }).click();
+  await expect(page.getByTestId("lesson-quiz")).toBeVisible();
+  await testInfo.attach("lesson-substantive-scene.png", { body: await page.screenshot(), contentType: "image/png" });
+  expectCleanNetwork(net);
 });
