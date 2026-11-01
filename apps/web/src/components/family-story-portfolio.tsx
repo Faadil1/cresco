@@ -127,7 +127,7 @@ export function PortfolioScreen() {
             </button>
             {showSample ? (
               <section className="mt-3 rounded-[18px] border border-yellow/50 bg-yellow-soft p-4" data-testid="portfolio-example">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-orange-text">Guided example — not your holdings</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-orange-text">Guided example - not your holdings</p>
                 <h3 className="mt-1 text-[17px] font-extrabold text-navy-strong">Three pretend positions · 60 fictional credits</h3>
                 <p className="mt-1 text-[13px] leading-5 text-navy">Imagine investing 20 credits in each of three invented assets. Their cost totals 60. This preview cannot spend your credits or approve a choice.</p>
                 <div role="group" aria-label="Sample portfolio scenarios" className="mt-3 flex flex-wrap gap-2">
