@@ -37,6 +37,7 @@ export function StoryFrame({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/try";
   const { story } = useFamilyStory();
   const current = chapterOfPath(pathname);
+  const onboarding = pathname === "/try/goal" || pathname === "/try/goal/interests" || pathname === "/try/goal/ready";
   const status = chapterStatus(story);
   const rail = STORY_CHAPTERS.filter(chapter => chapter.id !== "welcome");
   const index = rail.findIndex(chapter => chapter.id === current);
@@ -44,7 +45,7 @@ export function StoryFrame({ children }: { children: ReactNode }) {
   const doneCount = rail.filter(chapter => status[chapter.id as keyof typeof status]).length;
   return (
     <div className="cresco-app-workspace min-h-dvh">
-      <div className="mx-auto max-w-[1040px] px-4 pb-24 pt-3 md:px-10 md:pt-6">
+      <div className={onboarding ? "mx-auto max-w-[700px] px-4 pb-10 pt-3 md:px-7 md:pt-5" : "mx-auto max-w-[1040px] px-4 pb-24 pt-3 md:px-10 md:pt-6"}>
         <header className="flex items-center justify-between gap-3">
           <Link href="/try" aria-label="Cresco Family story start" className="inline-flex min-h-11 items-center"><Wordmark size="sm"/></Link>
           <div className="flex items-center gap-2">
@@ -53,7 +54,7 @@ export function StoryFrame({ children }: { children: ReactNode }) {
                 {lens === "parent" ? "Parent's view · simulated" : lens === "both" ? "Child + Parent · together" : "Child's view · practice"}
               </span>
             ) : null}
-            <details key={pathname} className="relative md:hidden">
+            <details key={pathname} className={onboarding ? "hidden" : "relative md:hidden"}>
               <summary aria-label="All chapters" className="flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-center rounded-full border border-line bg-surface text-navy-strong [&::-webkit-details-marker]:hidden">
                 <Menu aria-hidden className="size-5"/>
               </summary>
@@ -79,7 +80,7 @@ export function StoryFrame({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        {current !== "welcome" ? (
+        {current !== "welcome" && !onboarding ? (
           <nav aria-label="Story chapters" data-testid="story-rail" className="mt-2">
             <ol className="flex gap-1.5 md:gap-2">
               {rail.map(chapter => {
