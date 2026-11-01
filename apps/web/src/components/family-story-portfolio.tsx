@@ -27,6 +27,7 @@ const STATUS: Record<PracticeRequest["status"], string> = {
   used: "Approval used", stale: "Expired after a Key change",
 };
 const fmt = (n: number) => n.toFixed(2);
+const allocationTone = { ORC: "bg-blue-strong", MKT: "bg-green-soft", BKT: "bg-yellow-strong" } as const;
 
 export function PortfolioScreen() {
   const { story } = useFamilyStory();
@@ -48,7 +49,7 @@ export function PortfolioScreen() {
         <section className="rounded-[24px] bg-gradient-to-br from-green-strong to-green p-5 text-white shadow-soft" aria-label="Practice summary" data-testid="portfolio-summary">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[12px] font-bold uppercase tracking-wider text-white/80">Practice choices</p>
+              <p className="text-[12px] font-bold uppercase tracking-wider text-white/80">Invested in fictional holdings · cost</p>
               <p className="mt-1 text-[36px] font-extrabold leading-none" data-testid="portfolio-spent">{p.spent}<span className="ml-1 text-[15px] font-semibold">credits</span></p>
               <p className="mt-2 text-[13px] text-white/85">{p.receipts.length} receipt{p.receipts.length === 1 ? "" : "s"} · {held.length} holding{held.length === 1 ? "" : "s"}</p>
             </div>
@@ -58,6 +59,15 @@ export function PortfolioScreen() {
             <div className="rounded-[14px] bg-white/15 p-3"><dt className="text-white/80">Free to use</dt><dd className="text-[20px] font-extrabold" data-testid="portfolio-available">{remainingCredits(p)}</dd></div>
             <div className="rounded-[14px] bg-white/15 p-3"><dt className="text-white/80">Set aside for {goal.label.toLowerCase()}</dt><dd className="text-[20px] font-extrabold">{p.saved}/{goal.target}</dd></div>
           </dl>
+          <div className="mt-4" data-testid="portfolio-allocation" aria-label="How 100 pretend credits are used">
+            <div className="flex h-3 overflow-hidden rounded-full bg-white/20" role="img"
+              aria-label={`${p.saved} saved, ${p.spent} invested in practice, ${remainingCredits(p)} available out of 100 fictional credits`}>
+              <span className="bg-yellow-strong" style={{ width: `${p.saved}%` }}/>
+              <span className="bg-white" style={{ width: `${p.spent}%` }}/>
+              <span className="bg-white/35" style={{ width: `${remainingCredits(p)}%` }}/>
+            </div>
+            <p className="mt-2 text-[11px] leading-5 text-white/90">Out of 100: {p.saved} saved · {p.spent} invested · {remainingCredits(p)} available</p>
+          </div>
           <p className="mt-3 text-[11px] font-bold tracking-wide text-white/85">PRACTICE ONLY - NOT EXECUTED ONCHAIN</p>
         </section>
 
@@ -69,8 +79,10 @@ export function PortfolioScreen() {
       </div>
 
       <section aria-labelledby="holdings-title" className={panel}>
-        <h2 id="holdings-title" className="text-[18px] font-extrabold text-navy-strong">My holdings</h2>
+        <h2 id="holdings-title" className="text-[18px] font-extrabold text-navy-strong">My fictional positions</h2>
+        <p className="mt-1 text-[13px] leading-5 text-ink-2">Units, amount invested, weight and scenario value. Prices here are invented, not a live feed.</p>
         {held.length ? (
+          <>
           <ul className="mt-3 divide-y divide-line-soft" aria-label="Practice holdings">
             {held.map(asset => {
               const item = FAMILY_EXPLORE_CASES.find(c => c.practiceCode === asset.code)!;
@@ -80,14 +92,28 @@ export function PortfolioScreen() {
                     <CompanyArt id={item.id} name={asset.name} className="h-12 w-14 shrink-0 overflow-hidden rounded-[10px]"/>
                     <span className="min-w-0 flex-1">
                       <span className="block text-[15px] font-bold text-navy-strong">{asset.name}</span>
-                      <span className="block text-[12px] text-ink-2">{p.holdings[asset.code].toFixed(2)} pretend units · {Math.round(asset.weight * 100)}% of practice</span>
+                      <span className="block text-[12px] text-ink-2">{p.holdings[asset.code].toFixed(2)} pretend units · {Math.round(asset.weight * 100)}% allocation</span>
+                      <span className="mt-1 block text-[11px] text-ink-2">Cost {fmt(asset.cost)} · Change {asset.hypothetical >= asset.cost ? "+" : ""}{fmt(asset.hypothetical - asset.cost)} credits</span>
                     </span>
-                    <span className="text-right text-[14px] font-bold text-navy-strong">{fmt(asset.cost)}<span className="block text-[11px] font-normal text-ink-2">credits</span></span>
+                    <span className="text-right text-[14px] font-bold text-navy-strong">{fmt(asset.hypothetical)}<span className="block text-[11px] font-normal text-ink-2">{scenario === "base" ? "sample value" : "scenario value"}</span></span>
                   </Link>
                 </li>
               );
             })}
           </ul>
+          <div className="mt-3 space-y-2" data-testid="portfolio-weights">
+            <div className="flex h-3 overflow-hidden rounded-full bg-surface-soft" role="img"
+              aria-label={`Fictional portfolio allocation: ${held.map(asset => `${asset.name} ${Math.round(asset.weight * 100)} percent`).join(", ")}`}>
+              {held.map(asset => (
+                <span key={asset.code} className={allocationTone[asset.code]} style={{ width: `${100 * asset.weight}%` }}/>
+              ))}
+            </div>
+            <p className="text-[12px] leading-5 text-ink-2">
+              {Math.round(Math.max(...held.map(asset => asset.weight)) * 100)}% in the largest position.
+              {held.length === 1 ? " One company means all of your invested practice credits depend on that one fictional company." : " Diversifying can change concentration, but not eliminate risk."}
+            </p>
+          </div>
+          </>
         ) : (
           <div className="mt-2 rounded-[18px] bg-surface-soft p-4" data-testid="portfolio-empty">
             <p className="text-[14px] font-semibold text-navy-strong">No practice holdings yet.</p>
@@ -99,7 +125,8 @@ export function PortfolioScreen() {
 
       {p.spent > 0 ? (
         <section aria-labelledby="whatif-title" className={panel} data-testid="portfolio-what-if">
-          <h2 id="whatif-title" className="text-[18px] font-extrabold text-navy-strong">What if prices changed?</h2>
+          <h2 id="whatif-title" className="text-[18px] font-extrabold text-navy-strong">Revalue my practice portfolio</h2>
+          <p className="mt-1 text-[13px] leading-5 text-ink-2">Switch between fixed fictional price scenarios. The values shown above update too; transactions and cash never change.</p>
           <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Portfolio teaching scenarios">
             {SCENARIOS.map(s => (
               <button key={s.id} type="button" aria-pressed={scenario === s.id} onClick={() => setScenario(s.id)}
