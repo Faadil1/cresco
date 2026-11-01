@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { MinaGroceryArt } from "@/components/illustrations/mina-grocery";
 import { StoryVignette } from "@/components/illustrations/family-story";
 import { useFamilyStory } from "@/components/family-story-provider";
 import { ArrowRight } from "lucide-react";
@@ -101,6 +102,7 @@ export function OutcomeChapter() {
         <section className={panel} data-testid="episode-takeaway" aria-label="Remember your earlier choice">
           <p className="cresco-section-kicker">Your story, not just a receipt</p>
           <h2 className="mt-1 font-display text-[24px] text-navy-strong">Remember {episodeCompany.episode.person}?</h2>
+          {episodeCompany.id === "markets" ? <MinaGroceryArt className="float-right mb-2 ml-3 h-[118px] w-[100px] overflow-hidden rounded-[14px] sm:h-[145px] sm:w-[125px]"/> : null}
           <p className="mt-2 text-[14px] leading-6 text-navy"><strong>You chose:</strong> {episodeCompany.episode.options[episodeChoice]}.</p>
           <p className="mt-1 text-[14px] leading-6 text-navy">{episodeCompany.episode.reflection[episodeChoice]}</p>
           <p className="mt-2 text-[12px] leading-5 text-ink-2">Think about what you would ask next. This story answer did not change your Key, approval or pretend balance.</p>
