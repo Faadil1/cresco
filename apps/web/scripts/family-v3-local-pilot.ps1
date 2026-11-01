@@ -10,7 +10,7 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 $expectedBranch = "family/legacy-product-shell-rebuild-2026-11-01"
-$testedSourceSha = "5a2cc70eb519c06618c67ed8a531cbc6274412b6"
+$testedSourceSha = "0d37d2b9d81db3bedb93f9bd4f1e2fb0b666590e"
 $webRoot = Split-Path -Parent $PSScriptRoot
 $repoRoot = (Resolve-Path (Join-Path $webRoot "../..")).Path
 $pilotURL = "http://127.0.0.1:3100/try"
