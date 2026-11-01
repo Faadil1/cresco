@@ -306,7 +306,7 @@ test("the original-style setup uses separate readable screens, then the full sto
   await expect(page).toHaveURL(/\/try\/goal\/ready$/);
   await expect(page.getByTestId("goal-scene-ready")).toBeVisible();
   await page.getByRole("navigation", { name: "Previous and next chapter" }).getByRole("link", { name: "Start my learning path" }).click();
-  await expect(page).toHaveURL(/\\/try\\/learn$/);
+  await expect(page).toHaveURL(/\/try\/learn$/);
   await expect(page.getByTestId("story-rail")).toBeVisible();
 });
 
