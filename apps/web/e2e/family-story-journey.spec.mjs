@@ -279,37 +279,35 @@ test("deep links and refresh: empty states point to the right chapter, bad ids a
   }
 });
 
-test("the story is reachable and readable without horizontal scroll or hidden chapters", async ({ page }) => {
-  for (const path of ["/try", "/try/goal", "/try/learn", "/try/explore", "/try/decision", "/try/parent", "/try/outcome", "/try/together"]) {
+test("the original-style setup uses separate readable screens, then the full story rail resumes", async ({ page }) => {
+  for (const path of ["/try", "/try/goal", "/try/goal/interests", "/try/goal/ready", "/try/learn", "/try/explore", "/try/decision", "/try/parent", "/try/outcome", "/try/together"]) {
     await page.goto(path);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-    expect(overflow, `${path} horizontal overflow`).toBeLessThanOrEqual(1);
+    expect(overflow, path + " horizontal overflow").toBeLessThanOrEqual(1);
     await expect(page.getByRole("main")).toBeVisible();
-    if (path !== "/try") {
+    if (path.startsWith("/try/goal")) {
+      await expect(page.getByRole("progressbar", { name: "Story setup progress" })).toBeInViewport();
+      await expect(page.getByTestId("story-rail")).toHaveCount(0);
+    } else if (path !== "/try") {
       await expect(page.getByTestId("story-rail")).toBeInViewport();
       await expect(page.getByRole("navigation", { name: "Story chapters" }).getByRole("link")).toHaveCount(7);
     }
   }
   await page.goto("/try/goal");
-  const menu = page.locator("summary[aria-label='All chapters']");
-  if (await menu.isVisible()) {
-    await menu.click();
-    const nav = page.getByRole("navigation", { name: "All chapters" });
-    for (const label of ["Welcome", "My goal", "My learning path", "Explore", "Make a choice", "Parent's moment", "What happened", "Together"]) {
-      await expect(nav.getByRole("link", { name: label, exact: true })).toBeVisible();
-    }
-    await expect(nav.getByRole("link", { name: /free practice lab/i })).toBeVisible();
-    // Choosing a chapter from the menu navigates and closes the sheet.
-    await nav.getByRole("link", { name: "Explore", exact: true }).click();
-    await expect(page).toHaveURL(/\/try\/explore$/);
-    await expect(page.locator("details:has(summary[aria-label='All chapters'])")).not.toHaveAttribute("open", "");
-    await expect(page.getByRole("navigation", { name: "All chapters" })).toBeHidden();
-    await expect(page.getByRole("heading", { level: 1, name: /investigate before you decide/i })).toBeInViewport();
-  } else {
-    for (const label of ["Goal", "Learn", "Explore", "Choose", "Parent", "Result", "Together"]) {
-      await expect(page.getByTestId("story-rail").getByRole("link", { name: label, exact: true })).toBeVisible();
-    }
-  }
+  await expect(page.getByTestId("goal-scene-dream")).toBeVisible();
+  await expect(page.getByRole("group", { name: "Interests" })).toHaveCount(0);
+  await expect(page.getByTestId("ready-optional-saving")).toHaveCount(0);
+  await page.getByRole("radio", { name: /new bike/i }).click();
+  await page.getByRole("navigation", { name: "Previous and next chapter" }).getByRole("link", { name: "Next" }).click();
+  await expect(page).toHaveURL(/\/try\/goal\/interests$/);
+  await expect(page.getByTestId("goal-scene-interests")).toBeVisible();
+  await expect(page.getByRole("radiogroup", { name: "Saving goal" })).toHaveCount(0);
+  await page.getByRole("navigation", { name: "Previous and next chapter" }).getByRole("link", { name: "Skip for now" }).click();
+  await expect(page).toHaveURL(/\/try\/goal\/ready$/);
+  await expect(page.getByTestId("goal-scene-ready")).toBeVisible();
+  await page.getByRole("navigation", { name: "Previous and next chapter" }).getByRole("link", { name: "Start my learning path" }).click();
+  await expect(page).toHaveURL(/\\/try\\/learn$/);
+  await expect(page.getByTestId("story-rail")).toBeVisible();
 });
 
 test("landing leads into the story, with the free lab still available", async ({ page }) => {
