@@ -5,6 +5,7 @@ import { useState } from "react";
 import { ArrowRight, CheckCircle2, ChevronRight, ExternalLink, PlayCircle } from "lucide-react";
 import { LessonIllustration } from "@/components/illustrations/scenes";
 import { useFamilyStory } from "@/components/family-story-provider";
+import { LESSON_ACTIVITIES } from "@/lib/family-learning-depth";
 import { ResultCard, panel, primaryBtn, secondaryBtn } from "@/components/family-story-ui";
 import {
   PARENT_LEARNING, selectedPracticeGoal,
@@ -88,6 +89,7 @@ export function LessonReader({ id }: { id: string }) {
   const lesson = lessons.find(item => item.id === id);
   const [slide, setSlide] = useState(0);
   const [answer, setAnswer] = useState<number | null>(null);
+  const [applied, setApplied] = useState<number | null>(null);
   if (!lesson) return null;
   const goal = selectedPracticeGoal(story.practice);
   const done = (parent ? story.practice.parentCompleted : story.practice.childCompleted).includes(lesson.id);
@@ -98,6 +100,7 @@ export function LessonReader({ id }: { id: string }) {
   const onQuiz = slide >= concepts.length;
   const current = concepts[Math.min(slide, concepts.length - 1)];
   const note = parent ? parentLessonNote(goal, lesson.id) : childLessonNote(goal, lesson.id);
+  const activity = LESSON_ACTIVITIES[lesson.id];
   const index = lessons.findIndex(item => item.id === lesson.id);
   const following = lessons.slice(index + 1).find(item => !(parent ? story.practice.parentCompleted : story.practice.childCompleted).includes(item.id)) ?? lessons[index + 1];
   const correct = answer === lesson.answer;
@@ -123,6 +126,30 @@ export function LessonReader({ id }: { id: string }) {
               <h2 className="text-[19px] font-extrabold text-navy-strong">{current.title}</h2>
               <p className="mt-2 text-[15px] leading-7 text-navy">{current.body}</p>
               {current.realityCheck ? <p className="mt-3 rounded-[14px] bg-blue-soft p-3 text-[13px] leading-6 text-navy"><strong>Reality check: </strong>{current.realityCheck}</p> : null}
+              {slide === 1 && activity ? (
+                <section className="mt-5 rounded-[18px] border border-family-action/25 bg-family-action-soft/40 p-4" data-testid="lesson-applied-exercise"
+                  aria-label="Try it with a situation">
+                  <p className="text-[11px] font-extrabold uppercase tracking-wider text-family-action">Try it · a real reasoning exercise</p>
+                  <p className="mt-2 text-[14px] leading-6 text-navy-strong">{activity.situation}</p>
+                  <h3 className="mt-3 text-[16px] font-bold text-navy-strong">{activity.question}</h3>
+                  <div className="mt-3 grid gap-2" role="group" aria-label="Apply this lesson">
+                    {activity.options.map((option, i) => (
+                      <button type="button" key={option} aria-pressed={applied === i}
+                        onClick={() => setApplied(i)}
+                        className={`min-h-12 rounded-[14px] border bg-surface p-3 text-left text-[13px] font-semibold leading-5 text-navy-strong ${applied === i ? "border-family-action" : "border-line"}`}>
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                  {applied !== null ? (
+                    <div className="mt-3 rounded-[14px] bg-surface p-3" data-testid="applied-feedback" role="status">
+                      <p className="text-[13px] leading-6 text-navy-strong">{activity.outcomes[applied]}</p>
+                      <p className="mt-2 text-[13px] font-semibold leading-6 text-green-strong">{activity.insight}</p>
+                      <p className="mt-1 text-[11px] leading-5 text-ink-3">This is reflection, not a purchase or permission. You can try the other answer.</p>
+                    </div>
+                  ) : null}
+                </section>
+              ) : null}
               {slide === 0 ? <p data-testid="goal-note" className="mt-3 rounded-[14px] bg-yellow-soft p-3 text-[13px] leading-6 text-navy-strong"><strong>For your {goal.label.toLowerCase()}: </strong>{note}</p> : null}
               {current.source ? (
                 <p className="mt-3 text-[12px] leading-6 text-ink-2">
