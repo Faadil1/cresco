@@ -31,8 +31,22 @@ async function answerUntilCorrect(page, scope, feedback = "lesson-feedback") {
   throw new Error("no correct answer found");
 }
 async function finishLesson(page) {
-  while (await page.getByRole("button", { name: /next idea/i }).count()) await page.getByRole("button", { name: /next idea/i }).click();
-  await page.getByRole("button", { name: /quick check/i }).click();
+  // Rich multi-scene lessons now have more than one intermediate render.
+  // A quick .count() immediately after a click can race the client transition
+  // and skip an entire scene; wait for either next-step control to be visible.
+  let onQuiz = false;
+  for (let step = 0; step < 20; step++) {
+    const quick = page.getByRole("button", { name: /quick check/i });
+    if (await quick.isVisible()) {
+      await quick.click();
+      onQuiz = true;
+      break;
+    }
+    const next = page.getByRole("button", { name: /next idea/i });
+    await expect(next).toBeVisible();
+    await next.click();
+  }
+  expect(onQuiz, "lesson must reach its final recall check").toBe(true);
   await answerUntilCorrect(page, "[data-testid=lesson-quiz]");
   await page.getByRole("button", { name: /complete lesson/i }).click();
 }
@@ -484,7 +498,7 @@ test("the goal chapter records an actual Child choice rather than silently accep
     .getByRole("link", { name: "Skip for now" }).click();
   await expect(page).toHaveURL(/\/try\/goal\/ready$/);
   await openHomeFromReady(page);
-  await expect(page.getByRole("heading", { level: 1, name: /hi there/i })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /your space/i })).toBeVisible();
   await expect(page.getByTestId("home-goal-card")).toContainText(/family trip/i);
   expectCleanNetwork(net);
 });
