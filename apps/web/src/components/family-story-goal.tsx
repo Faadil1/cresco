@@ -120,7 +120,7 @@ export function ReadyChapter() {
       <div className="mt-4 space-y-2 text-[13px] leading-6 text-navy-strong">
         <p className="rounded-[14px] bg-blue-soft px-3 py-2.5"><strong>Your dream:</strong> {goal.label}. Your future decisions connect back to it.</p>
         <p className="rounded-[14px] bg-green-soft px-3 py-2.5"><strong>Your freedom:</strong> My Key lets you make pretend choices up to {p.key.maxPerAction} credits without asking.</p>
-        <p className="rounded-[14px] bg-lavender-soft px-3 py-2.5"><strong>When it's bigger:</strong> A simulated Parent decides once, just for that choice. No guardian identity is verified.</p>
+        <p className="rounded-[14px] bg-lavender-soft px-3 py-2.5"><strong>When it is bigger:</strong> A simulated Parent decides once, just for that choice. No guardian identity is verified.</p>
       </div>
       <details className="mt-4 rounded-[14px] border border-line-soft bg-surface-soft p-3" data-testid="ready-optional-saving">
         <summary className="cursor-pointer text-[13px] font-semibold text-navy-strong">Optional: set aside credits for my goal</summary>
