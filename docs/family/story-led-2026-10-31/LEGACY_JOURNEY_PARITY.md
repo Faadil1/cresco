@@ -41,6 +41,19 @@
 - Keep exact-release isolation tests: no API, RPC, wallet, account, server write or unguarded route. Browser tests check both scene boundaries and user-facing screenshots, not just page headings.
 - Manual Founder comparison of original Cresco Vercel versus locally built V3 and a real Parent/Child pilot. CI is not a substitute.
 
+## Current change in PR #119 (2026-11-01)
+
+The original source-based **first journey** is being implemented, not by reusing old money/auth services but by adapting its `OnboardingFrame` interaction grammar:
+
+- `/try/goal`: one illustrated goal decision, no interest chooser or savings form below.
+- `/try/goal/interests`: its own optional interests screen with a real **Skip for now** action.
+- `/try/goal/ready`: short story recap, explicit fictional Parent boundary, one **Start my learning path** action; optional savings hidden in a secondary expandable section.
+- Introductory screens use a centered ~620 px frame, **1 of 3 / 2 of 3 / 3 of 3** progress, back/next controls and a sticky footer; the seven-chapter rail is intentionally omitted *only in onboarding*.
+- `/try/learn` prioritizes the next lesson; the full catalog remains available under an optional expandable section.
+- Test suite now checks that all these URLs are distinct, the **wrong step controls do not leak into the current screen**, network restrictions still hold, and captures goal/interests/ready on mobile and desktop.
+
+**Verification status:** these are **new candidate changes on a draft PR**, not yet a founder-approved or externally tested story. The old production Vercel frontend remains untouched.
+
 ## Implementation/rollback boundary
 
 As of **2026-11-01** the short-lived speculative three-scene goal edit was **fully reversed** on PR #119. Verified via GitHub compare: **no net code diff** versus baseline `46d4eaa04e108c4b65bd249b5b930655821eef87` before adding this document. This deliberately avoids leaving broken routes/tests between design directions. Next implementation should be an **old-source-derived** change with a targeted old-vs-new visual check and exact-commit CI.
