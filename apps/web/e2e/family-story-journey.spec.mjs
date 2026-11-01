@@ -512,12 +512,14 @@ test("a fictional person's dilemma stays with the Child, Parent and receipt with
   await page.getByTestId("use-approval").click();
   await expect(page.getByTestId("receipt-line")).toContainText("25 credits");
   await expect(page.getByTestId("episode-takeaway")).toContainText(/more customers can help/i);
+  await expect(page.getByTestId("episode-takeaway").getByRole("img", { name: /fictional Mina in her family.s grocery/i })).toBeVisible();
   await page.getByRole("link", { name: /talk it through/i }).last().click();
   await page.getByRole("button", { name: /practice a small fictional choice/i }).click();
   await page.getByRole("button", { name: /answering as the parent/i }).click();
   await page.getByRole("button", { name: /agree on a small practice boundary/i }).click();
   await page.getByRole("button", { name: /mark our discussion complete/i }).click();
   await expect(page.getByTestId("together-story-memory")).toContainText("Mina");
+  await expect(page.getByTestId("together-story-memory").getByRole("img", { name: /fictional Mina in her family.s grocery/i })).toBeVisible();
   await expect(page.getByTestId("together-story-memory")).toContainText(/new fact could change your mind/i);
   expectCleanNetwork(net);
 });
@@ -536,6 +538,7 @@ test("the first mobile story decision and a fictional person's problem are visib
   await expect(page.getByTestId("fictional-episode").getByRole("heading", { level: 2, name: /^mina,/i }))
     .toBeInViewport({ ratio: 0.5 });
   await expect(page.getByTestId("fictional-episode")).toContainText(/supplier has raised delivery prices/i);
+  await expect(page.getByTestId("fictional-episode").getByRole("img", { name: /fictional Mina in her family.s grocery/i })).toBeVisible();
   // The first response must be genuinely reachable above the initial fold:
   // visible heading alone is not enough for a story-led decision.
   await expect(page.getByRole("group", { name: "Your response to the fictional dilemma" })
@@ -703,6 +706,7 @@ test("child first: lesson, Mina, blocked ask, Parent once, receipt, Portfolio, e
   await page.getByRole("button", { name: /agree on a small practice boundary/i }).click();
   await page.getByRole("button", { name: /mark our discussion complete/i }).click();
   await expect(page.getByTestId("together-story-memory")).toContainText("Mina");
+  await expect(page.getByTestId("together-story-memory").getByRole("img", { name: /fictional Mina in her family.s grocery/i })).toBeVisible();
   await page.getByTestId("together-home").click();
   await expect(page.getByTestId("home-mission")).toHaveAttribute("data-mission", "next-lesson");
   await tab(page, "Profile").click();
@@ -716,6 +720,8 @@ test("Parent first: own dashboard, no identity capture, learning and Key visible
   await page.goto("/try");
   await page.getByTestId("start-as-parent").click();
   await expect(page).toHaveURL(/\/try\/parent$/);
+  await expect(page.getByTestId("parent-overview-grid").locator(":scope > *")).toHaveCount(3);
+  await expect(page.getByTestId("parent-overview-grid")).toContainText(/My Key/);
   const parentNav = page.getByRole("navigation", { name: "Parent" });
   await expect(parentNav.getByRole("link")).toHaveText(["Overview", "Requests", "My Key", "Learn"]);
   await expect(parentNav.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
