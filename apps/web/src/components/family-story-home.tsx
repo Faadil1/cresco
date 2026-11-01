@@ -141,18 +141,6 @@ function MeetNext({ skip }: { skip?: string }) {
   );
 }
 
-function KeyCard() {
-  const { story } = useFamilyStory();
-  const p = story.practice;
-  return (
-    <section className={`${panel} !p-4`} data-testid="home-key" aria-labelledby="key-title">
-      <h2 id="key-title" className="flex items-center gap-2 text-[15px] font-extrabold text-navy-strong"><KeyRound aria-hidden className="size-5 text-green-strong"/>My Key</h2>
-      <p className="mt-1 text-[13px] leading-5 text-navy">Decide alone up to <strong>{p.key.maxPerAction} credits</strong> a choice. <strong>{remainingPeriod(p)}</strong> left this practice period.</p>
-      <p className="mt-1 text-[12px] leading-5 text-ink-2">Bigger choices go to your Parent, once. Lessons never change your Key.</p>
-    </section>
-  );
-}
-
 function ParentPreview() {
   const { story } = useFamilyStory();
   const p = story.practice;
