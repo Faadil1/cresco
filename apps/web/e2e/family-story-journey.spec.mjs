@@ -541,8 +541,21 @@ test("the first mobile story decision and a fictional person's problem are visib
   await expect(page.getByTestId("fictional-episode").getByRole("img", { name: /fictional Mina in her family.s grocery/i })).toBeVisible();
   // The first response must be genuinely reachable above the initial fold:
   // visible heading alone is not enough for a story-led decision.
-  await expect(page.getByRole("group", { name: "Your response to the fictional dilemma" })
-    .getByRole("button").first()).toBeInViewport({ ratio: 0.5 });
+  const firstChoice = page.getByRole("group", { name: "Your response to the fictional dilemma" })
+    .getByRole("button").first();
+  await expect(firstChoice).toBeInViewport({ ratio: 0.99 });
+  // Checking half of the button isn't enough: the fixed five-tab nav can
+  // overlay a visible DOM element and make its answer unreadable / unclickable.
+  const mobileNav = page.getByTestId("bottom-nav");
+  if (await mobileNav.isVisible()) {
+    const answerRect = await firstChoice.boundingBox();
+    const navRect = await mobileNav.boundingBox();
+    expect(answerRect, "Mina's answer must have a real onscreen layout").not.toBeNull();
+    expect(navRect, "mobile tab bar must have a real onscreen layout").not.toBeNull();
+    expect(answerRect.y + answerRect.height,
+      "Mina's entire first answer must clear the fixed bottom navigation")
+      .toBeLessThanOrEqual(navRect.y - 8);
+  }
   await testInfo.attach("mina-first-screen.png", { body: await page.screenshot(), contentType: "image/png" });
   // The invitation to consider the business is a *story-first* question,
   // not an implied real investment decision.
