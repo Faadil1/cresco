@@ -307,6 +307,8 @@ test("the original-style setup uses separate readable screens, then the full sto
   await page.getByRole("navigation", { name: "Previous and next chapter" }).getByRole("link", { name: "Skip for now" }).click();
   await expect(page).toHaveURL(/\/try\/goal\/ready$/);
   await expect(page.getByTestId("goal-scene-ready")).toBeVisible();
+  await expect(page.getByText(/no money moves and no guardian identity is verified/i)).toBeInViewport({ ratio: 0.5 });
+  await expect(page.getByRole("navigation", { name: "Previous and next chapter" }).getByRole("link", { name: "Start my learning path" })).toBeInViewport({ ratio: 0.5 });
   await testInfo.attach("legacy-step-3-ready.png", { body: await page.screenshot(), contentType: "image/png" });
   await page.getByRole("navigation", { name: "Previous and next chapter" }).getByRole("link", { name: "Start my learning path" }).click();
   await expect(page).toHaveURL(/\/try\/learn$/);
