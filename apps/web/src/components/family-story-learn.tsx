@@ -6,6 +6,7 @@ import { ArrowRight, CheckCircle2, ChevronRight, ExternalLink, PlayCircle } from
 import { LessonIllustration } from "@/components/illustrations/scenes";
 import { useFamilyStory } from "@/components/family-story-provider";
 import { LESSON_ACTIVITIES } from "@/lib/family-learning-depth";
+import { FamilyLessonLab } from "@/components/family-lesson-lab";
 import { ResultCard, panel, primaryBtn, secondaryBtn } from "@/components/family-story-ui";
 import {
   PARENT_LEARNING, selectedPracticeGoal,
@@ -152,6 +153,7 @@ export function LessonReader({ id }: { id: string }) {
                   ) : <p className="mt-3 text-[12px] font-semibold text-family-action" data-testid="applied-try-first">Choose an answer to see its consequence before continuing.</p>}
                 </section>
               ) : null}
+              {slide === concepts.length - 1 ? <FamilyLessonLab lessonId={lesson.id} target={goal.target} saved={story.practice.saved}/> : null}
               {slide === 0 ? <p data-testid="goal-note" className="mt-3 rounded-[14px] bg-yellow-soft p-3 text-[13px] leading-6 text-navy-strong"><strong>For your {goal.label.toLowerCase()}: </strong>{note}</p> : null}
               {current.source ? (
                 <p className="mt-3 text-[12px] leading-6 text-ink-2">
