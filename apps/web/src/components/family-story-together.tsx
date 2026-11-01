@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { MinaGroceryArt } from "@/components/illustrations/mina-grocery";
 import { useState } from "react";
 import { Together } from "@/components/family-public-studio";
 import { useFamilyStory } from "@/components/family-story-provider";
@@ -43,6 +44,7 @@ export function TogetherChapter() {
             <section className={panel} aria-label="A story to remember" data-testid="together-story-memory">
               <p className="cresco-section-kicker">A conversation to take home · fictional example</p>
               <h2 className="mt-1 font-display text-[25px] text-navy-strong">Remember {rememberedCompany.episode.person}?</h2>
+              {rememberedCompany.id === "markets" ? <MinaGroceryArt className="float-right mb-2 ml-3 h-[118px] w-[100px] overflow-hidden rounded-[14px] sm:h-[145px] sm:w-[125px]"/> : null}
               <p className="mt-2 text-[14px] leading-6 text-navy">{rememberedCompany.episode.dilemma}</p>
               <p className="mt-2 text-[13px] leading-6 text-navy"><strong>Your first thought:</strong> {rememberedCompany.episode.options[rememberedChoice]}.</p>
               <p className="mt-2 text-[13px] leading-6 text-navy"><strong>Discuss together:</strong> What new fact could change your mind? There is no single correct family opinion here.</p>
