@@ -27,7 +27,7 @@ export const STORY_CHAPTERS: readonly { id: StoryChapterId; path: string; label:
 ];
 
 const FIXED_STORY_PATHS = new Set([
-  "/try", "/try/lab", "/try/goal", "/try/learn", "/try/explore", "/try/decision",
+  "/try", "/try/lab", "/try/goal", "/try/goal/interests", "/try/goal/save", "/try/learn", "/try/explore", "/try/decision",
   "/try/parent", "/try/parent/learn", "/try/parent/key", "/try/parent/request",
   "/try/outcome", "/try/together",
 ]);
