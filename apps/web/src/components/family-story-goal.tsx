@@ -114,15 +114,13 @@ export function ReadyChapter() {
       subtitle={"Your " + goal.label.toLowerCase() + " is worth protecting. Let's learn how to decide, together."}
       footer={<ChapterNav back={{ href: "/try/goal/interests", label: "My interests" }}
         next={{ href: "/try/learn", label: "Start my learning path" }}/>}>
-      <div className="mx-auto max-w-[185px] overflow-hidden rounded-[18px] border border-line-soft">
+      <div className="mx-auto max-w-[152px] overflow-hidden rounded-[18px] border border-line-soft">
         <StoryVignette role="teen" className="block h-auto w-full" title="A fictional child ready to begin learning"/>
       </div>
-      <div className="mt-3 space-y-2 text-[13px] leading-5 text-navy-strong">
-        <p className="rounded-[14px] bg-blue-soft px-3 py-2"><strong>Your dream:</strong> {goal.label}. Every lesson can help you protect what matters to you.</p>
-        <p className="rounded-[14px] bg-green-soft px-3 py-2">
-          <strong>My Key:</strong> You can try fictional choices up to {p.key.maxPerAction} credits alone.
-          Bigger choices need one decision from a simulated Parent. No money moves and no guardian identity is verified.
-        </p>
+      <div className="mt-3 rounded-[14px] bg-green-soft px-3 py-3 text-[13px] leading-5 text-navy-strong" data-testid="ready-safety-summary">
+        <p><strong>Your dream:</strong> {goal.label}. Learning helps you protect it.</p>
+        <p className="mt-1"><strong>My Key:</strong> Try up to {p.key.maxPerAction} fictional credits alone; a simulated Parent decides once on bigger choices.</p>
+        <p className="mt-1 text-[12px] text-ink-2">Practice only. No money moves; no guardian identity is verified.</p>
       </div>
       <details className="mt-3 rounded-[14px] border border-line-soft bg-surface-soft p-3" data-testid="ready-optional-saving">
         <summary className="cursor-pointer text-[13px] font-semibold text-navy-strong">Optional: set aside credits for my goal</summary>
