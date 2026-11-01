@@ -30,23 +30,33 @@ async function answerUntilCorrect(page, scope, feedback = "lesson-feedback") {
   }
   throw new Error("no correct answer found");
 }
-async function finishLesson(page) {
-  // Rich multi-scene lessons now have more than one intermediate render.
-  // A quick .count() immediately after a click can race the client transition
-  // and skip an entire scene; wait for either next-step control to be visible.
-  let onQuiz = false;
+async function advanceLessonToQuiz(page) {
+  // All courses require one applied teaching moment; either option can be
+  // chosen, and no option changes a Key, credits or Parent authorization.
+  let reached = false;
   for (let step = 0; step < 20; step++) {
+    const exercise = page.getByTestId("lesson-applied-exercise");
+    if (await exercise.isVisible() && await page.getByTestId("applied-feedback").count() === 0) {
+      const advance = page.getByRole("button", { name: /next idea|quick check/i });
+      await expect(advance).toBeDisabled();
+      await exercise.getByRole("button").first().click();
+      await expect(page.getByTestId("applied-feedback")).toBeVisible();
+    }
     const quick = page.getByRole("button", { name: /quick check/i });
     if (await quick.isVisible()) {
+      await expect(quick).toBeEnabled();
       await quick.click();
-      onQuiz = true;
+      reached = true;
       break;
     }
     const next = page.getByRole("button", { name: /next idea/i });
-    await expect(next).toBeVisible();
+    await expect(next).toBeEnabled();
     await next.click();
   }
-  expect(onQuiz, "lesson must reach its final recall check").toBe(true);
+  expect(reached, "lesson must reach its final recall check").toBe(true);
+}
+async function finishLesson(page) {
+  await advanceLessonToQuiz(page);
   await answerUntilCorrect(page, "[data-testid=lesson-quiz]");
   await page.getByRole("button", { name: /complete lesson/i }).click();
 }
@@ -99,8 +109,7 @@ test("the whole story: goal, lesson, research, blocked choice, Parent approval, 
   await expect(page).toHaveURL(/\/try\/learn\/original-why-prices-move$/);
   await expect(page.getByTestId("goal-note")).toContainText(/gaming setup/i);
   await expect(page.getByTestId("lesson-slide").locator("svg").first()).toBeVisible();
-  while (await page.getByRole("button", { name: /next idea/i }).count()) await page.getByRole("button", { name: /next idea/i }).click();
-  await page.getByRole("button", { name: /quick check/i }).click();
+  await advanceLessonToQuiz(page);
   const choices = page.locator("[data-testid=lesson-quiz] fieldset button");
   // A wrong answer is explained and does not complete the lesson.
   let wrong = 0;
@@ -796,6 +805,8 @@ test("lessons teach with multi-step content and an applied choice before their f
   await expect(page.getByTestId("lesson-slide")).toContainText("Keep the bike money safe");
   const exercise = page.getByTestId("lesson-applied-exercise");
   await expect(exercise).toContainText(/bike costs 60 pretend credits/i);
+  await expect(page.getByRole("button", { name: /next idea/i })).toBeDisabled();
+  await expect(page.getByTestId("applied-try-first")).toContainText(/choose an answer/i);
   await exercise.getByRole("button", { name: /plan to save the remaining 40/i }).click();
   await expect(page.getByTestId("applied-feedback")).toContainText(/planning gives you a number/i);
   await exercise.getByRole("button", { name: /put the bike credits into one risky company/i }).click();
