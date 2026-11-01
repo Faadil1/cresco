@@ -1,11 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { GoalArt } from "@/components/illustrations/objects";
 import { StoryVignette } from "@/components/illustrations/family-story";
 import { useFamilyStory } from "@/components/family-story-provider";
-import { ChapterNav, ResultCard, panel, primaryBtn } from "@/components/family-story-ui";
+import { ChapterNav, ResultCard, primaryBtn } from "@/components/family-story-ui";
 import { PRACTICE_GOALS, remainingCredits } from "@/lib/family-public-practice";
 import { GOAL_STORY, INTERESTS } from "@/lib/family-story-state";
 
