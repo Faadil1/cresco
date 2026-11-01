@@ -56,6 +56,6 @@ The original source-based **first journey** is being implemented, not by reusing
 
 ## Implementation/rollback boundary
 
-As of **2026-11-01** the short-lived speculative three-scene goal edit was **fully reversed** on PR #119. Verified via GitHub compare: **no net code diff** versus baseline `46d4eaa04e108c4b65bd249b5b930655821eef87` before adding this document. This deliberately avoids leaving broken routes/tests between design directions. Next implementation should be an **old-source-derived** change with a targeted old-vs-new visual check and exact-commit CI.
+The first speculative three-scene edit was reversed before this old-source-derived implementation began. The new onboarding scenes deliberately follow the verified `OnboardingFrame` pattern. **App + browser-test commit `88733c05204bde5e5ca776a8229e06ae3e3c9f97` passed 44/44 dedicated Family browser tests (iPhone WebKit, desktop Chromium), plus isolated build, tests and historical web workflow.** The visual artifact from [the exact test run](https://github.com/Faadil1/cresco/actions/runs/41343405556) shows distinct centered Dream → Interests → Ready screens. This is **layout/functional evidence**, not family comprehension. The Windows local launcher was subsequently pinned to that tested SHA and has its own Windows `-CheckOnly` validation gate.
 
 **NO MERGE. NO PUBLIC V3 DEPLOY. NO alteration of V2 or historical Colosseum/Stocklana Workers.**
