@@ -101,6 +101,7 @@ export function LessonReader({ id }: { id: string }) {
   const current = concepts[Math.min(slide, concepts.length - 1)];
   const note = parent ? parentLessonNote(goal, lesson.id) : childLessonNote(goal, lesson.id);
   const activity = LESSON_ACTIVITIES[lesson.id];
+  const needsAppliedReasoning = !done && Boolean(activity) && slide === Math.min(1, concepts.length - 1) && applied === null;
   const index = lessons.findIndex(item => item.id === lesson.id);
   const following = lessons.slice(index + 1).find(item => !(parent ? story.practice.parentCompleted : story.practice.childCompleted).includes(item.id)) ?? lessons[index + 1];
   const correct = answer === lesson.answer;
@@ -146,8 +147,9 @@ export function LessonReader({ id }: { id: string }) {
                       <p className="text-[13px] leading-6 text-navy-strong">{activity.outcomes[applied]}</p>
                       <p className="mt-2 text-[13px] font-semibold leading-6 text-green-strong">{activity.insight}</p>
                       <p className="mt-1 text-[11px] leading-5 text-ink-3">This is reflection, not a purchase or permission. You can try the other answer.</p>
+                      <p className="mt-1 text-[11px] leading-5 text-ink-3">You can continue without choosing the best answer. Understanding the consequence matters more than guessing right.</p>
                     </div>
-                  ) : null}
+                  ) : <p className="mt-3 text-[12px] font-semibold text-family-action" data-testid="applied-try-first">Choose an answer to see its consequence before continuing.</p>}
                 </section>
               ) : null}
               {slide === 0 ? <p data-testid="goal-note" className="mt-3 rounded-[14px] bg-yellow-soft p-3 text-[13px] leading-6 text-navy-strong"><strong>For your {goal.label.toLowerCase()}: </strong>{note}</p> : null}
@@ -209,7 +211,7 @@ export function LessonReader({ id }: { id: string }) {
         <div className="sticky bottom-0 z-10 -mx-4 mt-4 flex items-center gap-3 bg-gradient-to-t from-bg via-bg to-bg/0 px-4 pb-3 pt-4">
           <button type="button" className={`${secondaryBtn} !px-4`} disabled={slide === 0} onClick={() => { setSlide(slide - 1); setAnswer(null); }}>Back</button>
           {!onQuiz
-            ? <button type="button" className={`flex-1 ${primaryBtn}`} onClick={() => setSlide(slide + 1)}>{slide === concepts.length - 1 ? "Quick check" : "Next idea"}</button>
+            ? <button type="button" className={`flex-1 ${primaryBtn}`} disabled={needsAppliedReasoning} onClick={() => setSlide(slide + 1)}>{slide === concepts.length - 1 ? "Quick check" : "Next idea"}</button>
             : <button type="button" className={`flex-1 ${primaryBtn}`} disabled={!correct} onClick={complete}>Complete lesson</button>}
         </div>
       ) : null}
