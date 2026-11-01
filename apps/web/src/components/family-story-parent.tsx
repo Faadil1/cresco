@@ -44,7 +44,12 @@ export function ParentHome() {
         intro="You see what your child is working toward, and you decide only at the boundary."
         art={<StoryVignette role="parent" className="block h-auto w-full rounded-[20px]" title="An illustrated parent reviewing a Cresco request at home"/>}/>
       <p className="rounded-[14px] bg-lavender-soft px-4 py-3 text-[12px] leading-5 text-navy-strong">{SIMULATED}</p>
-      <GoalCard/>
+      <section data-testid="parent-overview-grid" aria-label="Parent overview at a glance"
+        className="grid gap-3 lg:grid-cols-3 lg:items-stretch">
+        <div className="min-w-0 [&>div]:h-full">
+          <GoalCard/>
+        </div>
+        <div className="min-w-0 [&>p]:h-full [&>section]:h-full">
       {pending.length ? (
         <ResultCard tone="wait" title={`${pending.length} request${pending.length > 1 ? "s" : ""} waiting for you`} testId="parent-pending">
           <Link href="/try/parent/request" className={`mt-2 ${primaryBtn}`} data-testid="open-request">Review the exact request</Link>
@@ -55,12 +60,14 @@ export function ParentHome() {
           {p.requests.length === 0 ? <> <Link href="/try/decision" className="font-bold text-green-strong underline underline-offset-4">See how a request gets created</Link>.</> : null}
         </p>
       )}
-      <div className={panel}>
+        </div>
+        <section className={`${panel} min-w-0`} aria-label="My Key at a glance">
         <p className="cresco-section-kicker">My Key · Practice version {p.key.version}</p>
         <p className="mt-1 flex items-start gap-2 text-[15px] font-semibold text-navy-strong"><KeyRound aria-hidden className="mt-1 size-4 shrink-0 text-green-strong"/>
           <span>Your child decides alone up to {p.key.maxPerAction} credits per choice, {remainingPeriod(p)} left this practice period, for {p.key.allowed.join(", ")}.</span></p>
         <Link href="/try/parent/key" className={`mt-3 ${secondaryBtn}`}>Change the Key on purpose</Link>
-      </div>
+        </section>
+      </section>
       <div className="grid gap-3 sm:grid-cols-2">
         <Link href="/try/parent/learn" className={`${panel} block hover:border-green`}><span className="text-[17px] font-bold text-navy-strong">Your learning path</span><span className="mt-1 block text-[13px] text-ink-2">{p.parentCompleted.length} of {PARENT_LEARNING.length} Parent lessons done. Separate from your child&apos;s.</span></Link>
         <Link href="/try/together" className={`${panel} block hover:border-green`}><span className="text-[17px] font-bold text-navy-strong">Talk it through</span><span className="mt-1 block text-[13px] text-ink-2">Share your guidance and compare it with your child&apos;s.</span></Link>
