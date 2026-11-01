@@ -217,19 +217,7 @@ export function HomeScreen() {
       <GoalCard/>
       <MissionCard/>
 
-      {/* Home is a wayfinder, not six dashboards stacked into one page. The
-          dedicated destinations own lessons, companies, holdings and badges. */}
-      <nav aria-label="Go deeper" data-testid="home-quick-links" className="grid grid-cols-3 gap-2">
-        <Link href="/try/learn" className="flex min-h-[68px] flex-col items-center justify-center rounded-[18px] border border-line-soft bg-surface px-2 text-center text-[13px] font-bold text-navy-strong hover:border-family-action">
-          <BookOpen aria-hidden className="mb-1 size-5 text-family-action"/>Learn
-        </Link>
-        <Link href="/try/explore" className="flex min-h-[68px] flex-col items-center justify-center rounded-[18px] border border-line-soft bg-surface px-2 text-center text-[13px] font-bold text-navy-strong hover:border-family-action">
-          <Target aria-hidden className="mb-1 size-5 text-family-action"/>Explore
-        </Link>
-        <Link href="/try/portfolio" className="flex min-h-[68px] flex-col items-center justify-center rounded-[18px] border border-line-soft bg-surface px-2 text-center text-[13px] font-bold text-navy-strong hover:border-family-action">
-          <PiggyBank aria-hidden className="mb-1 size-5 text-family-action"/>Portfolio
-        </Link>
-      </nav>
+      <p className="text-[13px] leading-5 text-ink-2">Go to <strong>Learn</strong> for lessons, <strong>Explore</strong> to meet people, or <strong>Portfolio</strong> to review your practice. Use the main navigation anytime.</p>
 
       <div className="rounded-[16px] border border-green/20 bg-green-soft px-4 py-3 text-[13px] leading-5 text-navy-strong" data-testid="home-key">
         <KeyRound aria-hidden className="mr-1 inline size-4 text-green-strong"/>
