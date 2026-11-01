@@ -129,11 +129,20 @@ export function CompanyChapter({ id }: { id: string }) {
         <p className="cresco-section-kicker">Meet the person · fictional story</p>
         <div className="mt-2 flex items-start gap-3">
           <div className="min-w-0 flex-1">
-            <h2 id="human-story" className="font-display text-[24px] leading-tight text-navy-strong md:text-[26px]">{item.episode.person}</h2>
-            <p className="mt-1.5 text-[14px] leading-6 text-navy md:mt-2 md:text-[15px] md:leading-7">{item.episode.scene}</p>
+            <h2 id="human-story" aria-label={item.episode.person} className="font-display text-[24px] leading-tight text-navy-strong md:text-[26px]">
+              {item.id === "markets" ? <><span className="sm:hidden">Meet Mina</span><span className="hidden sm:inline">{item.episode.person}</span></> : item.episode.person}
+            </h2>
+            {item.id === "markets" ? (
+              <>
+                <p className="mt-1.5 text-[13px] leading-5 text-navy sm:hidden">
+                  Mina helps at her family grocery. More shoppers are arriving, but delivery costs just went up.
+                </p>
+                <p className="mt-2 hidden text-[15px] leading-7 text-navy sm:block">{item.episode.scene}</p>
+              </>
+            ) : <p className="mt-1.5 text-[14px] leading-6 text-navy md:mt-2 md:text-[15px] md:leading-7">{item.episode.scene}</p>}
           </div>
           {item.id === "markets" ? (
-            <MinaGroceryArt className="block h-[124px] w-[108px] shrink-0 overflow-hidden rounded-[14px] border border-line-soft sm:h-[175px] sm:w-[154px]" />
+            <MinaGroceryArt className="block h-[100px] w-[88px] shrink-0 overflow-hidden rounded-[14px] border border-line-soft sm:h-[175px] sm:w-[154px]" />
           ) : (
             <CompanyArt id={item.id} name={item.name} className="block h-auto w-16 shrink-0 rounded-[14px] border border-line-soft sm:w-28 md:w-36"/>
           )}
