@@ -126,7 +126,7 @@ export function LessonReader({ id }: { id: string }) {
               <h2 className="text-[19px] font-extrabold text-navy-strong">{current.title}</h2>
               <p className="mt-2 text-[15px] leading-7 text-navy">{current.body}</p>
               {current.realityCheck ? <p className="mt-3 rounded-[14px] bg-blue-soft p-3 text-[13px] leading-6 text-navy"><strong>Reality check: </strong>{current.realityCheck}</p> : null}
-              {slide === 1 && activity ? (
+              {slide === Math.min(1, concepts.length - 1) && activity ? (
                 <section className="mt-5 rounded-[18px] border border-family-action/25 bg-family-action-soft/40 p-4" data-testid="lesson-applied-exercise"
                   aria-label="Try it with a situation">
                   <p className="text-[11px] font-extrabold uppercase tracking-wider text-family-action">Try it · a real reasoning exercise</p>
