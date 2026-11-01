@@ -7,8 +7,8 @@
  */
 import { FAMILY_EXPLORE_CASES, type FamilyExploreCase } from "./family-public-explore-data";
 import {
-  PRACTICE_ASSETS, initialFamilyPractice, selectedPracticeGoal, transitionFamilyPractice,
-  type AssetCode, type FamilyPracticeState, type PracticeGoalId,
+  CHILD_LEARNING, PRACTICE_ASSETS, initialFamilyPractice, selectedPracticeGoal, transitionFamilyPractice,
+  type AssetCode, type FamilyPracticeState, type LearningModule, type PracticeGoalId,
 } from "./family-public-practice";
 
 export type InterestId = "gadgets" | "food" | "moving" | "planet" | "health" | "mix";
@@ -189,4 +189,117 @@ export function chapterStatus(s: StoryState): ChapterStatus {
     outcome: p.receipts.length > 0,
     together: p.togetherCompleted,
   };
+}
+
+const FIRST_FOR_GOAL: Record<PracticeGoalId, string> = {
+  bike: "c-save", gaming: "original-why-prices-move", trip: "original-build-your-portfolio",
+};
+/** The Child's path starts where the chosen goal needs it most; the rest keep their order. */
+export function childPathFor(goalId: PracticeGoalId): LearningModule[] {
+  const first = CHILD_LEARNING.find(item => item.id === FIRST_FOR_GOAL[goalId]);
+  return first ? [first, ...CHILD_LEARNING.filter(item => item.id !== first.id)] : CHILD_LEARNING;
+}
+
+/** "Mina, whose family runs a grocery" -> "Mina". */
+export const personName = (item: FamilyExploreCase) => item.episode.person.split(",")[0].trim();
+
+export type Mission = {
+  id: "choose-goal" | "use-approval" | "parent-deciding" | "see-decline" | "see-expired" | "first-lesson"
+    | "meet-person" | "first-choice" | "together" | "next-lesson" | "meet-next" | "practice-again";
+  kicker: string;
+  title: string;
+  body: string;
+  href: string;
+  cta: string;
+};
+/**
+ * The one meaningful next step for the Child's Home, derived only from state.
+ * It is a pointer, never an action: it cannot approve, buy or change the Key.
+ * Order: unfinished setup, then anything waiting on a decision, then the
+ * learn -> meet -> choose -> talk loop, then whatever is left to discover.
+ */
+export function nextMission(s: StoryState): Mission {
+  const p = s.practice;
+  const goal = selectedPracticeGoal(p);
+  const path = childPathFor(goal.id);
+  const nextLesson = path.find(item => !p.childCompleted.includes(item.id));
+  const ordered = orderExploreCases(s.interests, FAMILY_EXPLORE_CASES);
+  const newest = p.requests[0];
+  const newestReceipt = p.receipts[0];
+  const newestIsRequest = newest && (!newestReceipt || newest.id > newestReceipt.id);
+  const asset = (code: string) => PRACTICE_ASSETS.find(a => a.code === code)?.name ?? code;
+
+  if (!s.goalChosen) return {
+    id: "choose-goal", kicker: "Start here", title: "Choose what you are saving for",
+    body: "Your lessons and choices will follow your dream. It takes ten seconds.", href: "/try/goal", cta: "Choose my dream",
+  };
+  const approved = p.requests.find(r => r.status === "approved-once");
+  if (approved) return {
+    id: "use-approval", kicker: "Your Parent answered", title: "Your Parent said yes, once",
+    body: `${approved.amount} credits of ${asset(approved.asset)}. Use it when you are ready; it works one time only.`, href: "/try/outcome", cta: "See and use it",
+  };
+  const pending = p.requests.find(r => r.status === "pending");
+  if (pending) return {
+    id: "parent-deciding", kicker: "Waiting for your Parent", title: `Ask for ${pending.amount} credits sent`,
+    body: `It is above your ${p.key.maxPerAction}-credit Key, so nothing was bought. Hand the phone to your Parent to decide.`,
+    href: "/try/parent/request", cta: "Hand to my Parent",
+  };
+  if (newestIsRequest && newest.status === "declined") return {
+    id: "see-decline", kicker: "Your Parent answered", title: "Your Parent said not this time",
+    body: "Find out why, then try a smaller choice inside your Key.", href: "/try/outcome", cta: "See why",
+  };
+  if (newestIsRequest && newest.status === "stale") return {
+    id: "see-expired", kicker: "Something changed", title: "Your Parent changed My Key",
+    body: "Your earlier ask expired. See what changed before choosing again.", href: "/try/outcome", cta: "See what changed",
+  };
+  // Right after a real decision (a receipt or a Parent answer), talk about it before anything new.
+  const decided = p.receipts.length > 0 || p.requests.some(r => r.status !== "pending");
+  if (decided && !p.togetherCompleted) return {
+    id: "together", kicker: "Today's mission · together", title: "Talk it through with your Parent",
+    body: "You each give one view about what happened. Nothing changes the Key.", href: "/try/together", cta: "Talk it through",
+  };
+  if (p.childCompleted.length === 0 && nextLesson) return {
+    id: "first-lesson", kicker: `Today's mission · ${nextLesson.minutes} min`, title: nextLesson.title,
+    body: `Your first lesson, picked for your ${goal.label.toLowerCase()}.`, href: `/try/learn/${nextLesson.id}`, cta: "Start lesson",
+  };
+  if (s.viewed.length === 0) {
+    const first = ordered[0];
+    return {
+      id: "meet-person", kicker: "Today's mission · meet someone", title: `Meet ${personName(first)}`,
+      body: first.episode.dilemma, href: `/try/explore/${first.id}`, cta: `Meet ${personName(first)}`,
+    };
+  }
+  if (p.receipts.length === 0 && p.requests.length === 0) {
+    const seen = ordered.find(item => item.practiceCode && s.viewed.includes(item.id)) ?? ordered.find(item => item.practiceCode)!;
+    return {
+      id: "first-choice", kicker: "Today's mission · decide", title: "Make your first practice choice",
+      body: `You met ${personName(seen)}. Try a small practice choice with ${seen.name}, inside your ${p.key.maxPerAction}-credit Key.`,
+      href: `/try/explore/${seen.id}`, cta: "Choose with pretend credits",
+    };
+  }
+  if (nextLesson) return {
+    id: "next-lesson", kicker: `Up next · ${nextLesson.minutes} min`, title: nextLesson.title,
+    body: `Keep going: ${p.childCompleted.length} of ${path.length} lessons done.`, href: `/try/learn/${nextLesson.id}`, cta: "Continue learning",
+  };
+  const unseen = ordered.find(item => !s.viewed.includes(item.id));
+  if (unseen) return {
+    id: "meet-next", kicker: "Up next · meet someone", title: `Meet ${personName(unseen)}`,
+    body: unseen.episode.dilemma, href: `/try/explore/${unseen.id}`, cta: `Meet ${personName(unseen)}`,
+  };
+  return {
+    id: "practice-again", kicker: "You did it all", title: "Every lesson and every story",
+    body: "Practice again inside your Key, or revisit a story with your Parent.", href: "/try/decision", cta: "Practice again",
+  };
+}
+
+export type Win = { badge: "first-investor" | "company-detective" | "diversification-pro" | "money-master"; label: string; earned: boolean };
+/** Badges celebrate what actually happened. They never change My Key. */
+export function practiceWins(s: StoryState): Win[] {
+  const p = s.practice;
+  return [
+    { badge: "first-investor", earned: p.receipts.length > 0, label: "First practice choice" },
+    { badge: "company-detective", earned: s.researched.length > 0, label: "Researched a company" },
+    { badge: "diversification-pro", earned: Object.values(p.holdings).filter(shares => shares > 0).length >= 2, label: "Two different holdings" },
+    { badge: "money-master", earned: p.childCompleted.length === CHILD_LEARNING.length, label: "Finished Child lessons" },
+  ];
 }
