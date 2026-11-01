@@ -1,4 +1,5 @@
 import { LEARNING_SOURCES, LESSONS } from "@/mocks/learning";
+import { FOUNDATION_SCENES } from "./family-learning-depth";
 import type { IllustrationKey, LearningSource } from "@/domain/types";
 
 /**
@@ -96,6 +97,14 @@ for (const lesson of PARENT_LEARNING) {
   };
   lesson.source = sourceById[lesson.id];
   lesson.illustration = lesson.id === "p-risk" ? "scale" : lesson.id === "p-basics" ? "piggy" : "shares";
+}
+
+
+// Build the foundation and Parent lessons as actual multi-step learning
+// sequences, not a single information card before a memory quiz.
+for (const lesson of [...CHILD_LEARNING, ...PARENT_LEARNING]) {
+  const scenes = FOUNDATION_SCENES[lesson.id];
+  if (scenes) lesson.sections = scenes;
 }
 
 
