@@ -307,8 +307,16 @@ test("the original-style setup uses separate readable screens, then the full sto
   await page.getByRole("navigation", { name: "Previous and next chapter" }).getByRole("link", { name: "Skip for now" }).click();
   await expect(page).toHaveURL(/\/try\/goal\/ready$/);
   await expect(page.getByTestId("goal-scene-ready")).toBeVisible();
-  await expect(page.getByText(/no money moves and no guardian identity is verified/i)).toBeInViewport({ ratio: 0.5 });
-  await expect(page.getByRole("navigation", { name: "Previous and next chapter" }).getByRole("link", { name: "Start my learning path" })).toBeInViewport({ ratio: 0.5 });
+  const safety = page.getByTestId("ready-safety-summary");
+  const nextAction = page.getByRole("navigation", { name: "Previous and next chapter" }).getByRole("link", { name: "Start my learning path" });
+  await expect(safety).toContainText(/no money moves; no guardian identity is verified/i);
+  await expect(nextAction).toBeInViewport({ ratio: 0.5 });
+  const safetyBox = await safety.boundingBox();
+  const nextBox = await nextAction.boundingBox();
+  expect(safetyBox, "ready safety panel geometry").not.toBeNull();
+  expect(nextBox, "main action geometry").not.toBeNull();
+  expect(safetyBox.y + safetyBox.height + 8, "the sticky main CTA must not cover the practice-safety summary")
+    .toBeLessThanOrEqual(nextBox.y);
   await testInfo.attach("legacy-step-3-ready.png", { body: await page.screenshot(), contentType: "image/png" });
   await page.getByRole("navigation", { name: "Previous and next chapter" }).getByRole("link", { name: "Start my learning path" }).click();
   await expect(page).toHaveURL(/\/try\/learn$/);
