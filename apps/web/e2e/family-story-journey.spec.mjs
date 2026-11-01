@@ -279,7 +279,7 @@ test("deep links and refresh: empty states point to the right chapter, bad ids a
   }
 });
 
-test("the original-style setup uses separate readable screens, then the full story rail resumes", async ({ page }) => {
+test("the original-style setup uses separate readable screens, then the full story rail resumes", async ({ page }, testInfo) => {
   for (const path of ["/try", "/try/goal", "/try/goal/interests", "/try/goal/ready", "/try/learn", "/try/explore", "/try/decision", "/try/parent", "/try/outcome", "/try/together"]) {
     await page.goto(path);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -295,16 +295,19 @@ test("the original-style setup uses separate readable screens, then the full sto
   }
   await page.goto("/try/goal");
   await expect(page.getByTestId("goal-scene-dream")).toBeVisible();
+  await testInfo.attach("legacy-step-1-dream.png", { body: await page.screenshot(), contentType: "image/png" });
   await expect(page.getByRole("group", { name: "Interests" })).toHaveCount(0);
   await expect(page.getByTestId("ready-optional-saving")).toHaveCount(0);
   await page.getByRole("radio", { name: /new bike/i }).click();
   await page.getByRole("navigation", { name: "Previous and next chapter" }).getByRole("link", { name: "Next" }).click();
   await expect(page).toHaveURL(/\/try\/goal\/interests$/);
   await expect(page.getByTestId("goal-scene-interests")).toBeVisible();
+  await testInfo.attach("legacy-step-2-interests.png", { body: await page.screenshot(), contentType: "image/png" });
   await expect(page.getByRole("radiogroup", { name: "Saving goal" })).toHaveCount(0);
   await page.getByRole("navigation", { name: "Previous and next chapter" }).getByRole("link", { name: "Skip for now" }).click();
   await expect(page).toHaveURL(/\/try\/goal\/ready$/);
   await expect(page.getByTestId("goal-scene-ready")).toBeVisible();
+  await testInfo.attach("legacy-step-3-ready.png", { body: await page.screenshot(), contentType: "image/png" });
   await page.getByRole("navigation", { name: "Previous and next chapter" }).getByRole("link", { name: "Start my learning path" }).click();
   await expect(page).toHaveURL(/\/try\/learn$/);
   await expect(page.getByTestId("story-rail")).toBeVisible();
