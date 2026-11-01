@@ -13,6 +13,7 @@ import { BadgeArt } from "@/components/illustrations/badges";
 import { LessonIllustration } from "@/components/illustrations/scenes";
 import { useFamilyStory } from "@/components/family-story-provider";
 import { CompanyArt, panel, primaryBtn } from "@/components/family-story-ui";
+import { MinaGroceryArt } from "@/components/illustrations/mina-grocery";
 import { FAMILY_EXPLORE_CASES } from "@/lib/family-public-explore-data";
 import {
   PRACTICE_ASSETS, remainingCredits, remainingPeriod, selectedPracticeGoal,
@@ -129,7 +130,7 @@ function MeetNext({ skip }: { skip?: string }) {
         <Link href="/try/explore" className={seeAll}>Explore<ChevronRight aria-hidden className="size-4"/></Link>
       </h2>
       <Link href={`/try/explore/${next.id}`} className="mt-2 flex items-center gap-3 rounded-[18px] border border-line-soft bg-surface p-3 hover:border-family-action">
-        <CompanyArt id={next.id} name={next.name} className="h-16 w-20 shrink-0 overflow-hidden rounded-[12px]"/>
+        {next.id === "markets" ? <MinaGroceryArt className="h-16 w-20 shrink-0 overflow-hidden rounded-[12px]"/> : <CompanyArt id={next.id} name={next.name} className="h-16 w-20 shrink-0 overflow-hidden rounded-[12px]"/>}
         <span className="min-w-0 flex-1">
           <span className="block text-[15px] font-bold text-navy-strong">{personName(next)} · {next.name}</span>
           <span className="line-clamp-2 block text-[12px] leading-5 text-ink-2">{next.episode.dilemma}</span>
