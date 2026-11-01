@@ -38,6 +38,16 @@ La commande `-CheckOnly` fait uniquement les contrôles préalables : elle ne d�
 
 Avant d'inviter qui que ce soit, vérifier à l'écran l'accueil, les objectifs, Mina, My Key et la mention explicite de crédits fictifs. Faire une **séance blanche avec un adulte**, enregistrée « dry-run », distincte des séances avec enfant.
 
+### La nouvelle entrée reprend les écrans de l'ancien Cresco
+
+Cette édition V3 de la PR #119 s'inspire directement de `apps/web/src/components/onboarding.tsx` et des anciennes routes `/onboarding/goal`, `/onboarding/interests` et `/onboarding/ready` du frontend `cresco-lac.vercel.app` :
+- **`/try/goal`** : choisir un objectif, une décision uniquement.
+- **`/try/goal/interests`** : centres d'intérêt, avec **Skip for now**.
+- **`/try/goal/ready`** : résumé et entrée dans la première leçon; option de mettre des crédits fictifs de côté, sans encombrer l'écran principal.
+- La barre de progression **1 sur 3** et les boutons Suivant/Retour apparaissent dans un cadre centré comme l'ancien parcours. La navigation générale à sept chapitres n'encombre plus ces étapes.
+
+**Précision :** l'ancienne interface Vercel sert de **référence UX**; elle ne doit pas être modifiée, et nous ne réintroduisons ni courriel, ni âge, ni identité vérifiée, ni opérations en argent réel. Le pilotage visuel reste à confirmer avec toi et de vraies familles.
+
 ### Entre deux familles : réinitialiser réellement l'essai
 
 **Important :** cliquer sur « Welcome », sur le logo ou sur un autre chapitre conserve normalement le même état, ce qui est utile pendant **une** histoire, mais **ne sépare pas deux familles**.
@@ -46,7 +56,7 @@ Avant d'inviter qui que ce soit, vérifier à l'écran l'accueil, les objectifs,
 2. Avant d'accueillir la famille suivante, contrôler que « Mon objectif » n'a plus de choix sélectionné, que le Parent n'a **aucune demande en attente** et que « Résultat » annonce que rien ne s'est passé. Ne jamais afficher à la famille suivante les choix/résultats de la précédente.
 3. Revenir sur `/try` puis remettre la souris à l'enfant, **sans entrer de nom ni créer de compte**.
 
-Le test navigateur `a new local family session never inherits the previous simulated family's decisions` répète cette sécurité sur un cycle approuvé puis réinitialisé (WebKit et Chromium). **Commit applicatif et tests vérifiés : `9cc21526` — 44/44 tests navigateur, quatre workflows réussis (GitHub Actions, build local isolé, aucun déploiement).** Ce contrôle automatisé **ne remplace pas** le constat visuel de l'animateur ni le test avec une vraie famille.
+Le test navigateur `a new local family session never inherits the previous simulated family's decisions` répète cette sécurité sur un cycle approuvé puis réinitialisé (WebKit et Chromium). **Commit applicatif et tests vérifiés : `88733c05` — 44/44 tests navigateur sur iPhone WebKit et ordinateur Chromium; build Family isolé, tests unitaires et workflow web réussis. Trois captures d'étapes vérifiées. Aucun déploiement.** Ce contrôle automatisé **ne remplace pas** le constat visuel de l'animateur ni le test avec une vraie famille.
 
 ## 2. Déroulé : 12 à 18 minutes, non dirigé
 
