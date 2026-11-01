@@ -793,3 +793,25 @@ test("lessons teach with multi-step content and an applied choice before their f
   await testInfo.attach("lesson-substantive-scene.png", { body: await page.screenshot(), contentType: "image/png" });
   expectCleanNetwork(net);
 });
+
+
+test("empty Portfolio teaches real portfolio mechanics without inventing a holding or changing My Key", async ({ page }, testInfo) => {
+  const net = watch(page);
+  await page.goto("/try/portfolio");
+  await expect(page.getByTestId("portfolio-empty")).toContainText(/no practice holdings yet/i);
+  await expect(page.getByTestId("portfolio-spent")).toHaveText("0credits");
+  await page.getByTestId("portfolio-example-toggle").click();
+  const example = page.getByTestId("portfolio-example");
+  await expect(example).toContainText(/not your holdings/i);
+  await expect(example.getByRole("listitem")).toHaveCount(3);
+  await example.getByRole("button", { name: /a bad month/i }).click();
+  await expect(page.getByTestId("example-scenario-total")).toContainText(/60.00 invested → 49.00 scenario value/i);
+  await testInfo.attach("portfolio-guided-example.png", { body: await page.screenshot(), contentType: "image/png" });
+  await page.getByRole("navigation", { name: "Main" }).last().getByRole("link", { name: "Home", exact: true }).click();
+  await expect(page.getByTestId("home-key")).toContainText("15 credits");
+  await expect(page.getByTestId("home-goal-saved")).toHaveText("0/60");
+  await page.getByRole("navigation", { name: "Main" }).last().getByRole("link", { name: "Portfolio", exact: true }).click();
+  await expect(page.getByTestId("portfolio-empty")).toBeVisible();
+  await expect(page.getByTestId("portfolio-available")).toHaveText("100");
+  expectCleanNetwork(net);
+});
