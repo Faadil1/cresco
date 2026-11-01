@@ -36,6 +36,18 @@ async function finishLesson(page) {
   await answerUntilCorrect(page, "[data-testid=lesson-quiz]");
   await page.getByRole("button", { name: /complete lesson/i }).click();
 }
+async function openReadyAfterGoal(page, interest) {
+  const next = () => page.getByRole("navigation", { name: "Previous and next chapter" }).getByRole("link", { name: "Next", exact: true });
+  await next().click();
+  await expect(page).toHaveURL(/\/try\/goal\/interests$/);
+  if (interest) await page.getByRole("button", { name: interest }).click();
+  await page.getByRole("navigation", { name: "Previous and next chapter" })
+    .getByRole("link", { name: interest ? "Next" : "Skip for now" }).click();
+  await expect(page).toHaveURL(/\/try\/goal\/ready$/);
+}
+async function openOptionalSavings(page) {
+  await page.getByTestId("ready-optional-saving").locator("summary").click();
+}
 async function oneStatusAtMost(page) {
   expect(await page.getByRole("status").count()).toBeLessThanOrEqual(1);
 }
@@ -52,7 +64,8 @@ test("the whole story: goal, lesson, research, blocked choice, Parent approval, 
   await expect(page).toHaveURL(/\/try\/goal$/);
   await page.getByRole("radio", { name: /gaming setup/i }).click();
   await expect(page.getByTestId("goal-result")).toContainText(/about half a year/i);
-  await page.getByRole("button", { name: "Food & shopping" }).click();
+  await openReadyAfterGoal(page, "Food & shopping");
+  await openOptionalSavings(page);
   await page.getByRole("button", { name: /set aside 20 credits/i }).click();
   await expect(page.getByTestId("goal-progress")).toContainText("20 of 80");
   await page.getByRole("link", { name: /my learning path/i }).last().click();
@@ -95,7 +108,8 @@ test("one client-side journey keeps a single state across real pages, Back and F
   await page.evaluate(() => { window.__marker = "same-document"; });
   await page.getByTestId("welcome-start").click();
   await page.getByRole("radio", { name: /family trip/i }).click();
-  await page.getByRole("button", { name: "Food & shopping" }).click();
+  await openReadyAfterGoal(page, "Food & shopping");
+  await openOptionalSavings(page);
   await page.getByRole("button", { name: /set aside 20 credits/i }).click();
   await page.getByRole("link", { name: /my learning path/i }).last().click();
   await page.getByTestId("learn-up-next").click();
@@ -312,6 +326,8 @@ test("landing leads into the story, with the free lab still available", async ({
 test("the lab and the story share one practice state", async ({ page }) => {
   await page.goto("/try/goal");
   await page.getByRole("radio", { name: /family trip/i }).click();
+  await openReadyAfterGoal(page);
+  await openOptionalSavings(page);
   await page.getByRole("button", { name: /set aside 20 credits/i }).click();
   await page.getByRole("link", { name: /prefer the free practice lab/i }).click();
   await expect(page).toHaveURL(/\/try\/lab$/);
@@ -363,6 +379,8 @@ test("exhausted credits and a duplicate request are explained before the click a
   // The chapter now requires an explicit goal choice; test the empty-credit
   // edge case through the real story, not a synthetic unchosen default.
   await page.getByRole("radio", { name: /family trip/i }).click();
+  await openReadyAfterGoal(page);
+  await openOptionalSavings(page);
   for (let i = 0; i < 5; i++) await page.getByRole("button", { name: /set aside 20 credits/i }).click();
   await expect(page.getByTestId("goal-progress")).toContainText("0 still available");
   await expect(page.getByRole("button", { name: /set aside 20 credits/i })).toBeDisabled();
@@ -418,11 +436,17 @@ test("the goal chapter records an actual Child choice rather than silently accep
   const chapterNav = page.getByRole("navigation", { name: "Previous and next chapter" });
   await expect(page.getByText("Choose one to continue. You can change it any time.")).toBeVisible();
   await expect(chapterNav.getByText("Choose a goal to continue")).toHaveAttribute("aria-disabled", "true");
-  await expect(chapterNav.getByRole("link", { name: "My learning path" })).toHaveCount(0);
+  await expect(chapterNav.getByRole("link", { name: "Next" })).toHaveCount(0);
   await page.getByRole("radio", { name: /family trip/i }).click();
   await expect(page.getByTestId("goal-result")).toContainText(/family trip/i);
-  await expect(chapterNav.getByRole("link", { name: "My learning path" })).toBeVisible();
-  await chapterNav.getByRole("link", { name: "My learning path" }).click();
+  await expect(chapterNav.getByRole("link", { name: "Next" })).toBeVisible();
+  await chapterNav.getByRole("link", { name: "Next" }).click();
+  await expect(page).toHaveURL(/\/try\/goal\/interests$/);
+  await page.getByRole("navigation", { name: "Previous and next chapter" })
+    .getByRole("link", { name: "Skip for now" }).click();
+  await expect(page).toHaveURL(/\/try\/goal\/ready$/);
+  await page.getByRole("navigation", { name: "Previous and next chapter" })
+    .getByRole("link", { name: "Start my learning path" }).click();
   await expect(page).toHaveURL(/\/try\/learn$/);
   await expect(page.getByRole("heading", { level: 1, name: /learn, one small step at a time/i })).toBeVisible();
   expectCleanNetwork(net);
@@ -495,6 +519,8 @@ test("a new local family session never inherits the previous simulated family's 
   const net = watch(page);
   await page.goto("/try/goal");
   await page.getByRole("radio", { name: /family trip/i }).click();
+  await openReadyAfterGoal(page);
+  await openOptionalSavings(page);
   await page.getByRole("button", { name: /set aside 20 credits/i }).click();
   await page.getByRole("link", { name: /my learning path/i }).last().click();
   await page.getByRole("link", { name: /explore companies/i }).last().click();
