@@ -48,9 +48,9 @@ export function FamilyLessonLab({
         const shop = groceryMargin(100, 65, delivery);
         return (
           <>
-            <h3 className="mt-1 text-[18px] font-bold text-navy-strong">Can Mina's grocery cover its costs?</h3>
+            <h3 className="mt-1 text-[18px] font-bold text-navy-strong">Can Mina&apos;s grocery cover its costs?</h3>
             <p className="mt-2 text-[13px] leading-6 text-navy">
-              Imagine Mina's grocery earns 100 pretend credits in sales and pays 65 for other expenses.
+              Imagine Mina&apos;s grocery earns 100 pretend credits in sales and pays 65 for other expenses.
               Now change its delivery bill.
             </p>
             <label htmlFor="family-lab-delivery" className="mt-4 flex justify-between gap-2 text-[13px] font-semibold text-navy-strong">
