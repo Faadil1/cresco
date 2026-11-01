@@ -668,7 +668,9 @@ test("child first: lesson, Mina, blocked ask, Parent once, receipt, Portfolio, e
   await expect(page).toHaveURL(/\/try\/home$/);
   await expect(page.getByTestId("home-learning")).toContainText("1 of 9 done");
   await expect(page.getByTestId("home-more")).not.toHaveAttribute("open", "");
-  await expect(page.getByTestId("home-quick-links").getByRole("link")).toHaveCount(3);
+  // Dedicated nav already exposes the five destinations; Home must not duplicate it with another card grid.
+  await expect(page.getByTestId("home-quick-links")).toHaveCount(0);
+  await expect(page.locator('nav[aria-label="Main"]:visible').getByRole("link")).toHaveCount(5);
   await expect(page.getByTestId("home-mission")).toHaveAttribute("data-mission", "meet-person");
   await expect(page.getByTestId("home-mission")).toContainText("Meet Mina");
 
