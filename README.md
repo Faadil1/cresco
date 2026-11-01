@@ -1,5 +1,7 @@
 # CRESCO
 
+> **Source-code rights:** Original CRESCO material is not offered under an open-source license. See [LICENSE](LICENSE). Third-party licenses and existing permissions remain applicable.
+
 **Act alone inside the rules. Ask once for the exception.**
 
 CRESCO is one Solana program for money that is not fully yours: a teenager's allowance, or capital handed to a strategy or an AI agent. The principal sets a standing limit (the **Key**, a versioned Mandate). Inside it, the teen, strategy or agent acts alone, with no approval queue. At the limit, the program refuses and creates one exact request. The principal approves that single action once, and the limit never moves.
