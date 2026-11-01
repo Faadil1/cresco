@@ -1,13 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { BadgeArt } from "@/components/illustrations/badges";
 import { StoryVignette } from "@/components/illustrations/family-story";
 import { useFamilyStory } from "@/components/family-story-provider";
-import { FamilyPracticePortfolio } from "@/components/family-public-portfolio";
-import { ChapterHeading, ChapterNav, ResultCard, panel, primaryBtn, secondaryBtn } from "@/components/family-story-ui";
+import { ArrowRight } from "lucide-react";
+import { ChapterHeading, ResultCard, panel, primaryBtn, secondaryBtn } from "@/components/family-story-ui";
 import {
-  CHILD_LEARNING, PRACTICE_ASSETS, evaluatePracticeScenario, remainingCredits, selectedPracticeGoal,
+  PRACTICE_ASSETS, evaluatePracticeScenario, remainingCredits, selectedPracticeGoal,
 } from "@/lib/family-public-practice";
 import { DECLINE_REASONS } from "@/lib/family-story-state";
 import { FAMILY_EXPLORE_CASES } from "@/lib/family-public-explore-data";
@@ -40,12 +39,6 @@ export function OutcomeChapter() {
   const name = (code: string) => PRACTICE_ASSETS.find(a => a.code === code)?.name ?? code;
   const downturn = evaluatePracticeScenario(p, "downturn");
   const declineReason = lastRequest ? DECLINE_REASONS.find(item => item.id === story.declineReasons[lastRequest.id]) : undefined;
-  const badges = [
-    { badge: "first-investor", earned: p.receipts.length > 0, label: "First practice choice" },
-    { badge: "company-detective", earned: story.researched.length > 0, label: "Researched a company" },
-    { badge: "diversification-pro", earned: Object.values(p.holdings).filter(shares => shares > 0).length >= 2, label: "Two different holdings" },
-    { badge: "money-master", earned: p.childCompleted.length === CHILD_LEARNING.length, label: "Finished Child lessons" },
-  ] as const;
 
   let hero;
   if (approved) {
@@ -101,7 +94,7 @@ export function OutcomeChapter() {
 
   return (
     <div className="space-y-5">
-      <ChapterHeading kicker="Chapter 6 · What happened" title="See where your choice led"
+      <ChapterHeading kicker="Portfolio · result" title="What happened"
         art={<StoryVignette role={approved ? "approved" : "request"} className="block h-auto w-full rounded-[20px]" title="An illustrated teenager and parent after a practice decision"/>}/>
       {hero}
       {episodeCompany && episodeChoice !== undefined ? (
@@ -141,26 +134,12 @@ export function OutcomeChapter() {
         </section>
       ) : null}
 
-      <section className={panel} aria-labelledby="earned-title">
-        <h2 id="earned-title" className="text-[18px] font-bold text-navy-strong">Earned in practice</h2>
-        <div className="mt-3 flex flex-wrap gap-4">
-          {badges.map(item => (
-            <div key={item.badge} className="flex w-[110px] flex-col items-center gap-1 text-center">
-              <BadgeArt badge={item.badge} earned={item.earned} className="size-14"/>
-              <span className="text-[11px] font-semibold text-navy-strong">{item.label}</span>
-              <span className="text-[10px] text-ink-3">{item.earned ? "Earned" : "Not yet"}</span>
-            </div>
-          ))}
-        </div>
-        <p className="mt-3 text-[12px] text-ink-2">Badges celebrate what you actually did. They never change My Key.</p>
-      </section>
-
-      <details className="rounded-[20px] border border-line-soft bg-surface p-4" data-testid="portfolio-details">
-        <summary className="min-h-11 cursor-pointer text-[15px] font-bold text-navy-strong">Open the full portfolio, receipts and what-if scenarios</summary>
-        <div className="mt-4"><FamilyPracticePortfolio state={p}/></div>
-      </details>
-
-      <ChapterNav back={{ href: "/try/decision", label: "Make another choice" }} next={{ href: "/try/together", label: "Talk it through" }}/>
+      <nav aria-label="What next" className="grid gap-2 sm:grid-cols-3" data-testid="outcome-next">
+        <Link href="/try/home" className={primaryBtn} data-testid="outcome-home">Back to Home<ArrowRight aria-hidden className="size-4"/></Link>
+        <Link href="/try/decision" className={secondaryBtn}>Make another choice</Link>
+        <Link href="/try/together" className={secondaryBtn}>Talk it through</Link>
+      </nav>
+      <p className="text-[13px] text-ink-2"><Link href="/try/portfolio" className="font-bold text-family-action underline underline-offset-4">Open my portfolio</Link> for every holding, receipt and what-if.</p>
     </div>
   );
 }

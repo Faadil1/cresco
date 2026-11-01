@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Together } from "@/components/family-public-studio";
 import { useFamilyStory } from "@/components/family-story-provider";
-import { ChapterHeading, ChapterNav, ResultCard, panel, primaryBtn, secondaryBtn } from "@/components/family-story-ui";
+import { ChapterHeading, ResultCard, panel, primaryBtn, secondaryBtn } from "@/components/family-story-ui";
 import { FAMILY_EXPLORE_CASES } from "@/lib/family-public-explore-data";
 import {
   CHILD_LEARNING, PARENT_LEARNING, selectedPracticeGoal, type FamilyRole,
@@ -24,7 +24,7 @@ export function TogetherChapter() {
   const decided = p.requests.filter(r => r.status !== "pending").length;
   return (
     <div className="space-y-5">
-      <ChapterHeading kicker="Chapter 7 · Together" title="Talk it through, then choose what is next"
+      <ChapterHeading kicker="Child + Parent · together" title="Talk it through"
         intro="Each person adds a view, one at a time. Neither answer approves or changes anything. It is a conversation."/>
       <div role="group" aria-label="Who is answering" className="grid grid-cols-2 gap-2">
         <button type="button" aria-pressed={role === "child"} className={role === "child" ? primaryBtn : secondaryBtn} onClick={() => setRole("child")}>Answering as the Child</button>
@@ -60,7 +60,10 @@ export function TogetherChapter() {
           </section>
         </>
       ) : null}
-      <ChapterNav back={{ href: "/try/outcome", label: "What happened" }} next={{ href: "/try/learn", label: "Back to my learning path" }}/>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Link href="/try/home" className={p.togetherCompleted ? primaryBtn : secondaryBtn} data-testid="together-home">Back to Home</Link>
+        <Link href="/try/outcome" className={secondaryBtn}>What happened</Link>
+      </div>
     </div>
   );
 }

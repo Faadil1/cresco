@@ -24,14 +24,14 @@ function FamilyOnboardingScene({ step, title, subtitle, children, footer, testId
     <div data-testid={testId} className="mx-auto flex min-h-[calc(100dvh-150px)] w-full max-w-[620px] flex-col px-0 pb-6">
       <header className="pt-2 text-center">
         <div className="mb-6 flex items-center gap-3">
-          <div role="progressbar" aria-label="Story setup progress" aria-valuemin={1} aria-valuemax={3} aria-valuenow={step}
+          <div role="progressbar" aria-label="Setup progress" aria-valuemin={1} aria-valuemax={3} aria-valuenow={step}
             className="h-2.5 flex-1 overflow-hidden rounded-full bg-green-soft">
             <div className="h-full rounded-full bg-green-strong transition-[width] duration-300"
               style={{ width: String(step / 3 * 100) + "%" }}/>
           </div>
           <span className="shrink-0 text-[12px] font-semibold text-ink-2">{step} of 3</span>
         </div>
-        <p className="cresco-section-kicker">Cresco Family · The beginning</p>
+        <p className="cresco-section-kicker">Cresco Family · Getting started</p>
         <h1 className="mx-auto mt-2 max-w-[19ch] font-display text-[clamp(30px,6vw,43px)] leading-[1.07] text-navy-strong">{title}</h1>
         <p className="mx-auto mt-3 max-w-[40ch] text-[14px] leading-6 text-ink-2">{subtitle}</p>
       </header>
@@ -59,7 +59,7 @@ export function GoalChapter() {
             <button key={option.id} type="button" role="radio" aria-checked={selected}
               onClick={() => dispatch({ type: "practice", action: { type: "set-goal", goalId: option.id } })}
               className={["relative flex min-h-[155px] flex-col items-center justify-center gap-2 rounded-[22px] border-2 p-2 text-center transition-colors",
-                tone[option.id], selected ? "border-blue-strong ring-1 ring-blue-strong" : "border-line-soft"].join(" ")}>
+                tone[option.id], selected ? "border-family-action ring-2 ring-family-action" : "border-line-soft"].join(" ")}>
               <GoalArt goal={option.id} className="h-16 w-20 md:h-20 md:w-28"/>
               <span className="text-[13px] font-bold leading-4 text-navy-strong md:text-[15px]">{option.label}</span>
               <span className="text-[11px] text-ink-2">{option.target} credits</span>
@@ -81,7 +81,7 @@ export function InterestsChapter() {
   const { story, dispatch } = useFamilyStory();
   return (
     <FamilyOnboardingScene step={2} testId="goal-scene-interests" title="What do you love?"
-      subtitle="Meet fictional people behind things you enjoy. Choose as many as you like, or skip."
+      subtitle="You will meet invented people behind things you enjoy. Pick any, or skip."
       footer={<ChapterNav back={{ href: "/try/goal", label: "My goal" }}
         next={{ href: "/try/goal/ready", label: story.interests.length ? "Next" : "Skip for now" }}/>}>
       <div className="flex flex-wrap justify-center gap-2.5" role="group" aria-label="Interests">
@@ -98,7 +98,7 @@ export function InterestsChapter() {
         })}
       </div>
       <p className="mt-5 text-center text-[13px] leading-6 text-ink-2" data-testid="interest-consequence">
-        {story.interests.length ? "The people and companies related to your interests will appear first later in the story." : "It's okay to skip. You can explore every fictional company later."}
+        {story.interests.length ? "People and companies you like will show up first in Explore." : "It's okay to skip. You can meet everyone in Explore later."}
       </p>
     </FamilyOnboardingScene>
   );
@@ -110,11 +110,11 @@ export function ReadyChapter() {
   const goal = PRACTICE_GOALS.find(item => item.id === story.practice.goalId)!;
   const p = story.practice;
   return (
-    <FamilyOnboardingScene step={3} testId="goal-scene-ready" title="Your story starts here."
-      subtitle={"Your " + goal.label.toLowerCase() + " is worth protecting. Let's learn how to decide, together."}
+    <FamilyOnboardingScene step={3} testId="goal-scene-ready" title="You're all set."
+      subtitle={"Your Home is ready, with a first lesson picked for your " + goal.label.toLowerCase() + "."}
       footer={<ChapterNav back={{ href: "/try/goal/interests", label: "My interests" }}
-        next={{ href: "/try/learn", label: "Start my learning path" }}/>}>
-      <div className="mx-auto max-w-[152px] overflow-hidden rounded-[18px] border border-line-soft">
+        next={{ href: "/try/home", label: "Open my Home" }}/>}>
+      <div className="mx-auto max-w-[96px] overflow-hidden rounded-[18px] border border-line-soft md:max-w-[152px]">
         <StoryVignette role="teen" className="block h-auto w-full" title="A fictional child ready to begin learning"/>
       </div>
       <div className="mt-3 rounded-[14px] bg-green-soft px-3 py-3 text-[13px] leading-5 text-navy-strong" data-testid="ready-safety-summary">

@@ -14,20 +14,6 @@ export const STORY_LESSON_IDS = [
   "p-basics", "p-key", "p-risk", "p-boundary", "p-together",
 ] as const;
 
-/** @deprecated Seven-chapter rail; removed once no screen uses it. */
-export type StoryChapterId = "welcome" | "goal" | "learn" | "explore" | "decision" | "parent" | "outcome" | "together";
-/** @deprecated See StoryChapterId. */
-export const STORY_CHAPTERS: readonly { id: StoryChapterId; path: string; label: string; short: string }[] = [
-  { id: "welcome", path: "/try", label: "Welcome", short: "Welcome" },
-  { id: "goal", path: "/try/goal", label: "My goal", short: "Goal" },
-  { id: "learn", path: "/try/learn", label: "My learning path", short: "Learn" },
-  { id: "explore", path: "/try/explore", label: "Explore", short: "Explore" },
-  { id: "decision", path: "/try/decision", label: "Make a choice", short: "Choose" },
-  { id: "parent", path: "/try/parent", label: "Parent's moment", short: "Parent" },
-  { id: "outcome", path: "/try/outcome", label: "What happened", short: "Result" },
-  { id: "together", path: "/try/together", label: "Together", short: "Together" },
-];
-
 /**
  * The durable Family app (restored from the original Cresco AppShell): five
  * real destinations with their own routes. Narrative scenes (decision,

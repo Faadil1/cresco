@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { KeyRound } from "lucide-react";
+import { ArrowLeft, KeyRound } from "lucide-react";
 import { StoryVignette } from "@/components/illustrations/family-story";
 import { useFamilyStory } from "@/components/family-story-provider";
 import { KeyChip } from "@/components/family-story-explore";
-import { ChapterHeading, ChapterNav, CompanyArt, panel, primaryBtn, secondaryBtn } from "@/components/family-story-ui";
+import { ChapterHeading, CompanyArt, panel, primaryBtn, secondaryBtn } from "@/components/family-story-ui";
 import { FAMILY_EXPLORE_CASES } from "@/lib/family-public-explore-data";
 import {
   PRACTICE_ASSETS, previewPracticeChoice, remainingCredits, type AssetCode,
@@ -22,7 +22,7 @@ function Chooser() {
   const { story, dispatch } = useFamilyStory();
   return (
     <div className="space-y-5">
-      <ChapterHeading kicker="Chapter 4 · Make a choice" title="Which company do you want to practice with?"
+      <ChapterHeading kicker="Explore · practice choice" title="Which company do you want to practice with?"
         intro="Practice choices exist for three of the six invented companies. The other three are research only."
         art={<StoryVignette role="teen" className="block h-auto w-full rounded-[20px]" title="An illustrated teenager deciding what to practice"/>}/>
       <KeyChip/>
@@ -41,7 +41,7 @@ function Chooser() {
           );
         })}
       </ul>
-      <ChapterNav back={{ href: "/try/explore", label: "Explore" }}/>
+      <Link href="/try/explore" className={secondaryBtn}><ArrowLeft aria-hidden className="size-4"/>Back to Explore</Link>
     </div>
   );
 }
@@ -72,7 +72,7 @@ function ChoiceForm({ code }: { code: AssetCode }) {
   };
   return (
     <div className="space-y-5">
-      <ChapterHeading kicker="Chapter 4 · Make a choice" title={`Practice with ${asset.name}`}
+      <ChapterHeading kicker="Explore · practice choice" title={`Practice with ${asset.name}`}
         intro={<>{asset.description} Practice price: <strong>{asset.price} credits per unit</strong>.</>}
         art={<CompanyArt id={item.id} name={asset.name} className="hidden h-auto w-full overflow-hidden rounded-[20px] border border-line-soft md:block"/>}/>
       <section className={panel} aria-labelledby="amount-title">
@@ -123,7 +123,10 @@ function ChoiceForm({ code }: { code: AssetCode }) {
         <button type="button" className={secondaryBtn} onClick={() => dispatch({ type: "pick-asset", code: null })}>Pick another company</button>
       </div>
       {preview.kind === "pending" ? <p className="text-[13px] text-ink-2">Your Parent is deciding. <Link className="font-bold text-green-strong underline underline-offset-4" href="/try/parent/request">Open the request</Link>.</p> : null}
-      <ChapterNav back={{ href: `/try/explore/${item.id}`, label: `About ${asset.name}` }} next={{ href: "/try/outcome", label: "What happened" }}/>
+      <nav aria-label="Around this choice" className="flex flex-col gap-3 sm:flex-row sm:justify-between">
+        <Link href={`/try/explore/${item.id}`} className={secondaryBtn}><ArrowLeft aria-hidden className="size-4"/>About {asset.name}</Link>
+        <Link href="/try/outcome" className={secondaryBtn}>What happened</Link>
+      </nav>
     </div>
   );
 }
