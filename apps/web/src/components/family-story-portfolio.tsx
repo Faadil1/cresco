@@ -12,7 +12,7 @@ import { useFamilyStory } from "@/components/family-story-provider";
 import { CompanyArt, panel, primaryBtn } from "@/components/family-story-ui";
 import { FAMILY_EXPLORE_CASES } from "@/lib/family-public-explore-data";
 import {
-  PRACTICE_ASSETS, evaluatePracticeScenario, remainingCredits, selectedPracticeGoal,
+  PRACTICE_ASSETS, evaluatePracticeScenario, initialFamilyPractice, remainingCredits, selectedPracticeGoal,
   type PracticeRequest, type PracticeScenario,
 } from "@/lib/family-public-practice";
 import { nextMission } from "@/lib/family-story-state";
@@ -34,8 +34,10 @@ export function PortfolioScreen() {
   const p = story.practice;
   const goal = selectedPracticeGoal(p);
   const [scenario, setScenario] = useState<PracticeScenario>("base");
+  const [showSample, setShowSample] = useState(false);
   const result = evaluatePracticeScenario(p, scenario);
   const delta = result.hypothetical - result.original;
+  const example = evaluatePracticeScenario({ ...initialFamilyPractice(), spent: 60, holdings: { ORC: 2, MKT: 4, BKT: 1 } }, scenario);
   const held = result.assets.filter(a => p.holdings[a.code] > 0);
   const mission = nextMission(story);
   return (
@@ -119,6 +121,38 @@ export function PortfolioScreen() {
             <p className="text-[14px] font-semibold text-navy-strong">No practice holdings yet.</p>
             <p className="mt-1 text-[13px] leading-5 text-ink-2">Meet a fictional person in Explore, then try a small choice inside your Key. It will appear here with a receipt.</p>
             <Link href={mission.href.startsWith("/try/explore") ? mission.href : "/try/explore"} className={`mt-3 ${primaryBtn}`}>Go to Explore<ArrowRight aria-hidden className="size-4"/></Link>
+            <button type="button" className="ml-0 mt-2 block min-h-11 text-left text-[13px] font-bold text-family-action underline underline-offset-4"
+              aria-expanded={showSample} onClick={() => setShowSample(!showSample)} data-testid="portfolio-example-toggle">
+              {showSample ? "Hide sample portfolio" : "See how a sample portfolio works"}
+            </button>
+            {showSample ? (
+              <section className="mt-3 rounded-[18px] border border-yellow/50 bg-yellow-soft p-4" data-testid="portfolio-example">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-orange-text">Guided example — not your holdings</p>
+                <h3 className="mt-1 text-[17px] font-extrabold text-navy-strong">Three pretend positions · 60 fictional credits</h3>
+                <p className="mt-1 text-[13px] leading-5 text-navy">Imagine investing 20 credits in each of three invented assets. Their cost totals 60. This preview cannot spend your credits or approve a choice.</p>
+                <div role="group" aria-label="Sample portfolio scenarios" className="mt-3 flex flex-wrap gap-2">
+                  {SCENARIOS.map(choice => (
+                    <button key={choice.id} type="button" aria-pressed={scenario === choice.id}
+                      onClick={() => setScenario(choice.id)}
+                      className={`min-h-10 rounded-full border px-3 text-[12px] font-bold ${scenario === choice.id ? "border-family-action bg-surface text-family-action" : "border-line bg-surface-soft text-navy-strong"}`}>
+                      {choice.label}
+                    </button>
+                  ))}
+                </div>
+                <ul className="mt-3 space-y-2" aria-label="Example fictional holdings">
+                  {example.assets.map(asset => (
+                    <li key={asset.code} className="grid grid-cols-[1fr_auto] gap-2 rounded-[12px] bg-surface p-3 text-[12px] text-navy-strong">
+                      <span><strong className="block">{asset.name}</strong><span>{fmt(asset.cost)} invested · 33% of sample</span></span>
+                      <span className="text-right"><strong className="block">{fmt(asset.hypothetical)}</strong><span>scenario value</span></span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-3 text-[14px] font-semibold text-navy-strong" data-testid="example-scenario-total">
+                  Sample total: {fmt(example.original)} invested → {fmt(example.hypothetical)} scenario value.
+                </p>
+                <p className="mt-1 text-[12px] leading-5 text-ink-2">Illustrative fixed prices, not market data. Your real practice balance and My Key remain unchanged.</p>
+              </section>
+            ) : null}
           </div>
         )}
       </section>
