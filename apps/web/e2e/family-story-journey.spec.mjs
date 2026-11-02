@@ -286,7 +286,7 @@ test("changing the Key makes an earlier request stale, and learning never change
   await expect(page.getByRole("link", { name: /back to the parent/i })).toBeVisible();
   await page.getByRole("link", { name: /back to the parent/i }).click();
   await expect(page.getByText(/decides alone up to 30 credits/i)).toBeVisible();
-  await expect(page.getByText(/1 of 5 Parent lessons done/i)).toBeVisible();
+  await expect(page.getByText(/1 of 7 Parent lessons done/i)).toBeVisible();
 });
 
 test("deep links and refresh: empty states point to the right chapter, bad ids are 404", async ({ page, request }) => {
@@ -411,7 +411,7 @@ test("a Parent can start first, with their own lens, and nothing is pre-filled f
   await finishLesson(page);
   await expect(page.getByTestId("lesson-done")).toContainText(/lesson complete/i);
   await page.getByRole("link", { name: /back to the parent/i }).click();
-  await expect(page.getByText(/1 of 5 Parent lessons done/i)).toBeVisible();
+  await expect(page.getByText(/1 of 7 Parent lessons done/i)).toBeVisible();
   // Parent learning never touched the Child's chapters or the Key.
   await expect(page.getByText(/decides alone up to 15 credits/i)).toBeVisible();
   await page.getByRole("link", { name: /what happened/i }).last().click();
@@ -507,8 +507,8 @@ test("the goal chapter records an actual Child choice rather than silently accep
     .getByRole("link", { name: "Skip for now" }).click();
   await expect(page).toHaveURL(/\/try\/goal\/ready$/);
   await openHomeFromReady(page);
-  await expect(page.getByRole("heading", { level: 1, name: /your space/i })).toBeVisible();
-  await expect(page.getByTestId("home-goal-card")).toContainText(/family trip/i);
+  await expect(page.getByRole("heading", { level: 1, name: /one step at a time/i })).toBeVisible();
+  await expect(page.getByTestId("home-focus")).toContainText(/family trip/i);
   expectCleanNetwork(net);
 });
 
