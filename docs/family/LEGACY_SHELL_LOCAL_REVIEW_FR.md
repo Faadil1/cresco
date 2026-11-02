@@ -3,7 +3,7 @@
 **Travail en cours, pas une publication.** Cette fiche sert à vérifier sur son propre ordinateur la refonte basée sur l'ancien Cresco, séparément du site historique `cresco-lac.vercel.app` et de la V2 Family publique.
 
 - Branche à examiner : `family/legacy-product-shell-rebuild-2026-11-01` (PR #120, en brouillon).
-- Source applicative **vérifiée** : `2e2dd31bc5d9325613fda5062ffd356e6becd78d` — [58/58 tests WebKit iPhone + Chromium desktop](https://github.com/Faadil1/cresco/actions/runs/41363010547), aucun déploiement. Les exercices appliqués et les trois calculateurs éducatifs sont purement fictifs; aucune bonne réponse n'est exigée pour avancer.
+- Source applicative **vérifiée** : `2c96955a92b37d28bbd812da7130e7e2f9f0603f` — [62/62 tests WebKit iPhone + Chromium desktop](https://github.com/Faadil1/cresco/actions/runs/41402778248), aucun déploiement. Les exercices appliqués et les trois calculateurs éducatifs sont purement fictifs; aucune bonne réponse n'est exigée pour avancer.
 - **Ne pas utiliser** la branche `family/story-led-multipage-2026-10-31` (PR #119), qui présente encore le modèle à sept chapitres.
 - Aucun compte, prénom, âge, courriel, argent réel, authentification parentale ni réseau public : une simulation locale dans un seul onglet, qui se réinitialise lors d'un rechargement.
 
@@ -28,6 +28,14 @@ http://127.0.0.1:3100/try
 ```
 
 Le script refuse une mauvaise branche, un dépôt modifié ou un changement d'application après le commit candidat vérifié. Il ne déploie aucun Worker. Un `-CheckOnly` vert n'est pas une validation visuelle du lancement complet. Si le répertoire `cresco-family-review` existe déjà et pointe vers la bonne branche, y exécuter `git fetch origin` puis `git pull --ff-only` avant le contrôle; **ne jamais lancer `git reset --hard` pour forcer la mise à jour**.
+
+## Points de revue du 2 novembre : nouveau Home, cours étendu et deux portfolios
+
+- **Home recentré** : une seule mission principale dans le panneau vert. La progression du but est sur une ligne séparée; ouvrir **Savings and practice limits** pour l'action Set aside 20 et les détails de My Key. Le bandeau Home ne doit pas recommencer à empiler des panneaux.
+- **Learn** : 17 modules Enfant, sept modules Parent, chacun avec une mise en situation appliquée avant le quiz et des ateliers arithmétiques interactifs pertinents. Terminer les premières leçons, vérifier que les choix pédagogiques ne donnent pas plus d'autorité à l'Enfant.
+- **Portfolio — Fictional practice** : positions inventées, unités fictives, coûts, scénarios, reçus et limites My Key.
+- **Portfolio — Real companies** : recherche en lecture seule sur Shopify, Microsoft, Costco et Apple avec leurs pages officielles. **Ce n'est pas un portefeuille réel ni un compte d'investissement** : pas de positions, transactions, prix temps réel, ordres ou valeur de marché. Ne jamais confondre les deux sections.
+- L'examen vidéo comparatif du fondateur reste requis : les tests automatisés ne prouvent pas que le Home est assez sobre ou que le contenu des cours motive l'Enfant.
 
 ## Critères de revue (ancien parcours vs nouveau)
 
