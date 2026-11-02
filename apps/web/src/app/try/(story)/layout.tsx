@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { StoryFrame } from "@/components/family-story-ui";
+import { FamilyAppShell } from "@/components/family-app-shell";
 
 export default function StoryLayout({ children }: { children: ReactNode }) {
-  return <StoryFrame>{children}</StoryFrame>;
+  return <FamilyAppShell>{children}</FamilyAppShell>;
 }

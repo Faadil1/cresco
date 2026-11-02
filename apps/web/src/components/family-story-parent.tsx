@@ -7,7 +7,7 @@ import { GoalArt } from "@/components/illustrations/objects";
 import { useFamilyStory } from "@/components/family-story-provider";
 import { ParentKey } from "@/components/family-public-studio";
 import {
-  ChapterHeading, ChapterNav, ResultCard, panel, primaryBtn, secondaryBtn,
+  ChapterHeading, ResultCard, panel, primaryBtn, secondaryBtn,
 } from "@/components/family-story-ui";
 import {
   PARENT_LEARNING, remainingPeriod, selectedPracticeGoal, type PracticeRequest,
@@ -40,11 +40,16 @@ export function ParentHome() {
   const pending = p.requests.filter(r => r.status === "pending");
   return (
     <div className="space-y-5">
-      <ChapterHeading kicker="Chapter 5 · The Parent's moment" title="Guide with confidence"
-        intro="This is the Parent's side of the same story. You see what your child is working toward, and you decide only at the boundary."
+      <ChapterHeading kicker="Parent · overview" title="Your child's progress"
+        intro="You see what your child is working toward, and you decide only at the boundary."
         art={<StoryVignette role="parent" className="block h-auto w-full rounded-[20px]" title="An illustrated parent reviewing a Cresco request at home"/>}/>
       <p className="rounded-[14px] bg-lavender-soft px-4 py-3 text-[12px] leading-5 text-navy-strong">{SIMULATED}</p>
-      <GoalCard/>
+      <section data-testid="parent-overview-grid" aria-label="Parent overview at a glance"
+        className="grid gap-3 lg:grid-cols-3 lg:items-stretch">
+        <div className="min-w-0 [&>div]:h-full">
+          <GoalCard/>
+        </div>
+        <div className="min-w-0 [&>p]:h-full [&>section]:h-full">
       {pending.length ? (
         <ResultCard tone="wait" title={`${pending.length} request${pending.length > 1 ? "s" : ""} waiting for you`} testId="parent-pending">
           <Link href="/try/parent/request" className={`mt-2 ${primaryBtn}`} data-testid="open-request">Review the exact request</Link>
@@ -55,17 +60,29 @@ export function ParentHome() {
           {p.requests.length === 0 ? <> <Link href="/try/decision" className="font-bold text-green-strong underline underline-offset-4">See how a request gets created</Link>.</> : null}
         </p>
       )}
-      <div className={panel}>
+        </div>
+        <section className={`${panel} min-w-0`} aria-label="My Key at a glance">
         <p className="cresco-section-kicker">My Key · Practice version {p.key.version}</p>
         <p className="mt-1 flex items-start gap-2 text-[15px] font-semibold text-navy-strong"><KeyRound aria-hidden className="mt-1 size-4 shrink-0 text-green-strong"/>
           <span>Your child decides alone up to {p.key.maxPerAction} credits per choice, {remainingPeriod(p)} left this practice period, for {p.key.allowed.join(", ")}.</span></p>
         <Link href="/try/parent/key" className={`mt-3 ${secondaryBtn}`}>Change the Key on purpose</Link>
-      </div>
+        </section>
+      </section>
       <div className="grid gap-3 sm:grid-cols-2">
         <Link href="/try/parent/learn" className={`${panel} block hover:border-green`}><span className="text-[17px] font-bold text-navy-strong">Your learning path</span><span className="mt-1 block text-[13px] text-ink-2">{p.parentCompleted.length} of {PARENT_LEARNING.length} Parent lessons done. Separate from your child&apos;s.</span></Link>
         <Link href="/try/together" className={`${panel} block hover:border-green`}><span className="text-[17px] font-bold text-navy-strong">Talk it through</span><span className="mt-1 block text-[13px] text-ink-2">Share your guidance and compare it with your child&apos;s.</span></Link>
       </div>
-      <ChapterNav back={{ href: "/try/decision", label: "Back to the Child" }} next={{ href: "/try/outcome", label: "What happened" }}/>
+      <section className={panel} aria-label="Child activity" data-testid="parent-activity">
+        <h2 className="text-[16px] font-extrabold text-navy-strong">What your child did</h2>
+        <dl className="mt-2 grid grid-cols-2 gap-2 text-[13px] sm:grid-cols-4">
+          <div className="rounded-[14px] bg-surface-soft p-3"><dt className="text-ink-2">Lessons</dt><dd className="text-[20px] font-extrabold text-navy-strong">{p.childCompleted.length}</dd></div>
+          <div className="rounded-[14px] bg-surface-soft p-3"><dt className="text-ink-2">People met</dt><dd className="text-[20px] font-extrabold text-navy-strong">{story.viewed.length}</dd></div>
+          <div className="rounded-[14px] bg-surface-soft p-3"><dt className="text-ink-2">Receipts</dt><dd className="text-[20px] font-extrabold text-navy-strong">{p.receipts.length}</dd></div>
+          <div className="rounded-[14px] bg-surface-soft p-3"><dt className="text-ink-2">Asks to you</dt><dd className="text-[20px] font-extrabold text-navy-strong">{p.requests.length}</dd></div>
+        </dl>
+        <p className="mt-2 text-[12px] text-ink-3">Counts from this browser tab only. No tracking, nothing sent anywhere.</p>
+        <p className="mt-2 text-[13px]"><Link href="/try/outcome" className="font-bold text-family-action underline underline-offset-4">What happened</Link> · <Link href="/try/home" className="font-bold text-family-action underline underline-offset-4">Hand back to the Child</Link></p>
+      </section>
     </div>
   );
 }
@@ -76,7 +93,7 @@ export function ParentLearnHub() {
   const done = story.practice.parentCompleted;
   return (
     <div className="space-y-5">
-      <ChapterHeading kicker="Parent's lens · Learning path" title="Five short lessons for you"
+      <ChapterHeading kicker="Parent · learning" title={`${PARENT_LEARNING.length} lessons for you`}
         intro="A different lens from your child's: how to use the Key, ask good questions and keep learning separate from permission."/>
       <ol className="grid gap-3 md:grid-cols-2" aria-label="Parent lessons">
         {PARENT_LEARNING.map((lesson, index) => (
@@ -90,7 +107,7 @@ export function ParentLearnHub() {
         ))}
       </ol>
       <p className="text-[12px] text-ink-3">Finishing Parent lessons never widens the Key. Only an explicit change on the Key page does.</p>
-      <ChapterNav back={{ href: "/try/parent", label: "Parent home" }}/>
+      <Link href="/try/parent" className={secondaryBtn}>Parent home</Link>
     </div>
   );
 }
@@ -113,11 +130,14 @@ export function ParentRequest() {
   if (!request) {
     return (
       <div className="space-y-5">
-        <ChapterHeading kicker="Parent's moment · Request" title="No request to review yet"/>
+        <ChapterHeading kicker="Parent · requests" title="No request to review yet"/>
         <p className={`${panel} text-[14px] leading-6 text-navy-strong`} data-testid="parent-empty">
           A request appears here only after your child tries a practice choice above the Key. Nothing is pre-filled for you.
         </p>
-        <ChapterNav back={{ href: "/try/parent", label: "Parent home" }} next={{ href: "/try/decision", label: "Go to the Child's choice" }}/>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Link href="/try/parent" className={secondaryBtn}>Parent home</Link>
+          <Link href="/try/decision" className={secondaryBtn}>Go to the Child&apos;s choice</Link>
+        </div>
       </div>
     );
   }
@@ -131,7 +151,7 @@ export function ParentRequest() {
   const others = p.requests.filter(r => r.id !== request.id);
   return (
     <div className="space-y-5">
-      <ChapterHeading kicker="Chapter 5 · The Parent's moment" title={`${request.amount} practice credits · ${request.asset}`}
+      <ChapterHeading kicker="Parent · request" title={`${request.amount} practice credits · ${request.asset}`}
         intro={<span className="hidden md:inline">Your child asked for more than the Key allows. Read the exact request, then decide once.</span>}/>
       {/* A decision should put the outcome within the first phone viewport, not
           below a request summary whose actions have disappeared. */}
@@ -199,7 +219,10 @@ export function ParentRequest() {
           <ul className="mt-2 space-y-1 text-[13px] text-navy">{others.map(r => <li key={r.id}>#{r.id}: {r.amount} credits · {r.asset} · {r.status}</li>)}</ul>
         </section>
       ) : null}
-      <ChapterNav back={{ href: "/try/parent", label: "Parent home" }} next={{ href: "/try/outcome", label: "What happened" }}/>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Link href="/try/parent" className={secondaryBtn}>Parent home</Link>
+        <Link href="/try/outcome" className={secondaryBtn}>What happened</Link>
+      </div>
     </div>
   );
 }
@@ -213,7 +236,10 @@ export function ParentKeyPage() {
         ? story.practice.feedback : "Changing the Key is a separate, explicit act."} testId="key-result">
         <span>Any pending or approved-once request becomes stale when the Key changes. Lessons, badges and quizzes never change it.</span>
       </ResultCard>
-      <ChapterNav back={{ href: "/try/parent", label: "Parent home" }} next={{ href: "/try/outcome", label: "What happened" }}/>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Link href="/try/parent" className={secondaryBtn}>Parent home</Link>
+        <Link href="/try/outcome" className={secondaryBtn}>What happened</Link>
+      </div>
     </div>
   );
 }

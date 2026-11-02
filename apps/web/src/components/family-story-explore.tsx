@@ -3,16 +3,17 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, KeyRound, Search, ShieldAlert } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, KeyRound, Search, ShieldAlert } from "lucide-react";
 import { useFamilyStory } from "@/components/family-story-provider";
+import { MinaGroceryArt } from "@/components/illustrations/mina-grocery";
 import {
-  ChapterHeading, ChapterNav, CompanyArt, ResultCard, TeachingTrend, panel, primaryBtn, secondaryBtn,
+  ChapterHeading, CompanyArt, ResultCard, TeachingTrend, panel, primaryBtn, secondaryBtn,
 } from "@/components/family-story-ui";
 import {
   FAMILY_EXPLORE_CASES, filterFamilyExploreCases, type FamilyExploreCase,
 } from "@/lib/family-public-explore-data";
 import { PRACTICE_ASSETS, remainingPeriod, selectedPracticeGoal } from "@/lib/family-public-practice";
-import { goalForCase, interestMatches, orderExploreCases } from "@/lib/family-story-state";
+import { goalForCase, interestMatches, orderExploreCases, personName } from "@/lib/family-story-state";
 
 const categories = ["All", "Technology", "Consumer", "Funds", "Services", "Energy", "Health"] as const;
 type Category = (typeof categories)[number];
@@ -37,10 +38,28 @@ export function ExploreChapter() {
     [story.interests, query, category],
   );
   const goal = selectedPracticeGoal(story.practice);
+  const ordered = orderExploreCases(story.interests, FAMILY_EXPLORE_CASES);
+  const featured = ordered.find(item => !story.viewed.includes(item.id)) ?? ordered[0];
   return (
-    <div className="space-y-5">
-      <ChapterHeading kicker="Chapter 3 · Explore" title="Investigate before you decide"
-        intro={<>Six invented companies. Open one to read how it earns money, what could go wrong, and how that fits your <strong>{goal.label.toLowerCase()}</strong>.</>}/>
+    <div className="space-y-4 md:space-y-5">
+      <header>
+        <h1 className="font-display text-[26px] leading-tight text-navy-strong md:text-[32px]">Explore</h1>
+        <p className="text-[13px] text-ink-2">Six invented companies, each with a real-life dilemma. Meet the person first, then research how it fits your <strong className="text-navy-strong">{goal.label.toLowerCase()}</strong>.</p>
+      </header>
+      <section aria-labelledby="featured-title" data-testid="explore-featured"
+        className="grid items-center gap-4 overflow-hidden rounded-[24px] border border-yellow/40 bg-yellow-soft p-4 md:grid-cols-[1fr_220px] md:p-5">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-orange-text">{story.viewed.includes(featured.id) ? "Revisit a story" : "Someone to meet"} · {featured.name}</p>
+          <h2 id="featured-title" className="mt-1 text-[20px] font-extrabold leading-6 text-navy-strong">{featured.episode.person}</h2>
+          <p className="mt-1 text-[14px] leading-6 text-navy">{featured.episode.dilemma}</p>
+          <Link href={`/try/explore/${featured.id}`} className={`mt-3 w-full sm:w-auto ${primaryBtn}`}>Meet {personName(featured)}<ArrowRight aria-hidden className="size-4"/></Link>
+        </div>
+        {featured.id === "markets" ? (
+          <MinaGroceryArt className="mx-auto block h-[156px] w-full max-w-[240px] overflow-hidden rounded-[18px] md:h-auto" />
+        ) : (
+          <CompanyArt id={featured.id} name={featured.name} className="hidden h-auto w-full overflow-hidden rounded-[18px] md:block"/>
+        )}
+      </section>
       <KeyChip/>
       <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
         <label className="relative block">
@@ -51,10 +70,10 @@ export function ExploreChapter() {
             className="min-h-12 w-full rounded-[14px] border border-line bg-surface py-3 pl-11 pr-4 text-[14px] text-navy-strong"/>
         </label>
       </div>
-      <div role="group" aria-label="Filter by sector" className="flex flex-wrap gap-2">
+      <div role="group" aria-label="Filter by sector" className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
         {categories.map(item => (
           <button type="button" key={item} aria-pressed={category === item} onClick={() => setCategory(item)}
-            className={`min-h-11 rounded-full border px-4 text-[13px] font-bold ${category === item ? "border-green-strong bg-green-soft text-green-strong" : "border-line bg-surface text-navy-strong"}`}>{item}</button>
+            className={`min-h-11 shrink-0 rounded-full border px-4 text-[13px] font-bold ${category === item ? "border-family-action bg-family-action-soft text-family-action" : "border-line bg-surface text-navy-strong"}`}>{item}</button>
         ))}
       </div>
       <p className="text-[12px] text-ink-2" aria-live="polite">{cases.length} invented {cases.length === 1 ? "company" : "companies"} shown{story.interests.length ? " · yours first" : ""}.</p>
@@ -66,7 +85,7 @@ export function ExploreChapter() {
             const practice = item.practiceCode ? PRACTICE_ASSETS.find(a => a.code === item.practiceCode) : undefined;
             return (
               <li key={item.id} className={`${panel} flex flex-col !p-4`} data-testid={`company-${item.id}`}>
-                <CompanyArt id={item.id} name={item.name} className="mb-3 block h-auto max-h-[150px] w-full overflow-hidden rounded-[14px]"/>
+                <CompanyArt id={item.id} name={item.name} className="mb-3 block h-auto max-h-[96px] w-full overflow-hidden rounded-[14px] md:max-h-[130px]"/>
                 <div className="flex flex-wrap gap-1.5">
                   <span className="rounded-full bg-surface-soft px-2.5 py-1 text-[11px] font-bold text-ink-2">{item.category}</span>
                   {match ? <span className="rounded-full bg-yellow-soft px-2.5 py-1 text-[11px] font-bold text-navy-strong">You like: {match.label}</span> : null}
@@ -75,15 +94,15 @@ export function ExploreChapter() {
                 <h2 className="mt-2 text-[19px] font-bold leading-6 text-navy-strong">{item.name}</h2>
                 <p className="mt-1 text-[13px] font-semibold leading-6 text-green-strong">Meet {item.episode.person}</p>
                 <p className="mt-1 flex-1 text-[13px] leading-5 text-navy">{item.episode.dilemma}</p>
-                <p className="mt-2 text-[12px] leading-5 text-ink-2"><strong>Behind the story: </strong>{item.model}</p>
+                <p className="mt-2 hidden text-[12px] leading-5 text-ink-2 md:block"><strong>Behind the story: </strong>{item.model}</p>
                 <p className="mt-2 text-[12px] text-ink-3">{practice ? `Practice price: ${practice.price} credits per unit` : "Research only: no practice choice"}</p>
-                <Link href={`/try/explore/${item.id}`} className={`mt-3 ${secondaryBtn}`} aria-label={`Open ${item.name}`}>Open the research page</Link>
+                <Link href={`/try/explore/${item.id}`} className={`mt-3 ${secondaryBtn}`} aria-label={`Open ${item.name}`}>Meet {personName(item)}</Link>
               </li>
             );
           })}
         </ul>
       ) : <p className={`${panel} text-[13px] text-ink-2`}>No matching invented companies. Change your search or choose All.</p>}
-      <ChapterNav back={{ href: "/try/learn", label: "My learning path" }} next={{ href: "/try/decision", label: "Make a choice" }}/>
+      <p className="text-[13px] text-ink-2">Ready to try? <Link href="/try/decision" className="font-bold text-family-action underline underline-offset-4">Make a practice choice</Link> with one of the three practice companies.</p>
     </div>
   );
 }
@@ -102,7 +121,7 @@ export function CompanyChapter({ id }: { id: string }) {
   const researched = story.researched.includes(item.id);
   return (
     <div className="space-y-3 md:space-y-5">
-      <Link href="/try/explore" className="inline-flex min-h-11 items-center text-[13px] font-bold text-green-strong underline underline-offset-4">All companies</Link>
+      <Link href="/try/explore" className="inline-flex min-h-11 items-center gap-1 text-[13px] font-bold text-family-action"><ArrowLeft aria-hidden className="size-4"/>All companies</Link>
       {/* Keep context, then the fictional person and decision. Avoid repeating the
           same long introduction before the first mobile decision. */}
       <ChapterHeading kicker={`${item.category} · Invented company`} title={item.name}/>
@@ -110,10 +129,23 @@ export function CompanyChapter({ id }: { id: string }) {
         <p className="cresco-section-kicker">Meet the person · fictional story</p>
         <div className="mt-2 flex items-start gap-3">
           <div className="min-w-0 flex-1">
-            <h2 id="human-story" className="font-display text-[24px] leading-tight text-navy-strong md:text-[26px]">{item.episode.person}</h2>
-            <p className="mt-1.5 text-[14px] leading-6 text-navy md:mt-2 md:text-[15px] md:leading-7">{item.episode.scene}</p>
+            <h2 id="human-story" aria-label={item.episode.person} className="font-display text-[24px] leading-tight text-navy-strong md:text-[26px]">
+              {item.id === "markets" ? <><span className="sm:hidden">Meet Mina</span><span className="hidden sm:inline">{item.episode.person}</span></> : item.episode.person}
+            </h2>
+            {item.id === "markets" ? (
+              <>
+                <p className="mt-1.5 text-[13px] leading-5 text-navy sm:hidden">
+                  Mina helps at her family grocery. More shoppers are arriving, but delivery costs just went up.
+                </p>
+                <p className="mt-2 hidden text-[15px] leading-7 text-navy sm:block">{item.episode.scene}</p>
+              </>
+            ) : <p className="mt-1.5 text-[14px] leading-6 text-navy md:mt-2 md:text-[15px] md:leading-7">{item.episode.scene}</p>}
           </div>
-          <CompanyArt id={item.id} name={item.name} className="block h-auto w-16 shrink-0 rounded-[14px] border border-line-soft sm:w-28 md:w-36"/>
+          {item.id === "markets" ? (
+            <MinaGroceryArt className="block h-[100px] w-[88px] shrink-0 overflow-hidden rounded-[14px] border border-line-soft sm:h-[175px] sm:w-[154px]" />
+          ) : (
+            <CompanyArt id={item.id} name={item.name} className="block h-auto w-16 shrink-0 rounded-[14px] border border-line-soft sm:w-28 md:w-36"/>
+          )}
         </div>
         <div className="mt-3 rounded-[18px] bg-yellow-soft p-3 md:mt-4 md:p-4">
           <h3 className="text-[16px] font-bold leading-6 text-navy-strong md:text-[17px]">{item.episode.dilemma}</h3>
@@ -181,7 +213,10 @@ export function CompanyChapter({ id }: { id: string }) {
             <span><strong>Research only.</strong> No practice choice is offered for {item.name}. It never creates a request or a receipt.</span></p>
         )}
       </section>
-      <ChapterNav back={{ href: "/try/explore", label: "All companies" }} next={{ href: `/try/explore/${neighbour.id}`, label: `Next: ${neighbour.name}` }}/>
+      <nav aria-label="More companies" className="flex flex-col gap-3 sm:flex-row sm:justify-between">
+        <Link href="/try/explore" className={secondaryBtn}><ArrowLeft aria-hidden className="size-4"/>All companies</Link>
+        <Link href={`/try/explore/${neighbour.id}`} className={secondaryBtn}>Next: meet {personName(neighbour)}<ArrowRight aria-hidden className="size-4"/></Link>
+      </nav>
     </div>
   );
 }

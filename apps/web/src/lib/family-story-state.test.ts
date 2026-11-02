@@ -5,7 +5,7 @@ import {
 } from "./family-public-practice";
 import {
   DECLINE_REASONS, GOAL_STORY, INTERESTS, REASONS, chapterStatus, childLessonNote, choiceImpact,
-  initialStory, interestMatches, orderExploreCases, parentLessonNote, transitionStory,
+  childPathFor, initialStory, interestMatches, nextMission, orderExploreCases, parentLessonNote, practiceWins, transitionStory,
   type StoryAction, type StoryState,
 } from "./family-story-state";
 
@@ -187,5 +187,54 @@ describe("personalization and consequences are real", () => {
     expect(REASONS.map(item => item.id).sort()).toEqual(["curious", "goal-fit", "small-try"]);
     expect(DECLINE_REASONS.every(item => item.explain.length > 30)).toBe(true);
     expect(initialStory().practice).toEqual(initialFamilyPractice());
+  });
+});
+
+describe("Home mission: the return loop", () => {
+  const chosen = () => run(initialStory(), practice({ type: "set-goal", goalId: "bike" }));
+
+  it("walks goal -> lesson -> meet a person -> first choice -> talk -> next lesson", () => {
+    expect(nextMission(initialStory()).id).toBe("choose-goal");
+    let s = chosen();
+    const first = nextMission(s);
+    expect(first.id).toBe("first-lesson");
+    expect(first.href).toBe(`/try/learn/${childPathFor("bike")[0].id}`);
+    s = run(s, practice({ type: "complete", role: "child", lessonId: childPathFor("bike")[0].id }));
+    expect(nextMission(s).id).toBe("meet-person");
+    s = run(s, { type: "toggle-interest", id: "food" });
+    expect(nextMission(s).href).toBe("/try/explore/markets");
+    expect(nextMission(s).title).toBe("Meet Mina");
+    s = run(s, { type: "view-case", id: "markets" });
+    expect(nextMission(s)).toMatchObject({ id: "first-choice", href: "/try/explore/markets" });
+    s = run(s, practice({ type: "buy", asset: "MKT", amount: 10 }));
+    expect(nextMission(s).id).toBe("together");
+    s = run(s, practice({ type: "discussion-child", choice: "save-first" }), practice({ type: "discussion-parent", choice: "protect-goal" }), practice({ type: "together" }));
+    expect(nextMission(s).id).toBe("next-lesson");
+  });
+
+  it("anything waiting on a Parent decision comes first, and the mission never acts", () => {
+    let s = run(chosen(), practice({ type: "buy", asset: "MKT", amount: 25 }), { type: "view-case", id: "markets" });
+    const before = s;
+    expect(nextMission(s)).toMatchObject({ id: "parent-deciding", href: "/try/parent/request" });
+    expect(s).toBe(before);
+    const id = s.practice.requests[0].id;
+    s = run(s, practice({ type: "respond", id, choice: "approve" }));
+    expect(nextMission(s)).toMatchObject({ id: "use-approval", href: "/try/outcome" });
+    expect(s.practice.key).toEqual(initialStory().practice.key);
+    s = run(s, practice({ type: "buy", asset: "MKT", amount: 25 }));
+    expect(nextMission(s).id).toBe("together");
+  });
+
+  it("a decline or a Key change sends the Child to see why", () => {
+    const asked = run(chosen(), practice({ type: "buy", asset: "MKT", amount: 25 }));
+    const id = asked.practice.requests[0].id;
+    expect(nextMission(run(asked, practice({ type: "respond", id, choice: "decline" }, { declineReason: "too-big" }))).id).toBe("see-decline");
+    expect(nextMission(run(asked, practice({ type: "set-key", maxPerAction: 30, maxPeriod: 60, allowed: ["ORC", "MKT", "BKT"] }))).id).toBe("see-expired");
+  });
+
+  it("wins only reflect what happened", () => {
+    expect(practiceWins(initialStory()).every(w => !w.earned)).toBe(true);
+    const s = run(chosen(), practice({ type: "buy", asset: "MKT", amount: 10 }), practice({ type: "buy", asset: "ORC", amount: 5 }), { type: "research-correct", id: "orchard" });
+    expect(practiceWins(s).filter(w => w.earned).map(w => w.badge).sort()).toEqual(["company-detective", "diversification-pro", "first-investor"]);
   });
 });

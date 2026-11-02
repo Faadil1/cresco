@@ -30,9 +30,33 @@ async function answerUntilCorrect(page, scope, feedback = "lesson-feedback") {
   }
   throw new Error("no correct answer found");
 }
+async function advanceLessonToQuiz(page) {
+  // All courses require one applied teaching moment; either option can be
+  // chosen, and no option changes a Key, credits or Parent authorization.
+  let reached = false;
+  for (let step = 0; step < 20; step++) {
+    const exercise = page.getByTestId("lesson-applied-exercise");
+    if (await exercise.isVisible() && await page.getByTestId("applied-feedback").count() === 0) {
+      const advance = page.getByRole("button", { name: /next idea|quick check/i });
+      await expect(advance).toBeDisabled();
+      await exercise.getByRole("button").first().click();
+      await expect(page.getByTestId("applied-feedback")).toBeVisible();
+    }
+    const quick = page.getByRole("button", { name: /quick check/i });
+    if (await quick.isVisible()) {
+      await expect(quick).toBeEnabled();
+      await quick.click();
+      reached = true;
+      break;
+    }
+    const next = page.getByRole("button", { name: /next idea/i });
+    await expect(next).toBeEnabled();
+    await next.click();
+  }
+  expect(reached, "lesson must reach its final recall check").toBe(true);
+}
 async function finishLesson(page) {
-  while (await page.getByRole("button", { name: /next idea/i }).count()) await page.getByRole("button", { name: /next idea/i }).click();
-  await page.getByRole("button", { name: /quick check/i }).click();
+  await advanceLessonToQuiz(page);
   await answerUntilCorrect(page, "[data-testid=lesson-quiz]");
   await page.getByRole("button", { name: /complete lesson/i }).click();
 }
@@ -44,6 +68,12 @@ async function openReadyAfterGoal(page, interest) {
   await page.getByRole("navigation", { name: "Previous and next chapter" })
     .getByRole("link", { name: interest ? "Next" : "Skip for now" }).click();
   await expect(page).toHaveURL(/\/try\/goal\/ready$/);
+}
+// The five destinations live in two "Main" navs (side rail >= md, bottom bar on phones); use the visible one.
+const tab = (page, name) => page.locator('nav[aria-label="Main"]:visible').getByRole("link", { name, exact: true });
+async function openHomeFromReady(page) {
+  await page.getByRole("navigation", { name: "Previous and next chapter" }).getByRole("link", { name: "Open my Home" }).click();
+  await expect(page).toHaveURL(/\/try\/home$/);
 }
 async function openOptionalSavings(page) {
   await page.getByTestId("ready-optional-saving").locator("summary").click();
@@ -68,17 +98,18 @@ test("the whole story: goal, lesson, research, blocked choice, Parent approval, 
   await openOptionalSavings(page);
   await page.getByRole("button", { name: /set aside 20 credits/i }).click();
   await expect(page.getByTestId("goal-progress")).toContainText("20 of 80");
-  await page.getByRole("link", { name: /my learning path/i }).last().click();
+  await openHomeFromReady(page);
+  await expect(page.getByTestId("home-goal-saved")).toHaveText("20/80");
+  await tab(page, "Learn").click();
 
-  // Chapter 2: the lesson starts where the goal needs it, with a goal note, and quiz feedback is real.
+  // Learn: the lesson starts where the goal needs it, with a goal note, and quiz feedback is real.
   await expect(page).toHaveURL(/\/try\/learn$/);
-  await expect(page.getByTestId("learn-progress")).toContainText("0 of 9");
+  await expect(page.getByTestId("learn-progress")).toContainText("0 of 17");
   await page.getByTestId("learn-up-next").click();
   await expect(page).toHaveURL(/\/try\/learn\/original-why-prices-move$/);
   await expect(page.getByTestId("goal-note")).toContainText(/gaming setup/i);
   await expect(page.getByTestId("lesson-slide").locator("svg").first()).toBeVisible();
-  while (await page.getByRole("button", { name: /next idea/i }).count()) await page.getByRole("button", { name: /next idea/i }).click();
-  await page.getByRole("button", { name: /quick check/i }).click();
+  await advanceLessonToQuiz(page);
   const choices = page.locator("[data-testid=lesson-quiz] fieldset button");
   // A wrong answer is explained and does not complete the lesson.
   let wrong = 0;
@@ -96,7 +127,7 @@ test("the whole story: goal, lesson, research, blocked choice, Parent approval, 
   await expect(page).toHaveURL(/\/try\/explore$/);
   // A hard load resets the in-memory story.
   await page.goto("/try/learn");
-  await expect(page.getByTestId("learn-progress")).toContainText("0 of 9");
+  await expect(page.getByTestId("learn-progress")).toContainText("0 of 17");
   void testInfo;
   expect(net.outbound, "no API, wallet or write requests").toEqual([]);
   expect(net.external, "no external hosts").toEqual([]);
@@ -111,7 +142,8 @@ test("one client-side journey keeps a single state across real pages, Back and F
   await openReadyAfterGoal(page, "Food & shopping");
   await openOptionalSavings(page);
   await page.getByRole("button", { name: /set aside 20 credits/i }).click();
-  await page.getByRole("link", { name: /my learning path/i }).last().click();
+  await openHomeFromReady(page);
+  await tab(page, "Learn").click();
   await page.getByTestId("learn-up-next").click();
   await finishLesson(page);
   await expect(page.getByTestId("lesson-done-next")).toBeVisible();
@@ -180,8 +212,14 @@ test("one client-side journey keeps a single state across real pages, Back and F
   await expect(page.getByTestId("downturn-card")).toContainText(/bad month/i);
   await inViewport(page.getByTestId("outcome-hero"));
   await testInfo.attach("receipt.png", { body: await page.screenshot(), contentType: "image/png" });
-  await page.getByTestId("portfolio-details").locator("summary").click();
-  await expect(page.getByText(/PRACTICE ONLY - NOT EXECUTED ONCHAIN/i).first()).toBeVisible();
+  // Portfolio is its own destination, reached from the result.
+  await page.getByRole("link", { name: /open my portfolio/i }).click();
+  await expect(page).toHaveURL(/\/try\/portfolio$/);
+  await expect(page.getByTestId("portfolio-spent")).toContainText("25");
+  await expect(page.getByTestId("portfolio-receipts")).toContainText(/PRACTICE ONLY - NOT EXECUTED ONCHAIN/i);
+  await expect(page.getByTestId("child-request-history")).toContainText(/approval used/i);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/try\/outcome$/);
 
   // Replay is refused before the click and by the engine.
   await page.getByRole("link", { name: /make another choice/i }).click();
@@ -248,7 +286,7 @@ test("changing the Key makes an earlier request stale, and learning never change
   await expect(page.getByRole("link", { name: /back to the parent/i })).toBeVisible();
   await page.getByRole("link", { name: /back to the parent/i }).click();
   await expect(page.getByText(/decides alone up to 30 credits/i)).toBeVisible();
-  await expect(page.getByText(/1 of 5 Parent lessons done/i)).toBeVisible();
+  await expect(page.getByText(/1 of 7 Parent lessons done/i)).toBeVisible();
 });
 
 test("deep links and refresh: empty states point to the right chapter, bad ids are 404", async ({ page, request }) => {
@@ -270,27 +308,36 @@ test("deep links and refresh: empty states point to the right chapter, bad ids a
   await page.goto("/try/explore/river");
   await expect(page.getByText(/research only\. no practice choice is offered/i)).toBeVisible();
   await expect(page.getByTestId("practice-this")).toHaveCount(0);
-  for (const path of ["/try/explore/nope", "/try/explore/ORCHARD", "/try/learn/unknown", "/try/api", "/try/parent/sign-in", "/try/wallet", "/home", "/parent/sign-in", "/onboarding/goal", "/invest/ORC", "/api/health"]) {
+  for (const path of ["/try/explore/nope", "/try/explore/ORCHARD", "/try/learn/unknown", "/try/api", "/try/parent/sign-in", "/try/wallet", "/try/dashboard", "/try/home/x", "/try/portfolio/ORC", "/try/profile/edit", "/home", "/portfolio", "/profile", "/parent/sign-in", "/onboarding/goal", "/invest/ORC", "/api/health"]) {
     const response = await request.get(path);
     expect(response.status(), path).toBe(404);
   }
-  for (const path of ["/", "/try", "/try/goal", "/try/learn", "/try/learn/c-save", "/try/explore", "/try/explore/basket", "/try/decision", "/try/parent", "/try/parent/learn", "/try/parent/key", "/try/parent/request", "/try/outcome", "/try/together", "/try/lab"]) {
+  for (const path of ["/", "/try", "/try/goal", "/try/home", "/try/portfolio", "/try/profile", "/try/learn", "/try/learn/c-save", "/try/explore", "/try/explore/basket", "/try/decision", "/try/parent", "/try/parent/learn", "/try/parent/key", "/try/parent/request", "/try/outcome", "/try/together", "/try/lab"]) {
     expect((await request.get(path)).status(), path).toBe(200);
   }
 });
 
-test("the original-style setup uses separate readable screens, then the full story rail resumes", async ({ page }, testInfo) => {
-  for (const path of ["/try", "/try/goal", "/try/goal/interests", "/try/goal/ready", "/try/learn", "/try/explore", "/try/decision", "/try/parent", "/try/outcome", "/try/together"]) {
+test("setup uses separate readable screens, then the durable five-destination app takes over", async ({ page }, testInfo) => {
+  const appPaths = ["/try/home", "/try/learn", "/try/explore", "/try/decision", "/try/portfolio", "/try/profile", "/try/outcome", "/try/together"];
+  for (const path of ["/try", "/try/goal", "/try/goal/interests", "/try/goal/ready", ...appPaths, "/try/parent", "/try/learn/c-save"]) {
     await page.goto(path);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow, path + " horizontal overflow").toBeLessThanOrEqual(1);
     await expect(page.getByRole("main")).toBeVisible();
+    // The seven-chapter rail is gone everywhere.
+    await expect(page.getByTestId("story-rail")).toHaveCount(0);
     if (path.startsWith("/try/goal")) {
-      await expect(page.getByRole("progressbar", { name: "Story setup progress" })).toBeInViewport();
-      await expect(page.getByTestId("story-rail")).toHaveCount(0);
-    } else if (path !== "/try") {
-      await expect(page.getByTestId("story-rail")).toBeInViewport();
-      await expect(page.getByRole("navigation", { name: "Story chapters" }).getByRole("link")).toHaveCount(7);
+      await expect(page.getByRole("progressbar", { name: "Setup progress" })).toBeInViewport();
+      await expect(page.locator('nav[aria-label="Main"]:visible')).toHaveCount(0);
+    } else if (appPaths.includes(path)) {
+      const main = page.locator('nav[aria-label="Main"]:visible');
+      await expect(main).toHaveCount(1);
+      await expect(main).toBeInViewport();
+      await expect(main.getByRole("link")).toHaveText(["Home", "Learn", "Explore", "Portfolio", "Profile"]);
+      await expect(main.locator('[aria-current="page"]')).toHaveCount(1);
+    } else {
+      // Invitation, Parent dashboard and lesson focus mode have no Child tab bar.
+      await expect(page.locator('nav[aria-label="Main"]:visible')).toHaveCount(0);
     }
   }
   await page.goto("/try/goal");
@@ -308,7 +355,7 @@ test("the original-style setup uses separate readable screens, then the full sto
   await expect(page).toHaveURL(/\/try\/goal\/ready$/);
   await expect(page.getByTestId("goal-scene-ready")).toBeVisible();
   const safety = page.getByTestId("ready-safety-summary");
-  const nextAction = page.getByRole("navigation", { name: "Previous and next chapter" }).getByRole("link", { name: "Start my learning path" });
+  const nextAction = page.getByRole("navigation", { name: "Previous and next chapter" }).getByRole("link", { name: "Open my Home" });
   await expect(safety).toContainText(/no money moves; no guardian identity is verified/i);
   await expect(nextAction).toBeInViewport({ ratio: 0.5 });
   const safetyBox = await safety.boundingBox();
@@ -318,16 +365,18 @@ test("the original-style setup uses separate readable screens, then the full sto
   expect(safetyBox.y + safetyBox.height + 8, "the sticky main CTA must not cover the practice-safety summary")
     .toBeLessThanOrEqual(nextBox.y);
   await testInfo.attach("legacy-step-3-ready.png", { body: await page.screenshot(), contentType: "image/png" });
-  await page.getByRole("navigation", { name: "Previous and next chapter" }).getByRole("link", { name: "Start my learning path" }).click();
-  await expect(page).toHaveURL(/\/try\/learn$/);
-  await expect(page.getByTestId("story-rail")).toBeVisible();
+  await nextAction.click();
+  await expect(page).toHaveURL(/\/try\/home$/);
+  await expect(page.locator('nav[aria-label="Main"]:visible')).toBeInViewport();
 });
 
 test("landing leads into the story, with the free lab still available", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { name: /try cresco - no sign-in/i }).click();
   await expect(page).toHaveURL(/\/try$/);
-  await expect(page.getByTestId("welcome-chapters").getByRole("link")).toHaveCount(7);
+  // One invitation, one main action; no chapter index.
+  await expect(page.getByTestId("welcome-start")).toBeVisible();
+  await expect(page.getByTestId("welcome-chapters")).toHaveCount(0);
   await page.goto("/try/lab");
   await expect(page.getByTestId("family-public-studio")).toBeVisible();
   await page.getByRole("link", { name: /take the illustrated story/i }).click();
@@ -360,9 +409,9 @@ test("a Parent can start first, with their own lens, and nothing is pre-filled f
   await expect(page.getByTestId("goal-note")).toContainText(/your child is saving for/i);
   await expect(page.getByText(/parent's lens/i).first()).toBeVisible();
   await finishLesson(page);
-  await expect(page.getByTestId("lesson-feedback")).toContainText(/correct/i);
+  await expect(page.getByTestId("lesson-done")).toContainText(/lesson complete/i);
   await page.getByRole("link", { name: /back to the parent/i }).click();
-  await expect(page.getByText(/1 of 5 Parent lessons done/i)).toBeVisible();
+  await expect(page.getByText(/1 of 7 Parent lessons done/i)).toBeVisible();
   // Parent learning never touched the Child's chapters or the Key.
   await expect(page.getByText(/decides alone up to 15 credits/i)).toBeVisible();
   await page.getByRole("link", { name: /what happened/i }).last().click();
@@ -395,8 +444,10 @@ test("exhausted credits and a duplicate request are explained before the click a
   for (let i = 0; i < 5; i++) await page.getByRole("button", { name: /set aside 20 credits/i }).click();
   await expect(page.getByTestId("goal-progress")).toContainText("0 still available");
   await expect(page.getByRole("button", { name: /set aside 20 credits/i })).toBeDisabled();
-  await page.getByRole("link", { name: /explore companies|my learning path/i }).last().click();
-  await page.getByRole("link", { name: /explore companies/i }).last().click();
+  await openHomeFromReady(page);
+  await page.getByTestId("home-extras").locator("summary").click();
+  await expect(page.getByTestId("home-save")).toBeDisabled();
+  await tab(page, "Explore").click();
   await page.getByRole("link", { name: "Open Neighborhood Markets" }).click();
   await page.getByTestId("practice-this").click();
   await expect(page.getByTestId("limit-preview")).toHaveAttribute("data-preview-kind", "insufficient");
@@ -456,10 +507,9 @@ test("the goal chapter records an actual Child choice rather than silently accep
   await page.getByRole("navigation", { name: "Previous and next chapter" })
     .getByRole("link", { name: "Skip for now" }).click();
   await expect(page).toHaveURL(/\/try\/goal\/ready$/);
-  await page.getByRole("navigation", { name: "Previous and next chapter" })
-    .getByRole("link", { name: "Start my learning path" }).click();
-  await expect(page).toHaveURL(/\/try\/learn$/);
-  await expect(page.getByRole("heading", { level: 1, name: /learn, one small step at a time/i })).toBeVisible();
+  await openHomeFromReady(page);
+  await expect(page.getByRole("heading", { level: 1, name: /ready for your next step/i })).toBeVisible();
+  await expect(page.getByTestId("home-goal-summary")).toContainText(/family trip/i);
   expectCleanNetwork(net);
 });
 
@@ -486,12 +536,14 @@ test("a fictional person's dilemma stays with the Child, Parent and receipt with
   await page.getByTestId("use-approval").click();
   await expect(page.getByTestId("receipt-line")).toContainText("25 credits");
   await expect(page.getByTestId("episode-takeaway")).toContainText(/more customers can help/i);
+  await expect(page.getByTestId("episode-takeaway").getByRole("img", { name: /fictional Mina in her family.s grocery/i })).toBeVisible();
   await page.getByRole("link", { name: /talk it through/i }).last().click();
   await page.getByRole("button", { name: /practice a small fictional choice/i }).click();
   await page.getByRole("button", { name: /answering as the parent/i }).click();
   await page.getByRole("button", { name: /agree on a small practice boundary/i }).click();
   await page.getByRole("button", { name: /mark our discussion complete/i }).click();
   await expect(page.getByTestId("together-story-memory")).toContainText("Mina");
+  await expect(page.getByTestId("together-story-memory").getByRole("img", { name: /fictional Mina in her family.s grocery/i })).toBeVisible();
   await expect(page.getByTestId("together-story-memory")).toContainText(/new fact could change your mind/i);
   expectCleanNetwork(net);
 });
@@ -510,10 +562,24 @@ test("the first mobile story decision and a fictional person's problem are visib
   await expect(page.getByTestId("fictional-episode").getByRole("heading", { level: 2, name: /^mina,/i }))
     .toBeInViewport({ ratio: 0.5 });
   await expect(page.getByTestId("fictional-episode")).toContainText(/supplier has raised delivery prices/i);
+  await expect(page.getByTestId("fictional-episode").getByRole("img", { name: /fictional Mina in her family.s grocery/i })).toBeVisible();
   // The first response must be genuinely reachable above the initial fold:
   // visible heading alone is not enough for a story-led decision.
-  await expect(page.getByRole("group", { name: "Your response to the fictional dilemma" })
-    .getByRole("button").first()).toBeInViewport({ ratio: 0.5 });
+  const firstChoice = page.getByRole("group", { name: "Your response to the fictional dilemma" })
+    .getByRole("button").first();
+  await expect(firstChoice).toBeInViewport({ ratio: 0.99 });
+  // Checking half of the button isn't enough: the fixed five-tab nav can
+  // overlay a visible DOM element and make its answer unreadable / unclickable.
+  const mobileNav = page.getByTestId("bottom-nav");
+  if (await mobileNav.isVisible()) {
+    const answerRect = await firstChoice.boundingBox();
+    const navRect = await mobileNav.boundingBox();
+    expect(answerRect, "Mina's answer must have a real onscreen layout").not.toBeNull();
+    expect(navRect, "mobile tab bar must have a real onscreen layout").not.toBeNull();
+    expect(answerRect.y + answerRect.height,
+      "Mina's entire first answer must clear the fixed bottom navigation")
+      .toBeLessThanOrEqual(navRect.y - 8);
+  }
   await testInfo.attach("mina-first-screen.png", { body: await page.screenshot(), contentType: "image/png" });
   // The invitation to consider the business is a *story-first* question,
   // not an implied real investment decision.
@@ -533,8 +599,8 @@ test("a new local family session never inherits the previous simulated family's 
   await openReadyAfterGoal(page);
   await openOptionalSavings(page);
   await page.getByRole("button", { name: /set aside 20 credits/i }).click();
-  await page.getByRole("link", { name: /my learning path/i }).last().click();
-  await page.getByRole("link", { name: /explore companies/i }).last().click();
+  await openHomeFromReady(page);
+  await tab(page, "Explore").click();
   await page.getByRole("link", { name: "Open Neighborhood Markets" }).click();
   await page.getByRole("button", { name: /compare food, wages and delivery costs with sales/i }).click();
   await page.getByTestId("practice-this").click();
@@ -553,14 +619,305 @@ test("a new local family session never inherits the previous simulated family's 
   await expect(page.getByTestId("outcome-hero")).toContainText(/nothing has happened yet/i);
   await expect(page.getByTestId("outcome-spent")).toHaveText("0");
   await expect(page.getByTestId("episode-takeaway")).toHaveCount(0);
-  // Scope navigation to the visible chapter rail; the mobile chapter menu
-  // contains a *hidden* duplicate link and must not be selected with .first().
-  const chapterRail = page.getByRole("navigation", { name: "Story chapters" });
-  await chapterRail.getByRole("link", { name: /parent/i }).click();
+  await expect(page.getByTestId("story-rail")).toHaveCount(0);
+  await page.locator('a[href="/try/parent"]:visible').first().click();
   await expect(page.getByTestId("parent-no-pending")).toContainText(/nothing is waiting/i);
-  await chapterRail.getByRole("link", { name: /goal/i }).click();
+  await page.getByTestId("goal-default-note").getByRole("link", { name: /choose it together/i }).click();
   await expect(page.getByRole("radio", { name: /family trip/i })).toHaveAttribute("aria-checked", "false");
   await expect(page.getByRole("navigation", { name: "Previous and next chapter" })
     .getByText("Choose a goal to continue")).toHaveAttribute("aria-disabled", "true");
+  expectCleanNetwork(net);
+});
+
+// ---------------------------------------------------------------------------
+// Durable app shell (legacy Cresco product UX) acceptance journeys.
+// ---------------------------------------------------------------------------
+
+async function childSetup(page, goal = /new bike/i, interest = "Food & shopping") {
+  await page.goto("/try");
+  await page.getByTestId("welcome-start").click();
+  await page.getByRole("radio", { name: goal }).click();
+  await openReadyAfterGoal(page, interest);
+  await openHomeFromReady(page);
+}
+
+test("Home shows goal, today's mission and navigation in the first screen, and each destination has its own content", async ({ page }, testInfo) => {
+  const net = watch(page);
+  await childSetup(page);
+  await expect(page.getByTestId("home-focus")).toBeInViewport({ ratio: 0.5 });
+  await expect(page.getByTestId("home-goal-summary")).toContainText(/new bike/i);
+  await expect(page.getByTestId("home-extras")).not.toHaveAttribute("open", "");
+  await page.getByTestId("home-extras").locator("summary").click();
+  await expect(page.getByTestId("home-save")).toBeVisible();
+  await expect(page.getByTestId("home-mission")).toHaveAttribute("data-mission", "first-lesson");
+  await expect(page.getByTestId("home-mission-go")).toBeInViewport({ ratio: 0.5 });
+  await expect(page.locator('nav[aria-label="Main"]:visible')).toBeInViewport();
+  await expect(page.getByTestId("home-key")).toContainText("15 credits");
+  await expect(page.getByTestId("home-parent-preview")).toHaveCount(0);
+  await testInfo.attach("home-first-screen.png", { body: await page.screenshot(), contentType: "image/png" });
+
+  const destinations = [
+    ["Learn", /\/try\/learn$/, page.getByTestId("learn-up-next-card")],
+    ["Explore", /\/try\/explore$/, page.getByTestId("explore-featured")],
+    ["Portfolio", /\/try\/portfolio$/, page.getByTestId("portfolio-empty")],
+    ["Profile", /\/try\/profile$/, page.getByTestId("profile-screen")],
+    ["Home", /\/try\/home$/, page.getByTestId("home-screen")],
+  ];
+  for (const [name, url, landmark] of destinations) {
+    await tab(page, name).click();
+    await expect(page).toHaveURL(url);
+    await expect(tab(page, name)).toHaveAttribute("aria-current", "page");
+    await expect(landmark).toBeVisible();
+    await testInfo.attach(`${name.toLowerCase()}.png`, { body: await page.screenshot(), contentType: "image/png" });
+  }
+  // Interest-matched person is the one Explore and Home suggest first.
+  await tab(page, "Explore").click();
+  await expect(page.getByTestId("explore-featured")).toContainText("Mina");
+  // Profile never asks for identity.
+  await tab(page, "Profile").click();
+  await expect(page.getByTestId("profile-goal")).toContainText(/new bike/i);
+  await expect(page.getByTestId("profile-interests")).toContainText(/food & shopping/i);
+  await expect(page.locator("input")).toHaveCount(0);
+  expectCleanNetwork(net);
+});
+
+test("child first: lesson, Mina, blocked ask, Parent once, receipt, Portfolio, each returning to a contextual Home mission", async ({ page }, testInfo) => {
+  const net = watch(page);
+  await childSetup(page);
+  await page.evaluate(() => { window.__marker = "same-document"; });
+
+  // Lesson from the Home mission, then back Home: progress and next mission changed.
+  await page.getByTestId("home-mission-go").click();
+  await expect(page).toHaveURL(/\/try\/learn\/c-save$/);
+  await expect(page.locator('nav[aria-label="Main"]:visible')).toHaveCount(0);
+  await finishLesson(page);
+  await page.getByTestId("lesson-back-home").click();
+  await expect(page).toHaveURL(/\/try\/home$/);
+  await expect(page.getByTestId("home-focus")).toBeVisible();
+  await expect(page.getByTestId("home-more")).toHaveCount(0);
+  // Dedicated nav already exposes the five destinations; Home must not duplicate it with another card grid.
+  await expect(page.getByTestId("home-quick-links")).toHaveCount(0);
+  await expect(page.locator('nav[aria-label="Main"]:visible').getByRole("link")).toHaveCount(5);
+  await expect(page.getByTestId("home-mission")).toHaveAttribute("data-mission", "meet-person");
+  await expect(page.getByTestId("home-mission")).toContainText("Meet Mina");
+
+  // Mina's dilemma comes before any financial research.
+  await page.getByTestId("home-mission-go").click();
+  await expect(page).toHaveURL(/\/try\/explore\/markets$/);
+  await expect(tab(page, "Explore")).toHaveAttribute("aria-current", "page");
+  await page.getByRole("button", { name: /compare food, wages and delivery costs with sales/i }).click();
+  await tab(page, "Home").click();
+  await expect(page.getByTestId("home-mission")).toHaveAttribute("data-mission", "first-choice");
+  await page.getByTestId("home-mission-go").click();
+  await page.getByTestId("practice-this").click();
+  await page.getByRole("button", { name: /a bigger choice \(25\)/i }).click();
+  await page.getByLabel(/i am curious how it behaves/i).check();
+  await page.getByTestId("make-choice").click();
+  await expect(page.getByTestId("outcome-hero")).toContainText(/blocked by my key/i);
+
+  // Home now points at the Parent, and previews the exact reason.
+  await tab(page, "Home").click();
+  await expect(page.getByTestId("home-mission")).toHaveAttribute("data-mission", "parent-deciding");
+  await expect(page.getByTestId("home-parent-preview")).toContainText(/Parent decision/i);
+  await expect(page.getByTestId("home-mission")).toContainText(/25 credits/i);
+  await page.getByTestId("home-mission-go").click();
+  await expect(page).toHaveURL(/\/try\/parent\/request$/);
+  await expect(page.getByRole("navigation", { name: "Parent" })).toBeVisible();
+  await expect(page.getByTestId("child-reason")).toHaveText(/i am curious how it behaves/i);
+  await testInfo.attach("parent-request.png", { body: await page.screenshot(), contentType: "image/png" });
+  await page.getByTestId("approve-once").click();
+  await expect(page.getByTestId("parent-result")).toContainText(/key did not widen/i);
+
+  // Back to the Child: Home says the Parent answered.
+  await page.getByTestId("switch-to-child").click();
+  await expect(page.getByTestId("home-mission")).toHaveAttribute("data-mission", "use-approval");
+  await page.getByTestId("home-mission-go").click();
+  await page.getByTestId("use-approval").click();
+  await expect(page.getByTestId("receipt-line")).toContainText("25 credits");
+  await tab(page, "Portfolio").click();
+  await expect(page.getByTestId("portfolio-receipts")).toContainText(/parent's one-time approval/i);
+  await expect(page.getByTestId("portfolio-what-if")).toBeVisible();
+  await expect(page.getByTestId("portfolio-allocation")).toContainText("25 invested");
+  await expect(page.getByTestId("portfolio-weights")).toContainText("100% in the largest position");
+  await page.getByRole("button", { name: "A bad month" }).click();
+  await expect(page.getByTestId("scenario-hypothetical")).toHaveText("22.50");
+  await tab(page, "Home").click();
+  await expect(page.getByTestId("home-mission")).toHaveAttribute("data-mission", "together");
+  await expect(page.getByTestId("home-key")).toContainText("15 credits");
+
+  // Together remembers Mina, then Home moves on to the next lesson.
+  await page.getByTestId("home-mission-go").click();
+  await page.getByRole("button", { name: /practice a small fictional choice/i }).click();
+  await page.getByRole("button", { name: /answering as the parent/i }).click();
+  await page.getByRole("button", { name: /agree on a small practice boundary/i }).click();
+  await page.getByRole("button", { name: /mark our discussion complete/i }).click();
+  await expect(page.getByTestId("together-story-memory")).toContainText("Mina");
+  await expect(page.getByTestId("together-story-memory").getByRole("img", { name: /fictional Mina in her family.s grocery/i })).toBeVisible();
+  await page.getByTestId("together-home").click();
+  await expect(page.getByTestId("home-mission")).toHaveAttribute("data-mission", "next-lesson");
+  await tab(page, "Profile").click();
+  await expect(page.getByTestId("profile-wins")).toContainText(/first practice choice\s*earned/i);
+  expect(await page.evaluate(() => window.__marker)).toBe("same-document");
+  expectCleanNetwork(net);
+});
+
+test("Parent first: own dashboard, no identity capture, learning and Key visible, then the Child path later", async ({ page }) => {
+  const net = watch(page);
+  await page.goto("/try");
+  await page.getByTestId("start-as-parent").click();
+  await expect(page).toHaveURL(/\/try\/parent$/);
+  await expect(page.getByTestId("parent-overview-grid").locator(":scope > *")).toHaveCount(3);
+  await expect(page.getByTestId("parent-overview-grid")).toContainText(/My Key/);
+  const parentNav = page.getByRole("navigation", { name: "Parent" });
+  await expect(parentNav.getByRole("link")).toHaveText(["Overview", "Requests", "My Key", "Learn"]);
+  await expect(parentNav.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
+  for (const [name, url] of [["Requests", /\/parent\/request$/], ["My Key", /\/parent\/key$/], ["Learn", /\/parent\/learn$/]]) {
+    await parentNav.getByRole("link", { name }).click();
+    await expect(page).toHaveURL(url);
+    // No sign-in, email, password or identity verification anywhere in the Parent lens.
+    await expect(page.locator('input[type="email"], input[type="password"], input[autocomplete]')).toHaveCount(0);
+    await expect(page.getByText(/no guardian identity|no identity is verified|simulated/i).first()).toBeVisible();
+  }
+  await parentNav.getByRole("link", { name: "Requests" }).click();
+  await expect(page.getByTestId("parent-empty")).toBeVisible();
+  await page.getByTestId("switch-to-child").click();
+  await expect(page).toHaveURL(/\/try\/home$/);
+  await expect(page.getByTestId("home-mission")).toHaveAttribute("data-mission", "choose-goal");
+  await page.getByTestId("home-mission-go").click();
+  await expect(page).toHaveURL(/\/try\/goal$/);
+  expectCleanNetwork(net);
+});
+
+test("Profile can start over for a new family without a reload, and nothing carries over", async ({ page }) => {
+  test.slow(); // Full reset journey: allow a busy CI desktop runner without dropping checks.
+  await childSetup(page, /family trip/i);
+  await page.getByTestId("home-extras").locator("summary").click();
+  await page.getByTestId("home-save").click();
+  await expect(page.getByTestId("home-goal-saved")).toHaveText("20/100");
+  await tab(page, "Profile").click();
+  await page.getByTestId("profile-reset").click();
+  await expect(page).toHaveURL(/\/try$/);
+  await expect(page.getByTestId("welcome-start")).toHaveText(/let's begin/i);
+  await page.getByTestId("start-as-parent").click();
+  await expect(page.getByTestId("goal-default-note")).toBeVisible();
+});
+
+
+test("lessons teach with multi-step content and an applied choice before their final recall check", async ({ page }, testInfo) => {
+  const net = watch(page);
+  await page.goto("/try/learn/c-save");
+  await expect(page.getByTestId("lesson-slide")).toContainText("Give a dream a deadline");
+  await page.getByRole("button", { name: /next idea/i }).click();
+  await expect(page.getByTestId("lesson-slide")).toContainText("Keep the bike money safe");
+  const exercise = page.getByTestId("lesson-applied-exercise");
+  await expect(exercise).toContainText(/bike costs 60 pretend credits/i);
+  await expect(page.getByRole("button", { name: /next idea/i })).toBeDisabled();
+  await expect(page.getByTestId("applied-try-first")).toContainText(/choose an answer/i);
+  await exercise.getByRole("button", { name: /plan to save the remaining 40/i }).click();
+  await expect(page.getByTestId("applied-feedback")).toContainText(/planning gives you a number/i);
+  await exercise.getByRole("button", { name: /put the bike credits into one risky company/i }).click();
+  await expect(page.getByTestId("applied-feedback")).toContainText(/mercy of a price/i);
+  await page.getByRole("button", { name: /next idea/i }).click();
+  await expect(page.getByTestId("lesson-slide")).toContainText("Work backward from the goal");
+  await expect(page.getByTestId("lesson-math-lab")).toContainText("Build your own saving plan");
+  await expect(page.getByTestId("lab-savings-result")).toContainText("15 pretend credits each period");
+  await page.getByRole("slider", { name: "Practice periods" }).press("ArrowLeft");
+  await expect(page.getByTestId("lab-savings-result")).toContainText("20 pretend credits each period");
+  await testInfo.attach("hands-on-c-save.png", { body: await page.screenshot(), contentType: "image/png" });
+  await page.getByRole("button", { name: /quick check/i }).click();
+  await expect(page.getByTestId("lesson-quiz")).toBeVisible();
+  await testInfo.attach("lesson-substantive-scene.png", { body: await page.screenshot(), contentType: "image/png" });
+  expectCleanNetwork(net);
+});
+
+
+test("empty Portfolio teaches real portfolio mechanics without inventing a holding or changing My Key", async ({ page }, testInfo) => {
+  const net = watch(page);
+  await page.goto("/try/portfolio");
+  await expect(page.getByTestId("portfolio-empty")).toContainText(/no practice holdings yet/i);
+  await expect(page.getByTestId("portfolio-spent")).toHaveText("0credits");
+  await page.getByTestId("portfolio-example-toggle").click();
+  const example = page.getByTestId("portfolio-example");
+  await expect(example).toContainText(/not your holdings/i);
+  await expect(example.getByRole("listitem")).toHaveCount(3);
+  await example.getByRole("button", { name: /a bad month/i }).click();
+  await expect(page.getByTestId("example-scenario-total")).toContainText(/60.00 invested → 49.00 scenario value/i);
+  await testInfo.attach("portfolio-guided-example.png", { body: await page.screenshot(), contentType: "image/png" });
+  await tab(page, "Home").click();
+  await expect(page.getByTestId("home-key")).toContainText("15 credits");
+  await expect(page.getByTestId("home-goal-saved")).toHaveText("0/60");
+  await tab(page, "Portfolio").click();
+  await expect(page.getByTestId("portfolio-empty")).toBeVisible();
+  await expect(page.getByTestId("portfolio-available")).toHaveText("100");
+  expectCleanNetwork(net);
+});
+
+
+test("hands-on grocery and price-risk labs calculate consequences without changing the child's credit balance", async ({ page }, testInfo) => {
+  const net = watch(page);
+  for (const part of [
+    { id: "c-explore", title: /mina.s grocery cover its costs/i, slider: "Delivery cost", testid: "lab-grocery-result", initial: /15 pretend credits left after costs/, changed: /25 pretend credits short after costs/ },
+    { id: "c-risk", title: /what could a price drop mean/i, slider: "Hypothetical price drop", testid: "lab-risk-result", initial: /20 credits become 15.00/, changed: /20 credits become 10.00/ },
+  ]) {
+    await page.goto("/try/learn/" + part.id);
+    await page.getByRole("button", { name: /next idea/i }).click();
+    const exercise = page.getByTestId("lesson-applied-exercise");
+    await expect(exercise).toBeVisible();
+    await exercise.getByRole("button").first().click();
+    await expect(page.getByTestId("applied-feedback")).toBeVisible();
+    await page.getByRole("button", { name: /next idea/i }).click();
+    await expect(page.getByTestId("lesson-math-lab")).toContainText(part.title);
+    await expect(page.getByTestId(part.testid)).toContainText(part.initial);
+    await page.getByRole("slider", { name: part.slider }).press("End");
+    await expect(page.getByTestId(part.testid)).toContainText(part.changed);
+    await testInfo.attach("hands-on-" + part.id + ".png", { body: await page.screenshot(), contentType: "image/png" });
+  }
+  await page.goto("/try/portfolio");
+  await expect(page.getByTestId("portfolio-spent")).toContainText("0");
+  await expect(page.getByTestId("portfolio-available")).toHaveText("100");
+  await expect(page.getByTestId("portfolio-empty")).toBeVisible();
+  expectCleanNetwork(net);
+});
+
+
+test("real-company research is separate from fictional holdings and cannot mutate practice credits", async ({ page }, testInfo) => {
+  const net = watch(page);
+  await page.goto("/try/portfolio");
+  await expect(page.getByTestId("portfolio-sections").getByRole("link", { name: "Fictional practice" })).toHaveAttribute("aria-current", "page");
+  await page.getByTestId("portfolio-sections").getByRole("link", { name: "Real companies" }).click();
+  await expect(page).toHaveURL(/\/try\/portfolio\/companies$/);
+  await expect(tab(page, "Portfolio")).toHaveAttribute("aria-current", "page");
+  await expect(page.getByTestId("real-company-boundary")).toContainText(/no live prices, buy buttons, real balances/i);
+  for (const name of ["shopify", "microsoft", "costco", "apple"]) {
+    const company = page.getByTestId("real-company-" + name);
+    await expect(company).toBeVisible();
+    await expect(company.getByRole("link")).toHaveAttribute("href", /^https:\/\//);
+    await expect(company.getByRole("link")).toHaveAttribute("rel", "noopener noreferrer");
+    await company.getByText("What should I check?").click();
+    await expect(company).toContainText("Customers:");
+  }
+  await expect(page.getByRole("button", { name: /buy|invest|trade/i })).toHaveCount(0);
+  await testInfo.attach("real-company-research.png", { body: await page.screenshot(), contentType: "image/png" });
+  await page.getByTestId("portfolio-sections").getByRole("link", { name: "Fictional practice" }).click();
+  await expect(page.getByTestId("portfolio-empty")).toBeVisible();
+  await expect(page.getByTestId("portfolio-available")).toHaveText("100");
+  expectCleanNetwork(net);
+});
+
+test("the expanded curriculum has 17 Child lessons and 7 Parent lessons with multiple learning steps", async ({ page }) => {
+  const net = watch(page);
+  await page.goto("/try/learn");
+  await expect(page.getByTestId("learn-progress")).toContainText("0 of 17");
+  await expect(page.getByRole("list", { name: "All Child lessons" }).getByRole("listitem")).toHaveCount(17);
+  await page.getByRole("link", { name: /recognize scams and promises/i }).click();
+  await expect(page).toHaveURL(/\/try\/learn\/c-scams$/);
+  await expect(page.getByTestId("lesson-slide")).toContainText("Notice the pressure");
+  await page.getByRole("button", { name: /next idea/i }).click();
+  const exercise = page.getByTestId("lesson-applied-exercise");
+  await expect(exercise).toContainText(/social message/i);
+  await exercise.getByRole("button").first().click();
+  await expect(page.getByTestId("applied-feedback")).toBeVisible();
+  await page.goto("/try/parent/learn");
+  await expect(page.getByRole("list", { name: /parent lessons/i }).getByRole("listitem")).toHaveCount(7);
   expectCleanNetwork(net);
 });
