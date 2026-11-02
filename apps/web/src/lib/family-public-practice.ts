@@ -1,5 +1,6 @@
 import { LEARNING_SOURCES, LESSONS } from "@/mocks/learning";
 import { FOUNDATION_SCENES } from "./family-learning-depth";
+import { EXTRA_CHILD_LEARNING, EXTRA_PARENT_LEARNING } from "./family-learning-expansion";
 import type { IllustrationKey, LearningSource } from "@/domain/types";
 
 /**
@@ -80,6 +81,8 @@ for (const id of SOURCE_BACKED_CHILD_IDS) {
   });
 }
 
+CHILD_LEARNING.push(...EXTRA_CHILD_LEARNING);
+
 export const PARENT_LEARNING: LearningModule[] = [
   { id: "p-basics", title: "Money & family conversations", minutes: 3, concept: "Begin with goals, needs and wants, and a conversation about what the child wants to learn. Progress is not permission.", question: "What is a good first family conversation?", choices: ["Promise guaranteed returns", "Talk about goals and what money is for", "Require a wallet"], answer: 1, explanation: "The conversation builds context without creating financial authority." },
   { id: "p-key", title: "Understand My Key", minutes: 4, concept: "A standing Key defines the amount per action, total spending this practice period, and eligible instruments. The child acts alone inside it.", question: "When a practice action is inside the standing Key, does it need a new Parent approval?", choices: ["Always", "No", "Only if the child has no badge"], answer: 1, explanation: "The point of the Key is bounded autonomy, not approval of every action." },
@@ -87,6 +90,8 @@ export const PARENT_LEARNING: LearningModule[] = [
   { id: "p-boundary", title: "Decide at the boundary", minutes: 5, concept: "Above a limit, the child is blocked. You can decline, allow one exact action, or separately edit the standing Key. They have different consequences.", question: "What does Approve once change?", choices: ["Only the precise pending practice request", "Every future spending limit", "The child's learning score"], answer: 0, explanation: "An exact single-use exception leaves the standing Key unchanged and cannot be replayed." },
   { id: "p-together", title: "Grow autonomy together", minutes: 4, concept: "Review choices and outcomes with the child. You may explicitly update the Key, but a quiz, badge or recommendation must never widen it automatically.", question: "Who changes the standing Key in a real family product?", choices: ["The child's quiz", "A badge algorithm", "An authorized parent through an explicit action"], answer: 2, explanation: "Learning and authorization remain separate." },
 ];
+
+PARENT_LEARNING.push(...EXTRA_PARENT_LEARNING);
 
 // The parent's separate path uses the existing verified educational sources
 // for financial concepts, not for Family Key rules (which are demo-specific).
