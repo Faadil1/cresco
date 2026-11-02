@@ -95,7 +95,7 @@ export function HomeScreen() {
           ) : null}
           <div className="flex items-start gap-2 text-[12px] leading-5" data-testid="home-key">
             <KeyRound aria-hidden className="mt-0.5 size-4 shrink-0 text-green-strong"/>
-            <span>My Key: {p.key.maxPerAction} pretend credits per choice, {remainingPeriod(p)} available this period. No real money.</span>
+            <span>My Key: {p.key.maxPerAction} credits per choice, {remainingPeriod(p)} available this period. All credits are fictional; no real money.</span>
           </div>
         </div>
       </details>
