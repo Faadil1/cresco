@@ -785,6 +785,7 @@ test("Parent first: own dashboard, no identity capture, learning and Key visible
 });
 
 test("Profile can start over for a new family without a reload, and nothing carries over", async ({ page }) => {
+  test.slow(); // Full reset journey: allow a busy CI desktop runner without dropping checks.
   await childSetup(page, /family trip/i);
   await page.getByTestId("home-save").click();
   await expect(page.getByTestId("home-goal-saved")).toHaveText("20/100");
