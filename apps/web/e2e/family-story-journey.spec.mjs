@@ -445,6 +445,7 @@ test("exhausted credits and a duplicate request are explained before the click a
   await expect(page.getByTestId("goal-progress")).toContainText("0 still available");
   await expect(page.getByRole("button", { name: /set aside 20 credits/i })).toBeDisabled();
   await openHomeFromReady(page);
+  await page.getByTestId("home-extras").locator("summary").click();
   await expect(page.getByTestId("home-save")).toBeDisabled();
   await tab(page, "Explore").click();
   await page.getByRole("link", { name: "Open Neighborhood Markets" }).click();
@@ -507,8 +508,8 @@ test("the goal chapter records an actual Child choice rather than silently accep
     .getByRole("link", { name: "Skip for now" }).click();
   await expect(page).toHaveURL(/\/try\/goal\/ready$/);
   await openHomeFromReady(page);
-  await expect(page.getByRole("heading", { level: 1, name: /one step at a time/i })).toBeVisible();
-  await expect(page.getByTestId("home-focus")).toContainText(/family trip/i);
+  await expect(page.getByRole("heading", { level: 1, name: /ready for your next step/i })).toBeVisible();
+  await expect(page.getByTestId("home-goal-summary")).toContainText(/family trip/i);
   expectCleanNetwork(net);
 });
 
@@ -644,7 +645,9 @@ test("Home shows goal, today's mission and navigation in the first screen, and e
   const net = watch(page);
   await childSetup(page);
   await expect(page.getByTestId("home-focus")).toBeInViewport({ ratio: 0.5 });
-  await expect(page.getByTestId("home-focus")).toContainText(/new bike/i);
+  await expect(page.getByTestId("home-goal-summary")).toContainText(/new bike/i);
+  await expect(page.getByTestId("home-extras")).not.toHaveAttribute("open", "");
+  await page.getByTestId("home-extras").locator("summary").click();
   await expect(page.getByTestId("home-save")).toBeVisible();
   await expect(page.getByTestId("home-mission")).toHaveAttribute("data-mission", "first-lesson");
   await expect(page.getByTestId("home-mission-go")).toBeInViewport({ ratio: 0.5 });
@@ -788,6 +791,7 @@ test("Parent first: own dashboard, no identity capture, learning and Key visible
 test("Profile can start over for a new family without a reload, and nothing carries over", async ({ page }) => {
   test.slow(); // Full reset journey: allow a busy CI desktop runner without dropping checks.
   await childSetup(page, /family trip/i);
+  await page.getByTestId("home-extras").locator("summary").click();
   await page.getByTestId("home-save").click();
   await expect(page.getByTestId("home-goal-saved")).toHaveText("20/100");
   await tab(page, "Profile").click();
