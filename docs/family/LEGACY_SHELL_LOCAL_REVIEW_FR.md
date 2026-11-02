@@ -21,13 +21,13 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\apps\web\scripts\famil
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\apps\web\scripts\family-v3-local-pilot.ps1
 ```
 
-Prérequis : Git, Node.js 22+ et le port local 3100 libre. Attendre le message réel de démarrage de Wrangler dans PowerShell, puis ouvrir sur **le même PC** :
+Prérequis : Git, Node.js 22+ et le port local 3100 libre. **L'installation Windows complète, le build isolé et le démarrage HTTP local ont été validés sur GitHub Actions Windows** : [run #41365377450](https://github.com/Faadil1/cresco/actions/runs/41365377450) (`WINDOWS_LOCALHOST_FAMILY_HTTP_SMOKE=PASS`, requêtes GET pour `/try`, `/try/learn`, `/try/portfolio`, `/try/profile`, `PUBLIC_WORKER_DEPLOYED=NO`). Cela ne remplace pas un test sur le vrai PC du fondateur. Attendre le message réel de démarrage de Wrangler dans PowerShell, puis ouvrir sur **le même PC** :
 
 ```text
 http://127.0.0.1:3100/try
 ```
 
-Le script refuse une mauvaise branche, un dépôt modifié ou un changement d'application après le commit candidat vérifié. Il ne déploie aucun Worker. Un `-CheckOnly` vert n'est pas une validation visuelle du lancement complet.
+Le script refuse une mauvaise branche, un dépôt modifié ou un changement d'application après le commit candidat vérifié. Il ne déploie aucun Worker. Un `-CheckOnly` vert n'est pas une validation visuelle du lancement complet. Si le répertoire `cresco-family-review` existe déjà et pointe vers la bonne branche, y exécuter `git fetch origin` puis `git pull --ff-only` avant le contrôle; **ne jamais lancer `git reset --hard` pour forcer la mise à jour**.
 
 ## Critères de revue (ancien parcours vs nouveau)
 
