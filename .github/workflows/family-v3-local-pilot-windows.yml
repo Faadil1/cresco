@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - "apps/web/scripts/family-v3-local-pilot.ps1"
+      - "apps/web/package.json"
+      - "apps/web/package-lock.json"
       - ".github/workflows/family-v3-local-pilot-windows.yml"
 
 permissions:
