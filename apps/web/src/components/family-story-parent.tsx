@@ -93,7 +93,7 @@ export function ParentLearnHub() {
   const done = story.practice.parentCompleted;
   return (
     <div className="space-y-5">
-      <ChapterHeading kicker="Parent · learning" title="Five short lessons for you"
+      <ChapterHeading kicker="Parent · learning" title={`${PARENT_LEARNING.length} lessons for you`}
         intro="A different lens from your child's: how to use the Key, ask good questions and keep learning separate from permission."/>
       <ol className="grid gap-3 md:grid-cols-2" aria-label="Parent lessons">
         {PARENT_LEARNING.map((lesson, index) => (
