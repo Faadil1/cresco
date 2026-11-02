@@ -6,6 +6,7 @@ import { ArrowRight, CheckCircle2, ChevronRight, ExternalLink, PlayCircle } from
 import { LessonIllustration } from "@/components/illustrations/scenes";
 import { useFamilyStory } from "@/components/family-story-provider";
 import { LESSON_ACTIVITIES } from "@/lib/family-learning-depth";
+import { EXTENDED_LESSON_ACTIVITIES } from "@/lib/family-learning-expansion";
 import { FamilyLessonLab } from "@/components/family-lesson-lab";
 import { ResultCard, panel, primaryBtn, secondaryBtn } from "@/components/family-story-ui";
 import {
@@ -101,7 +102,7 @@ export function LessonReader({ id }: { id: string }) {
   const onQuiz = slide >= concepts.length;
   const current = concepts[Math.min(slide, concepts.length - 1)];
   const note = parent ? parentLessonNote(goal, lesson.id) : childLessonNote(goal, lesson.id);
-  const activity = LESSON_ACTIVITIES[lesson.id];
+  const activity = LESSON_ACTIVITIES[lesson.id] ?? EXTENDED_LESSON_ACTIVITIES[lesson.id];
   const needsAppliedReasoning = !done && Boolean(activity) && slide === Math.min(1, concepts.length - 1) && applied === null;
   const index = lessons.findIndex(item => item.id === lesson.id);
   const following = lessons.slice(index + 1).find(item => !(parent ? story.practice.parentCompleted : story.practice.childCompleted).includes(item.id)) ?? lessons[index + 1];
