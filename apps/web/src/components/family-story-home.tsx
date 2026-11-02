@@ -1,31 +1,18 @@
 "use client";
 
-/**
- * The Child's personal Home, restored from the original Cresco /home: goal
- * card, today's mission, continue learning, wins, plus the Family-specific
- * My Key and Parent conversation. Every number comes from the in-memory
- * practice state; nothing here is fabricated usage data.
- */
 import Link from "next/link";
-import { ArrowRight, BookOpen, CheckCircle2, ChevronRight, KeyRound, MessagesSquare, PiggyBank, Target } from "lucide-react";
+import { ArrowRight, KeyRound, PiggyBank } from "lucide-react";
 import { GoalArt } from "@/components/illustrations/objects";
-import { BadgeArt } from "@/components/illustrations/badges";
-import { LessonIllustration } from "@/components/illustrations/scenes";
 import { useFamilyStory } from "@/components/family-story-provider";
-import { CompanyArt, panel, primaryBtn } from "@/components/family-story-ui";
-import { MinaGroceryArt } from "@/components/illustrations/mina-grocery";
-import { FAMILY_EXPLORE_CASES } from "@/lib/family-public-explore-data";
-import {
-  PRACTICE_ASSETS, remainingCredits, remainingPeriod, selectedPracticeGoal,
-} from "@/lib/family-public-practice";
-import {
-  DECLINE_REASONS, GOAL_STORY, REASONS, childPathFor, nextMission, orderExploreCases, personName, practiceWins,
-} from "@/lib/family-story-state";
+import { primaryBtn } from "@/components/family-story-ui";
+import { remainingCredits, remainingPeriod, selectedPracticeGoal } from "@/lib/family-public-practice";
+import { GOAL_STORY, nextMission } from "@/lib/family-story-state";
 
-const GOAL_TONE = { bike: "from-blue-soft to-surface", gaming: "from-pink-soft to-surface", trip: "from-aqua-soft to-surface" } as const;
-const sectionTitle = "flex items-center justify-between gap-3 text-[17px] font-extrabold text-navy-strong";
-const seeAll = "inline-flex min-h-11 items-center gap-0.5 text-[13px] font-bold text-family-action";
-
+/**
+ * One destination, one next step. The persistent shell already owns all five
+ * tabs, and their contents must not be repeated as a secondary dashboard.
+ * Parent can still use GoalCard in their own lens; Home uses the single hero.
+ */
 export function GoalCard({ compact = false }: { compact?: boolean }) {
   const { story, dispatch } = useFamilyStory();
   const p = story.practice;
@@ -33,195 +20,87 @@ export function GoalCard({ compact = false }: { compact?: boolean }) {
   const percent = Math.min(100, Math.round(p.saved / goal.target * 100));
   return (
     <section data-testid="home-goal-card" aria-label="My goal"
-      className={`rounded-[24px] border border-line-soft bg-gradient-to-br ${GOAL_TONE[goal.id]} p-4 shadow-sm md:p-5`}>
+      className="rounded-[22px] border border-line-soft bg-surface p-4">
       <div className="flex items-center gap-3">
-        <GoalArt goal={goal.id} className={compact ? "h-14 w-16 shrink-0" : "h-16 w-20 shrink-0 md:h-20 md:w-24"}/>
+        <GoalArt goal={goal.id} className={compact ? "h-12 w-14 shrink-0" : "h-16 w-20 shrink-0"}/>
         <div className="min-w-0 flex-1">
-          <p className="text-[12px] font-bold text-ink-2">{story.goalChosen ? "Saving for" : "Not chosen yet"}</p>
-          <p className="text-[19px] font-extrabold leading-6 text-navy-strong">{story.goalChosen ? goal.label : "Your dream"}</p>
-          <p className="text-[12px] text-ink-2">{story.goalChosen ? `${GOAL_STORY[goal.id].horizon} away` : "Pick it to start"}</p>
+          <p className="text-[11px] font-bold text-ink-2">Saving for</p>
+          <p className="text-[18px] font-extrabold text-navy-strong">{story.goalChosen ? goal.label : "Your dream"}</p>
+          <p className="text-[12px] text-ink-2">{GOAL_STORY[goal.id].horizon} away</p>
         </div>
-        <p className="text-right text-[12px] font-semibold text-ink-2"><span className="block text-[20px] font-extrabold text-navy-strong" data-testid="home-goal-saved">{p.saved}/{goal.target}</span>set aside</p>
+        <p className="text-right text-[12px] font-semibold text-ink-2"><span className="block text-[18px] font-bold text-navy-strong" data-testid="home-goal-saved">{p.saved}/{goal.target}</span>saved</p>
       </div>
-      <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-surface" role="progressbar" aria-label={`${goal.label} savings`}
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-soft" role="progressbar" aria-label={`${goal.label} savings`}
         aria-valuemin={0} aria-valuemax={goal.target} aria-valuenow={p.saved}>
         <div className="h-full rounded-full bg-green-strong" style={{ width: `${percent}%` }}/>
       </div>
       {story.goalChosen ? (
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[12px] text-ink-2">
-          <span><strong className="text-navy-strong">{remainingCredits(p)}</strong> pretend credits free to use</span>
-          <button type="button" disabled={remainingCredits(p) < 20} data-testid="home-save"
-            onClick={() => dispatch({ type: "practice", action: { type: "save" } })}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-green/40 bg-surface px-4 text-[13px] font-bold text-green-strong disabled:opacity-50">
-            <PiggyBank aria-hidden className="size-4"/>Set aside 20
-          </button>
-        </div>
+        <button type="button" disabled={remainingCredits(p) < 20} data-testid="home-save"
+          onClick={() => dispatch({ type: "practice", action: { type: "save" } })}
+          className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-full border border-green/40 bg-surface px-4 text-[13px] font-bold text-green-strong disabled:opacity-50">
+          <PiggyBank aria-hidden className="size-4"/>Set aside 20
+        </button>
       ) : null}
     </section>
   );
 }
 
-function MissionCard() {
-  const { story } = useFamilyStory();
-  const mission = nextMission(story);
-  return (
-    <section data-testid="home-mission" data-mission={mission.id} aria-labelledby="mission-title"
-      className="rounded-[24px] border border-yellow/40 bg-yellow-soft p-4 md:p-5">
-      <div className="flex items-start gap-3">
-        <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-full bg-surface text-orange-text"><Target className="size-6"/></span>
-        <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-orange-text">{mission.kicker}</p>
-          <h2 id="mission-title" className="text-[18px] font-extrabold leading-6 text-navy-strong">{mission.title}</h2>
-          <p className="mt-1 line-clamp-2 text-[13px] leading-5 text-navy">{mission.body}</p>
-        </div>
-      </div>
-      <Link href={mission.href} className={`mt-3 w-full sm:w-auto ${primaryBtn}`} data-testid="home-mission-go">
-        {mission.cta}<ArrowRight aria-hidden className="size-4"/>
-      </Link>
-    </section>
-  );
-}
-
-function ContinueLearning({ skip }: { skip?: string }) {
-  const { story } = useFamilyStory();
-  const p = story.practice;
-  const path = childPathFor(p.goalId);
-  // The mission already shows one lesson; do not repeat it right below.
-  const upcoming = path.filter(item => !p.childCompleted.includes(item.id) && `/try/learn/${item.id}` !== skip).slice(0, 2);
-  return (
-    <section aria-labelledby="continue-title" data-testid="home-learning">
-      <h2 id="continue-title" className={sectionTitle}>
-        <span>Continue learning <span className="ml-1 text-[13px] font-semibold text-ink-2">{p.childCompleted.length} of {path.length} done</span></span>
-        <Link href="/try/learn" className={seeAll}>See all<ChevronRight aria-hidden className="size-4"/></Link>
-      </h2>
-      {upcoming.length ? (
-        <ul className="mt-2 grid gap-2 sm:grid-cols-2">
-          {upcoming.map(lesson => (
-            <li key={lesson.id}>
-              <Link href={`/try/learn/${lesson.id}`} className="flex min-h-[72px] items-center gap-3 rounded-[18px] border border-line-soft bg-surface p-2.5 hover:border-family-action">
-                {lesson.illustration
-                  ? <LessonIllustration kind={lesson.illustration} title={`${lesson.title} illustration`} className="h-14 w-16 shrink-0 overflow-hidden rounded-[12px]"/>
-                  : <BookOpen aria-hidden className="size-8 shrink-0 text-green-strong"/>}
-                <span className="min-w-0">
-                  <span className="block text-[15px] font-bold leading-5 text-navy-strong">{lesson.title}</span>
-                  <span className="block text-[12px] text-ink-2">{lesson.minutes} min</span>
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      ) : p.childCompleted.length === path.length ? (
-        <p className="mt-2 flex items-center gap-2 rounded-[16px] bg-green-soft p-3 text-[13px] font-semibold text-green-strong"><CheckCircle2 aria-hidden className="size-4"/>Every Child lesson done. Review any time in Learn.</p>
-      ) : <p className="mt-2 text-[13px] text-ink-2">Your last lesson is today&apos;s mission above.</p>}
-    </section>
-  );
-}
-
-function MeetNext({ skip }: { skip?: string }) {
-  const { story } = useFamilyStory();
-  const ordered = orderExploreCases(story.interests, FAMILY_EXPLORE_CASES);
-  const next = ordered.find(item => !story.viewed.includes(item.id) && `/try/explore/${item.id}` !== skip)
-    ?? ordered.find(item => `/try/explore/${item.id}` !== skip)!;
-  const seen = story.viewed.length;
-  return (
-    <section aria-labelledby="meet-title" data-testid="home-next-person">
-      <h2 id="meet-title" className={sectionTitle}>
-        <span>People to meet <span className="ml-1 text-[13px] font-semibold text-ink-2">{seen} of {FAMILY_EXPLORE_CASES.length} met</span></span>
-        <Link href="/try/explore" className={seeAll}>Explore<ChevronRight aria-hidden className="size-4"/></Link>
-      </h2>
-      <Link href={`/try/explore/${next.id}`} className="mt-2 flex items-center gap-3 rounded-[18px] border border-line-soft bg-surface p-3 hover:border-family-action">
-        {next.id === "markets" ? <MinaGroceryArt className="h-16 w-20 shrink-0 overflow-hidden rounded-[12px]"/> : <CompanyArt id={next.id} name={next.name} className="h-16 w-20 shrink-0 overflow-hidden rounded-[12px]"/>}
-        <span className="min-w-0 flex-1">
-          <span className="block text-[15px] font-bold text-navy-strong">{personName(next)} · {next.name}</span>
-          <span className="line-clamp-2 block text-[12px] leading-5 text-ink-2">{next.episode.dilemma}</span>
-        </span>
-        <ChevronRight aria-hidden className="size-5 shrink-0 text-ink-3"/>
-      </Link>
-    </section>
-  );
-}
-
-function ParentPreview() {
-  const { story } = useFamilyStory();
-  const p = story.practice;
-  const pending = p.requests.find(r => r.status === "pending");
-  const latest = p.requests[0];
-  const name = (code: string) => PRACTICE_ASSETS.find(a => a.code === code)?.name ?? code;
-  let body;
-  if (pending) {
-    body = <>Waiting: <strong>{pending.amount} credits of {name(pending.asset)}</strong>. Your reason: “{REASONS.find(r => r.id === story.reasons[pending.id])?.label ?? "No reason given"}”.</>;
-  } else if (latest && latest.status === "declined") {
-    body = <>Your Parent declined {latest.amount} credits: “{DECLINE_REASONS.find(r => r.id === story.declineReasons[latest.id])?.label ?? "Not this time"}”.</>;
-  } else if (latest && (latest.status === "approved-once" || latest.status === "used")) {
-    body = <>Your Parent approved {latest.amount} credits of {name(latest.asset)}, once. Your Key stayed the same.</>;
-  } else {
-    body = <>Nothing is waiting. Your Parent sees your goal and, only when you ask above your Key, the exact choice and your reason.</>;
-  }
-  return (
-    <section className={`${panel} !p-4`} data-testid="home-parent-preview" aria-labelledby="parent-preview-title">
-      <h2 id="parent-preview-title" className="flex items-center gap-2 text-[15px] font-extrabold text-navy-strong"><MessagesSquare aria-hidden className="size-5 text-lavender"/>With your Parent</h2>
-      <p className="mt-1 text-[13px] leading-5 text-navy">{body}</p>
-      <div className="mt-2 flex flex-wrap gap-x-4">
-        <Link href={pending ? "/try/parent/request" : "/try/parent"} className={seeAll}>{pending ? "Hand to my Parent" : "Parent's view"}<ChevronRight aria-hidden className="size-4"/></Link>
-        <Link href="/try/together" className={seeAll}>{p.togetherCompleted ? "Your last talk" : "Talk it through"}<ChevronRight aria-hidden className="size-4"/></Link>
-      </div>
-    </section>
-  );
-}
-
-function WinsCard() {
-  const { story } = useFamilyStory();
-  const wins = practiceWins(story);
-  return (
-    <section className={`${panel} !p-4`} aria-labelledby="wins-title" data-testid="home-wins">
-      <h2 id="wins-title" className={sectionTitle}>
-        <span>Your wins <span className="ml-1 text-[13px] font-semibold text-ink-2">{wins.filter(w => w.earned).length} of {wins.length}</span></span>
-        <Link href="/try/profile" className={seeAll}>Profile<ChevronRight aria-hidden className="size-4"/></Link>
-      </h2>
-      <ul className="mt-2 flex gap-2">
-        {wins.map(win => (
-          <li key={win.badge} title={`${win.label}: ${win.earned ? "earned" : "not yet"}`}>
-            <BadgeArt badge={win.badge} earned={win.earned} className="size-11"/>
-            <span className="sr-only">{win.label}: {win.earned ? "earned" : "not yet"}</span>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
 export function HomeScreen() {
-  const { story } = useFamilyStory();
-  const mission = nextMission(story);
+  const { story, dispatch } = useFamilyStory();
   const p = story.practice;
-  const waiting = p.requests.some(request => request.status === "pending" || request.status === "approved-once");
+  const goal = selectedPracticeGoal(p);
+  const mission = nextMission(story);
+  const percent = Math.min(100, Math.round(p.saved / goal.target * 100));
   return (
-    <div className="mx-auto max-w-[850px] space-y-5" data-testid="home-screen">
-      <header>
-        <h1 className="font-display text-[28px] leading-tight text-navy-strong md:text-[34px]">Your space <span aria-hidden>✳</span></h1>
-        <p className="mt-1 text-[13px] text-ink-2">One goal. One next step. Learn at your own pace.</p>
+    <div className="mx-auto max-w-[710px] pt-3 md:pt-7" data-testid="home-screen">
+      <header className="mb-5">
+        <p className="text-[11px] font-extrabold uppercase tracking-wider text-green-strong">My Cresco</p>
+        <h1 className="mt-1 font-display text-[29px] leading-tight text-navy-strong md:text-[36px]">One step at a time.</h1>
       </header>
 
-      <GoalCard/>
-      <MissionCard/>
-
-      <div className="rounded-[16px] border border-green/20 bg-green-soft px-4 py-3 text-[13px] leading-5 text-navy-strong" data-testid="home-key">
-        <KeyRound aria-hidden className="mr-1 inline size-4 text-green-strong"/>
-        <strong>My Key:</strong> up to {p.key.maxPerAction} credits per choice · {remainingPeriod(p)} credits left this practice period.
-        <span className="block text-[11px] text-ink-2">All credits are fictional. Only a simulated Parent can decide above your Key.</span>
-      </div>
-
-      {waiting ? <ParentPreview/> : null}
-
-      <details className="rounded-[20px] border border-line-soft bg-surface p-4" data-testid="home-more">
-        <summary className="cursor-pointer text-[14px] font-bold text-navy-strong">More progress and family details</summary>
-        <div className="mt-4 space-y-5">
-          <ContinueLearning skip={mission.href}/>
-          <MeetNext skip={mission.href}/>
-          {!waiting ? <ParentPreview/> : null}
-          <WinsCard/>
+      <section className="overflow-hidden rounded-[28px] border border-line-soft bg-surface p-5 shadow-sm md:p-7" data-testid="home-focus"
+        aria-label="Your goal and your next step">
+        <div className="flex items-center gap-3">
+          <GoalArt goal={goal.id} className="h-[70px] w-[80px] shrink-0 md:h-[96px] md:w-[110px]"/>
+          <div className="min-w-0 flex-1">
+            <p className="text-[12px] font-semibold text-ink-2">{story.goalChosen ? "My goal" : "Choose a dream"}</p>
+            <h2 className="text-[20px] font-extrabold leading-6 text-navy-strong md:text-[24px]">{story.goalChosen ? goal.label : "Your first goal"}</h2>
+            <p className="mt-1 text-[12px] text-ink-2">{story.goalChosen ? GOAL_STORY[goal.id].horizon + " away" : "Start with something that matters to you"}</p>
+          </div>
+          <p className="shrink-0 text-right text-[11px] text-ink-2"><strong className="block text-[19px] text-navy-strong" data-testid="home-goal-saved">{p.saved}/{goal.target}</strong>set aside</p>
         </div>
-      </details>
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-soft" role="progressbar"
+          aria-label={`${goal.label} savings`} aria-valuemin={0} aria-valuemax={goal.target} aria-valuenow={p.saved}>
+          <div className="h-full rounded-full bg-green-strong" style={{ width: `${percent}%` }}/>
+        </div>
+
+        <div className="my-5 border-t border-line-soft"/>
+        <div data-testid="home-mission" data-mission={mission.id}>
+          <p className="text-[11px] font-extrabold uppercase tracking-wider text-family-action">Your next step</p>
+          <h3 className="mt-1 text-[21px] font-extrabold leading-tight text-navy-strong">{mission.title}</h3>
+          <p className="mt-2 max-w-[530px] text-[14px] leading-6 text-ink-2">{mission.body}</p>
+          <Link href={mission.href} className={`mt-4 w-full sm:w-auto ${primaryBtn}`} data-testid="home-mission-go">
+            {mission.cta}<ArrowRight aria-hidden className="size-4"/>
+          </Link>
+        </div>
+      </section>
+
+      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 px-1 text-[12px] text-ink-2" data-testid="home-key">
+        <KeyRound aria-hidden className="size-4 text-green-strong"/>
+        <span>My Key: {p.key.maxPerAction} credits per choice · {remainingPeriod(p)} available this period · fictional only</span>
+        {story.goalChosen && remainingCredits(p) >= 20 ? (
+          <button type="button" data-testid="home-save" onClick={() => dispatch({ type: "practice", action: { type: "save" } })}
+            className="ml-auto min-h-11 rounded-full px-2 text-[12px] font-bold text-green-strong underline underline-offset-4">
+            Set aside 20
+          </button>
+        ) : null}
+      </div>
+      {p.requests.some(request => request.status === "pending" || request.status === "approved-once") ? (
+        <p data-testid="home-parent-preview" className="mt-3 text-[13px] leading-6 text-family-action">
+          A Parent decision is part of your next step. The button above takes you to the exact request.
+        </p>
+      ) : null}
+      <p className="mt-5 px-1 text-[11px] text-ink-3">Practice only. No actual money, investment or verified Parent identity.</p>
     </div>
   );
 }
