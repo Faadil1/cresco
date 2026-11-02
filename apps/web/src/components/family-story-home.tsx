@@ -88,8 +88,8 @@ export function HomeScreen() {
       <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 px-1 text-[12px] text-ink-2" data-testid="home-key">
         <KeyRound aria-hidden className="size-4 text-green-strong"/>
         <span>My Key: {p.key.maxPerAction} credits per choice · {remainingPeriod(p)} available this period · fictional only</span>
-        {story.goalChosen && remainingCredits(p) >= 20 ? (
-          <button type="button" data-testid="home-save" onClick={() => dispatch({ type: "practice", action: { type: "save" } })}
+        {story.goalChosen ? (
+          <button type="button" disabled={remainingCredits(p) < 20} data-testid="home-save" onClick={() => dispatch({ type: "practice", action: { type: "save" } })}
             className="ml-auto min-h-11 rounded-full px-2 text-[12px] font-bold text-green-strong underline underline-offset-4">
             Set aside 20
           </button>
