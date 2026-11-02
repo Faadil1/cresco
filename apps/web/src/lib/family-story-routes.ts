@@ -11,7 +11,8 @@ export const STORY_LESSON_IDS = [
   "c-save", "c-explore", "c-risk",
   "original-what-is-a-stock", "original-why-companies-sell-shares", "original-stock-vs-tokenized-security",
   "original-why-prices-move", "original-risk-and-reward", "original-build-your-portfolio",
-  "p-basics", "p-key", "p-risk", "p-boundary", "p-together",
+  "c-budget", "c-price", "c-profit", "c-funds", "c-fees", "c-volatility", "c-scams", "c-research",
+  "p-basics", "p-key", "p-risk", "p-boundary", "p-together", "p-digital", "p-research",
 ] as const;
 
 /**
@@ -32,7 +33,7 @@ export function tabOfPath(pathname: string): FamilyTabId | null {
   if (pathname === "/try/home" || pathname === "/try/together") return "home";
   if (pathname === "/try/learn" || (pathname.startsWith("/try/learn/") && !pathname.startsWith("/try/learn/p-"))) return "learn";
   if (pathname.startsWith("/try/explore") || pathname === "/try/decision") return "explore";
-  if (pathname === "/try/portfolio" || pathname === "/try/outcome") return "portfolio";
+  if (pathname === "/try/portfolio" || pathname.startsWith("/try/portfolio/") || pathname === "/try/outcome") return "portfolio";
   if (pathname === "/try/profile") return "profile";
   return null;
 }
@@ -71,7 +72,7 @@ export function shellModeOfPath(pathname: string): ShellMode {
 
 const FIXED_STORY_PATHS = new Set([
   "/try", "/try/lab", "/try/goal", "/try/goal/interests", "/try/goal/ready",
-  "/try/home", "/try/learn", "/try/explore", "/try/decision", "/try/portfolio", "/try/profile",
+  "/try/home", "/try/learn", "/try/explore", "/try/decision", "/try/portfolio", "/try/portfolio/companies", "/try/profile",
   "/try/parent", "/try/parent/learn", "/try/parent/key", "/try/parent/request",
   "/try/outcome", "/try/together",
 ]);
