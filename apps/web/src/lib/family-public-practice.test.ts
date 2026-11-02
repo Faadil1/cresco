@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { FOUNDATION_SCENES, LESSON_ACTIVITIES } from "./family-learning-depth";
+import { EXTENDED_LESSON_ACTIVITIES, EXTRA_CHILD_LEARNING, EXTRA_PARENT_LEARNING } from "./family-learning-expansion";
 import {
   CHILD_LEARNING, PARENT_LEARNING, evaluatePracticeScenario, initialFamilyPractice, previewPracticeChoice, remainingCredits,
   transitionFamilyPractice as next,
@@ -188,7 +189,7 @@ describe("previewPracticeChoice (forecast shown before the Child clicks)", () =>
 describe("Family course depth and practice fidelity", () => {
   it("all Child and Parent courses offer an applied scenario separate from the recall quiz", () => {
     for (const lesson of [...CHILD_LEARNING, ...PARENT_LEARNING]) {
-      const exercise = LESSON_ACTIVITIES[lesson.id];
+      const exercise = LESSON_ACTIVITIES[lesson.id] ?? EXTENDED_LESSON_ACTIVITIES[lesson.id];
       expect(exercise, lesson.id).toBeDefined();
       expect(exercise.situation.length).toBeGreaterThan(45);
       expect(exercise.options).toHaveLength(2);
@@ -205,6 +206,19 @@ describe("Family course depth and practice fidelity", () => {
       expect(lesson?.sections).toEqual(scenes);
       expect(new Set(scenes.map(scene => scene.title)).size).toBe(3);
       expect(scenes.every(scene => scene.body.length > 95 && scene.realityCheck.length > 40)).toBe(true);
+    }
+  });
+
+
+  it("extends the curriculum with 17 Child and 7 Parent multi-scene lessons", () => {
+    expect(CHILD_LEARNING).toHaveLength(17);
+    expect(PARENT_LEARNING).toHaveLength(7);
+    expect(EXTRA_CHILD_LEARNING).toHaveLength(8);
+    expect(EXTRA_PARENT_LEARNING).toHaveLength(2);
+    for (const item of [...EXTRA_CHILD_LEARNING, ...EXTRA_PARENT_LEARNING]) {
+      expect(item.sections).toHaveLength(3);
+      expect(new Set(item.sections?.map(scene => scene.title)).size).toBe(3);
+      expect(EXTENDED_LESSON_ACTIVITIES[item.id], item.id).toBeDefined();
     }
   });
 
