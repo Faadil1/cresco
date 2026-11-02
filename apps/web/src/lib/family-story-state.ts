@@ -133,10 +133,21 @@ const LESSON_TOPIC: Record<string, Topic> = {
   "original-stock-vs-tokenized-security": "token", "original-why-prices-move": "price",
   "original-risk-and-reward": "risk", "original-build-your-portfolio": "mix",
 };
+const EXPANDED_CHILD_NOTE: Record<string, string> = {
+  "c-budget": "Plan for needs first, then wishes and savings.",
+  "c-price": "Comparing unit prices and full costs can protect your savings.",
+  "c-profit": "A familiar company can sell a lot while costs remain high.",
+  "c-funds": "A diverse basket still needs thoughtful research about its holdings.",
+  "c-fees": "Recurring costs can take away from long-term goals.",
+  "c-volatility": "One day of price changes cannot tell you what will happen next.",
+  "c-scams": "Never risk your passwords or credits on a guarantee or urgent offer.",
+  "c-research": "Start with a real company's official documents and ask good questions.",
+};
 /** A sentence that ties a Child lesson to the goal the Child chose. */
 export function childLessonNote(goal: { label: string } & { id: PracticeGoalId }, lessonId: string): string {
   const g = GOAL_STORY[goal.id];
   const label = goal.label.toLowerCase();
+  if (EXPANDED_CHILD_NOTE[lessonId]) return `For your ${label}: ${EXPANDED_CHILD_NOTE[lessonId]}`;
   switch (LESSON_TOPIC[lessonId]) {
     case "save": return `Your ${label} is a plan with a date, ${g.horizon} away. Money needed that soon is usually saved, not risked.`;
     case "own": return `Your ${label} is certain once you have the credits. A share is a piece of a business with no promise. Keep the two apart.`;
@@ -154,6 +165,8 @@ const PARENT_NOTE: Record<string, (label: string, horizon: string) => string> = 
   "p-risk": (label, horizon) => `With a ${label} due in ${horizon}, a price drop is not abstract. This lesson is about that conversation.`,
   "p-boundary": (label) => `When a request comes in, you can see the ${label} goal and the reason your child gave, then decide once, exactly.`,
   "p-together": (label) => `Whatever you decide, talk about the ${label} afterwards. Autonomy grows from conversations, not from badges.`,
+  "p-digital": (label) => `Protect private information while learning about your child's ${label} goal. Pressure and promises deserve a pause.`,
+  "p-research": (label) => `Researching real businesses for your child's ${label} goal is not permission to purchase them.`,
 };
 export function parentLessonNote(goal: { label: string; id: PracticeGoalId }, lessonId: string): string {
   const g = GOAL_STORY[goal.id];
