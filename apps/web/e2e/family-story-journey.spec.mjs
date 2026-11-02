@@ -104,7 +104,7 @@ test("the whole story: goal, lesson, research, blocked choice, Parent approval, 
 
   // Learn: the lesson starts where the goal needs it, with a goal note, and quiz feedback is real.
   await expect(page).toHaveURL(/\/try\/learn$/);
-  await expect(page.getByTestId("learn-progress")).toContainText("0 of 9");
+  await expect(page.getByTestId("learn-progress")).toContainText("0 of 17");
   await page.getByTestId("learn-up-next").click();
   await expect(page).toHaveURL(/\/try\/learn\/original-why-prices-move$/);
   await expect(page.getByTestId("goal-note")).toContainText(/gaming setup/i);
@@ -127,7 +127,7 @@ test("the whole story: goal, lesson, research, blocked choice, Parent approval, 
   await expect(page).toHaveURL(/\/try\/explore$/);
   // A hard load resets the in-memory story.
   await page.goto("/try/learn");
-  await expect(page.getByTestId("learn-progress")).toContainText("0 of 9");
+  await expect(page.getByTestId("learn-progress")).toContainText("0 of 17");
   void testInfo;
   expect(net.outbound, "no API, wallet or write requests").toEqual([]);
   expect(net.external, "no external hosts").toEqual([]);
@@ -643,13 +643,13 @@ async function childSetup(page, goal = /new bike/i, interest = "Food & shopping"
 test("Home shows goal, today's mission and navigation in the first screen, and each destination has its own content", async ({ page }, testInfo) => {
   const net = watch(page);
   await childSetup(page);
-  await expect(page.getByTestId("home-goal-card")).toBeInViewport({ ratio: 0.5 });
-  await expect(page.getByTestId("home-goal-card")).toContainText(/new bike/i);
+  await expect(page.getByTestId("home-focus")).toBeInViewport({ ratio: 0.5 });
+  await expect(page.getByTestId("home-focus")).toContainText(/new bike/i);
   await expect(page.getByTestId("home-mission")).toHaveAttribute("data-mission", "first-lesson");
   await expect(page.getByTestId("home-mission-go")).toBeInViewport({ ratio: 0.5 });
   await expect(page.locator('nav[aria-label="Main"]:visible')).toBeInViewport();
   await expect(page.getByTestId("home-key")).toContainText("15 credits");
-  await expect(page.getByTestId("home-parent-preview")).toContainText(/nothing is waiting/i);
+  await expect(page.getByTestId("home-parent-preview")).toHaveCount(0);
   await testInfo.attach("home-first-screen.png", { body: await page.screenshot(), contentType: "image/png" });
 
   const destinations = [
@@ -689,8 +689,8 @@ test("child first: lesson, Mina, blocked ask, Parent once, receipt, Portfolio, e
   await finishLesson(page);
   await page.getByTestId("lesson-back-home").click();
   await expect(page).toHaveURL(/\/try\/home$/);
-  await expect(page.getByTestId("home-learning")).toContainText("1 of 9 done");
-  await expect(page.getByTestId("home-more")).not.toHaveAttribute("open", "");
+  await expect(page.getByTestId("home-focus")).toBeVisible();
+  await expect(page.getByTestId("home-more")).toHaveCount(0);
   // Dedicated nav already exposes the five destinations; Home must not duplicate it with another card grid.
   await expect(page.getByTestId("home-quick-links")).toHaveCount(0);
   await expect(page.locator('nav[aria-label="Main"]:visible').getByRole("link")).toHaveCount(5);
@@ -714,8 +714,8 @@ test("child first: lesson, Mina, blocked ask, Parent once, receipt, Portfolio, e
   // Home now points at the Parent, and previews the exact reason.
   await tab(page, "Home").click();
   await expect(page.getByTestId("home-mission")).toHaveAttribute("data-mission", "parent-deciding");
-  await expect(page.getByTestId("home-parent-preview")).toContainText(/25 credits of neighborhood markets/i);
-  await expect(page.getByTestId("home-parent-preview")).toContainText(/i am curious how it behaves/i);
+  await expect(page.getByTestId("home-parent-preview")).toContainText(/Parent decision/i);
+  await expect(page.getByTestId("home-mission")).toContainText(/25 credits/i);
   await page.getByTestId("home-mission-go").click();
   await expect(page).toHaveURL(/\/try\/parent\/request$/);
   await expect(page.getByRole("navigation", { name: "Parent" })).toBeVisible();
@@ -870,5 +870,48 @@ test("hands-on grocery and price-risk labs calculate consequences without changi
   await expect(page.getByTestId("portfolio-spent")).toContainText("0");
   await expect(page.getByTestId("portfolio-available")).toHaveText("100");
   await expect(page.getByTestId("portfolio-empty")).toBeVisible();
+  expectCleanNetwork(net);
+});
+
+
+test("real-company research is separate from fictional holdings and cannot mutate practice credits", async ({ page }, testInfo) => {
+  const net = watch(page);
+  await page.goto("/try/portfolio");
+  await expect(page.getByTestId("portfolio-sections").getByRole("link", { name: "Fictional practice" })).toHaveAttribute("aria-current", "page");
+  await page.getByTestId("portfolio-sections").getByRole("link", { name: "Real companies" }).click();
+  await expect(page).toHaveURL(/\/try\/portfolio\/companies$/);
+  await expect(tab(page, "Portfolio")).toHaveAttribute("aria-current", "page");
+  await expect(page.getByTestId("real-company-boundary")).toContainText(/no live prices, buy buttons, real balances/i);
+  for (const name of ["shopify", "microsoft", "costco", "apple"]) {
+    const company = page.getByTestId("real-company-" + name);
+    await expect(company).toBeVisible();
+    await expect(company.getByRole("link")).toHaveAttribute("href", /^https:\/\//);
+    await expect(company.getByRole("link")).toHaveAttribute("rel", "noopener noreferrer");
+    await company.getByText("What should I check?").click();
+    await expect(company).toContainText("Customers:");
+  }
+  await expect(page.getByRole("button", { name: /buy|invest|trade/i })).toHaveCount(0);
+  await testInfo.attach("real-company-research.png", { body: await page.screenshot(), contentType: "image/png" });
+  await page.getByTestId("portfolio-sections").getByRole("link", { name: "Fictional practice" }).click();
+  await expect(page.getByTestId("portfolio-empty")).toBeVisible();
+  await expect(page.getByTestId("portfolio-available")).toHaveText("100");
+  expectCleanNetwork(net);
+});
+
+test("the expanded curriculum has 17 Child lessons and 7 Parent lessons with multiple learning steps", async ({ page }) => {
+  const net = watch(page);
+  await page.goto("/try/learn");
+  await expect(page.getByTestId("learn-progress")).toContainText("0 of 17");
+  await expect(page.getByRole("list", { name: "All Child lessons" }).getByRole("listitem")).toHaveCount(17);
+  await page.getByRole("link", { name: /recognize scams and promises/i }).click();
+  await expect(page).toHaveURL(/\/try\/learn\/c-scams$/);
+  await expect(page.getByTestId("lesson-slide")).toContainText("Notice the pressure");
+  await page.getByRole("button", { name: /next idea/i }).click();
+  const exercise = page.getByTestId("lesson-applied-exercise");
+  await expect(exercise).toContainText(/social message/i);
+  await exercise.getByRole("button").first().click();
+  await expect(page.getByTestId("applied-feedback")).toBeVisible();
+  await page.goto("/try/parent/learn");
+  await expect(page.getByRole("list", { name: /parent lessons/i }).getByRole("listitem")).toHaveCount(7);
   expectCleanNetwork(net);
 });
