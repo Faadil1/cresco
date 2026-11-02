@@ -14,7 +14,7 @@ describe("Family public teaching sandbox — never a financial permission", () =
     expect(s.parentCompleted).toEqual([]);
     expect(remainingCredits(s)).toBe(100);
     expect(CHILD_LEARNING.length).toBeGreaterThan(0);
-    expect(PARENT_LEARNING.length).toBe(5);
+    expect(PARENT_LEARNING.length).toBe(7);
   });
   it("keeps personalized fictional saving goals shared without changing parental permission", () => {
     const original = initialFamilyPractice();
