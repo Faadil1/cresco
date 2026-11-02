@@ -645,6 +645,7 @@ test("Home shows goal, today's mission and navigation in the first screen, and e
   await childSetup(page);
   await expect(page.getByTestId("home-focus")).toBeInViewport({ ratio: 0.5 });
   await expect(page.getByTestId("home-focus")).toContainText(/new bike/i);
+  await expect(page.getByTestId("home-save")).toBeVisible();
   await expect(page.getByTestId("home-mission")).toHaveAttribute("data-mission", "first-lesson");
   await expect(page.getByTestId("home-mission-go")).toBeInViewport({ ratio: 0.5 });
   await expect(page.locator('nav[aria-label="Main"]:visible')).toBeInViewport();
