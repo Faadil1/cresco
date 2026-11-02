@@ -74,6 +74,13 @@ export function HomeScreen() {
           <div className="h-full rounded-full bg-green-strong" style={{ width: `${percent}%` }}/>
         </div>
 
+        {story.goalChosen ? (
+          <button type="button" disabled={remainingCredits(p) < 20} data-testid="home-save"
+            onClick={() => dispatch({ type: "practice", action: { type: "save" } })}
+            className="mt-2 inline-flex min-h-11 items-center gap-1 rounded-full px-2 text-[12px] font-bold text-green-strong underline underline-offset-4 disabled:cursor-not-allowed disabled:opacity-50">
+            <PiggyBank aria-hidden className="size-4"/>Set aside 20
+          </button>
+        ) : null}
         <div className="my-5 border-t border-line-soft"/>
         <div data-testid="home-mission" data-mission={mission.id}>
           <p className="text-[11px] font-extrabold uppercase tracking-wider text-family-action">Your next step</p>
@@ -88,12 +95,7 @@ export function HomeScreen() {
       <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 px-1 text-[12px] text-ink-2 md:hidden" data-testid="home-key">
         <KeyRound aria-hidden className="size-4 text-green-strong"/>
         <span>My Key: {p.key.maxPerAction} credits per choice · {remainingPeriod(p)} available this period · fictional only</span>
-        {story.goalChosen ? (
-          <button type="button" disabled={remainingCredits(p) < 20} data-testid="home-save" onClick={() => dispatch({ type: "practice", action: { type: "save" } })}
-            className="ml-auto min-h-11 rounded-full px-2 text-[12px] font-bold text-green-strong underline underline-offset-4">
-            Set aside 20
-          </button>
-        ) : null}
+
       </div>
       {p.requests.some(request => request.status === "pending" || request.status === "approved-once") ? (
         <p data-testid="home-parent-preview" className="mt-3 text-[13px] leading-6 text-family-action">
