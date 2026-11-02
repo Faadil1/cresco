@@ -22,7 +22,7 @@ export const REAL_COMPANY_RESEARCH: readonly PublicCompanyResearch[] = [
     id: "shopify",
     name: "Shopify",
     ticker: "SHOP",
-    exchange: "NYSE / TSX",
+    exchange: "NASDAQ / TSX",
     sector: "Commerce software",
     model: "Offers a commerce platform and tools that help merchants start and operate businesses.",
     customers: "Merchants and businesses selling in stores and online.",
