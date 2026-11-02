@@ -51,55 +51,57 @@ export function HomeScreen() {
   const goal = selectedPracticeGoal(p);
   const mission = nextMission(story);
   const percent = Math.min(100, Math.round(p.saved / goal.target * 100));
+  const pending = p.requests.some(request => request.status === "pending" || request.status === "approved-once");
+
   return (
-    <div className="mx-auto max-w-[710px] pt-3 md:pt-7" data-testid="home-screen">
-      <header className="mb-5">
+    <div className="mx-auto max-w-[660px] pt-4 md:pt-10" data-testid="home-screen">
+      <header className="mb-6">
         <p className="text-[11px] font-extrabold uppercase tracking-wider text-green-strong">My Cresco</p>
-        <h1 className="mt-1 font-display text-[29px] leading-tight text-navy-strong md:text-[36px]">One step at a time.</h1>
+        <h1 className="mt-1 font-display text-[28px] leading-tight text-navy-strong md:text-[36px]">Ready for your next step?</h1>
       </header>
 
-      <section className="overflow-hidden rounded-[28px] border border-line-soft bg-surface p-5 shadow-sm md:p-7" data-testid="home-focus"
-        aria-label="Your goal and your next step">
-        <div className="flex items-center gap-3">
-          <GoalArt goal={goal.id} className="h-[70px] w-[80px] shrink-0 md:h-[96px] md:w-[110px]"/>
-          <div className="min-w-0 flex-1">
-            <p className="text-[12px] font-semibold text-ink-2">{story.goalChosen ? "My goal" : "Choose a dream"}</p>
-            <h2 className="text-[20px] font-extrabold leading-6 text-navy-strong md:text-[24px]">{story.goalChosen ? goal.label : "Your first goal"}</h2>
-            <p className="mt-1 text-[12px] text-ink-2">{story.goalChosen ? GOAL_STORY[goal.id].horizon + " away" : "Start with something that matters to you"}</p>
-          </div>
-          <p className="shrink-0 text-right text-[11px] text-ink-2"><strong className="block text-[19px] text-navy-strong" data-testid="home-goal-saved">{p.saved}/{goal.target}</strong>set aside</p>
-        </div>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-soft" role="progressbar"
-          aria-label={`${goal.label} savings`} aria-valuemin={0} aria-valuemax={goal.target} aria-valuenow={p.saved}>
-          <div className="h-full rounded-full bg-green-strong" style={{ width: `${percent}%` }}/>
-        </div>
-
-        {story.goalChosen ? (
-          <button type="button" disabled={remainingCredits(p) < 20} data-testid="home-save"
-            onClick={() => dispatch({ type: "practice", action: { type: "save" } })}
-            className="mt-2 inline-flex min-h-11 items-center gap-1 rounded-full px-2 text-[12px] font-bold text-green-strong underline underline-offset-4 disabled:cursor-not-allowed disabled:opacity-50">
-            <PiggyBank aria-hidden className="size-4"/>Set aside 20
-          </button>
-        ) : null}
-        <div className="my-5 border-t border-line-soft"/>
+      <section className="rounded-[28px] border border-green/25 bg-green-soft px-5 py-6 md:px-8 md:py-9"
+        data-testid="home-focus" aria-label="Your next step">
         <div data-testid="home-mission" data-mission={mission.id}>
-          <p className="text-[11px] font-extrabold uppercase tracking-wider text-family-action">Your next step</p>
-          <h3 className="mt-1 text-[21px] font-extrabold leading-tight text-navy-strong">{mission.title}</h3>
-          <p className="mt-2 max-w-[530px] text-[14px] leading-6 text-ink-2">{mission.body}</p>
-          <Link href={mission.href} className={`mt-4 w-full sm:w-auto ${primaryBtn}`} data-testid="home-mission-go">
+          <p className="text-[11px] font-extrabold uppercase tracking-wider text-green-strong">Just one thing today</p>
+          <h2 className="mt-2 font-display text-[25px] font-bold leading-tight text-navy-strong md:text-[31px]">{mission.title}</h2>
+          <p className="mt-2 max-w-[44ch] text-[14px] leading-6 text-navy">{mission.body}</p>
+          <Link href={mission.href} className={`mt-5 w-full sm:w-auto ${primaryBtn}`} data-testid="home-mission-go">
             {mission.cta}<ArrowRight aria-hidden className="size-4"/>
           </Link>
         </div>
       </section>
 
-      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 px-1 text-[12px] text-ink-2 md:hidden" data-testid="home-key">
-        <KeyRound aria-hidden className="size-4 text-green-strong"/>
-        <span>My Key: {p.key.maxPerAction} credits per choice · {remainingPeriod(p)} available this period · fictional only</span>
+      <section aria-label="Goal progress" className="mt-5 flex items-center gap-3 rounded-[20px] border border-line-soft bg-surface px-3 py-3 sm:px-4" data-testid="home-goal-summary">
+        <GoalArt goal={goal.id} className="h-12 w-14 shrink-0"/>
+        <div className="min-w-0 flex-1">
+          <p className="text-[12px] font-semibold text-ink-2">Saving for {story.goalChosen ? goal.label : "your dream"}</p>
+          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-soft" role="progressbar" aria-label={`${goal.label} savings`} aria-valuemin={0} aria-valuemax={goal.target} aria-valuenow={p.saved}>
+            <div className="h-full rounded-full bg-green-strong" style={{ width: `${percent}%` }}/>
+          </div>
+        </div>
+        <p className="shrink-0 text-right text-[12px] text-ink-2"><strong className="block text-[16px] text-navy-strong" data-testid="home-goal-saved">{p.saved}/{goal.target}</strong>saved</p>
+      </section>
 
-      </div>
-      {p.requests.some(request => request.status === "pending" || request.status === "approved-once") ? (
+      <details className="mt-2 rounded-[16px] px-3 py-2 text-[13px] text-ink-2" data-testid="home-extras">
+        <summary className="cursor-pointer font-semibold text-family-action">Savings and practice limits</summary>
+        <div className="mt-3 space-y-3">
+          {story.goalChosen ? (
+            <button type="button" disabled={remainingCredits(p) < 20} data-testid="home-save"
+              onClick={() => dispatch({ type: "practice", action: { type: "save" } })}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-green/40 bg-surface px-4 text-[13px] font-bold text-green-strong disabled:opacity-50">
+              <PiggyBank aria-hidden className="size-4"/>Set aside 20
+            </button>
+          ) : null}
+          <div className="flex items-start gap-2 text-[12px] leading-5" data-testid="home-key">
+            <KeyRound aria-hidden className="mt-0.5 size-4 shrink-0 text-green-strong"/>
+            <span>My Key: {p.key.maxPerAction} pretend credits per choice, {remainingPeriod(p)} available this period. No real money.</span>
+          </div>
+        </div>
+      </details>
+      {pending ? (
         <p data-testid="home-parent-preview" className="mt-3 text-[13px] leading-6 text-family-action">
-          A Parent decision is part of your next step. The button above takes you to the exact request.
+          Your next step includes a simulated Parent decision, shown when you select the main action above.
         </p>
       ) : null}
     </div>
