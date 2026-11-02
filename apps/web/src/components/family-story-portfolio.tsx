@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { ArrowRight, ChevronRight, PiggyBank, Receipt, Sprout } from "lucide-react";
 import { useFamilyStory } from "@/components/family-story-provider";
+import { FamilyPortfolioTabs } from "@/components/family-portfolio-tabs";
 import { CompanyArt, panel, primaryBtn } from "@/components/family-story-ui";
 import { FAMILY_EXPLORE_CASES } from "@/lib/family-public-explore-data";
 import {
@@ -46,6 +47,8 @@ export function PortfolioScreen() {
         <h1 className="font-display text-[26px] leading-tight text-navy-strong md:text-[32px]">My practice portfolio</h1>
         <p className="text-[13px] text-ink-2">Pretend credits and invented companies. Nothing here is real money or a real share.</p>
       </header>
+
+      <FamilyPortfolioTabs active="practice"/>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section className="rounded-[24px] bg-gradient-to-br from-green-strong to-green p-5 text-white shadow-soft" aria-label="Practice summary" data-testid="portfolio-summary">
