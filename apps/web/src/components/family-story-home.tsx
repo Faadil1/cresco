@@ -85,7 +85,7 @@ export function HomeScreen() {
         </div>
       </section>
 
-      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 px-1 text-[12px] text-ink-2" data-testid="home-key">
+      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 px-1 text-[12px] text-ink-2 md:hidden" data-testid="home-key">
         <KeyRound aria-hidden className="size-4 text-green-strong"/>
         <span>My Key: {p.key.maxPerAction} credits per choice · {remainingPeriod(p)} available this period · fictional only</span>
         {story.goalChosen ? (
@@ -100,7 +100,6 @@ export function HomeScreen() {
           A Parent decision is part of your next step. The button above takes you to the exact request.
         </p>
       ) : null}
-      <p className="mt-5 px-1 text-[11px] text-ink-3">Practice only. No actual money, investment or verified Parent identity.</p>
     </div>
   );
 }
