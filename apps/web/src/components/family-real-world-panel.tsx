@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ExternalLink, LineChart, RefreshCcw, ShieldCheck } from "lucide-react";
 import snapshotJson from "@/lib/family-sec-snapshot.json";
+import verified10kJson from "@/lib/family-sec-verified-10k.json";
 import type { PublicCompanyResearch } from "@/lib/family-real-companies";
 
 type AnnualFact = {
@@ -23,6 +24,7 @@ type AnnualFact = {
 type CompanyFacts = {
   status: "AVAILABLE" | "UNAVAILABLE";
   cik: string;
+  filingUrl?: string;
   annualRevenue: AnnualFact | null;
   annualNetIncome: AnnualFact | null;
 };
@@ -31,7 +33,10 @@ type SecSnapshot = {
   generatedAt: string | null;
   companies: Partial<Record<PublicCompanyResearch["id"], CompanyFacts>>;
 };
-const SEC = snapshotJson as unknown as SecSnapshot;
+const IMPORTED_SEC = snapshotJson as unknown as SecSnapshot;
+const VERIFIED_SEC = verified10kJson as unknown as SecSnapshot;
+// A manual, filing-linked verified snapshot is shown until a reviewed API import exists.
+const SEC = IMPORTED_SEC.generatedAt ? IMPORTED_SEC : VERIFIED_SEC;
 
 const MARKET_SYMBOLS: Record<PublicCompanyResearch["id"], string> = {
   apple: "NASDAQ:AAPL",
@@ -118,9 +123,9 @@ export function FamilyRealWorldPanel({ company }: { company: PublicCompanyResear
   const revenue = facts?.annualRevenue ?? null;
   const netIncome = facts?.annualNetIncome ?? null;
   const [answer, setAnswer] = useState<"yes" | "no" | null>(null);
-  const secHref = "https://www.sec.gov/edgar/browse/?CIK=" + (facts?.cik ?? {
+  const secHref = facts?.filingUrl ?? ("https://www.sec.gov/edgar/browse/?CIK=" + (facts?.cik ?? {
     apple:"0000320193", microsoft:"0000789019", costco:"0000909832", shopify:"0001594805"
-  }[company.id]);
+  }[company.id]));
 
   return (
     <div data-testid={"real-learning-" + company.id}>
@@ -150,8 +155,8 @@ export function FamilyRealWorldPanel({ company }: { company: PublicCompanyResear
               </div>
             </dl>
             <p className="mt-2 text-[11px] leading-5 text-ink-2">
-              SEC XBRL facts · as published in a filing, not live market data.
-              Imported {SEC.generatedAt?.slice(0, 10) ?? "date unavailable"}.
+              Annual SEC filing facts · not live market data.
+              Snapshot checked {SEC.generatedAt?.slice(0, 10) ?? "date unavailable"}.
               Financial figures can be restated; compare reporting periods before drawing conclusions.
             </p>
           </>
