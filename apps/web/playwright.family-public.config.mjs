@@ -10,12 +10,12 @@ export default defineConfig({
   projects: [
     {
       name: "public-family-webkit",
-      testMatch: ["family-public-demo.spec.mjs", "family-story-journey.spec.mjs"],
+      testMatch: ["family-public-demo.spec.mjs", "family-story-journey.spec.mjs", "family-real-world.spec.mjs"],
       use: { ...devices["iPhone 13"], browserName: "webkit" },
     },
     {
       name: "public-family-desktop",
-      testMatch: ["family-story-journey.spec.mjs"],
+      testMatch: ["family-story-journey.spec.mjs", "family-real-world.spec.mjs"],
       use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 900 }, browserName: "chromium" },
     },
   ],

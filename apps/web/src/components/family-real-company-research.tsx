@@ -1,5 +1,6 @@
 import { ExternalLink, Search, ShieldAlert } from "lucide-react";
 import { FamilyPortfolioTabs } from "@/components/family-portfolio-tabs";
+import { FamilyRealWorldPanel } from "@/components/family-real-world-panel";
 import { REAL_COMPANY_RESEARCH } from "@/lib/family-real-companies";
 
 export function RealCompanyResearch() {
@@ -19,7 +20,7 @@ export function RealCompanyResearch() {
       <div role="note" className="rounded-[16px] border border-yellow/40 bg-yellow-soft p-4 text-[13px] leading-6 text-navy-strong" data-testid="real-company-boundary">
         <ShieldAlert aria-hidden className="mr-2 inline size-4 text-orange-text"/>
         <strong>Research only.</strong> These are real companies, but you have no shares here.
-        There are no live prices, buy buttons, real balances, accounts or portfolio positions.
+        Optional third-party market charts are display-only and load only when you ask. There are no buy buttons, real balances, accounts or portfolio positions.
         Your fictional credits and Parent Key work only in Fictional practice.
       </div>
 
@@ -46,6 +47,7 @@ export function RealCompanyResearch() {
                 {company.risksToConsider.map(risk => <li key={risk}>{risk}</li>)}
               </ul>
             </details>
+            <FamilyRealWorldPanel company={company} />
             <a href={company.officialSource} target="_blank" rel="noopener noreferrer"
               className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-[13px] font-extrabold text-family-action underline underline-offset-4">
               {company.sourceLabel}<ExternalLink aria-hidden className="size-4"/>
@@ -55,7 +57,7 @@ export function RealCompanyResearch() {
       </section>
 
       <p className="rounded-[14px] border border-line-soft p-3 text-[12px] leading-5 text-ink-2">
-        Information is an introductory snapshot, not up-to-date market research or financial advice. Always read the date and details on the official source. Companies and tickers can change; this page never claims a live feed.
+        Company profiles are introductory, not investment advice. SEC annual figures are offline snapshots with fiscal-period and filing dates; the optional TradingView chart is owned by TradingView and may be delayed. Neither source affects fictional holdings or permissions.
       </p>
     </div>
   );
