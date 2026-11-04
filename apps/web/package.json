@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run && node scripts/family-sec-snapshot.mjs --self-test",
     "check": "npm run typecheck && npm run lint && npm run copy:lint && npm run test && npm run build",
     "copy:lint": "node scripts/copy-lint.mjs",
     "mock:cresco": "node scripts/mock-cresco-api.mjs",
