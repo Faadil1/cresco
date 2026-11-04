@@ -17,6 +17,8 @@ test("Real-world research stays offline until a chart is explicitly requested", 
   for (const id of ["shopify", "microsoft", "costco", "apple"]) {
     await expect(page.getByTestId("real-company-" + id)).toBeVisible();
     await expect(page.getByTestId("real-sec-" + id)).toBeVisible();
+    await expect(page.getByTestId("real-revenue-" + id)).toContainText("$");
+    await expect(page.getByTestId("real-sec-" + id).getByRole("link", {name:"Read official SEC filings"})).toHaveAttribute("href", /sec\.gov/);
     await expect(page.getByTestId("real-chart-consent-" + id)).toBeVisible();
   }
   expect(external, "No third-party requests before user action").toEqual([]);
