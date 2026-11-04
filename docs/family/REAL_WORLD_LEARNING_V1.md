@@ -5,7 +5,7 @@ Status: experimental, no release. This branch is stacked on draft PR #120 and mu
 ## Truth boundary
 
 - Issuer profiles: official investor-relations links for Shopify, Microsoft, Costco and Apple.
-- SEC annual metrics: extracted from SEC EDGAR Company Facts API OFFLINE then bundled as a reviewed snapshot. Each displayed value includes USD, fiscal-year end, filed date and form. Absent facts remain unavailable, not fabricated.
+- SEC annual metrics: four manually verified 10-K filing snapshots ship with links to the actual SEC filings; a separate offline Company Facts API importer can refresh them. Every figure states USD, fiscal-year end, filing date and form. No API call is made by a child browser.
 - TradingView: official display-only widget, loaded only after a user's explicit click. This third party receives page URL, viewed ticker and IP. Keep its branding visible; prices may be delayed, and Cresco cannot use chart prices in calculations.
 - Mission: 100/90 and 120/130 credits are INVENTED examples, unrelated to any company's SEC figures. Answers never grant permission, trade, update balances or touch My Key.
 - Not built: brokerage, accounts, positions in real securities, live numeric quotes, user tracking, persistent identity, automatic refresh, purchases.
@@ -24,7 +24,7 @@ In a separate clean checkout of this branch, open PowerShell from the repository
 
 Substitute your real organization and email (do not commit credentials). The User-Agent is only sent in the SEC request. The importer downloads four companyfacts records sequentially and accepts annual fiscal durations only. It rejects CIK mismatch and does not combine metrics from different fiscal year ends. Import failure leaves the prior snapshot unchanged. Review the generated JSON before committing it.
 
-IMPORTANT: The branch ships with an empty SEC snapshot initially (generatedAt null). No current numeric revenue or income is claimed until the importer is executed and the results reviewed. SEC annual data is not realtime.
+IMPORTANT: The branch ships with a reviewed, dated 10-K dataset for all four companies in family-sec-verified-10k.json. The separate family-sec-snapshot.json remains empty until an explicit, inspected API refresh. The UI uses the 10-K dataset until a reviewed import exists; SEC annual data is NOT realtime. Apple/Microsoft/Costco use FY2026 and Shopify uses FY2025; these are not aligned reporting years.
 
 SEC API guide: https://www.sec.gov/search-filings/edgar-application-programming-interfaces
 
@@ -35,7 +35,7 @@ SEC API guide: https://www.sec.gov/search-filings/edgar-application-programming-
 3. Try the hypothetical revenue/profit exercise. No changes to Parent Key or practice credits.
 4. Click Load TradingView chart. Confirm third-party widget renders; fallback official TradingView links remain available.
 5. Go to Fictional practice. It still uses invented prices and positions.
-6. With the initial empty SEC snapshot, no company-specific income or sales numbers should be displayed.
+6. Verify all four sourced annual revenue/net-income pairs against linked SEC filings; no number should be labeled realtime. A verified API import can replace the manual source only after review.
 7. Re-run E2E for both desktop Chromium and mobile WebKit, test the isolated build and compare with PR #120 behavior.
 
 The original PR #120 Windows launcher intentionally refuses untested app-source changes. Do not bypass or weaken its pinned-source guard. This feature branch requires its OWN exact-SHA CI/local validation before another Windows pilot.
