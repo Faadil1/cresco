@@ -9,7 +9,7 @@ export default defineConfig({
   // playwright.family-public.config.mjs (iPhone WebKit + desktop Chromium).
   // The canonical Next app must not expose /try/*; don't accidentally test
   // Family-only pages against its intentionally closed routes.
-  testIgnore: ["family-public-demo.spec.mjs", "family-story-journey.spec.mjs"],
+  testIgnore: ["family-public-demo.spec.mjs", "family-story-journey.spec.mjs", "family-real-world.spec.mjs"],
   timeout: 30_000,
   retries: 1,
   use: {
