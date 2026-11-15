@@ -888,7 +888,7 @@ test("real-company research is separate from fictional holdings and cannot mutat
   await page.getByTestId("portfolio-sections").getByRole("link", { name: "Real companies" }).click();
   await expect(page).toHaveURL(/\/try\/portfolio\/companies$/);
   await expect(tab(page, "Portfolio")).toHaveAttribute("aria-current", "page");
-  await expect(page.getByTestId("real-company-boundary")).toContainText(/no buy buttons, real balances or accounts/i);
+  await expect(page.getByTestId("real-company-boundary")).toContainText(/no real orders, real balances or accounts/i);
   for (const name of ["shopify", "microsoft", "costco", "apple"]) {
     const company = page.getByTestId("real-company-" + name);
     await expect(company).toBeVisible();
@@ -900,7 +900,9 @@ test("real-company research is separate from fictional holdings and cannot mutat
     await active.getByText("What should I check?").click();
     await expect(active).toContainText("Customers:");
   }
-  await expect(page.getByRole("button", { name: /buy|invest|trade/i })).toHaveCount(0);
+  await expect(page.getByTestId("market-buy")).toBeDisabled();
+  await expect(page.getByTestId("market-sell")).toBeDisabled();
+  await expect(page.getByRole("button", { name: /^buy$|^invest$|^trade$/i })).toHaveCount(0);
   await testInfo.attach("real-company-research.png", { body: await page.screenshot(), contentType: "image/png" });
   await page.getByTestId("portfolio-sections").getByRole("link", { name: "Fictional practice" }).click();
   await expect(page.getByTestId("portfolio-empty")).toBeVisible();

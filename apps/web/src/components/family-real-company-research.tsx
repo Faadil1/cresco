@@ -10,6 +10,7 @@ import Link from "next/link";
 import { ArrowLeft, ExternalLink, Search, ShieldAlert } from "lucide-react";
 import { FamilyPortfolioTabs } from "@/components/family-portfolio-tabs";
 import { FamilyRealWorldPanel } from "@/components/family-real-world-panel";
+import { FamilyRealMarketPractice } from "@/components/family-real-market-practice";
 import { REAL_COMPANY_RESEARCH, type PublicCompanyResearch } from "@/lib/family-real-companies";
 
 export function RealCompanyResearch() {
@@ -22,8 +23,7 @@ export function RealCompanyResearch() {
         <p className="text-[11px] font-extrabold uppercase tracking-wider text-green-strong">Explore the real world</p>
         <h1 className="mt-1 font-display text-[28px] text-navy-strong md:text-[36px]">Meet real companies</h1>
         <p className="mt-1 max-w-[660px] text-[14px] leading-6 text-ink-2">
-          Pick a company you recognize, discover how it earns money and examine a real annual report.
-          Try a question, then choose whether to view its market chart.
+          Pick a business you recognize, practice with an imaginary USD portfolio using a price you record, then explore its official annual results and optional market chart.
         </p>
       </header>
 
@@ -77,15 +77,17 @@ export function RealCompanyResearch() {
             {selected.risksToConsider.map(risk => <li key={risk}>{risk}</li>)}
           </ul>
         </details>
+        <FamilyRealMarketPractice key={"paper-" + selected.id} company={selected}/>
         <FamilyRealWorldPanel key={selected.id} company={selected}/>
       </section>
 
       <div data-testid="real-company-boundary" role="note"
         className="rounded-[16px] border border-yellow/40 bg-yellow-soft p-3 text-[12px] leading-6 text-navy-strong">
         <ShieldAlert aria-hidden className="mr-2 inline size-4 text-orange-text"/>
-        Research only. You do not own shares here. There are no buy buttons, real balances or accounts.
-        SEC figures are dated annual reports. The TradingView chart is optional, third-party and display-only.
-        Neither research nor quiz answers change fictional holdings, practice credits or My Key.
+        Research and paper practice only. You own no real shares; there are no real orders, real balances or accounts.
+        Paper buys and sells use imaginary USD and prices entered by you, not verified prices from a feed.
+        SEC figures are dated annual reports; TradingView charts are optional and display-only.
+        These activities do not change the original Fictional practice credits or Parent/My Key.
       </div>
 
       <p className="text-[12px] leading-5 text-ink-2">
