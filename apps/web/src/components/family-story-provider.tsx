@@ -35,7 +35,7 @@ export function FamilyStoryProvider({ children }: { children: ReactNode }) {
     dispatch(action);
     return next;
   }, [story.practice, dispatch]);
-  const value = useMemo(() => ({ story, dispatch, act }), [story, act]);
+  const value = useMemo(() => ({ story, dispatch, act }), [story, act, dispatch]);
   const marketValue = useMemo(() => ({ market, marketDispatch }), [market]);
   return (
     <RealMarketContext.Provider value={marketValue}>
