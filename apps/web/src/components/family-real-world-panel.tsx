@@ -48,7 +48,7 @@ const USD = new Intl.NumberFormat("en-US", {
   style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 2
 });
 
-function TradingViewOnDemand({ company }: { company: PublicCompanyResearch }) {
+export function TradingViewOnDemand({ company }: { company: PublicCompanyResearch }) {
   const [open, setOpen] = useState(false);
   const host = useRef<HTMLDivElement>(null);
   const symbol = MARKET_SYMBOLS[company.id];
@@ -118,7 +118,7 @@ function TradingViewOnDemand({ company }: { company: PublicCompanyResearch }) {
   );
 }
 
-export function FamilyRealWorldPanel({ company }: { company: PublicCompanyResearch }) {
+export function FamilyRealWorldPanel({ company, showChart = true }: { company: PublicCompanyResearch; showChart?: boolean }) {
   const facts = SEC.companies[company.id];
   const revenue = facts?.annualRevenue ?? null;
   const netIncome = facts?.annualNetIncome ?? null;
@@ -201,7 +201,7 @@ export function FamilyRealWorldPanel({ company }: { company: PublicCompanyResear
         ) : null}
       </details>
 
-      <TradingViewOnDemand company={company} />
+      {showChart ? <TradingViewOnDemand company={company} /> : null}
       <p className="mt-2 flex items-center gap-1 text-[11px] leading-5 text-ink-3">
         <RefreshCcw aria-hidden className="size-3" /> SEC figures are updated only when the offline snapshot is refreshed and reviewed.
       </p>

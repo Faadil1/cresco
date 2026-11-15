@@ -13,7 +13,7 @@ import type { PublicCompanyResearch } from "./family-real-companies";
 
 export type MarketCompanyId = PublicCompanyResearch["id"];
 export const MARKET_IDS: readonly MarketCompanyId[] = ["apple", "microsoft", "costco", "shopify"];
-export type QuoteReference = "TradingView" | "Exchange website" | "Other public source";
+export type QuoteReference = "TradingView" | "Exchange website" | "Other public source" | "Marketstack EOD";
 export const QUOTE_REFERENCES: readonly QuoteReference[] = ["TradingView", "Exchange website", "Other public source"];
 
 export type ManualQuote = {
@@ -21,7 +21,7 @@ export type ManualQuote = {
   priceCents: number;
   asOf: string;
   reference: QuoteReference;
-  provenance: "USER_ENTERED_NOT_VERIFIED";
+  provenance: "USER_ENTERED_NOT_VERIFIED" | "LICENSED_EOD_SNAPSHOT";
 };
 export type MarketPosition = { sharesHundredths: number; costBasisCents: number };
 export type MarketReceipt = {
@@ -45,6 +45,7 @@ export type RealMarketState = {
 };
 export type RealMarketAction =
   | { type: "quote"; symbol: MarketCompanyId; priceCents: number; asOf: string; reference: QuoteReference; today: string }
+  | { type: "licensed-eod"; symbol: MarketCompanyId; priceCents: number; asOf: string; today: string; reference: "Marketstack EOD"; licenseConfirmed: true }
   | { type: "trade"; kind: "BUY" | "SELL"; symbol: MarketCompanyId; sharesHundredths: number }
   | { type: "reset" };
 
@@ -92,6 +93,24 @@ export function marketTradePreview(state: RealMarketState, action: Extract<RealM
 
 export function transitionRealMarket(state: RealMarketState, action: RealMarketAction): RealMarketState {
   if (action.type === "reset") return initialRealMarketState();
+  if (action.type === "licensed-eod") {
+    if (!isKnown(action.symbol) || action.licenseConfirmed !== true ||
+        action.reference !== "Marketstack EOD" ||
+        !goodInt(action.priceCents) || action.priceCents > 100000000 ||
+        !dateOK(action.asOf) || !dateOK(action.today) ||
+        action.asOf > action.today ||
+        (Date.parse(action.today + "T00:00:00Z") - Date.parse(action.asOf + "T00:00:00Z")) / 86400000 > 7) return state;
+    const old=state.quotes[action.symbol];
+    if(old && old.asOf >= action.asOf) return state;
+    return {
+      ...state,
+      quotes: {
+        ...state.quotes,
+        [action.symbol]: {symbol:action.symbol,priceCents:action.priceCents,
+          asOf:action.asOf,reference:"Marketstack EOD",provenance:"LICENSED_EOD_SNAPSHOT"}
+      }
+    };
+  }
   if (action.type === "quote") {
     if (!isKnown(action.symbol) || !goodInt(action.priceCents) || action.priceCents > 100000000 ||
         !dateOK(action.asOf) || !dateOK(action.today) || action.asOf > action.today ||
