@@ -90,4 +90,29 @@ describe("Real market sandbox is not a financial account", () => {
     const reset = next(s,{type:"reset"});
     expect(reset).toEqual(initialRealMarketState());
   });
+  it("accepts only approved, recent, verified-currency EOD close references without executing a trade", () => {
+    const s = initialRealMarketState();
+    const approved = {
+      type:"licensed-eod" as const, symbol:"apple" as const,priceCents:20456,
+      asOf:"2026-11-13",today:"2026-11-15",reference:"Marketstack EOD" as const,
+      licenseConfirmed:true as const
+    };
+    const updated=next(s,approved);
+    expect(updated.quotes.apple).toMatchObject({
+      priceCents:20456,asOf:"2026-11-13",
+      reference:"Marketstack EOD",provenance:"LICENSED_EOD_SNAPSHOT"
+    });
+    expect(updated.cashCents).toBe(100000);
+    expect(updated.receipts).toHaveLength(0);
+    expect(next(s,{...approved,asOf:"2026-11-01"})).toBe(s);
+    expect(next(s,{...approved,asOf:"2026-11-16"})).toBe(s);
+    expect(next(s,{...approved,priceCents:0})).toBe(s);
+    expect(next(s,{...approved,reference:"TradingView" as unknown as "Marketstack EOD"})).toBe(s);
+    expect(next(s,{...approved,licenseConfirmed:false as unknown as true})).toBe(s);
+    // A later manually entered close should not be reset by older licensed data.
+    const manual=next(updated,{type:"quote",symbol:"apple",priceCents:20700,asOf:"2026-11-14",today,reference:"TradingView"});
+    expect(next(manual,approved)).toBe(manual);
+    expect(manual.quotes.apple?.provenance).toBe("USER_ENTERED_NOT_VERIFIED");
+  });
+
 });
