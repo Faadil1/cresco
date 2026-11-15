@@ -57,7 +57,7 @@ test("A dated user-entered price powers a separate offline paper portfolio with 
 
   await page.getByTestId("market-price-input").fill("200.00");
   await page.getByTestId("market-quote-submit").click();
-  await expect(page.getByTestId("market-current-quote")).toContainText("USER-ENTERED");
+  await expect(page.getByTestId("market-current-quote")).toContainText(/user-entered/i);
   await expect(page.getByTestId("market-current-quote")).toContainText("$200.00");
   await page.getByTestId("market-quantity-input").fill("0.50");
   await expect(page.getByTestId("market-trade-preview")).toContainText("$100.00");
