@@ -34,7 +34,7 @@ export function FamilyStoryProvider({ children }: { children: ReactNode }) {
     const next = transitionFamilyPractice(story.practice, action.action);
     dispatch(action);
     return next;
-  }, [story.practice]);
+  }, [story.practice, dispatch]);
   const value = useMemo(() => ({ story, dispatch, act }), [story, act]);
   const marketValue = useMemo(() => ({ market, marketDispatch }), [market]);
   return (
