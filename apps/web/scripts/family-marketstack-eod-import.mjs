@@ -72,7 +72,7 @@ export function checkLicense(env) {
   return {key,ref};
 }
 async function run() {
-  const {key,ref}=checkLicense(process.env);
+  const {key}=checkLicense(process.env);
   const url = new URL("https://api.marketstack.com/v2/eod/latest");
   url.searchParams.set("access_key",key);
   url.searchParams.set("symbols",Object.values(TICKERS).join(","));
@@ -86,7 +86,7 @@ async function run() {
     const quotes=validateEodResponse(raw,today);
     const output={
       schemaVersion:1,status:"APPROVED_SNAPSHOT",provider:"Marketstack EOD",
-      generatedAt:new Date().toISOString(),rightsReference:ref,quotes
+      generatedAt:new Date().toISOString(),rightsReference:"ON_FILE_NOT_BUNDLED",quotes
     };
     const tmp=TARGET+".tmp";
     try{
