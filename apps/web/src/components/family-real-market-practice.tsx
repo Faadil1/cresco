@@ -69,7 +69,7 @@ export function FamilyRealMarketPractice({ company }: { company: PublicCompanyRe
       return;
     }
     marketDispatch({type:"trade",kind,symbol:company.id,sharesHundredths:qty});
-    setMessage(kind + " simulated for " + fmt(preview.totalCents) + " — no real order, no Parent approval, no payment.");
+    setMessage(kind + " simulated for " + fmt(preview.totalCents) + " - no real order, no Parent approval, no payment.");
   }
 
   return (
@@ -117,7 +117,7 @@ export function FamilyRealMarketPractice({ company }: { company: PublicCompanyRe
           <h4 className="text-[15px] font-extrabold text-navy-strong">1. Record a reference price for {company.ticker}</h4>
           <p className="mt-1 text-[12px] leading-5 text-ink-2">
             Use the optional TradingView chart below or another trusted source. Type the amount yourself.
-            We do not automatically verify, retrieve or redistribute a market quote.
+            We do not automatically verify, retrieve or redistribute a market quote. For Shopify use NASDAQ:SHOP (USD), not TSX:SHOP (CAD).
           </p>
           <div className="mt-3 grid grid-cols-2 gap-3">
             <label className="text-[12px] font-bold text-navy-strong">
