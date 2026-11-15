@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "source": "Official SEC 10-K annual filings, manually verified on 2026-11-04",
+  "generatedAt": "2026-11-04",
+  "companies": {
+    "apple": {
+      "cik": "0000320193",
+      "issuer": "Apple Inc.",
+      "status": "AVAILABLE",
+      "filingUrl": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm",
+      "annualRevenue": {
+        "valueUSD": 478834000000,
+        "start": "2025-09-28",
+        "end": "2026-09-26",
+        "filed": "2026-11-03",
+        "form": "10-K",
+        "accession": "0000320193-26-000026",
+        "taxonomy": "SEC 10-K statement",
+        "tag": "Total net sales"
+      },
+      "annualNetIncome": {
+        "valueUSD": 132175000000,
+        "start": "2025-09-28",
+        "end": "2026-09-26",
+        "filed": "2026-11-03",
+        "form": "10-K",
+        "accession": "0000320193-26-000026",
+        "taxonomy": "SEC 10-K statement",
+        "tag": "Net income"
+      }
+    },
+    "microsoft": {
+      "cik": "0000789019",
+      "issuer": "Microsoft Corporation",
+      "status": "AVAILABLE",
+      "filingUrl": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm",
+      "annualRevenue": {
+        "valueUSD": 331839000000,
+        "start": "2025-07-01",
+        "end": "2026-06-30",
+        "filed": "2026-07-29",
+        "form": "10-K",
+        "accession": "0001193125-26-323660",
+        "taxonomy": "SEC 10-K statement",
+        "tag": "Total revenue"
+      },
+      "annualNetIncome": {
+        "valueUSD": 133749000000,
+        "start": "2025-07-01",
+        "end": "2026-06-30",
+        "filed": "2026-07-29",
+        "form": "10-K",
+        "accession": "0001193125-26-323660",
+        "taxonomy": "SEC 10-K statement",
+        "tag": "Net income"
+      }
+    },
+    "costco": {
+      "cik": "0000909832",
+      "issuer": "Costco Wholesale Corporation",
+      "status": "AVAILABLE",
+      "filingUrl": "https://www.sec.gov/Archives/edgar/data/909832/000090983226000093/cost-20260830.htm",
+      "annualRevenue": {
+        "valueUSD": 303154000000,
+        "start": "2025-09-01",
+        "end": "2026-08-30",
+        "filed": "2026-10-07",
+        "form": "10-K",
+        "accession": "0000909832-26-000093",
+        "taxonomy": "SEC 10-K statement",
+        "tag": "Total revenue (including membership fees)"
+      },
+      "annualNetIncome": {
+        "valueUSD": 9226000000,
+        "start": "2025-09-01",
+        "end": "2026-08-30",
+        "filed": "2026-10-07",
+        "form": "10-K",
+        "accession": "0000909832-26-000093",
+        "taxonomy": "SEC 10-K statement",
+        "tag": "Net income"
+      }
+    },
+    "shopify": {
+      "cik": "0001594805",
+      "issuer": "Shopify Inc.",
+      "status": "AVAILABLE",
+      "filingUrl": "https://www.sec.gov/Archives/edgar/data/1594805/000159480526000007/shop-20251231.htm",
+      "annualRevenue": {
+        "valueUSD": 11556000000,
+        "start": "2025-01-01",
+        "end": "2025-12-31",
+        "filed": "2026-02-11",
+        "form": "10-K",
+        "accession": "0001594805-26-000007",
+        "taxonomy": "SEC 10-K statement",
+        "tag": "Total revenue"
+      },
+      "annualNetIncome": {
+        "valueUSD": 1231000000,
+        "start": "2025-01-01",
+        "end": "2025-12-31",
+        "filed": "2026-02-11",
+        "form": "10-K",
+        "accession": "0001594805-26-000007",
+        "taxonomy": "SEC 10-K statement",
+        "tag": "Net income"
+      }
+    }
+  }
+}

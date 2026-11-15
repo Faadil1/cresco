@@ -50,6 +50,21 @@ export function PortfolioScreen() {
 
       <FamilyPortfolioTabs active="practice"/>
 
+      <section data-testid="portfolio-real-entry"
+        className="flex flex-col gap-3 rounded-[20px] border border-blue/30 bg-blue-soft p-4 sm:flex-row sm:items-center sm:justify-between md:p-5">
+        <div>
+          <p className="text-[11px] font-extrabold uppercase tracking-wider text-blue-strong">Beyond imaginary companies</p>
+          <h2 className="mt-1 text-[19px] font-extrabold text-navy-strong">Discover four real businesses</h2>
+          <p className="mt-1 text-[13px] leading-5 text-navy">Apple · Microsoft · Costco · Shopify. Real annual reports and optional market charts; no real purchases.</p>
+        </div>
+        <Link href="/try/portfolio/companies"
+          className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-family-action px-4 text-[13px] font-bold text-white"
+          data-testid="portfolio-go-real">
+          Explore real companies <ArrowRight aria-hidden className="size-4"/>
+        </Link>
+      </section>
+
+
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section className="rounded-[24px] bg-gradient-to-br from-green-strong to-green p-5 text-white shadow-soft" aria-label="Practice summary" data-testid="portfolio-summary">
           <div className="flex items-start justify-between gap-3">

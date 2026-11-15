@@ -60,6 +60,23 @@ export function ExploreChapter() {
           <CompanyArt id={featured.id} name={featured.name} className="hidden h-auto w-full overflow-hidden rounded-[18px] md:block"/>
         )}
       </section>
+
+      <section data-testid="explore-real-entry" aria-label="Explore real companies"
+        className="flex flex-col gap-3 rounded-[20px] border border-blue/30 bg-blue-soft p-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-[11px] font-extrabold uppercase tracking-wider text-blue-strong">Curious about real businesses?</p>
+          <h2 className="mt-1 text-[18px] font-extrabold text-navy-strong">Meet Apple, Microsoft, Costco and Shopify</h2>
+          <p className="mt-1 max-w-[55ch] text-[13px] leading-5 text-navy">
+            Discover how real companies earn money, read dated SEC results and choose whether to open a third-party chart.
+            This research never spends fictional credits.
+          </p>
+        </div>
+        <Link href="/try/portfolio/companies" data-testid="explore-go-real"
+          className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-family-action px-4 text-[13px] font-bold text-white">
+          Explore real companies <ArrowRight aria-hidden className="size-4"/>
+        </Link>
+      </section>
+
       <KeyChip/>
       <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
         <label className="relative block">

@@ -389,7 +389,8 @@ test("the lab and the story share one practice state", async ({ page }) => {
   await openReadyAfterGoal(page);
   await openOptionalSavings(page);
   await page.getByRole("button", { name: /set aside 20 credits/i }).click();
-  await page.getByRole("link", { name: /prefer the free practice lab/i }).click();
+  await page.getByText("Advanced legacy experiment").click();
+  await page.getByRole("link", { name: "Open the experimental lab" }).click();
   await expect(page).toHaveURL(/\/try\/lab$/);
   await expect(page.getByTestId("practice-saved")).toHaveText("20");
   await expect(page.getByText("Saved for Family trip", { exact: true })).toBeVisible();
@@ -887,14 +888,17 @@ test("real-company research is separate from fictional holdings and cannot mutat
   await page.getByTestId("portfolio-sections").getByRole("link", { name: "Real companies" }).click();
   await expect(page).toHaveURL(/\/try\/portfolio\/companies$/);
   await expect(tab(page, "Portfolio")).toHaveAttribute("aria-current", "page");
-  await expect(page.getByTestId("real-company-boundary")).toContainText(/no live prices, buy buttons, real balances/i);
+  await expect(page.getByTestId("real-company-boundary")).toContainText(/no buy buttons, real balances or accounts/i);
   for (const name of ["shopify", "microsoft", "costco", "apple"]) {
     const company = page.getByTestId("real-company-" + name);
     await expect(company).toBeVisible();
+    await company.getByRole("button").click();
+    const active = page.getByTestId("real-active-company");
+    await expect(active).toContainText(name === "microsoft" ? "Microsoft" : name === "shopify" ? "Shopify" : name === "costco" ? "Costco" : "Apple");
     await expect(company.getByRole("link")).toHaveAttribute("href", /^https:\/\//);
     await expect(company.getByRole("link")).toHaveAttribute("rel", "noopener noreferrer");
-    await company.getByText("What should I check?").click();
-    await expect(company).toContainText("Customers:");
+    await active.getByText("What should I check?").click();
+    await expect(active).toContainText("Customers:");
   }
   await expect(page.getByRole("button", { name: /buy|invest|trade/i })).toHaveCount(0);
   await testInfo.attach("real-company-research.png", { body: await page.screenshot(), contentType: "image/png" });
