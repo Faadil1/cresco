@@ -41,3 +41,61 @@ test("Real-world research stays offline until a chart is explicitly requested", 
   await page.getByRole("button",{name:"Hide third-party chart"}).click();
   await expect(page.getByTestId("real-chart-consent-apple")).toBeVisible();
 });
+
+
+test("A dated user-entered price powers a separate offline paper portfolio with P&L", async ({page}) => {
+  const forbidden = [];
+  page.on("request", request => {
+    const url = request.url();
+    if (!url.startsWith("http://127.0.0.1:3100")) forbidden.push(url);
+    if (url.includes("/api/") || !["GET", "HEAD"].includes(request.method())) forbidden.push(url);
+  });
+  await page.goto("/try/portfolio/companies");
+  await expect(page.getByTestId("market-equity")).toContainText("$1,000.00");
+  await expect(page.getByTestId("market-buy")).toBeDisabled();
+  await expect(page.getByTestId("market-current-quote")).toContainText("No price recorded");
+
+  await page.getByTestId("market-price-input").fill("200.00");
+  await page.getByTestId("market-quote-submit").click();
+  await expect(page.getByTestId("market-current-quote")).toContainText("USER-ENTERED");
+  await expect(page.getByTestId("market-current-quote")).toContainText("$200.00");
+  await page.getByTestId("market-quantity-input").fill("0.50");
+  await expect(page.getByTestId("market-trade-preview")).toContainText("$100.00");
+  await page.getByTestId("market-buy").click();
+  await expect(page.getByTestId("market-cash")).toContainText("$900.00");
+  await expect(page.getByTestId("market-equity")).toContainText("$1,000.00");
+  await expect(page.getByTestId("market-holdings")).toContainText("0.50 pretend shares");
+  await expect(page.getByTestId("market-action-feedback")).toContainText("no real order");
+
+  // Change only the manual reference price. Cash and positions do not trade.
+  await page.getByTestId("market-price-input").fill("180.00");
+  await page.getByTestId("market-quote-submit").click();
+  await expect(page.getByTestId("market-cash")).toContainText("$900.00");
+  await expect(page.getByTestId("market-equity")).toContainText("$990.00");
+  await expect(page.getByTestId("market-unrealized")).toContainText("-$10.00");
+  await page.getByTestId("market-quantity-input").fill("0.25");
+  await page.getByTestId("market-sell").click();
+  await expect(page.getByTestId("market-cash")).toContainText("$945.00");
+
+  await page.getByTestId("portfolio-sections").getByRole("link", {name:"Fictional practice"}).click();
+  await expect(page.getByTestId("portfolio-available")).toHaveText("100");
+  await page.getByTestId("portfolio-go-real").click();
+  await expect(page.getByTestId("market-cash")).toContainText("$945.00");
+
+  await page.getByTestId("market-reset").click();
+  await expect(page.getByTestId("market-cash")).toContainText("$1,000.00");
+  await expect(page.getByTestId("market-holdings")).toContainText("No pretend holdings yet");
+  expect(forbidden, "Paper trading must not contact markets, wallets or any server API").toEqual([]);
+});
+
+test("paper trading blocks impossible quote, overspending and selling shares not owned", async ({page}) => {
+  await page.goto("/try/portfolio/companies");
+  await page.getByTestId("market-price-input").fill("-1");
+  await expect(page.getByTestId("market-quote-submit")).toBeDisabled();
+  await page.getByTestId("market-price-input").fill("9999.00");
+  await page.getByTestId("market-quote-submit").click();
+  await page.getByTestId("market-quantity-input").fill("1");
+  await expect(page.getByTestId("market-buy")).toBeDisabled();
+  await expect(page.getByTestId("market-sell")).toBeDisabled();
+  await expect(page.getByTestId("market-trade-preview")).toContainText("Not enough imaginary USD");
+});
