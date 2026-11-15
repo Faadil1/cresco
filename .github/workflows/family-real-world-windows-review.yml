@@ -51,7 +51,7 @@ jobs:
           & node scripts/family-marketstack-eod-import.mjs --self-test
           if ($LASTEXITCODE -ne 0) { throw "MARKETSTACK_NORMALIZER_SELF_TEST_FAILED" }
           $snapshot = Get-Content src/lib/family-market-approved-snapshot.json -Raw | ConvertFrom-Json
-          if ($snapshot.status -ne "DISABLED" -or $snapshot.quotes.PSObject.Properties.Count -ne 0) {
+          if ($snapshot.status -ne "DISABLED" -or @($snapshot.quotes.PSObject.Properties | Where-Object { $_.MemberType -eq "NoteProperty" }).Count -ne 0) {
             throw "NO_PUBLIC_MARKET_DATA_WITHOUT_REVIEW"
           }
       - name: Install and build isolated Family artifact
