@@ -5,6 +5,10 @@ on:
     paths:
       - ".github/workflows/family-real-world-windows-review.yml"
       - "apps/web/scripts/family-sec-snapshot.mjs"
+      - "apps/web/scripts/family-marketstack-eod-import.mjs"
+      - "apps/web/src/lib/family-market-approved-snapshot.json"
+      - "apps/web/src/components/family-real-market-practice.tsx"
+      - "apps/web/src/lib/family-real-market-sandbox.ts"
       - "apps/web/src/lib/family-sec-snapshot.json"
       - "apps/web/src/components/family-real-world-panel.tsx"
       - "apps/web/src/components/family-real-company-research.tsx"
@@ -38,6 +42,18 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "SEC_SCRIPT_SYNTAX_INVALID" }
           & node scripts/family-sec-snapshot.mjs --self-test
           if ($LASTEXITCODE -ne 0) { throw "SEC_NORMALIZER_SELF_TEST_FAILED" }
+      - name: Validate disabled-by-default EOD importer using fixture only
+        shell: powershell
+        working-directory: apps/web
+        run: |
+          & node --check scripts/family-marketstack-eod-import.mjs
+          if ($LASTEXITCODE -ne 0) { throw "MARKETSTACK_SCRIPT_SYNTAX_INVALID" }
+          & node scripts/family-marketstack-eod-import.mjs --self-test
+          if ($LASTEXITCODE -ne 0) { throw "MARKETSTACK_NORMALIZER_SELF_TEST_FAILED" }
+          $snapshot = Get-Content src/lib/family-market-approved-snapshot.json -Raw | ConvertFrom-Json
+          if ($snapshot.status -ne "DISABLED" -or $snapshot.quotes.PSObject.Properties.Count -ne 0) {
+            throw "NO_PUBLIC_MARKET_DATA_WITHOUT_REVIEW"
+          }
       - name: Install and build isolated Family artifact
         shell: powershell
         working-directory: apps/web
