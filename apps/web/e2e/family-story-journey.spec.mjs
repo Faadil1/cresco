@@ -389,7 +389,8 @@ test("the lab and the story share one practice state", async ({ page }) => {
   await openReadyAfterGoal(page);
   await openOptionalSavings(page);
   await page.getByRole("button", { name: /set aside 20 credits/i }).click();
-  await page.getByRole("link", { name: /prefer the free practice lab/i }).click();
+  await page.getByText("Advanced legacy experiment").click();
+  await page.getByRole("link", { name: "Open the experimental lab" }).click();
   await expect(page).toHaveURL(/\/try\/lab$/);
   await expect(page.getByTestId("practice-saved")).toHaveText("20");
   await expect(page.getByText("Saved for Family trip", { exact: true })).toBeVisible();
