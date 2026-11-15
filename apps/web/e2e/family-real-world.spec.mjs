@@ -99,3 +99,27 @@ test("paper trading blocks impossible quote, overspending and selling shares not
   await expect(page.getByTestId("market-sell")).toBeDisabled();
   await expect(page.getByTestId("market-trade-preview")).toContainText("Not enough imaginary USD");
 });
+
+
+test("compact market desk places chart beside trade on desktop and above it on mobile", async ({page}, testInfo) => {
+  await page.goto("/try/portfolio/companies");
+  const chart = page.getByTestId("market-chart-column");
+  const trade = page.getByTestId("market-order-column");
+  await expect(chart).toBeVisible();
+  await expect(trade).toBeVisible();
+  const chartBox=await chart.boundingBox();
+  const tradeBox=await trade.boundingBox();
+  expect(chartBox).not.toBeNull();
+  expect(tradeBox).not.toBeNull();
+  const wide=(page.viewportSize()?.width??0)>=1200;
+  if(wide) {
+    expect(tradeBox.x).toBeGreaterThan(chartBox.x + chartBox.width-10);
+    expect(Math.abs(tradeBox.y-chartBox.y)).toBeLessThan(12);
+  } else {
+    expect(tradeBox.y).toBeGreaterThan(chartBox.y + chartBox.height-10);
+  }
+  await expect(page.getByTestId("market-approved-quote")).toHaveCount(0);
+  await expect(page.getByTestId("real-chart-consent-apple")).toBeVisible();
+  await expect(page.getByTestId("real-sec-apple")).toBeVisible();
+  await testInfo.attach("compact-market-desk.png",{body:await page.screenshot(),contentType:"image/png"});
+});
