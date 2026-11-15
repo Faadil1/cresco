@@ -9,8 +9,8 @@ import { useState } from "react";
 import { ArrowDownRight, ArrowUpRight, BookOpen, RotateCcw, ShieldAlert } from "lucide-react";
 import { useRealMarketPractice } from "@/components/family-story-provider";
 import {
-  MARKET_IDS, QUOTE_REFERENCES, marketTradePreview, summarizeRealMarket,
-  type MarketCompanyId, type QuoteReference
+  QUOTE_REFERENCES, marketTradePreview, summarizeRealMarket,
+  type QuoteReference
 } from "@/lib/family-real-market-sandbox";
 import { REAL_COMPANY_RESEARCH, type PublicCompanyResearch } from "@/lib/family-real-companies";
 
@@ -43,8 +43,11 @@ export function FamilyRealMarketPractice({ company }: { company: PublicCompanyRe
   const buy = marketTradePreview(market,{type:"trade",kind:"BUY",symbol:company.id,sharesHundredths:qty});
   const sell = marketTradePreview(market,{type:"trade",kind:"SELL",symbol:company.id,sharesHundredths:qty});
   const localPosition = market.positions[company.id];
+  const dateParsed = Date.parse(inputDate + "T00:00:00.000Z");
+  const validCalendarDate = /^\d{4}-\d{2}-\d{2}$/.test(inputDate) && Number.isFinite(dateParsed) &&
+    new Date(dateParsed).toISOString().slice(0,10) === inputDate;
   const canSavePrice = priceCentsFromInput(inputPrice) > 0 && priceCentsFromInput(inputPrice) <= 100000000 &&
-    /^\d{4}-\d{2}-\d{2}$/.test(inputDate) && inputDate <= today && (!quote || inputDate >= quote.asOf);
+    validCalendarDate && inputDate <= today && (!quote || inputDate >= quote.asOf);
   const isDateTooEarly = Boolean(quote && inputDate < quote.asOf);
 
   function saveQuote() {
