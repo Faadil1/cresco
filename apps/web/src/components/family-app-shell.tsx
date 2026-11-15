@@ -51,9 +51,9 @@ function SafetyFooter({ compact = false }: { compact?: boolean }) {
     <footer className={`${compact ? "mt-8" : "mt-12"} space-y-1.5 border-t border-line-soft pt-4 text-[12px] leading-5 text-ink-3`}>
       <p className="flex items-start gap-2">
         <ShieldCheck aria-hidden className="mt-0.5 size-4 shrink-0 text-green-strong"/>
-        <span>Fictional practice in this browser tab only. Refreshing starts the story again. No sign-in, wallet, server write, real money or verified Parent. Sample companies and prices are invented and are not advice.</span>
+        <span>Practice credits and holdings are fictional and reset on refresh. There is no sign-in, wallet, trading or verified Parent. Research on real companies uses dated public filings and optional third-party charts, not real positions or financial advice.</span>
       </p>
-      <p><Link href="/try/lab" className="font-semibold text-green-strong underline underline-offset-4">Prefer the free practice lab with all tabs?</Link></p>
+      <details className="text-[12px]"><summary className="cursor-pointer text-ink-3">Advanced legacy experiment</summary><p className="mt-1">An older interface with a different navigation style, not the main Family journey.</p><Link href="/try/lab" className="font-semibold text-green-strong underline underline-offset-4">Open the experimental lab</Link></details>
     </footer>
   );
 }
