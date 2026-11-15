@@ -27,7 +27,7 @@ describe("Real market sandbox is not a financial account", () => {
     expect(next(s, { ...action, asOf: "2026-02-30" })).toBe(s);
     expect(next(s, { ...action, asOf: "2026-11-16" })).toBe(s);
     expect(next(s, { ...action, today: "not-a-date" })).toBe(s);
-    expect(next(s, { ...action, reference: "unknown" as any })).toBe(s);
+    expect(next(s, { ...action, reference: "unknown" as unknown as "TradingView" })).toBe(s);
     const updated = next(s, action);
     expect(next(updated, { ...action, asOf: "2026-11-14" })).toBe(updated);
   });
