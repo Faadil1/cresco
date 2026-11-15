@@ -13,9 +13,13 @@ test("Real-world research stays offline until a chart is explicitly requested", 
   await page.route("https://s3.tradingview.com/**", route =>
     route.fulfill({status:200, contentType:"application/javascript", body:"/* network isolation test */"}));
 
-  await page.goto("/try/portfolio/companies");
+  await page.goto("/try/portfolio");
+  await expect(page.getByTestId("portfolio-real-entry")).toBeVisible();
+  await page.getByTestId("portfolio-go-real").click();
+  await expect(page).toHaveURL(/\/try\/portfolio\/companies$/);
   for (const id of ["shopify", "microsoft", "costco", "apple"]) {
     await expect(page.getByTestId("real-company-" + id)).toBeVisible();
+    await page.getByTestId("real-company-select-" + id).click();
     await expect(page.getByTestId("real-sec-" + id)).toBeVisible();
     await expect(page.getByTestId("real-revenue-" + id)).toContainText("$");
     await expect(page.getByTestId("real-sec-" + id).getByRole("link", {name:"Read official SEC filings"})).toHaveAttribute("href", /sec\.gov/);
