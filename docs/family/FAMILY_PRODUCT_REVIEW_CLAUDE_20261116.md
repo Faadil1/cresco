@@ -1,0 +1,154 @@
+# Cresco Family: product and UX review, and the redesign plan (2026-11-16)
+
+Issue: Faadil1/cresco#126 · Baseline: `3fbc92b02de3a99e3e838e5bcb7a9c5e8a9bf0f6` (PR #124 head) ·
+Review branch: `claude/family-ux-overhaul-2026-11-16` · **No merge, no deploy.**
+
+## 0. Evidence and its limits
+
+| Source | What it covers | Limits |
+|---|---|---|
+| Local public Family artifact built with `node scripts/build-public-family.mjs` at the baseline SHA, served by local `wrangler dev` (`npm run start:vinext -- --ip 127.0.0.1 --port 3100`) | Every `/try/*` route, plus `/` | Chromium 1.63 headless on Linux. Browser zoom 100%, `deviceScaleFactor` 1. Windows and real iPhone hardware were not available. |
+| Viewports | 1440x900, 1280x800, 390x844, 375x812 (mobile with `isMobile`/touch) | Comparable screenshots: `docs/family/ux-overhaul-2026-11-16/before/` |
+| Automatic measurements per route and viewport | page height, word count, number of disclaimer phrases, text under 12px, interactive elements, horizontal overflow, external requests | `before/metrics.json`. Script: Playwright capture in the PR description. |
+| Founder video `20261116-0957-03.5680228.mp4` | Not available in this session | I did **not** view it. Statements in section 2.3 that mention the video restate issue #126, they are not my observations. |
+| Source review | `apps/web/src/app/try/**`, `src/components/family-*`, `src/lib/family-*` | Static reading |
+
+Not verified: real two-account Parent/Child approval (it does not exist; the Parent is simulated in one tab), screen-reader output with a real screen reader, Windows Edge, real iOS Safari.
+
+## 1. Route and component inventory (baseline)
+
+| Route | Shell frame | Component | Status at baseline |
+|---|---|---|---|
+| `/` | none | `FamilyOnlyHome` (server component) | **HTTP 500** `TypeError: n.createContext is not a function` |
+| `/try` | intro | `WelcomeChapter` | works |
+| `/try/goal`, `/goal/interests`, `/goal/ready` | onboarding (3 steps) | `family-story-goal` | works |
+| `/try/home` | child | `HomeScreen` | works, nearly empty |
+| `/try/learn`, `/try/learn/[id]` | child / focus | `LearnChapter`, `LessonReader` | works |
+| `/try/explore`, `/try/explore/[id]` | child | `ExploreChapter`, `CompanyChapter` | works |
+| `/try/decision`, `/try/outcome` | child (hidden scenes) | `DecisionChapter`, `OutcomeChapter` | works |
+| `/try/portfolio` | child | `PortfolioScreen` | works |
+| `/try/portfolio/companies` | child | `RealCompanyResearch` + `FamilyRealMarketPractice` + `FamilyRealWorldPanel` | works, very long |
+| `/try/profile` | child | `ProfileScreen` | works |
+| `/try/parent`, `/parent/request`, `/parent/key`, `/parent/learn` | parent | `family-story-parent`, `ParentKey` from `family-public-studio` | works |
+| `/try/together` | child (lens "both") | `TogetherChapter` | works |
+| `/try/lab` | none (own page) | `FamilyPublicStudio` (631 lines, second product) | **HTTP 500**, same error |
+
+Two separate state reducers are kept in one provider: the 100-credit fictional practice (`family-public-practice`) and the $1,000 imaginary-USD paper book (`family-real-market-sandbox`). A reset clears both; neither can alter the other. This separation is correct and is kept.
+
+## 2. Findings
+
+Severity: **P0** blocks a journey, **P1** makes a golden journey confusing or tiring, **P2** polish or consistency.
+
+### 2.1 Defects
+
+| # | Sev | Finding | Repro | Root cause | Desired outcome |
+|---|---|---|---|---|---|
+| D1 | P0 | The public Family landing `/` returns HTTP 500 at every viewport | open `/` | `FamilyOnlyHome` is a server component that renders `lucide-react` icons. lucide 1.x creates a React context, and `createContext` does not exist in the RSC runtime | landing renders; icons only inside client components |
+| D2 | P0 | `/try/lab` returns HTTP 500; the footer of **every** page links to it ("Advanced legacy experiment") | open any page, expand the footer, follow the link | same as D1 (`/try/lab/page.tsx` renders lucide icons on the server) | lab renders, and it is no longer linked from every page |
+
+Screenshots: `before/1440-landing.png`, `before/1440-lab.png`.
+
+### 2.2 The golden journeys, traced
+
+**Child: first visit → goal → concept → safe fictional decision → consequence.**
+`/try` → 3 setup screens → Home → Learn → lesson (3-6 slides, an applied exercise and a quiz) → Explore → company story → research question → "Practice with" → `/try/decision` → `/try/outcome`. It works end to end, and the reducer logic (Key preview before the click, one-time approval, stale requests) is good. Problems:
+- Home is a single "mission" card and a bar (`before/1440-home.png`). The child sees no map of where they are in the loop (goal → learn → meet → decide → talk), no credits, and the Key is hidden in a `<details>`. Progress is not visible, so the product does not feel like it is going anywhere.
+- `/try/decision` and `/try/outcome` are reachable only by in-page links. They are filed under the Explore and Portfolio tabs, so the moment of decision belongs to no destination you can return to.
+- The company page (`before/390-company.png`, 2,360px on a phone) stacks 7 panels: story, dilemma, interest note, 4-item research list, invented trend, goal lens, research quiz, then practice. The page has no numbered steps, so the child cannot tell how far they are from the decision.
+
+**Parent: understand safety → set a simulated limit → see activity → review what would need approval.**
+`/try` → "I'm the Parent" → overview → Key → requests. Problems:
+- The overview (`before/1440-parent.png`) puts three unequal cards in one row: the goal, "nothing waiting" text and the Key. Nothing marks what needs attention first.
+- "What your child did" shows four counters (0 / 0 / 0 / 0) but no actual activity. A parent cannot see *what* was chosen, *why* or *when*.
+- Jargon a parent should not need: "Practice version 1", "v1 / nonce 3", "ORC, MKT, BKT".
+- The simulation notice appears 3 times on the request page and in two places on the overview.
+
+**Child, real company: choose a company → understand the business → source/date → optional chart → paper trade → explain gains or losses.**
+Explore banner or Portfolio banner or Portfolio tab → `/try/portfolio/companies`. Problems (`before/1440-real-full.png`, `before/390-real-full.png`):
+- **2,766px tall on desktop and 4,147px on a phone**, the longest page in the product. 682 words, **20 disclaimer phrases**, **26-31 text elements under 12px**.
+- The order is reversed. The trade desk comes first and "Understand the business" is last, under a fold, even though the issue requires business → source → chart → trade.
+- Each company card's second link is the company's Investor Relations site, so the first-viewport choices on a phone are 4 "Explore X" buttons and 4 **offsite** links (`before/390-real.png`). This is the offsite jump described in issue #126.
+- Dead end: every action is disabled until the child types a price, and the only price source is a third-party chart that they must first opt in to. Nothing walks them through "read the price on the chart, type it here".
+- No step explains a gain or loss. The P&L appears as a number ("Unrealized change") with no reasoning prompt, so the learning goal ("explain gains/losses") is not met.
+- Three overlapping boundary notices say the same thing (the yellow box in the lab, the yellow box under the page, the global footer), plus a fourth line on redistribution rights.
+
+### 2.3 Systemic root causes (why it feels like several sites stitched together)
+
+| # | Sev | Root cause | Evidence |
+|---|---|---|---|
+| R1 | P1 | **Real vs pretend has no single visual language.** "Pretend", "fictional", "imaginary", "practice only", "not real", "simulated", "NOT EXECUTED ONCHAIN" are used interchangeably, in green, blue and yellow boxes. | metrics: 8-20 disclaimer phrases per page; `PRACTICE ONLY - NOT EXECUTED ONCHAIN` (crypto jargon) in Portfolio |
+| R2 | P1 | **Information architecture splits one idea across tabs.** Real companies are *things to explore* but live under Portfolio, and three separate links lead to them (Explore banner, Portfolio banner, Portfolio tab). The real paper portfolio has no summary in Portfolio. | `family-portfolio-tabs.tsx`, `explore-real-entry`, `portfolio-real-entry` |
+| R3 | P1 | **There is no visible model of the learning loop.** The state already computes `chapterStatus` (goal, learn, explore, decision, parent, outcome, together) but nothing shows it, so progress feels random. | `family-story-state.ts:chapterStatus` is unused in the UI |
+| R4 | P1 | **Competing second product.** `/try/lab` (`FamilyPublicStudio`, 631 lines) duplicates every tab in another layout and is linked from every footer and from Profile. | `family-app-shell.tsx:SafetyFooter` |
+| R5 | P1 | **Density instead of hierarchy.** Every page is a stack of equally weighted rounded cards; headings are 26-36px but body copy is 11-13px, and helper text is often 11px. | tiny text counts in metrics; Explore 3,515px tall on a phone |
+| R6 | P2 | **Lens chip noise.** "Child's view · practice" sits in the header of every child page and adds nothing in the child's own app. | every child screenshot |
+| R7 | P2 | **Over-tooling for six items.** Explore has full-text search and 7 category filters for 6 invented companies, plus a featured card that repeats the first list item. | `before/390-explore-full.png` |
+| R8 | P2 | **Parent lacks a timeline.** The data exists (`requests`, `receipts`, `reasons`, `declineReasons`) but no screen shows it in order. | `family-story-parent.tsx` |
+
+Video (from issue #126, not observed by me): the real-company scroll, repetitive components, the IR offsite jump, and the chart and calculation sitting far apart all match R1, R2 and section 2.2.
+
+## 3. Design direction: "One loop, two clearly labelled worlds"
+
+**Product principle:** Cresco Family is a loop the child goes around again and again:
+**Goal → Learn → Meet → Decide → Talk.** Every screen should show where you are in the loop and what the one next step is. Parents watch the same loop from their side and only step in at the boundary.
+
+**Two worlds, one rule each, and one visual tag:**
+
+| Tag | Meaning | Colour | Where |
+|---|---|---|---|
+| `Pretend` | invented companies, 100 pretend credits, My Key applies | warm yellow | story companies, practice portfolio, decisions |
+| `Real company · paper $` | real businesses, official SEC figures, $1,000 imaginary USD, no Key, no Parent | blue | real company lab, paper portfolio |
+| `Parent` | simulated Parent in this tab | lavender | Parent pages, requests |
+
+These tags replace the scattered disclaimers. The full legal and source text stays available, word for word, in a "Sources and limits" disclosure on the page where it applies.
+
+**IA changes**
+1. **Explore** holds both worlds behind a two-way switch: *Story companies* (pretend) and *Real companies*. The real lab moves to `/try/explore/real`; `/try/portfolio/companies` stays as an alias so old links work.
+2. **Portfolio** holds both books behind a two-way switch: *Pretend credits* and *Paper dollars*. Each has its own summary, and the two are never added together.
+3. **Home** becomes the loop: one main next step, a five-step journey track, a wallet strip (free / saved for the goal / My Key) with "Set aside 20", and a parent status line.
+4. **Parent overview:** "Needs you" first, then the same journey track (a shared mental model), then the Key in plain words, then a dated activity timeline.
+5. **Lab:** the crash is fixed, it is no longer linked from every page, and it is reachable only from Profile as "Classic practice lab (older layout)".
+6. **Shell:** no lens chip on child pages; one quiet footer line with a link to "How Cresco works" (Profile).
+
+**Real company lab, redesigned as four numbered steps in one column (chart beside trade on wide screens):**
+1. *Understand the business*: what it sells, who pays, SEC revenue and net income with fiscal period, form, filing date and currency (unchanged data), and the "more sales, less profit?" exercise.
+2. *Look at the price*: opt-in TradingView chart with the unchanged consent text, then "type the price you read and its date" (manual, labelled unverified). Licensed EOD snapshot logic unchanged and still DISABLED.
+3. *Paper trade*: amount, then buy or sell with imaginary USD.
+4. *Explain the result*: for a position, show the gain or loss and ask the child to pick the explanation. Revenue is not price; a falling price is not a falling business. No numbers are invented.
+Company switching uses compact tabs. Investor Relations links move inside step 1 as "Company's own site (opens outside Cresco)".
+
+**Small design system (scoped to `.cresco-family-app`)**
+- Type: display 30/36 (mobile 26), h2 20, body 15/24, meta 13/20; **nothing under 12px**.
+- Width: content max 1040px; reading max 680px; 8px spacing grid (8, 12, 16, 24, 32).
+- Surfaces: `Card` (surface, 20px radius, 1px soft border), `Card tone="accent"` for the one primary next step per page; no nested cards beyond two levels.
+- Components: `RealityTag`, `JourneyTrack`, `StepHeader` (numbered step), `Stat`, `Segmented` (two-way switch), `SourcesNote` (the single disclosure for legal and source text).
+- Actions: one primary button per view (`family-action` blue), secondary outline, tertiary text link.
+- Copy: plain words and short sentences. No "nonce", "onchain", "EOD" or "unrealized" in child copy; a ticker is always shown next to the company name.
+
+## 4. Plan and acceptance checklist
+
+Implemented on the review branch, in this order: shell and tokens → Home → Explore and real lab → Portfolio → company page and decision → Parent → Profile and lab → landing.
+
+| # | Acceptance check | How verified |
+|---|---|---|
+| A1 | `/` and `/try/lab` return 200 | e2e + curl |
+| A2 | At 390x844, Home shows the next step, the journey track and the wallet without scrolling | e2e `toBeInViewport` |
+| A3 | Real company page is at least 35% shorter at 390 and 1440, and puts the business explanation before the trade | metrics script |
+| A4 | No text under 12px on main journey pages | metrics script |
+| A5 | Disclaimer phrases per page reduced; each page has exactly one reality tag strip | metrics + e2e |
+| A6 | Real vs pretend: tags present; credits and USD never summed; reset clears both | unit + e2e |
+| A7 | No third-party request before chart opt-in; no API/POST anywhere | e2e network watch |
+| A8 | Child journey, Parent journey and real-company journey pass end to end, Chromium desktop + WebKit iPhone | Playwright |
+| A9 | Key, one-time approval, stale request, duplicate ask and insufficient credits behave as before | existing unit + e2e |
+| A10 | Keyboard: every action reachable with Tab; visible focus ring; `aria-current` on nav and switches | e2e |
+
+## 5. Decision log
+
+| Decision | Why | Rejected alternative |
+|---|---|---|
+| Keep the 5 tabs | Original Cresco structure; tests and founder familiarity | A 3-tab app (too disruptive for one review) |
+| Real companies under Explore, paper holdings under Portfolio | "Learn about a business" belongs in Explore; "what do I hold" belongs in Portfolio | Keeping them under Portfolio (root cause R2) |
+| Show `chapterStatus` as a journey track | Data already exists; makes progress visible to child and parent alike | Badges only (they reward, but do not orient) |
+| One reality tag + one "Sources and limits" disclosure per page | Removes repetition without deleting any safeguard text | Deleting the legal text (unsafe) |
+| No sample prices for real companies | Issue forbids invented prices; manual entry stays clearly unverified | A "classroom price" (would be an invented real price) |
+| Lab demoted, not deleted | Existing tests and shared state; the founder can decide on removal | Deleting `/try/lab` now |
