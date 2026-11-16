@@ -14,14 +14,15 @@ vi.mock("@/components/shell", () => ({
 }));
 
 describe("Family-only landing first impression", () => {
-  it("shows child action and parental boundaries within the first screen", () => {
+  it("shows the promise, one main action and the learning loop on the first screen", () => {
     render(<FamilyOnlyHome />);
     expect(screen.getByRole("heading", { level: 1, name: /your child takes the lead.*you set the boundaries/i })).toBeInTheDocument();
-    const rolePreview = screen.getByTestId("family-hero-role-comparison");
-    expect(within(rolePreview).getByRole("heading", { name: /teen view.*i make a choice/i })).toBeInTheDocument();
-    expect(within(rolePreview).getByRole("heading", { name: /parent view.*i guide the boundaries/i })).toBeInTheDocument();
-    expect(within(rolePreview).getByText(/my next question: can i learn about diversified funds/i)).toBeInTheDocument();
-    expect(within(rolePreview).getByText(/approve or decline the/i)).toBeInTheDocument();
+    const loop = screen.getByTestId("family-three-steps");
+    expect(within(loop).getAllByRole("listitem")).toHaveLength(5);
+    expect(within(loop).getByRole("heading", { name: /decide inside the key/i })).toBeInTheDocument();
+    const worlds = screen.getByTestId("family-two-worlds");
+    expect(within(worlds).getByText(/100 pretend credits/i)).toBeInTheDocument();
+    expect(within(worlds).getByText(/imaginary dollars\. no orders/i)).toBeInTheDocument();
   });
 
   it("does not imply real child accounts, licensed finance or an approved real investment", () => {
@@ -30,7 +31,6 @@ describe("Family-only landing first impression", () => {
     expect(screen.getByText(/single-browser simulation/i)).toBeInTheDocument();
     expect(screen.getByText(/does not prove separate accounts, legal guardianship/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /try cresco - no sign-in/i })).toHaveAttribute("href", "/try");
-    expect(screen.getByRole("link", { name: /start free demo/i })).toHaveAttribute("href", "/try");
     expect(screen.getByRole("link", { name: /what parents should know/i })).toHaveAttribute("href", "#family-trust");
     expect(screen.queryByRole("link", { name: /invest now|buy stocks|earn yield/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /separate family setup preview/i })).not.toBeInTheDocument();

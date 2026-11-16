@@ -81,7 +81,7 @@ export function OutcomeChapter() {
       <ResultCard tone="good" title={lastReceipt.permission === "allow-once" ? "Done with your Parent's one-time approval." : "Done inside My Key, on your own."} testId="outcome-hero">
         <p data-testid="receipt-line"><strong>Receipt #{lastReceipt.id}:</strong> {lastReceipt.amount} credits · {name(lastReceipt.asset)} ({lastReceipt.asset}) · {lastReceipt.shares.toFixed(2)} pretend units.
           {lastReceipt.permission === "allow-once" ? " That approval is now used up and cannot be replayed." : " No approval was needed."}</p>
-        <p className="mt-1 text-[11px] font-bold tracking-wide">PRACTICE ONLY - NOT EXECUTED ONCHAIN</p>
+        <p className="mt-1 text-[13px] font-semibold">Practice receipt · no real money moved.</p>
       </ResultCard>
     );
   } else {
@@ -95,7 +95,7 @@ export function OutcomeChapter() {
 
   return (
     <div className="space-y-5">
-      <ChapterHeading kicker="Portfolio · result" title="What happened"
+      <ChapterHeading kicker="Your choice · result" title="What happened"
         art={<StoryVignette role={approved ? "approved" : "request"} className="block h-auto w-full rounded-[20px]" title="An illustrated teenager and parent after a practice decision"/>}/>
       {hero}
       {episodeCompany && episodeChoice !== undefined ? (

@@ -7,15 +7,27 @@
  */
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronDown, Info } from "lucide-react";
 import { LessonIllustration } from "@/components/illustrations/scenes";
 import { sampleTrendPath, type FamilyExploreCase } from "@/lib/family-public-explore-data";
 import type { IllustrationKey } from "@/domain/types";
+import type { ChapterStatus } from "@/lib/family-story-state";
 
-export const panel = "rounded-[24px] border border-line-soft bg-surface p-5 shadow-sm md:p-6";
+/*
+ * Cresco Family design system (2026-11-16, issue #126).
+ * Type: page title 26/30 -> 34/40, section 20/28, body 15/24, meta 13/20.
+ * Nothing in the Family app is smaller than 12px. Spacing on an 8px grid.
+ * One primary action per view. Reality is shown with ONE tag per world:
+ * Pretend (yellow), Real company + paper $ (blue), Parent (lavender).
+ */
+export const panel = "rounded-[20px] border border-line-soft bg-surface p-5 md:p-6";
 export const small = "text-[13px] leading-6 text-ink-2";
-export const primaryBtn = "inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-family-action px-6 py-3 text-[14px] font-bold text-white shadow-[0_12px_26px_-17px_rgba(31,95,214,.7)] hover:bg-family-action-hover disabled:cursor-not-allowed disabled:opacity-50";
-export const secondaryBtn = "inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-line bg-surface px-6 py-3 text-[14px] font-bold text-navy-strong hover:bg-family-action-soft disabled:cursor-not-allowed disabled:opacity-50";
+export const pageTitle = "font-display text-[26px] leading-[1.15] text-navy-strong md:text-[34px]";
+export const sectionTitle = "text-[20px] font-extrabold leading-7 text-navy-strong";
+export const kicker = "text-[12px] font-extrabold uppercase tracking-[0.08em]";
+export const textLink = "inline-flex min-h-11 items-center gap-1 text-[14px] font-bold text-family-action underline-offset-4 hover:underline";
+export const primaryBtn = "inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-family-action px-6 py-3 text-[15px] font-bold text-white shadow-[0_12px_26px_-17px_rgba(31,95,214,.7)] hover:bg-family-action-hover disabled:cursor-not-allowed disabled:opacity-50";
+export const secondaryBtn = "inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-line bg-surface px-6 py-3 text-[15px] font-bold text-navy-strong hover:bg-family-action-soft disabled:cursor-not-allowed disabled:opacity-50";
 
 /** Page heading with optional art. Art is decorative; its title says what it shows. */
 export function ChapterHeading({ kicker, title, intro, art }: { kicker?: string; title: string; intro?: ReactNode; art?: ReactNode }) {
@@ -23,8 +35,8 @@ export function ChapterHeading({ kicker, title, intro, art }: { kicker?: string;
     <header className="grid items-center gap-4 md:grid-cols-[1fr_auto] md:gap-8">
       <div>
         {kicker ? <p className="cresco-section-kicker mb-2">{kicker}</p> : null}
-        <h1 className="font-display text-[clamp(26px,4.4vw,38px)] leading-[1.1] text-navy-strong">{title}</h1>
-        {intro ? <div className="mt-2 max-w-[60ch] text-[14px] leading-6 text-ink-2">{intro}</div> : null}
+        <h1 className={pageTitle}>{title}</h1>
+        {intro ? <div className="mt-2 max-w-[60ch] text-[15px] leading-6 text-ink-2">{intro}</div> : null}
       </div>
       {art ? <div className="mx-auto hidden w-full max-w-[260px] md:block">{art}</div> : null}
     </header>
@@ -79,7 +91,126 @@ export function TeachingTrend({ item }: { item: FamilyExploreCase }) {
         {[30, 60, 90].map(y => <path key={y} d={`M0 ${y} H320`} stroke="currentColor" opacity=".12" strokeDasharray="3 5"/>)}
         <path d={sampleTrendPath(values, 320, 112)} fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-green-strong"/>
       </svg>
-      <figcaption className="text-[11px] leading-5 text-ink-2">Invented 8-step line for discussion only. No real price, date, trend history or forecast.</figcaption>
+      <figcaption className="text-[12px] leading-5 text-ink-2">Invented 8-step line for discussion only. No real price, date, trend history or forecast.</figcaption>
     </figure>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Reality: one tag per world, one disclosure for sources and limits.  */
+/* ------------------------------------------------------------------ */
+export type Reality = "pretend" | "real" | "parent";
+const REALITY: Record<Reality, { label: string; tone: string }> = {
+  pretend: { label: "Pretend", tone: "bg-yellow-soft text-orange-text border-yellow/50" },
+  real: { label: "Real company · paper $", tone: "bg-blue-soft text-blue-strong border-blue/30" },
+  parent: { label: "Parent · simulated", tone: "bg-lavender-soft text-lavender border-lavender/30" },
+};
+export function RealityTag({ kind, label }: { kind: Reality; label?: string }) {
+  const r = REALITY[kind];
+  return (
+    <span data-testid={`reality-${kind}`} data-reality={kind}
+      className={`inline-flex min-h-7 items-center gap-1 rounded-full border px-2.5 text-[12px] font-extrabold ${r.tone}`}>
+      {label ?? r.label}
+    </span>
+  );
+}
+
+/** The single place where a page keeps its full source and safety wording. Closed by default. */
+export function SourcesNote({ title = "Sources and limits", children, testId = "sources-note" }: { title?: string; children: ReactNode; testId?: string }) {
+  return (
+    <details data-testid={testId} className="group rounded-[16px] border border-line-soft bg-surface-soft/60 px-4 py-1 text-[13px] leading-6 text-ink-2">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 font-bold text-navy-strong">
+        <Info aria-hidden className="size-4 shrink-0 text-ink-2"/>{title}
+        <ChevronDown aria-hidden className="ml-auto size-4 transition-transform group-open:rotate-180"/>
+      </summary>
+      <div className="space-y-2 pb-3">{children}</div>
+    </details>
+  );
+}
+
+/** A two-way switch between pages (Story vs Real, Pretend credits vs Paper dollars). */
+export function Segmented({ label, items, testId }: {
+  label: string; testId?: string;
+  items: readonly { href: string; label: string; active: boolean; reality?: Reality }[];
+}) {
+  return (
+    <nav aria-label={label} data-testid={testId}>
+      <ul className="grid grid-cols-2 gap-1 rounded-full border border-line-soft bg-surface-soft p-1">
+        {items.map(item => (
+          <li key={item.href}>
+            <Link href={item.href} aria-current={item.active ? "page" : undefined}
+              className={`flex min-h-11 items-center justify-center gap-2 rounded-full px-3 text-center text-[14px] font-extrabold transition-colors ${item.active ? "bg-surface text-navy-strong shadow-sm" : "text-ink-2 hover:text-navy-strong"}`}>
+              {item.reality ? <span aria-hidden className={`size-2.5 rounded-full ${item.reality === "real" ? "bg-blue-strong" : "bg-yellow"}`}/> : null}
+              {item.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+/** A numbered step inside a longer task (company page, real-company lab). */
+export function StepHeader({ n, title, hint, done }: { n: number; title: string; hint?: ReactNode; done?: boolean }) {
+  return (
+    <header className="flex items-start gap-3">
+      <span aria-hidden className={`grid size-8 shrink-0 place-items-center rounded-full text-[14px] font-extrabold ${done ? "bg-green-strong text-white" : "bg-family-action-soft text-family-action"}`}>
+        {done ? <Check className="size-4"/> : n}
+      </span>
+      <div className="min-w-0">
+        <h2 className="text-[18px] font-extrabold leading-7 text-navy-strong"><span className="sr-only">Step {n}: </span>{title}</h2>
+        {hint ? <p className="text-[13px] leading-5 text-ink-2">{hint}</p> : null}
+      </div>
+    </header>
+  );
+}
+
+export function Stat({ label, value, testId, hint }: { label: string; value: ReactNode; testId?: string; hint?: ReactNode }) {
+  return (
+    <div className="min-w-0 rounded-[16px] bg-surface-soft px-3 py-3">
+      <dt className="text-[13px] font-semibold leading-5 text-ink-2">{label}</dt>
+      <dd className="mt-0.5 text-[22px] font-extrabold leading-7 text-navy-strong" data-testid={testId}>{value}</dd>
+      {hint ? <dd className="text-[12px] leading-5 text-ink-2">{hint}</dd> : null}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* The learning loop: Goal -> Learn -> Meet -> Decide -> Talk.          */
+/* Done only because something real happened in state.                 */
+/* ------------------------------------------------------------------ */
+export const LOOP_STEPS = [
+  { id: "goal", label: "Goal", child: "Pick a dream", parent: "Picks a dream", href: "/try/goal" },
+  { id: "learn", label: "Learn", child: "One short lesson", parent: "Learns an idea", href: "/try/learn" },
+  { id: "explore", label: "Meet", child: "Meet a company", parent: "Researches", href: "/try/explore" },
+  { id: "decision", label: "Decide", child: "Make a choice", parent: "Decides in the Key", href: "/try/decision" },
+  { id: "together", label: "Talk", child: "Talk it through", parent: "You talk together", href: "/try/together" },
+] as const satisfies readonly { id: keyof ChapterStatus; label: string; child: string; parent: string; href: string }[];
+
+export function JourneyTrack({ status, lens = "child", testId = "journey-track" }: { status: ChapterStatus; lens?: "child" | "parent"; testId?: string }) {
+  const current = LOOP_STEPS.find(step => !status[step.id])?.id;
+  const done = LOOP_STEPS.filter(step => status[step.id]).length;
+  return (
+    <nav aria-label={lens === "child" ? "My learning loop" : "Your child's learning loop"} data-testid={testId} data-done={done}>
+      <ol className="grid grid-cols-5 gap-1.5">
+        {LOOP_STEPS.map((step, i) => {
+          const isDone = status[step.id];
+          const isCurrent = step.id === current;
+          return (
+            <li key={step.id} className="min-w-0">
+              <Link href={step.href} aria-current={isCurrent ? "step" : undefined} data-step={step.id} data-done={isDone ? "true" : "false"}
+                className="group flex min-h-11 flex-col items-center gap-1 rounded-[14px] px-1 py-1.5 text-center hover:bg-surface-soft">
+                <span aria-hidden className={`grid size-8 place-items-center rounded-full border-2 text-[13px] font-extrabold ${isDone ? "border-green-strong bg-green-strong text-white" : isCurrent ? "border-family-action bg-family-action-soft text-family-action" : "border-line bg-surface text-ink-2"}`}>
+                  {isDone ? <Check className="size-4" strokeWidth={3}/> : i + 1}
+                </span>
+                <span className={`text-[12px] font-extrabold leading-4 ${isCurrent ? "text-family-action" : "text-navy-strong"}`}>{step.label}</span>
+                <span className="hidden text-[12px] leading-4 text-ink-2 sm:block">{lens === "child" ? step.child : step.parent}</span>
+                <span className="sr-only">{isDone ? " (done)" : isCurrent ? " (you are here)" : " (not yet)"}</span>
+              </Link>
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
   );
 }

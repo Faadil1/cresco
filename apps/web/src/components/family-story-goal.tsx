@@ -62,7 +62,7 @@ export function GoalChapter() {
                 tone[option.id], selected ? "border-family-action ring-2 ring-family-action" : "border-line-soft"].join(" ")}>
               <GoalArt goal={option.id} className="h-16 w-20 md:h-20 md:w-28"/>
               <span className="text-[13px] font-bold leading-4 text-navy-strong md:text-[15px]">{option.label}</span>
-              <span className="text-[11px] text-ink-2">{option.target} credits</span>
+              <span className="text-[12px] text-ink-2">{option.target} credits</span>
             </button>
           );
         })}

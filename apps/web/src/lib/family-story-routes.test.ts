@@ -90,4 +90,13 @@ describe("durable app shell", () => {
     expect(parentTabOfPath("/try/learn/p-key")).toBe("learn");
     expect(parentTabOfPath("/try/parent/key")).toBe("key");
   });
+  it("redesign 2026-11-16: real companies live under Explore, paper dollars under Portfolio, and the old address still works", () => {
+    for (const path of ["/try/explore/real", "/try/portfolio/paper", "/try/portfolio/companies"]) expect(familyStoryRouteAllowed(path)).toBe(true);
+    expect(tabOfPath("/try/explore/real")).toBe("explore");
+    expect(tabOfPath("/try/portfolio/companies")).toBe("explore");
+    expect(tabOfPath("/try/portfolio/paper")).toBe("portfolio");
+    expect(shellModeOfPath("/try/explore/real")).toBe("child");
+    expect(lensOfPath("/try/portfolio/paper")).toBe("child");
+    for (const path of ["/try/explore/real/", "/try/explore/Real", "/try/portfolio/paper/x", "/try/portfolio/real"]) expect(familyStoryRouteAllowed(path)).toBe(false);
+  });
 });

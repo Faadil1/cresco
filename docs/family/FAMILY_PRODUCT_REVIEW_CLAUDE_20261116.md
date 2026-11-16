@@ -152,3 +152,79 @@ Implemented on the review branch, in this order: shell and tokens → Home → E
 | One reality tag + one "Sources and limits" disclosure per page | Removes repetition without deleting any safeguard text | Deleting the legal text (unsafe) |
 | No sample prices for real companies | Issue forbids invented prices; manual entry stays clearly unverified | A "classroom price" (would be an invented real price) |
 | Lab demoted, not deleted | Existing tests and shared state; the founder can decide on removal | Deleting `/try/lab` now |
+
+## 6. Results of the redesign (Gate C)
+
+Screenshots for the same routes and viewports: `ux-overhaul-2026-11-16/before/` and `ux-overhaul-2026-11-16/after/`
+(`<viewport>-<route>.png`; `-full` = full page). Capture script: `ux-overhaul-2026-11-16/capture-screenshots.mjs`.
+The real-company page moved from `/try/portfolio/companies` to `/try/explore/real`; the old address still renders the same page.
+
+### Measured before → after (Chromium, 100% zoom)
+
+| Viewport | Page | Height before (px) | Height after (px) | Disclaimer phrases | Text under 12px |
+|---|---|---|---|---|---|
+| 1440 | landing `/` | HTTP 500 | 2922 | 0 → 9 | 0 → 0 |
+| 1440 | home | 900 | 900 | 3 → 6 | 3 → 0 |
+| 1440 | explore | 1912 | 1104 (−42%) | 8 → 5 | 9 → 0 |
+| 1440 | company | 1789 | 1575 | 6 → 7 | 5 → 0 |
+| 1440 | portfolio | 1272 | 929 (−27%) | 11 → 8 | 4 → 0 |
+| 1440 | real companies | 2766 | 1947 (−30%) | 20 → 8 | 26 → 0 |
+| 1440 | parent | 1145 | 1219 | 5 → 6 | 5 → 1 |
+| 1440 | `/try/lab` | HTTP 500 | 2015 | n/a | 20 (unchanged classic layout) |
+| 390 | home | 845 | 1229 | 2 → 5 | 8 → 0 |
+| 390 | explore | 3515 | 1880 (−47%) | 4 → 4 | 14 → 0 |
+| 390 | company | 2360 | 2151 | 5 → 6 | 10 → 0 |
+| 390 | portfolio | 1718 | 1240 (−28%) | 10 → 7 | 9 → 0 |
+| 390 | real companies | 4147 | 3183 (−23%) | 19 → 7 | 31 → 0 |
+| 390 | parent | 1725 | 1748 | 5 → 6 | 5 → 1 |
+
+Notes on the metrics:
+- "Disclaimer phrases" counts the words pretend, fictional, imaginary, simulated, not real and similar. The new reality tags and the switch labels ("Pretend credits") use those words on purpose, so on Home and Parent the count went *up* while the paragraphs of repeated legal text went away. Closed "Sources and limits" disclosures are not counted.
+- Home on a phone is taller because it now shows the learning loop, the credit bar and the Key, which were hidden in a drawer before.
+- No external request at any viewport before the chart opt-in.
+
+### Acceptance checklist (section 4)
+
+| # | Result | Evidence |
+|---|---|---|
+| A1 | **Met.** `/` and `/try/lab` return 200 | `e2e/family-redesign.spec.mjs` A1 |
+| A2 | **Met** (390x844 and iPhone 13 emulation) | redesign A2 |
+| A3 | **Partly met.** The business now comes before the trade, and the page is 30% shorter at 1440 but only **23% at 390** (target 35%). The four steps each keep their own form on mobile. | metrics table; real-world spec checks step order |
+| A4 | **Met on the redesigned pages.** 0 text under 12px. Remaining small text: one line in the Parent illustration and the classic lab (not redesigned). | metrics |
+| A5 | **Met.** Exactly one reality tag per main page; repeated notices moved into one closed "Sources and limits" disclosure, with the wording kept | redesign A5/A6 |
+| A6 | **Met.** Separate Portfolio pages; reset clears both books; neither changes the other | unit `family-redesign.test.tsx`, real-world spec |
+| A7 | **Met** | network watchers in all public specs |
+| A8 | **Met** on Chromium desktop 1280x900 and iPhone 13 emulated **on Chromium**. **WebKit not run**: the WebKit download is blocked in this environment. | see test table below |
+| A9 | **Met.** The reducers are untouched; all earlier Key, approval, stale, duplicate and insufficient-credit journeys pass | `family-story-journey.spec.mjs` |
+| A10 | **Met** for the switches, the company picker and the price form | redesign A10 |
+
+### Tests run on the review branch
+
+| Suite | Result |
+|---|---|
+| `npm run typecheck`, `npm run lint` (0 errors; the 3 warnings are pre-existing in unrelated files), `npm run copy:lint` | pass |
+| `npx vitest run` (apps/web) | 27 files, 190 tests pass |
+| Repo root `npm test` (quality gate + node tests) | 286 pass |
+| `node scripts/build-public-family.mjs` (public artifact gate) | PASS, not deployed |
+| `npm run build:family` with a placeholder dedicated origin (`https://cresco-family-api.example.invalid`) | PASS; config check only, not uploaded |
+| Playwright `public-family-desktop` (Chromium 1280x900, local `wrangler dev`) | 35/35, 3 consecutive runs; `--repeat-each 8` on the real-world and redesign specs 80/80 |
+| Playwright `public-family-webkit` project, **with browserName switched to Chromium** (iPhone 13 emulation) | 47/47, 3 consecutive runs |
+| Real WebKit, Windows smoke (`scripts/family-v3-local-pilot.ps1`), `playwright.family-practice.config.mjs` | **not run** here (no WebKit binary, no Windows) |
+
+Test changes to note:
+- Some specs encoded the old interface (the hidden Home drawer, the featured Explore card, the lab link in the footer, `NOT EXECUTED ONCHAIN`, the Portfolio "Real companies" tab). They now assert the new interface and say so in comments.
+- Two existing public-demo checks visited `/try/lab` and `/`, which both returned 500 at the baseline, so that suite could not have passed at `3fbc92b0`.
+- New `e2e/family-ready.mjs`: specs wait for `html[data-family-ready]`, which the provider sets after hydration. This removed intermittent failures where a click landed on server-rendered HTML before React attached.
+
+### What did not change (safeguards)
+
+- `family-public-practice.ts`, `family-real-market-sandbox.ts`, `family-story-state.ts`, the SEC snapshot files and `family-market-approved-snapshot.json` (still `DISABLED`) are byte-identical to the baseline.
+- No price is invented. Manual prices are still labelled `USER-ENTERED … (NOT VERIFIED)`. The TradingView consent text is unchanged, and nothing loads before the click.
+- No new network calls, storage, identity, auth or API. Wrangler config, the Family build guards, Cloudflare and the Colosseum Worker are untouched. Nothing was deployed or merged.
+
+### Open items for founder review
+
+1. Mobile real-company page length (A3): next candidates are hiding step 4 until a paper trade exists, and a sticky step index.
+2. Decide whether to delete `/try/lab` (now demoted, linked only from Profile).
+3. Run real WebKit (iPhone) and the Windows smoke locally (commands in the PR).
+4. The learning-loop track uses the existing `chapterStatus`. "Meet" counts as done after opening one story; consider whether it should need the research answer.

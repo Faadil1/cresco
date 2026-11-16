@@ -6,7 +6,7 @@
  * No third-party request happens before the visitor requests the chart.
  */
 import { useEffect, useRef, useState } from "react";
-import { ExternalLink, LineChart, RefreshCcw, ShieldCheck } from "lucide-react";
+import { ExternalLink, LineChart, ShieldCheck } from "lucide-react";
 import snapshotJson from "@/lib/family-sec-snapshot.json";
 import verified10kJson from "@/lib/family-sec-verified-10k.json";
 import type { PublicCompanyResearch } from "@/lib/family-real-companies";
@@ -80,19 +80,15 @@ export function TradingViewOnDemand({ company }: { company: PublicCompanyResearc
   }, [open, company.name, symbol]);
 
   return (
-    <section className="mt-3 rounded-[16px] border border-line-soft bg-surface-soft p-3" data-testid={"real-chart-" + company.id}>
-      <p className="flex items-center gap-2 text-[13px] font-extrabold text-navy-strong">
+    <section className="rounded-[16px] border border-line-soft bg-surface-soft p-3" data-testid={"real-chart-" + company.id}>
+      <p className="flex items-center gap-2 text-[14px] font-extrabold text-navy-strong">
         <LineChart aria-hidden className="size-4 text-family-action" />
-        Market chart
-      </p>
-      <p className="mt-1 text-[12px] leading-5 text-ink-2">
-        Display-only chart from TradingView. Prices may be delayed or unavailable depending on the market.
-        We do not read chart prices into practice balances, lessons or My Key.
+        {company.ticker} price chart (optional)
       </p>
       {!open ? (
         <button type="button" onClick={() => setOpen(true)}
           data-testid={"real-chart-consent-" + company.id}
-          className="mt-3 min-h-11 rounded-full bg-family-action px-4 py-2 text-[13px] font-bold text-white">
+          className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-full border border-family-action bg-surface px-4 py-2 text-[14px] font-bold text-family-action">
           Load TradingView chart
         </button>
       ) : (
@@ -100,19 +96,19 @@ export function TradingViewOnDemand({ company }: { company: PublicCompanyResearc
           <div ref={host} className="mt-3 min-h-[350px] w-full overflow-hidden bg-white" aria-label={company.name + " chart by TradingView"}
             data-testid={"real-chart-widget-" + company.id} />
           <button type="button" onClick={() => setOpen(false)}
-            className="mt-2 min-h-10 text-[12px] font-bold text-family-action underline underline-offset-4">
+            className="mt-2 min-h-11 text-[13px] font-bold text-family-action underline underline-offset-4">
             Hide third-party chart
           </button>
         </>
       )}
-      <p className="mt-2 text-[11px] leading-5 text-ink-2">
+      <p className="mt-2 text-[12px] leading-5 text-ink-2">
         Loading the chart contacts TradingView and shares your IP address, this page URL and the viewed symbol.
         Chart data remains on TradingView; its branding and attribution must remain visible.
       </p>
       <a href={"https://www.tradingview.com/symbols/" + symbol.replace(":", "-") + "/"}
         target="_blank" rel="noopener noreferrer"
-        className="mt-1 inline-flex items-center gap-1 text-[12px] font-bold text-family-action underline underline-offset-4">
-        View directly on TradingView <ExternalLink aria-hidden className="size-3" />
+        className="inline-flex min-h-11 items-center gap-1 text-[13px] font-bold text-family-action underline underline-offset-4">
+        View on TradingView (opens outside Cresco) <ExternalLink aria-hidden className="size-3" />
       </a>
     </section>
   );
@@ -129,32 +125,32 @@ export function FamilyRealWorldPanel({ company, showChart = true }: { company: P
 
   return (
     <div data-testid={"real-learning-" + company.id}>
-      <section className="mt-4 rounded-[16px] border border-line-soft bg-surface-soft p-3"
+      <section className="rounded-[16px] border border-line-soft bg-surface-soft p-3 md:p-4"
         data-testid={"real-sec-" + company.id}>
-        <p className="flex items-center gap-2 text-[13px] font-extrabold text-navy-strong">
+        <p className="flex items-center gap-2 text-[14px] font-extrabold text-navy-strong">
           <ShieldCheck aria-hidden className="size-4 text-green-strong" />
           Official SEC results
         </p>
         {revenue ? (
           <>
-            <p className="mt-1 text-[11px] leading-5 text-ink-2">
+            <p className="mt-1 text-[13px] leading-5 text-ink-2">
               Annual fiscal period ending {revenue.end} · {revenue.form} filed {revenue.filed} · USD
             </p>
             <dl className="mt-3 grid grid-cols-2 gap-2">
               <div className="rounded-[12px] bg-white p-3">
-                <dt className="text-[11px] font-semibold text-ink-2">Annual revenue</dt>
-                <dd className="mt-1 text-[18px] font-extrabold text-navy-strong" data-testid={"real-revenue-" + company.id}>
+                <dt className="text-[13px] font-semibold text-ink-2">Annual revenue (sales)</dt>
+                <dd className="mt-1 text-[20px] font-extrabold text-navy-strong" data-testid={"real-revenue-" + company.id}>
                   {USD.format(revenue.valueUSD)}
                 </dd>
               </div>
               <div className="rounded-[12px] bg-white p-3">
-                <dt className="text-[11px] font-semibold text-ink-2">Annual net income</dt>
-                <dd className="mt-1 text-[18px] font-extrabold text-navy-strong">
+                <dt className="text-[13px] font-semibold text-ink-2">Annual net income (profit)</dt>
+                <dd className="mt-1 text-[20px] font-extrabold text-navy-strong">
                   {netIncome ? USD.format(netIncome.valueUSD) : "Not available"}
                 </dd>
               </div>
             </dl>
-            <p className="mt-2 text-[11px] leading-5 text-ink-2">
+            <p className="mt-2 text-[12px] leading-5 text-ink-2">
               Annual SEC filing facts · not live market data.
               Snapshot checked {SEC.generatedAt?.slice(0, 10) ?? "date unavailable"}.
               Financial figures can be restated; compare reporting periods before drawing conclusions.
@@ -167,13 +163,13 @@ export function FamilyRealWorldPanel({ company, showChart = true }: { company: P
           </p>
         )}
         <a href={secHref} target="_blank" rel="noopener noreferrer"
-          className="mt-2 inline-flex min-h-10 items-center gap-1 text-[12px] font-bold text-family-action underline underline-offset-4">
+          className="mt-1 inline-flex min-h-11 items-center gap-1 text-[13px] font-bold text-family-action underline underline-offset-4">
           Read official SEC filings <ExternalLink aria-hidden className="size-3" />
         </a>
       </section>
 
-      <details className="mt-3 rounded-[16px] border border-line-soft p-3" data-testid={"real-mission-" + company.id}>
-        <summary className="cursor-pointer text-[13px] font-extrabold text-navy-strong">
+      <details className="mt-3 rounded-[16px] border border-family-action/25 bg-family-action-soft/40 px-3 py-1" data-testid={"real-mission-" + company.id}>
+        <summary className="flex min-h-11 cursor-pointer items-center text-[14px] font-extrabold text-navy-strong">
           Try it · Can more sales mean less profit?
         </summary>
         <p className="mt-3 text-[13px] leading-6 text-navy">
@@ -183,16 +179,16 @@ export function FamilyRealWorldPanel({ company, showChart = true }: { company: P
         <p className="mt-2 text-[13px] font-bold text-navy-strong">Does higher revenue guarantee a higher profit?</p>
         <div className="mt-2 flex flex-wrap gap-2">
           <button type="button" aria-pressed={answer === "yes"} onClick={() => setAnswer("yes")}
-            className={"min-h-10 rounded-full border px-4 text-[12px] font-bold " + (answer === "yes" ? "border-family-action bg-family-action-soft" : "border-line-soft")}>
+            className={"min-h-11 rounded-full border bg-surface px-5 text-[14px] font-bold " + (answer === "yes" ? "border-family-action bg-family-action-soft" : "border-line-soft")}>
             Yes
           </button>
           <button type="button" aria-pressed={answer === "no"} onClick={() => setAnswer("no")}
-            className={"min-h-10 rounded-full border px-4 text-[12px] font-bold " + (answer === "no" ? "border-family-action bg-family-action-soft" : "border-line-soft")}>
+            className={"min-h-11 rounded-full border bg-surface px-5 text-[14px] font-bold " + (answer === "no" ? "border-family-action bg-family-action-soft" : "border-line-soft")}>
             No
           </button>
         </div>
         {answer ? (
-          <p className="mt-2 rounded-[12px] bg-green-soft p-3 text-[12px] leading-5 text-navy" role="status">
+          <p className="mb-2 mt-2 rounded-[12px] bg-green-soft p-3 text-[13px] leading-5 text-navy" role="status">
             {answer === "no"
               ? "Correct. The imaginary shop went from 10 credits of profit to a loss of 10."
               : "Not necessarily. Costs can rise even faster than sales. Here the shop would lose 10 credits."}
@@ -202,9 +198,7 @@ export function FamilyRealWorldPanel({ company, showChart = true }: { company: P
       </details>
 
       {showChart ? <TradingViewOnDemand company={company} /> : null}
-      <p className="mt-2 flex items-center gap-1 text-[11px] leading-5 text-ink-3">
-        <RefreshCcw aria-hidden className="size-3" /> SEC figures are updated only when the offline snapshot is refreshed and reviewed.
-      </p>
+
     </div>
   );
 }

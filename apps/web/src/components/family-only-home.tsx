@@ -1,148 +1,97 @@
+"use client";
+
+/**
+ * Public Family landing. A client component on purpose: lucide icons create a
+ * React context, which is not available while rendering server components
+ * (the cause of the 2026-11-16 HTTP 500 on "/").
+ */
 import Link from "next/link";
+import { ArrowRight, BookOpen, Building2, Compass, HeartHandshake, KeyRound, ShieldCheck, Target } from "lucide-react";
 import { FamilyParentTrustCenter } from "@/components/family-parent-trust-center";
-import { ArrowRight, HeartHandshake, ShieldCheck, Sprout } from "lucide-react";
 import { Wordmark } from "@/components/shell";
 import { FamilyStoryScene } from "@/components/illustrations/family-story";
 
+const LOOP = [
+  { icon: Target, title: "Pick a goal", body: "A bike, a game setup or a trip. Everything that follows is about that goal." },
+  { icon: BookOpen, title: "Learn one idea", body: "Short lessons with a real decision inside, not just reading." },
+  { icon: Compass, title: "Meet a company", body: "Invented people with real-life dilemmas, then four real businesses." },
+  { icon: KeyRound, title: "Decide inside the Key", body: "Small choices alone. Bigger ones go to the Parent, who can say yes once." },
+  { icon: HeartHandshake, title: "Talk it through", body: "Each of you shares a view about what happened and what to try next." },
+];
+
 export function FamilyOnlyHome() {
   return (
-    <main id="main" className="cresco-app-workspace min-h-dvh">
-      <div className="mx-auto max-w-[1120px] px-5 pb-20 pt-7 md:px-10">
+    <main id="main" className="cresco-app-workspace cresco-family-app min-h-dvh">
+      <div className="mx-auto max-w-[1120px] px-5 pb-20 pt-5 md:px-10 md:pt-7">
         <header className="flex items-center justify-between gap-4">
           <Wordmark size="md" />
-          <span className="rounded-full border border-green/40 bg-green-soft px-4 py-2 text-[12px] font-bold text-green-strong">
-            Open demo · fictional credits
+          <span className="rounded-full border border-yellow/50 bg-yellow-soft px-3 py-1.5 text-[12px] font-bold text-orange-text md:px-4 md:text-[13px]">
+            Free · pretend money only
           </span>
         </header>
 
-        <section
-          aria-labelledby="family-hero-title"
-          className="mt-6 grid gap-7 md:mt-16 md:gap-9 md:grid-cols-[1.05fr_0.95fr] md:items-center"
-        >
+        <section aria-labelledby="family-hero-title" className="mt-6 grid gap-6 md:mt-14 md:grid-cols-[1.05fr_0.95fr] md:items-center md:gap-10">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-green-strong md:text-[12px] md:tracking-[0.16em]">
-              Cresco Family · Learn through your own decisions
-            </p>
-            <h1
-              id="family-hero-title"
-              className="mt-3 max-w-[15ch] font-display text-[clamp(38px,5.8vw,80px)] leading-[0.98] text-navy-strong"
-            >
-              Your child takes the lead. <em className="text-green-strong">You set the boundaries.</em>
+            <p className="text-[12px] font-extrabold uppercase tracking-[0.1em] text-green-strong">Cresco Family · learn money by deciding</p>
+            <h1 id="family-hero-title" className="mt-3 max-w-[15ch] font-display text-[clamp(36px,5.6vw,72px)] leading-[1.02] text-navy-strong">
+              Your child takes the lead. <span className="text-green-strong">You set the boundaries.</span>
             </h1>
-            <p className="mt-4 max-w-[55ch] text-[16px] leading-7 text-ink-2 md:mt-6">
-              A teen practices investing with pretend credits. Inside a limit
-              the parent sets, the teen decides alone. Above it, the parent says yes or no.
+            <p className="mt-4 max-w-[52ch] text-[16px] leading-7 text-ink-2">
+              Your child learns about money by making real decisions with pretend credits. Inside a limit you set,
+              they decide alone. Above it, they ask you.
             </p>
-
-            <div className="mt-5 flex flex-wrap gap-3 md:mt-7">
-              <Link
-                href="/try"
-                className="inline-flex min-h-12 items-center gap-3 rounded-full bg-green-strong px-6 text-[14px] font-bold text-white hover:bg-green"
-              >
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <Link href="/try" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-family-action px-6 text-[15px] font-bold text-white hover:bg-family-action-hover">
                 Try Cresco - no sign-in <ArrowRight aria-hidden className="size-4" />
               </Link>
-              <a
-                href="#family-trust"
-                className="inline-flex min-h-12 items-center gap-3 rounded-full border border-green/40 bg-surface px-6 text-[14px] font-bold text-navy-strong hover:bg-green-soft"
-              >
+              <a href="#family-trust" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-line bg-surface px-6 text-[15px] font-bold text-navy-strong hover:bg-family-action-soft">
                 What parents should know
               </a>
             </div>
-            <ol data-testid="family-three-steps" className="mt-6 grid max-w-[58ch] gap-2 text-[13px] leading-5 text-navy-strong">
-              {[
-                "The teen saves pretend credits toward a goal and researches six invented companies.",
-                "Inside the Key limit, the teen makes the practice choice alone.",
-                "Above the limit, it is blocked. A simulated parent approves it once or declines it.",
-              ].map((text, index) => (
-                <li key={text} className="flex items-start gap-3">
-                  <span aria-hidden className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-green-soft text-[12px] font-bold text-green-strong">{index + 1}</span>
-                  <span>{text}</span>
-                </li>
-              ))}
-            </ol>
-            <p className="mt-4 max-w-[55ch] text-[13px] leading-6 text-ink-2">
-              Explore Cresco right now, without signing in, entering a code,
-              or connecting a wallet. This is a fictional learning exercise,
-              not a real financial account or investment service.
+            <p className="mt-3 text-[13px] leading-6 text-ink-2">
+              No account, code or wallet. This is a fictional learning exercise, not a real financial account or investment service.
             </p>
           </div>
-
-          <div
-            aria-label="Illustrative teen and parent experience"
-            data-testid="family-hero-role-comparison"
-            className="rounded-[28px] border border-green/20 bg-surface p-5 shadow-soft md:p-6"
-          >
-            <div className="mb-4 hidden overflow-hidden rounded-[20px] border border-line-soft md:block">
-              <FamilyStoryScene className="block h-auto w-full" title="An illustrated parent and teenager exploring Cresco together at home. Fictional practice only."/>
-            </div>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="font-display text-[27px] leading-tight text-navy-strong">
-                Two views. Shared understanding.
-              </h2>
-              <span className="rounded-full bg-green-soft px-3 py-1.5 text-[11px] font-bold text-green-strong">
-                Illustrated · No real money
-              </span>
-            </div>
-            <p className="mt-2 text-[12px] leading-5 text-ink-2">
-              An introduction to the full Parent and Child workspaces, available under Try Cresco.
-            </p>
-
-            <div className="mt-5 rounded-[21px] border border-green/20 bg-green-soft/40 p-4">
-              <div className="flex items-center gap-2 text-green-strong">
-                <Sprout aria-hidden className="size-5" />
-                <h3 className="text-[15px] font-bold">Teen view · I make a choice</h3>
-              </div>
-              <p className="mt-2 text-[12px] text-ink-2">Imaginary credits to learn with</p>
-              <div className="mt-3 grid grid-cols-2 gap-3">
-                <div className="rounded-xl bg-surface p-3">
-                  <p className="text-[11px] font-semibold text-ink-2">Available</p>
-                  <p className="mt-1 font-display text-[29px] text-navy-strong">80</p>
-                </div>
-                <div className="rounded-xl bg-surface p-3">
-                  <p className="text-[11px] font-semibold text-ink-2">Set aside</p>
-                  <p className="mt-1 font-display text-[29px] text-navy-strong">20</p>
-                </div>
-              </div>
-              <p className="mt-3 rounded-xl border border-green/20 bg-surface p-3 text-[12px] leading-5 text-navy-strong">
-                My next question: can I learn about diversified funds?
-              </p>
-            </div>
-
-            <div className="mt-3 rounded-[21px] border border-line-soft bg-surface-soft p-4">
-              <div className="flex items-center gap-2 text-navy-strong">
-                <HeartHandshake aria-hidden className="size-5" />
-                <h3 className="text-[15px] font-bold">Parent view · I guide the boundaries</h3>
-              </div>
-              <p className="mt-2 text-[12px] leading-5 text-ink-2">
-                Learn how the Key works, then review what the young person chose.
-                Approve or decline the <strong>exact fictional practice request</strong>,
-                or update the standing Key explicitly. No real investment occurs.
-              </p>
-              <p className="mt-3 text-[11px] font-bold text-green-strong">Parent learning path · 5 short lessons</p>
-            </div>
-            <div className="mt-4 flex items-start gap-2 rounded-[15px] bg-yellow-soft p-3">
-              <ShieldCheck aria-hidden className="mt-0.5 size-4 shrink-0 text-orange-text" />
-              <p className="text-[11px] leading-5 text-navy">
-                Illustration only. The full demo on Try Cresco is a single-browser simulation.
-                It does not prove separate accounts, legal guardianship, custody or
-                authority over real funds.
-              </p>
-            </div>
+          <div className="overflow-hidden rounded-[28px] border border-green/20 bg-surface shadow-soft">
+            <FamilyStoryScene className="block h-auto max-h-[30vh] w-full md:max-h-none" title="An illustrated parent and teenager exploring Cresco together at home. Fictional practice only."/>
           </div>
         </section>
 
-        <section className="mt-8 rounded-[22px] border border-green/30 bg-green-soft p-5 md:p-6" aria-label="Open public learning demo">
-          <h2 className="font-display text-[27px] text-navy-strong">Curious? Try it right away.</h2>
-          <p className="mt-2 max-w-[72ch] text-[13px] leading-6 text-ink-2">
-            No registration, invitation or access code. Play both roles in one browser,
-            using only pretend credits. Your choices are temporary and are not sent
-            to a financial service. Each visitor starts with a fresh simulation.
-          </p>
-          <Link href="/try"
-            className="mt-4 inline-flex min-h-12 items-center gap-2 rounded-full bg-green-strong px-5 py-3 text-[13px] font-bold text-white">
-            Start free demo <ArrowRight aria-hidden className="size-4"/>
-          </Link>
+        <section aria-labelledby="loop-title" className="mt-12 md:mt-16">
+          <h2 id="loop-title" className="font-display text-[26px] text-navy-strong md:text-[32px]">One loop, repeated</h2>
+          <p className="mt-1 max-w-[60ch] text-[15px] leading-6 text-ink-2">Every round takes a few minutes. The app always shows where you are and the one next step.</p>
+          <ol data-testid="family-three-steps" className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {LOOP.map(({ icon: Icon, title, body }, index) => (
+              <li key={title} className="rounded-[20px] border border-line-soft bg-surface p-4">
+                <span className="flex items-center gap-2 text-[13px] font-extrabold text-family-action">
+                  <span aria-hidden className="grid size-7 place-items-center rounded-full bg-family-action-soft">{index + 1}</span>
+                  <Icon aria-hidden className="size-4"/>
+                </span>
+                <h3 className="mt-2 text-[16px] font-extrabold text-navy-strong">{title}</h3>
+                <p className="mt-1 text-[14px] leading-6 text-ink-2">{body}</p>
+              </li>
+            ))}
+          </ol>
         </section>
+
+        <section aria-labelledby="worlds-title" className="mt-12 grid gap-3 md:grid-cols-2" data-testid="family-two-worlds">
+          <h2 id="worlds-title" className="sr-only">Pretend and real, never mixed</h2>
+          <div className="rounded-[20px] border border-yellow/50 bg-yellow-soft p-5">
+            <p className="text-[12px] font-extrabold uppercase tracking-[0.08em] text-orange-text">Pretend</p>
+            <h3 className="mt-1 text-[19px] font-extrabold text-navy-strong">100 pretend credits, six invented companies</h3>
+            <p className="mt-1 text-[14px] leading-6 text-navy">This is where the Key applies: small choices alone, bigger ones go to the Parent, who can approve exactly once.</p>
+          </div>
+          <div className="rounded-[20px] border border-blue/30 bg-blue-soft p-5">
+            <p className="flex items-center gap-1.5 text-[12px] font-extrabold uppercase tracking-[0.08em] text-blue-strong"><Building2 aria-hidden className="size-4"/>Real company · paper $</p>
+            <h3 className="mt-1 text-[19px] font-extrabold text-navy-strong">Apple, Microsoft, Costco, Shopify</h3>
+            <p className="mt-1 text-[14px] leading-6 text-navy">Official, dated SEC figures and an optional chart, then a paper trade with $1,000 of imaginary dollars. No orders, no accounts.</p>
+          </div>
+        </section>
+
+        <p className="mt-6 flex items-start gap-2 rounded-[16px] border border-line-soft bg-surface p-4 text-[13px] leading-6 text-ink-2">
+          <ShieldCheck aria-hidden className="mt-1 size-4 shrink-0 text-green-strong" />
+          <span>The demo is a single-browser simulation: one person can play both roles. It does not prove separate accounts, legal guardianship, custody or authority over real funds. Nothing is saved after you close the tab.</span>
+        </p>
         <FamilyParentTrustCenter />
       </div>
     </main>
