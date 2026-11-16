@@ -145,7 +145,7 @@ export function FamilyRealMarketPractice({ company }: { company: PublicCompanyRe
         <section className="rounded-[16px] border border-line-soft bg-surface p-4" aria-label="Enter your quote">
           <h4 className="text-[15px] font-extrabold text-navy-strong">1. Record a reference price for {company.ticker}</h4>
           <p className="mt-1 text-[12px] leading-5 text-ink-2">
-            Check the chart to the left (below on mobile). When no licensed snapshot is available, enter a dated USD price yourself. Shopify uses NASDAQ:SHOP in USD, not TSX:SHOP in CAD.
+            Check the chart beside this form (above on mobile). When no licensed snapshot is available, enter a dated USD price yourself. Shopify uses NASDAQ:SHOP in USD, not TSX:SHOP in CAD.
           </p>
           <div className="mt-3 grid grid-cols-2 gap-3">
             <label className="text-[12px] font-bold text-navy-strong">
