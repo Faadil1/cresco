@@ -1,4 +1,7 @@
 import { test, expect } from "@playwright/test";
+import { waitForFamilyReady } from "./family-ready.mjs";
+
+waitForFamilyReady(test);
 
 const FORBIDDEN = ["cresco-family-api", "keys-api-stocklana", "api.solana", "rpc.solana", "/api/", "api.pyth", "hermes.pyth"];
 
@@ -216,7 +219,7 @@ test("one client-side journey keeps a single state across real pages, Back and F
   await page.getByRole("link", { name: /open my portfolio/i }).click();
   await expect(page).toHaveURL(/\/try\/portfolio$/);
   await expect(page.getByTestId("portfolio-spent")).toContainText("25");
-  await expect(page.getByTestId("portfolio-receipts")).toContainText(/PRACTICE ONLY - NOT EXECUTED ONCHAIN/i);
+  await expect(page.getByTestId("portfolio-receipts")).toContainText(/practice receipt, no real money/i);
   await expect(page.getByTestId("child-request-history")).toContainText(/approval used/i);
   await page.goBack();
   await expect(page).toHaveURL(/\/try\/outcome$/);
@@ -306,13 +309,13 @@ test("deep links and refresh: empty states point to the right chapter, bad ids a
   await expect(page.getByRole("heading", { name: /which company do you want to practice with/i })).toBeVisible();
   // Research-only companies offer no practice choice.
   await page.goto("/try/explore/river");
-  await expect(page.getByText(/research only\. no practice choice is offered/i)).toBeVisible();
+  await expect(page.getByText(/research only\..*has no practice choice/i)).toBeVisible();
   await expect(page.getByTestId("practice-this")).toHaveCount(0);
   for (const path of ["/try/explore/nope", "/try/explore/ORCHARD", "/try/learn/unknown", "/try/api", "/try/parent/sign-in", "/try/wallet", "/try/dashboard", "/try/home/x", "/try/portfolio/ORC", "/try/profile/edit", "/home", "/portfolio", "/profile", "/parent/sign-in", "/onboarding/goal", "/invest/ORC", "/api/health"]) {
     const response = await request.get(path);
     expect(response.status(), path).toBe(404);
   }
-  for (const path of ["/", "/try", "/try/goal", "/try/home", "/try/portfolio", "/try/profile", "/try/learn", "/try/learn/c-save", "/try/explore", "/try/explore/basket", "/try/decision", "/try/parent", "/try/parent/learn", "/try/parent/key", "/try/parent/request", "/try/outcome", "/try/together", "/try/lab"]) {
+  for (const path of ["/", "/try", "/try/goal", "/try/home", "/try/portfolio", "/try/profile", "/try/learn", "/try/learn/c-save", "/try/explore", "/try/explore/basket", "/try/decision", "/try/parent", "/try/parent/learn", "/try/parent/key", "/try/parent/request", "/try/outcome", "/try/together", "/try/lab", "/try/explore/real", "/try/portfolio/paper", "/try/portfolio/companies"]) {
     expect((await request.get(path)).status(), path).toBe(200);
   }
 });
@@ -389,8 +392,11 @@ test("the lab and the story share one practice state", async ({ page }) => {
   await openReadyAfterGoal(page);
   await openOptionalSavings(page);
   await page.getByRole("button", { name: /set aside 20 credits/i }).click();
-  await page.getByText("Advanced legacy experiment").click();
-  await page.getByRole("link", { name: "Open the experimental lab" }).click();
+  // The classic lab is demoted: reachable only from Profile, never from every page.
+  await openHomeFromReady(page);
+  await expect(page.getByTestId("family-footer").getByRole("link", { name: /lab/i })).toHaveCount(0);
+  await tab(page, "Profile").click();
+  await page.getByTestId("profile-classic-lab").click();
   await expect(page).toHaveURL(/\/try\/lab$/);
   await expect(page.getByTestId("practice-saved")).toHaveText("20");
   await expect(page.getByText("Saved for Family trip", { exact: true })).toBeVisible();
@@ -446,7 +452,6 @@ test("exhausted credits and a duplicate request are explained before the click a
   await expect(page.getByTestId("goal-progress")).toContainText("0 still available");
   await expect(page.getByRole("button", { name: /set aside 20 credits/i })).toBeDisabled();
   await openHomeFromReady(page);
-  await page.getByTestId("home-extras").locator("summary").click();
   await expect(page.getByTestId("home-save")).toBeDisabled();
   await tab(page, "Explore").click();
   await page.getByRole("link", { name: "Open Neighborhood Markets" }).click();
@@ -509,7 +514,8 @@ test("the goal chapter records an actual Child choice rather than silently accep
     .getByRole("link", { name: "Skip for now" }).click();
   await expect(page).toHaveURL(/\/try\/goal\/ready$/);
   await openHomeFromReady(page);
-  await expect(page.getByRole("heading", { level: 1, name: /ready for your next step/i })).toBeVisible();
+  // Once a goal is chosen, Home is titled by it.
+  await expect(page.getByRole("heading", { level: 1, name: /saving for a family trip/i })).toBeVisible();
   await expect(page.getByTestId("home-goal-summary")).toContainText(/family trip/i);
   expectCleanNetwork(net);
 });
@@ -647,8 +653,7 @@ test("Home shows goal, today's mission and navigation in the first screen, and e
   await childSetup(page);
   await expect(page.getByTestId("home-focus")).toBeInViewport({ ratio: 0.5 });
   await expect(page.getByTestId("home-goal-summary")).toContainText(/new bike/i);
-  await expect(page.getByTestId("home-extras")).not.toHaveAttribute("open", "");
-  await page.getByTestId("home-extras").locator("summary").click();
+  // The wallet and Key are always visible on Home now; nothing hides behind a drawer.
   await expect(page.getByTestId("home-save")).toBeVisible();
   await expect(page.getByTestId("home-mission")).toHaveAttribute("data-mission", "first-lesson");
   await expect(page.getByTestId("home-mission-go")).toBeInViewport({ ratio: 0.5 });
@@ -659,7 +664,7 @@ test("Home shows goal, today's mission and navigation in the first screen, and e
 
   const destinations = [
     ["Learn", /\/try\/learn$/, page.getByTestId("learn-up-next-card")],
-    ["Explore", /\/try\/explore$/, page.getByTestId("explore-featured")],
+    ["Explore", /\/try\/explore$/, page.getByRole("list", { name: "Invented companies" })],
     ["Portfolio", /\/try\/portfolio$/, page.getByTestId("portfolio-empty")],
     ["Profile", /\/try\/profile$/, page.getByTestId("profile-screen")],
     ["Home", /\/try\/home$/, page.getByTestId("home-screen")],
@@ -673,7 +678,8 @@ test("Home shows goal, today's mission and navigation in the first screen, and e
   }
   // Interest-matched person is the one Explore and Home suggest first.
   await tab(page, "Explore").click();
-  await expect(page.getByTestId("explore-featured")).toContainText("Mina");
+  await expect(page.getByRole("list", { name: "Invented companies" }).getByRole("listitem").first()).toContainText("Start here");
+  await expect(page.getByRole("list", { name: "Invented companies" }).getByRole("listitem").first()).toContainText("Mina");
   // Profile never asks for identity.
   await tab(page, "Profile").click();
   await expect(page.getByTestId("profile-goal")).toContainText(/new bike/i);
@@ -719,7 +725,7 @@ test("child first: lesson, Mina, blocked ask, Parent once, receipt, Portfolio, e
   // Home now points at the Parent, and previews the exact reason.
   await tab(page, "Home").click();
   await expect(page.getByTestId("home-mission")).toHaveAttribute("data-mission", "parent-deciding");
-  await expect(page.getByTestId("home-parent-preview")).toContainText(/Parent decision/i);
+  await expect(page.getByTestId("home-parent-preview")).toContainText(/with your Parent/i);
   await expect(page.getByTestId("home-mission")).toContainText(/25 credits/i);
   await page.getByTestId("home-mission-go").click();
   await expect(page).toHaveURL(/\/try\/parent\/request$/);
@@ -736,10 +742,10 @@ test("child first: lesson, Mina, blocked ask, Parent once, receipt, Portfolio, e
   await page.getByTestId("use-approval").click();
   await expect(page.getByTestId("receipt-line")).toContainText("25 credits");
   await tab(page, "Portfolio").click();
-  await expect(page.getByTestId("portfolio-receipts")).toContainText(/parent's one-time approval/i);
+  await expect(page.getByTestId("portfolio-receipts")).toContainText(/parent's one-time yes/i);
   await expect(page.getByTestId("portfolio-what-if")).toBeVisible();
-  await expect(page.getByTestId("portfolio-allocation")).toContainText("25 invested");
-  await expect(page.getByTestId("portfolio-weights")).toContainText("100% in the largest position");
+  await expect(page.getByTestId("portfolio-allocation").getByRole("img")).toHaveAttribute("aria-label", /25 invested in practice/);
+  await expect(page.getByTestId("portfolio-weights")).toContainText(/depend on one invented company/i);
   await page.getByRole("button", { name: "A bad month" }).click();
   await expect(page.getByTestId("scenario-hypothetical")).toHaveText("22.50");
   await tab(page, "Home").click();
@@ -792,7 +798,6 @@ test("Parent first: own dashboard, no identity capture, learning and Key visible
 test("Profile can start over for a new family without a reload, and nothing carries over", async ({ page }) => {
   test.slow(); // Full reset journey: allow a busy CI desktop runner without dropping checks.
   await childSetup(page, /family trip/i);
-  await page.getByTestId("home-extras").locator("summary").click();
   await page.getByTestId("home-save").click();
   await expect(page.getByTestId("home-goal-saved")).toHaveText("20/100");
   await tab(page, "Profile").click();
@@ -836,13 +841,13 @@ test("empty Portfolio teaches real portfolio mechanics without inventing a holdi
   const net = watch(page);
   await page.goto("/try/portfolio");
   await expect(page.getByTestId("portfolio-empty")).toContainText(/no practice holdings yet/i);
-  await expect(page.getByTestId("portfolio-spent")).toHaveText("0credits");
+  await expect(page.getByTestId("portfolio-spent")).toHaveText("0");
   await page.getByTestId("portfolio-example-toggle").click();
   const example = page.getByTestId("portfolio-example");
   await expect(example).toContainText(/not your holdings/i);
   await expect(example.getByRole("listitem")).toHaveCount(3);
   await example.getByRole("button", { name: /a bad month/i }).click();
-  await expect(page.getByTestId("example-scenario-total")).toContainText(/60.00 invested → 49.00 scenario value/i);
+  await expect(page.getByTestId("example-scenario-total")).toContainText(/60.00 invested → 49.00 after the month/i);
   await testInfo.attach("portfolio-guided-example.png", { body: await page.screenshot(), contentType: "image/png" });
   await tab(page, "Home").click();
   await expect(page.getByTestId("home-key")).toContainText("15 credits");
@@ -883,32 +888,35 @@ test("hands-on grocery and price-risk labs calculate consequences without changi
 
 test("real-company research is separate from fictional holdings and cannot mutate practice credits", async ({ page }, testInfo) => {
   const net = watch(page);
-  await page.goto("/try/portfolio");
-  await expect(page.getByTestId("portfolio-sections").getByRole("link", { name: "Fictional practice" })).toHaveAttribute("aria-current", "page");
-  await page.getByTestId("portfolio-sections").getByRole("link", { name: "Real companies" }).click();
-  await expect(page).toHaveURL(/\/try\/portfolio\/companies$/);
-  await expect(tab(page, "Portfolio")).toHaveAttribute("aria-current", "page");
+  await page.goto("/try/explore");
+  await expect(page.getByTestId("explore-sections").getByRole("link", { name: "Story companies" })).toHaveAttribute("aria-current", "page");
+  await page.getByTestId("explore-sections").getByRole("link", { name: "Real companies" }).click();
+  await expect(page).toHaveURL(/\/try\/explore\/real$/);
+  await expect(tab(page, "Explore")).toHaveAttribute("aria-current", "page");
   await expect(page.getByTestId("real-company-boundary")).toContainText(/no real orders, real balances or accounts/i);
   for (const name of ["shopify", "microsoft", "costco", "apple"]) {
     const company = page.getByTestId("real-company-" + name);
     await expect(company).toBeVisible();
     await company.getByRole("button").click();
     const active = page.getByTestId("real-active-company");
-    await expect(active).toContainText(name === "microsoft" ? "Microsoft" : name === "shopify" ? "Shopify" : name === "costco" ? "Costco" : "Apple");
-    await expect(company.getByRole("link")).toHaveAttribute("href", /^https:\/\//);
-    await expect(company.getByRole("link")).toHaveAttribute("rel", "noopener noreferrer");
-    await active.getByText("What should I check?").click();
-    await expect(active).toContainText("Customers:");
+    const label = name === "microsoft" ? "Microsoft" : name === "shopify" ? "Shopify" : name === "costco" ? "Costco" : "Apple";
+    await expect(active).toContainText("Understand " + label);
+    await expect(active).toContainText("Who pays:");
+    await active.getByTestId("real-risks").locator("summary").click();
+    const official = active.getByRole("link", { name: new RegExp(label + " investor relations", "i") });
+    await expect(official).toHaveAttribute("href", /^https:\/\//);
+    await expect(official).toHaveAttribute("rel", "noopener noreferrer");
   }
   await expect(page.getByTestId("market-buy")).toBeDisabled();
   await expect(page.getByTestId("market-sell")).toBeDisabled();
   await expect(page.getByRole("button", { name: /^buy$|^invest$|^trade$/i })).toHaveCount(0);
   await testInfo.attach("real-company-research.png", { body: await page.screenshot(), contentType: "image/png" });
-  await page.getByTestId("portfolio-sections").getByRole("link", { name: "Fictional practice" }).click();
+  await tab(page, "Portfolio").click();
   await expect(page.getByTestId("portfolio-empty")).toBeVisible();
   await expect(page.getByTestId("portfolio-available")).toHaveText("100");
   expectCleanNetwork(net);
 });
+
 
 test("the expanded curriculum has 17 Child lessons and 7 Parent lessons with multiple learning steps", async ({ page }) => {
   const net = watch(page);

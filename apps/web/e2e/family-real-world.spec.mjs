@@ -1,4 +1,7 @@
 import { test, expect } from "@playwright/test";
+import { waitForFamilyReady } from "./family-ready.mjs";
+
+waitForFamilyReady(test);
 
 test("Real-world research stays offline until a chart is explicitly requested", async ({page}) => {
   const external = [];
@@ -13,10 +16,15 @@ test("Real-world research stays offline until a chart is explicitly requested", 
   await page.route("https://s3.tradingview.com/**", route =>
     route.fulfill({status:200, contentType:"application/javascript", body:"/* network isolation test */"}));
 
-  await page.goto("/try/portfolio");
-  await expect(page.getByTestId("portfolio-real-entry")).toBeVisible();
-  await page.getByTestId("portfolio-go-real").click();
-  await expect(page).toHaveURL(/\/try\/portfolio\/companies$/);
+  // Real companies are one switch away from the story companies, under Explore.
+  await page.goto("/try/explore");
+  await page.getByTestId("explore-sections").getByRole("link", { name: "Real companies" }).click();
+  await expect(page).toHaveURL(/\/try\/explore\/real$/);
+  await expect(page.getByTestId("reality-real")).toBeVisible();
+  // Business first: step 1 (official facts) comes before the price and the trade.
+  const step1 = await page.getByRole("heading", { name: /step 1: understand apple/i }).boundingBox();
+  const step3 = await page.getByRole("heading", { name: /step 3: try a paper trade/i }).boundingBox();
+  expect(step1.y).toBeLessThan(step3.y);
   for (const id of ["shopify", "microsoft", "costco", "apple"]) {
     await expect(page.getByTestId("real-company-" + id)).toBeVisible();
     await page.getByTestId("real-company-select-" + id).click();
@@ -77,9 +85,22 @@ test("A dated user-entered price powers a separate offline paper portfolio with 
   await page.getByTestId("market-sell").click();
   await expect(page.getByTestId("market-cash")).toContainText("$945.00");
 
-  await page.getByTestId("portfolio-sections").getByRole("link", {name:"Fictional practice"}).click();
+  // Step 4: the child explains the paper loss; nothing is invented or changed.
+  await expect(page.getByTestId("market-explain")).toContainText(/down \$5\.00/);
+  await page.getByTestId("market-explain").getByRole("button", { name: /lost money as a business/i }).click();
+  await expect(page.getByTestId("market-explain-feedback")).toContainText(/not necessarily/i);
+  await page.getByTestId("market-explain").getByRole("button", { name: /lower than the price you paid/i }).click();
+  await expect(page.getByTestId("market-explain-feedback")).toContainText(/paper loss/i);
+  await expect(page.getByTestId("market-cash")).toContainText("$945.00");
+
+  // Portfolio keeps the two books apart behind one switch, never summed.
+  await page.locator('nav[aria-label="Main"]:visible').getByRole("link", { name: "Portfolio", exact: true }).click();
   await expect(page.getByTestId("portfolio-available")).toHaveText("100");
-  await page.getByTestId("portfolio-go-real").click();
+  await page.getByTestId("portfolio-sections").getByRole("link", {name:"Paper dollars"}).click();
+  await expect(page).toHaveURL(/\/try\/portfolio\/paper$/);
+  await expect(page.getByTestId("paper-cash")).toContainText("$945.00");
+  await expect(page.getByTestId("paper-holdings")).toContainText("0.25 paper shares");
+  await page.getByTestId("paper-go-real").click();
   await expect(page.getByTestId("market-cash")).toContainText("$945.00");
 
   await page.getByTestId("market-reset").click();

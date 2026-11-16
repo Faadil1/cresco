@@ -12,7 +12,7 @@ import type { ReactNode } from "react";
 import { KidBust } from "@/components/illustrations/people";
 import { BadgeArt } from "@/components/illustrations/badges";
 import { useFamilyStory } from "@/components/family-story-provider";
-import { panel } from "@/components/family-story-ui";
+import { pageTitle, panel } from "@/components/family-story-ui";
 import { remainingPeriod, selectedPracticeGoal } from "@/lib/family-public-practice";
 import { GOAL_STORY, INTERESTS, childPathFor, practiceWins } from "@/lib/family-story-state";
 
@@ -41,7 +41,7 @@ export function ProfileScreen() {
   const interests = INTERESTS.filter(i => story.interests.includes(i.id)).map(i => i.label);
   return (
     <div className="space-y-4 md:space-y-5" data-testid="profile-screen">
-      <h1 className="font-display text-[26px] leading-tight text-navy-strong md:text-[32px]">Profile</h1>
+      <h1 className={pageTitle}>Profile</h1>
       <section className={`${panel} flex items-center gap-4 !p-4`} aria-label="Practice learner">
         <KidBust className="size-16 shrink-0"/>
         <div>
@@ -73,7 +73,7 @@ export function ProfileScreen() {
               <li key={win.badge} className="flex flex-col items-center gap-1 rounded-[16px] bg-surface-soft p-3 text-center">
                 <BadgeArt badge={win.badge} earned={win.earned} className="size-12"/>
                 <span className="text-[12px] font-bold text-navy-strong">{win.label}</span>
-                <span className="text-[11px] text-ink-3">{win.earned ? "Earned" : "Not yet"}</span>
+                <span className="text-[12px] text-ink-3">{win.earned ? "Earned" : "Not yet"}</span>
               </li>
             ))}
           </ul>
@@ -81,22 +81,23 @@ export function ProfileScreen() {
         </section>
       </div>
 
-      <section className={`${panel} !p-4`} aria-labelledby="how-title">
-        <h2 id="how-title" className="flex items-center gap-2 text-[17px] font-extrabold text-navy-strong"><ShieldCheck aria-hidden className="size-5 text-green-strong"/>How Cresco Family works</h2>
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-[13px] leading-6 text-navy">
-          <li>100 pretend credits. No real money, wallet or investment.</li>
-          <li>Inside My Key you decide alone. Above it, a simulated Parent decides once, for that exact choice.</li>
-          <li>Companies and people are invented. Prices are examples, not advice.</li>
-          <li>Nothing is saved: a full refresh starts a new family session.</li>
+      <section id="how-it-works" className={`${panel} scroll-mt-6 !p-4 md:!p-5`} aria-labelledby="how-title">
+        <h2 id="how-title" className="flex items-center gap-2 text-[18px] font-extrabold text-navy-strong"><ShieldCheck aria-hidden className="size-5 text-green-strong"/>How Cresco Family works</h2>
+        <ul className="mt-2 list-disc space-y-1.5 pl-5 text-[15px] leading-6 text-navy">
+          <li><strong>Pretend:</strong> 100 pretend credits and six invented companies. Inside My Key you decide alone. Above it, a simulated Parent decides once, for that exact choice.</li>
+          <li><strong>Real company · paper $:</strong> four real businesses with official, dated SEC figures, and $1,000 of imaginary dollars for paper trades. Prices are ones you type in. No orders or accounts.</li>
+          <li>The two are never mixed: paper dollars cannot touch your credits or your Key.</li>
+          <li>The Parent is simulated in this browser. No identity or consent is verified.</li>
+          <li>Nothing is saved: closing the tab or a full refresh starts a new family session.</li>
         </ul>
         <div className="mt-3 flex flex-wrap gap-2">
-          <Link href="/try/lab" className="inline-flex min-h-11 items-center rounded-full border border-line px-4 text-[13px] font-bold text-navy-strong">Free practice lab</Link>
           <button type="button" data-testid="profile-reset"
             onClick={() => { dispatch({ type: "practice", action: { type: "reset" } }); router.push("/try"); }}
             className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line px-4 text-[13px] font-bold text-navy-strong">
             <RotateCcw aria-hidden className="size-4"/>Start over for a new family
           </button>
         </div>
+        <p className="mt-3 text-[13px] text-ink-2">Reviewing the older design? <Link href="/try/lab" className="font-semibold text-family-action underline underline-offset-4" data-testid="profile-classic-lab">Classic practice lab (older layout)</Link></p>
       </section>
     </div>
   );
