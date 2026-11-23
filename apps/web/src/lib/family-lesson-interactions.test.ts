@@ -15,9 +15,9 @@ describe("interactive lessons (issue #130)", () => {
       const lesson = interactiveLessonFor(id, bike)!;
       expect(lesson.beats.map(b => b.kind)).toEqual(["decide", "lab", "check"]);
       // The check reuses the lesson's vetted question; every wrong answer has a specific hint.
-      const module = CHILD_LEARNING.find(item => item.id === id)!;
+      const vetted = CHILD_LEARNING.find(item => item.id === id)!;
       const check = lesson.beats[2] as { hints: string[] };
-      module.choices.forEach((_, i) => expect(Boolean(check.hints[i]), `${id} hint ${i}`).toBe(i !== module.answer));
+      vetted.choices.forEach((_, i) => expect(Boolean(check.hints[i]), `${id} hint ${i}`).toBe(i !== vetted.answer));
     }
   });
 

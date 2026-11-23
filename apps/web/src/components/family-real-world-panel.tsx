@@ -10,6 +10,8 @@ import { ExternalLink, LineChart, ShieldCheck } from "lucide-react";
 import snapshotJson from "@/lib/family-sec-snapshot.json";
 import verified10kJson from "@/lib/family-sec-verified-10k.json";
 import type { PublicCompanyResearch } from "@/lib/family-real-companies";
+import { MONEY_TERMS, profitPerHundred } from "@/lib/family-real-company-explainers";
+import { Term } from "@/components/family-story-ui";
 
 type AnnualFact = {
   valueUSD: number;
@@ -95,21 +97,24 @@ export function TradingViewOnDemand({ company }: { company: PublicCompanyResearc
         <>
           <div ref={host} className="mt-3 min-h-[350px] w-full overflow-hidden bg-white" aria-label={company.name + " chart by TradingView"}
             data-testid={"real-chart-widget-" + company.id} />
-          <button type="button" onClick={() => setOpen(false)}
-            className="mt-2 min-h-11 text-[13px] font-bold text-family-action underline underline-offset-4">
-            Hide third-party chart
-          </button>
+          <span className="flex flex-wrap items-center gap-x-4">
+            <button type="button" onClick={() => setOpen(false)}
+              className="mt-2 min-h-11 text-[13px] font-bold text-family-action underline underline-offset-4">
+              Hide third-party chart
+            </button>
+            <a href={"https://www.tradingview.com/symbols/" + symbol.replace(":", "-") + "/"}
+        target="_blank" rel="noopener noreferrer"
+        className="inline-flex min-h-11 items-center gap-1 text-[13px] font-bold text-family-action underline underline-offset-4">
+        View on TradingView (opens outside Cresco) <ExternalLink aria-hidden className="size-3" />
+      </a>
+          </span>
         </>
       )}
       <p className="mt-2 text-[12px] leading-5 text-ink-2">
         Loading the chart contacts TradingView and shares your IP address, this page URL and the viewed symbol.
         Chart data remains on TradingView; its branding and attribution must remain visible.
       </p>
-      <a href={"https://www.tradingview.com/symbols/" + symbol.replace(":", "-") + "/"}
-        target="_blank" rel="noopener noreferrer"
-        className="inline-flex min-h-11 items-center gap-1 text-[13px] font-bold text-family-action underline underline-offset-4">
-        View on TradingView (opens outside Cresco) <ExternalLink aria-hidden className="size-3" />
-      </a>
+
     </section>
   );
 }
@@ -138,18 +143,24 @@ export function FamilyRealWorldPanel({ company, showChart = true }: { company: P
             </p>
             <dl className="mt-3 grid grid-cols-2 gap-2">
               <div className="rounded-[12px] bg-white p-3">
-                <dt className="text-[13px] font-semibold text-ink-2">Annual revenue (sales)</dt>
+                <dt className="text-[13px] font-semibold text-ink-2">Revenue: money customers paid</dt>
                 <dd className="mt-1 text-[20px] font-extrabold text-navy-strong" data-testid={"real-revenue-" + company.id}>
                   {USD.format(revenue.valueUSD)}
                 </dd>
               </div>
               <div className="rounded-[12px] bg-white p-3">
-                <dt className="text-[13px] font-semibold text-ink-2">Annual net income (profit)</dt>
+                <dt className="text-[13px] font-semibold text-ink-2">Profit: money left after costs</dt>
                 <dd className="mt-1 text-[20px] font-extrabold text-navy-strong">
                   {netIncome ? USD.format(netIncome.valueUSD) : "Not available"}
                 </dd>
               </div>
             </dl>
+            {netIncome ? (
+              <p className="mt-2 rounded-[12px] bg-white px-3 py-2 text-[14px] leading-6 text-navy-strong" data-testid={"real-profit-per-100-" + company.id}>
+                Out of every $100 customers paid, about <strong>${profitPerHundred(revenue.valueUSD, netIncome.valueUSD)}</strong> was left as profit that year.{" "}
+                <Term word="What is profit?" definition={MONEY_TERMS.profit}/>
+              </p>
+            ) : null}
             <p className="mt-2 text-[12px] leading-5 text-ink-2">
               Annual SEC filing facts · not live market data.
               Snapshot checked {SEC.generatedAt?.slice(0, 10) ?? "date unavailable"}.

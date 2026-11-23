@@ -19,6 +19,14 @@ export function waitForFamilyReady(test) {
 // child would (tap its heading). On desktop every step is open and the toggle
 // is hidden, so this does nothing.
 export async function openRealStep(page, n) {
+  await page.getByTestId("real-companies-screen").waitFor();
   const toggle = page.getByTestId(`step-toggle-${n}`);
   if (await toggle.isVisible() && (await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
+}
+
+// Real companies ask "why would you choose it?" before a paper buy (issue #130 P2).
+export async function chooseReason(page, name = /many people|schools and businesses|members come back|many shops/i) {
+  await openRealStep(page, 1);
+  await page.getByTestId("real-reason").getByRole("button", { name }).click();
+  await page.getByTestId("real-reason-feedback").waitFor();
 }

@@ -6,7 +6,7 @@
  * family-app-shell.tsx. Pure presentation; state comes from the provider.
  */
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Check, ChevronDown, Info } from "lucide-react";
 import { LessonIllustration } from "@/components/illustrations/scenes";
 import { sampleTrendPath, type FamilyExploreCase } from "@/lib/family-public-explore-data";
@@ -247,5 +247,28 @@ export function StepPanel({ n, title, hint, summary, done, open, onToggle, child
         {children}
       </div>
     </section>
+  );
+}
+
+/**
+ * A tap-to-explain word for first-time readers (revenue, profit, reference
+ * price...). A real button with aria-expanded; the definition appears inline,
+ * right under the sentence, so nothing opens elsewhere.
+ */
+export function Term({ word, definition, testId }: { word: string; definition: string; testId?: string }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  return (
+    <>
+      <button type="button" aria-expanded={open} aria-controls={id} onClick={() => setOpen(v => !v)} data-testid={testId}
+        className="inline min-h-0 cursor-help border-b-2 border-dotted border-family-action/60 font-bold text-navy-strong hover:text-family-action">
+        {word}<span className="sr-only"> (what does this mean?)</span>
+      </button>
+      {open ? (
+        <span id={id} role="note" className="mt-1 block rounded-[12px] bg-blue-soft px-3 py-2 text-[14px] font-normal leading-6 text-navy-strong">
+          {definition}
+        </span>
+      ) : <span id={id} hidden/>}
+    </>
   );
 }

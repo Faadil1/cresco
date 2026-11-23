@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { openRealStep, waitForFamilyReady } from "./family-ready.mjs";
+import { chooseReason, openRealStep, waitForFamilyReady } from "./family-ready.mjs";
 
 waitForFamilyReady(test);
 
@@ -85,6 +85,7 @@ test("A3/A7: real-company journey: business, source and date, opt-in chart, pape
   await page.goto("/try/explore/real");
   await page.getByTestId("real-company-select-costco").click();
   await expect(page.getByTestId("real-company-select-costco")).toHaveAttribute("aria-pressed", "true");
+  await chooseReason(page);
   await expect(page.getByRole("heading", { name: /step 1: understand costco/i })).toBeVisible();
   // Official figures keep their period, form, filing date and currency.
   await openRealStep(page, 1);
@@ -180,7 +181,9 @@ test("A3 (phones): the real-company lab guides one step at a time and moves forw
   await open(1); await closed(2); await closed(3); await closed(4);
   await expect(page.getByTestId("step-toggle-2")).toContainText(/type the latest price/i);
   await expect(page.getByTestId("market-price-input")).toBeHidden();
-  // Step 1 hands over to step 2.
+  // Step 1 asks why first, then hands over to step 2.
+  await expect(page.getByTestId("real-step-1-next")).toBeDisabled();
+  await chooseReason(page);
   await page.getByTestId("real-step-1-next").click();
   await open(2); await closed(1);
   await expect(page.getByTestId("real-chart-consent-apple")).toBeVisible();

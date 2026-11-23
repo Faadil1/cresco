@@ -9,10 +9,12 @@ export const FAMILY_WORKER_MOBILE_SPECS = [
   "family-story-journey.spec.mjs",
   "family-real-world.spec.mjs",
   "family-redesign.spec.mjs",
+  "family-acceptance-130.spec.mjs",
 ];
 export const FAMILY_WORKER_DESKTOP_SPECS = [
   "family-story-journey.spec.mjs",
   "family-real-world.spec.mjs",
   "family-redesign.spec.mjs",
+  "family-acceptance-130.spec.mjs",
 ];
 export const FAMILY_WORKER_SPECS = [...new Set([...FAMILY_WORKER_MOBILE_SPECS, ...FAMILY_WORKER_DESKTOP_SPECS])];

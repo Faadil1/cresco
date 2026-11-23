@@ -13,7 +13,8 @@ import { ArrowRight, ExternalLink } from "lucide-react";
 import { FamilyRealWorldPanel } from "@/components/family-real-world-panel";
 import { FamilyRealMarketPractice } from "@/components/family-real-market-practice";
 import { useRealMarketPractice } from "@/components/family-story-provider";
-import { RealityTag, Segmented, SourcesNote, StepPanel, pageTitle } from "@/components/family-story-ui";
+import { RealityTag, Segmented, SourcesNote, StepPanel, Term, pageTitle } from "@/components/family-story-ui";
+import { COMPANY_EXPLAINERS, MONEY_TERMS } from "@/lib/family-real-company-explainers";
 import { REAL_COMPANY_RESEARCH, type PublicCompanyResearch } from "@/lib/family-real-companies";
 
 export function ExploreSections({ active }: { active: "story" | "real" }) {
@@ -30,8 +31,13 @@ export function RealCompanyResearch() {
   // Phones show one step at a time; lg+ shows all four. Switching company restarts at step 1.
   const [openStep, setOpenStep] = useState(1);
   const toggle = (n: number) => setOpenStep(current => current === n ? 0 : n);
+  // "Why would you choose it?" per company: asked before any paper buy (issue #130 P2).
+  const [reasons, setReasons] = useState<Partial<Record<PublicCompanyResearch["id"], string>>>({});
   const { market } = useRealMarketPractice();
   const selected = REAL_COMPANY_RESEARCH.find(company => company.id === chosenId) ?? REAL_COMPANY_RESEARCH[0];
+  const explainer = COMPANY_EXPLAINERS[selected.id];
+  const reasonId = reasons[selected.id];
+  const reason = explainer.reasons.find(item => item.id === reasonId);
 
   return (
     <div className="space-y-5" data-testid="real-companies-screen">
@@ -76,8 +82,24 @@ export function RealCompanyResearch() {
           ariaLabel={"Step 1: understand " + selected.name} testId="real-step-1">
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
             <div className="space-y-3 text-[15px] leading-6 text-navy">
-              <p><strong className="text-navy-strong">What it does: </strong>{selected.model}</p>
+              <p className="text-[17px] font-bold leading-7 text-navy-strong" data-testid="real-in-one-sentence">{explainer.inOneSentence}</p>
+              <p><strong className="text-navy-strong">How money comes in: </strong>{explainer.moneyExample}{" "}
+                <Term word="What is revenue?" definition={MONEY_TERMS.revenue} testId="term-revenue"/></p>
               <p><strong className="text-navy-strong">Who pays: </strong>{selected.customers}</p>
+              <fieldset className="rounded-[16px] border border-family-action/25 bg-family-action-soft/40 p-3" data-testid="real-reason">
+                <legend className="px-1 text-[15px] font-extrabold text-navy-strong">Why would someone choose {selected.name}?</legend>
+                <p className="px-1 text-[13px] text-ink-2">Pick the reason closest to yours. You need one before a paper buy.</p>
+                <div className="mt-2 grid gap-2">
+                  {explainer.reasons.map(item => (
+                    <button key={item.id} type="button" aria-pressed={reasonId === item.id}
+                      onClick={() => setReasons(r => ({ ...r, [selected.id]: item.id }))}
+                      className={`min-h-12 rounded-[14px] border px-3 py-2 text-left text-[14px] font-semibold leading-5 text-navy-strong ${reasonId === item.id ? (item.strong ? "border-green-strong bg-green-soft" : "border-orange/50 bg-yellow-soft") : "border-line bg-surface hover:border-family-action/40"}`}>
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+                {reason ? <p role="status" data-testid="real-reason-feedback" data-strong={reason.strong ? "true" : "false"} className="mt-2 rounded-[12px] bg-surface p-3 text-[14px] leading-6 text-navy-strong">{reason.feedback}</p> : null}
+              </fieldset>
               <p className="rounded-[14px] bg-yellow-soft p-3 text-[14px] text-navy-strong"><strong>A question to ask: </strong>{selected.researchQuestion}</p>
               <details key={selected.id} className="rounded-[14px] border border-line-soft px-3 py-1" data-testid="real-risks">
                 <summary className="flex min-h-11 cursor-pointer items-center text-[14px] font-bold text-navy-strong">What could go wrong? ({selected.risksToConsider.length})</summary>
@@ -92,13 +114,14 @@ export function RealCompanyResearch() {
             </div>
             <FamilyRealWorldPanel key={selected.id} company={selected} showChart={false}/>
           </div>
-          <button type="button" onClick={() => setOpenStep(2)} data-testid="real-step-1-next"
-            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-family-action px-6 text-[15px] font-bold text-white lg:hidden">
-            Next: read the price <ArrowRight aria-hidden className="size-4"/>
+          <button type="button" onClick={() => setOpenStep(2)} data-testid="real-step-1-next" disabled={!reason}
+            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-family-action px-6 text-[15px] font-bold text-white disabled:opacity-50 lg:hidden">
+            {reason ? <>Next: read the price <ArrowRight aria-hidden className="size-4"/></> : "Pick a reason above to continue"}
           </button>
         </StepPanel>
 
-        <FamilyRealMarketPractice key={"paper-" + selected.id} company={selected} openStep={openStep} setOpenStep={setOpenStep} toggle={toggle}/>
+        <FamilyRealMarketPractice key={"paper-" + selected.id} company={selected} openStep={openStep} setOpenStep={setOpenStep} toggle={toggle}
+          reasonChosen={Boolean(reason)} onNeedReason={() => setOpenStep(1)}/>
       </section>
 
       <SourcesNote testId="real-company-boundary">

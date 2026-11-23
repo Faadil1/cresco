@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { openRealStep, waitForFamilyReady } from "./family-ready.mjs";
+import { chooseReason, openRealStep, waitForFamilyReady } from "./family-ready.mjs";
 
 waitForFamilyReady(test);
 
@@ -66,6 +66,7 @@ test("A dated user-entered price powers a separate offline paper portfolio with 
   });
   await page.goto("/try/portfolio/companies");
   await expect(page.getByTestId("market-equity")).toContainText("$1,000.00");
+  await chooseReason(page);
   await expect(page.getByTestId("market-buy")).toBeDisabled();
   await expect(page.getByTestId("market-current-quote")).toContainText("No price recorded");
 

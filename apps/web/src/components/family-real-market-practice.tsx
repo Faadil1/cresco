@@ -9,7 +9,8 @@ import { useEffect, useState } from "react";
 import { TradingViewOnDemand } from "@/components/family-real-world-panel";
 import licensedEodJson from "@/lib/family-market-approved-snapshot.json";
 import { ArrowDownRight, ArrowUpRight, RotateCcw } from "lucide-react";
-import { StepPanel } from "@/components/family-story-ui";
+import { StepPanel, Term } from "@/components/family-story-ui";
+import { MONEY_TERMS } from "@/lib/family-real-company-explainers";
 import { useRealMarketPractice } from "@/components/family-story-provider";
 import {
   QUOTE_REFERENCES, marketTradePreview, summarizeRealMarket,
@@ -62,8 +63,10 @@ function explainOptions(company: PublicCompanyResearch, direction: "up" | "down"
   ];
 }
 
-export function FamilyRealMarketPractice({ company, openStep, setOpenStep, toggle }: {
+export function FamilyRealMarketPractice({ company, openStep, setOpenStep, toggle, reasonChosen = true, onNeedReason }: {
   company: PublicCompanyResearch;
+  /** The Child said why they would choose this company (step 1). Paper buys wait for it. */
+  reasonChosen?: boolean; onNeedReason?: () => void;
   /** Which step is open on phones (lg+ shows all). Owned by the page so step 1 can hand over. */
   openStep: number; setOpenStep: (n: number) => void; toggle: (n: number) => void;
 }) {
@@ -140,7 +143,7 @@ export function FamilyRealMarketPractice({ company, openStep, setOpenStep, toggl
         <StepPanel n={2} title="Read the price" done={Boolean(quote)} open={openStep === 2} onToggle={() => toggle(2)}
           testId="market-chart-column" ariaLabel={"Step 2: read the price of " + company.ticker}
           summary={quote ? `Your price: ${fmt(quote.priceCents)} · ${quote.asOf}` : "Type the latest price and its date"}
-          hint={<>Open the chart if you like, then type the latest price you see and its date. Shopify uses NASDAQ:SHOP in US dollars.</>}>
+          hint={<>a) Open the chart if you like. b) Find the latest share price in US dollars. c) Type it here with its date. <Term word="What is a reference price?" definition={MONEY_TERMS.referencePrice} testId="term-reference-price"/></>}>
           <TradingViewOnDemand company={company} />
           <div className="rounded-[16px] bg-surface-soft p-3 md:p-4" aria-label="Enter your quote">
             <div className="grid grid-cols-2 gap-3">
@@ -163,6 +166,7 @@ export function FamilyRealMarketPractice({ company, openStep, setOpenStep, toggl
                 {QUOTE_REFERENCES.map(name => <option key={name} value={name}>{name}</option>)}
               </select>
             </label>
+            {inputPrice.trim() && !(priceCentsFromInput(inputPrice) > 0) ? <p className="mt-2 text-[13px] font-semibold text-loss-text" data-testid="market-price-error">Type the price as a number in dollars, like 182.50.</p> : null}
             {isDateTooEarly ? <p className="mt-2 text-[13px] text-loss-text">Choose the same or a later date than the last saved price.</p> : null}
             <button type="button" onClick={saveQuote} disabled={!canSavePrice}
               className="mt-3 min-h-12 w-full rounded-full bg-family-action px-4 text-[15px] font-bold text-white disabled:opacity-50"
@@ -191,8 +195,14 @@ export function FamilyRealMarketPractice({ company, openStep, setOpenStep, toggl
           <p className="rounded-[12px] bg-surface-soft px-3 py-2 text-[14px] leading-6 text-navy" data-testid="market-trade-preview">
             {buy.allowed ? "This would cost " + fmt(buy.totalCents) + " of imaginary dollars." : buy.reason}
           </p>
+          {!reasonChosen ? (
+            <p className="rounded-[12px] bg-yellow-soft px-3 py-2 text-[14px] leading-6 text-navy-strong" data-testid="market-need-reason">
+              First, say why you would choose {company.name} in step 1. Then the paper buy unlocks.{" "}
+              {onNeedReason ? <button type="button" onClick={onNeedReason} className="font-bold text-family-action underline underline-offset-4 lg:hidden">Go to step 1</button> : null}
+            </p>
+          ) : null}
           <div className="grid grid-cols-2 gap-2">
-            <button type="button" onClick={() => simulate("BUY")} disabled={!buy.allowed} data-testid="market-buy"
+            <button type="button" onClick={() => simulate("BUY")} disabled={!buy.allowed || !reasonChosen} data-testid="market-buy"
               className="inline-flex min-h-12 items-center justify-center gap-1 rounded-full bg-green-strong px-3 text-[15px] font-bold text-white disabled:opacity-40">
               <ArrowUpRight aria-hidden className="size-4"/>Paper buy
             </button>
