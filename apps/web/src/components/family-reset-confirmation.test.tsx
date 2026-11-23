@@ -37,6 +37,8 @@ describe("Family global reset confirmation", () => {
     const confirmed = vi.fn();
     render(<Harness confirmed={confirmed} />);
     const trigger = screen.getByRole("button", { name: "Start a new Family" });
+    // fireEvent.click does not focus the trigger as a real pointer click does.
+    trigger.focus();
     fireEvent.click(trigger);
     fireEvent.click(screen.getByTestId("family-reset-cancel"));
     expect(screen.queryByRole("alertdialog")).toBeNull();
