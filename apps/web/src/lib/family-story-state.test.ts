@@ -4,7 +4,7 @@ import {
   CHILD_LEARNING, PARENT_LEARNING, PRACTICE_GOALS, initialFamilyPractice, selectedPracticeGoal,
 } from "./family-public-practice";
 import {
-  DECLINE_REASONS, GOAL_STORY, INTERESTS, REASONS, chapterStatus, childLessonNote, choiceImpact,
+  DECLINE_REASONS, GOAL_STORY, INTERESTS, REASONS, chapterStatus, childLessonNote, choiceImpact, metCases,
   childPathFor, initialStory, interestMatches, nextMission, orderExploreCases, parentLessonNote, practiceWins, transitionStory,
   type StoryAction, type StoryState,
 } from "./family-story-state";
@@ -168,6 +168,9 @@ describe("personalization and consequences are real", () => {
     let s = initialStory();
     expect(Object.values(chapterStatus(s)).every(done => !done)).toBe(true);
     s = run(s, practice({ type: "set-goal", goalId: "bike" }), practice({ type: "complete", role: "child", lessonId: "c-save" }), { type: "view-case", id: "markets" });
+    // Opening a company is not meeting someone: it needs an answer.
+    expect(chapterStatus(s)).toMatchObject({ goal: true, learn: true, explore: false });
+    s = run(s, { type: "choose-episode", id: "markets", option: 0 });
     expect(chapterStatus(s)).toMatchObject({ goal: true, learn: true, explore: true, decision: false, parent: false, outcome: false });
     s = run(s, practice({ type: "buy", asset: "MKT", amount: 25 }));
     expect(chapterStatus(s)).toMatchObject({ decision: true, parent: false, outcome: false });
@@ -205,6 +208,9 @@ describe("Home mission: the return loop", () => {
     expect(nextMission(s).href).toBe("/try/explore/markets");
     expect(nextMission(s).title).toBe("Meet Mina");
     s = run(s, { type: "view-case", id: "markets" });
+    // Opened but not answered: Home asks the Child to finish meeting Mina.
+    expect(nextMission(s)).toMatchObject({ id: "meet-person", href: "/try/explore/markets", cta: "Finish meeting Mina" });
+    s = run(s, { type: "research-correct", id: "markets" });
     expect(nextMission(s)).toMatchObject({ id: "first-choice", href: "/try/explore/markets" });
     s = run(s, practice({ type: "buy", asset: "MKT", amount: 10 }));
     expect(nextMission(s).id).toBe("together");
@@ -237,4 +243,17 @@ describe("Home mission: the return loop", () => {
     const s = run(chosen(), practice({ type: "buy", asset: "MKT", amount: 10 }), practice({ type: "buy", asset: "ORC", amount: 5 }), { type: "research-correct", id: "orchard" });
     expect(practiceWins(s).filter(w => w.earned).map(w => w.badge).sort()).toEqual(["company-detective", "diversification-pro", "first-investor"]);
   });
+
+describe("Meet = a meaningful interaction (PR #127 decision)", () => {
+  it("opening companies never completes Meet; a dilemma answer or a correct research answer does", () => {
+    let s = initialStory();
+    for (const item of FAMILY_EXPLORE_CASES) s = run(s, { type: "view-case", id: item.id });
+    expect(metCases(s)).toEqual([]);
+    expect(chapterStatus(s).explore).toBe(false);
+    expect(run(s, { type: "choose-episode", id: "river", option: 1 }).viewed).toHaveLength(6);
+    expect(metCases(run(s, { type: "choose-episode", id: "river", option: 1 }))).toEqual(["river"]);
+    expect(metCases(run(s, { type: "research-correct", id: "harbor" }))).toEqual(["harbor"]);
+    expect(chapterStatus(run(s, { type: "research-correct", id: "harbor" })).explore).toBe(true);
+  });
+});
 });

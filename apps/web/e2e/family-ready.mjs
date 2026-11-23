@@ -14,3 +14,11 @@ export function waitForFamilyReady(test) {
     }
   });
 }
+
+// On phones the real-company lab shows one step at a time. Open step n the way a
+// child would (tap its heading). On desktop every step is open and the toggle
+// is hidden, so this does nothing.
+export async function openRealStep(page, n) {
+  const toggle = page.getByTestId(`step-toggle-${n}`);
+  if (await toggle.isVisible() && (await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
+}

@@ -238,7 +238,6 @@ test("one client-side journey keeps a single state across real pages, Back and F
   await expect(page.getByTestId("outcome-hero")).toContainText(/on your own/i);
   await page.getByRole("link", { name: /talk it through/i }).click();
   await page.getByRole("button", { name: /practice a small fictional choice/i }).click();
-  await page.getByRole("button", { name: /answering as the parent/i }).click();
   await page.getByRole("button", { name: /agree on a small practice boundary/i }).click();
   await page.getByRole("button", { name: /mark our discussion complete/i }).click();
   await expect(page.getByTestId("together-result")).toContainText(/2 practice receipts/i);
@@ -414,7 +413,8 @@ test("a Parent can start first, with their own lens, and nothing is pre-filled f
   await expect(page).toHaveURL(/\/try\/parent\/learn$/);
   await page.getByRole("link", { name: /money & family conversations/i }).click();
   await expect(page.getByTestId("goal-note")).toContainText(/your child is saving for/i);
-  await expect(page.getByText(/parent's lens/i).first()).toBeVisible();
+  await expect(page.getByTestId("story-lens")).toContainText(/parent's view/i);
+  await expect(page.getByText(/parent lesson \d/i).first()).toBeVisible();
   await finishLesson(page);
   await expect(page.getByTestId("lesson-done")).toContainText(/lesson complete/i);
   await page.getByRole("link", { name: /back to the parent/i }).click();
@@ -431,8 +431,9 @@ test("the header always names the right lens, including Parent lessons and Toget
   await page.goto("/try/learn/p-basics");
   await expect(lens).toHaveAttribute("data-lens", "parent");
   await expect(lens).toContainText(/parent's view/i);
+  // The Child's own pages carry no lens chip (redesign): only Parent and Together pages name a lens.
   await page.goto("/try/learn/c-save");
-  await expect(lens).toHaveAttribute("data-lens", "child");
+  await expect(lens).toHaveCount(0);
   await page.goto("/try/parent/request");
   await expect(lens).toHaveAttribute("data-lens", "parent");
   await page.goto("/try/together");
@@ -546,7 +547,6 @@ test("a fictional person's dilemma stays with the Child, Parent and receipt with
   await expect(page.getByTestId("episode-takeaway").getByRole("img", { name: /fictional Mina in her family.s grocery/i })).toBeVisible();
   await page.getByRole("link", { name: /talk it through/i }).last().click();
   await page.getByRole("button", { name: /practice a small fictional choice/i }).click();
-  await page.getByRole("button", { name: /answering as the parent/i }).click();
   await page.getByRole("button", { name: /agree on a small practice boundary/i }).click();
   await page.getByRole("button", { name: /mark our discussion complete/i }).click();
   await expect(page.getByTestId("together-story-memory")).toContainText("Mina");
@@ -755,7 +755,6 @@ test("child first: lesson, Mina, blocked ask, Parent once, receipt, Portfolio, e
   // Together remembers Mina, then Home moves on to the next lesson.
   await page.getByTestId("home-mission-go").click();
   await page.getByRole("button", { name: /practice a small fictional choice/i }).click();
-  await page.getByRole("button", { name: /answering as the parent/i }).click();
   await page.getByRole("button", { name: /agree on a small practice boundary/i }).click();
   await page.getByRole("button", { name: /mark our discussion complete/i }).click();
   await expect(page.getByTestId("together-story-memory")).toContainText("Mina");

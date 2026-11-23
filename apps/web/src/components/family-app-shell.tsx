@@ -41,7 +41,7 @@ export function LensChip({ pathname }: { pathname: string }) {
   return (
     <span data-testid="story-lens" data-lens={lens}
       className={`inline-flex min-h-8 items-center rounded-full px-3 text-[12px] font-bold ${lens === "parent" ? "bg-lavender-soft text-navy-strong" : lens === "both" ? "bg-yellow-soft text-navy-strong" : "bg-green-soft text-green-strong"}`}>
-      {lens === "parent" ? "Parent's view · simulated" : lens === "both" ? "Child + Parent · together" : "Child's view · practice"}
+      {lens === "parent" ? "Parent's view · simulated" : lens === "both" ? "Together" : "Child's view · practice"}
     </span>
   );
 }
@@ -212,7 +212,7 @@ function FocusShell({ pathname, children }: { pathname: string; children: ReactN
           className="grid size-11 place-items-center rounded-full border border-line bg-surface text-navy-strong hover:bg-surface-soft">
           <X aria-hidden className="size-5"/>
         </Link>
-        <LensChip pathname={pathname}/>
+        {parent ? <LensChip pathname={pathname}/> : null}
       </header>
       <main id="main" className="mx-auto w-full max-w-[720px] px-4 pb-10 pt-3">
         {children}
@@ -227,7 +227,7 @@ function SetupShell({ pathname, children, intro }: { pathname: string; children:
     <div className={intro ? "mx-auto max-w-[1040px] px-4 pb-10 pt-3 md:px-10 md:pt-6" : "mx-auto max-w-[700px] px-4 pb-10 pt-3 md:px-7 md:pt-5"}>
       <header className="flex items-center justify-between gap-3">
         <Link href="/try" aria-label="Cresco Family start" className="inline-flex min-h-11 items-center"><Wordmark size="sm"/></Link>
-        {intro ? null : <LensChip pathname={pathname}/>}
+        {intro || lensOfPath(pathname) === "child" ? null : <LensChip pathname={pathname}/>}
       </header>
       <main id="main" className="mt-4 md:mt-6">{children}</main>
       <SafetyFooter/>

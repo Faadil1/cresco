@@ -189,6 +189,17 @@ export function choiceImpact(state: StoryState, amount: number) {
   };
 }
 
+/**
+ * A person counts as "met" only after a meaningful interaction: the Child
+ * answered their dilemma or got the research question right. Opening a
+ * company page is not enough (founder decision, PR #127 review).
+ */
+export function metCases(s: StoryState): string[] {
+  return FAMILY_EXPLORE_CASES
+    .filter(item => s.episodeChoices[item.id] !== undefined || s.researched.includes(item.id))
+    .map(item => item.id);
+}
+
 export type ChapterStatus = Record<"goal" | "learn" | "explore" | "decision" | "parent" | "outcome" | "together", boolean>;
 /** A chapter is "done" only because something real happened in state. */
 export function chapterStatus(s: StoryState): ChapterStatus {
@@ -196,7 +207,7 @@ export function chapterStatus(s: StoryState): ChapterStatus {
   return {
     goal: s.goalChosen,
     learn: p.childCompleted.length > 0,
-    explore: s.viewed.length > 0,
+    explore: metCases(s).length > 0,
     decision: p.receipts.length > 0 || p.requests.length > 0,
     parent: p.requests.some(r => r.status !== "pending"),
     outcome: p.receipts.length > 0,
@@ -240,6 +251,7 @@ export function nextMission(s: StoryState): Mission {
   const newest = p.requests[0];
   const newestReceipt = p.receipts[0];
   const newestIsRequest = newest && (!newestReceipt || newest.id > newestReceipt.id);
+  const met = metCases(s);
   const asset = (code: string) => PRACTICE_ASSETS.find(a => a.code === code)?.name ?? code;
 
   if (!s.goalChosen) return {
@@ -275,15 +287,18 @@ export function nextMission(s: StoryState): Mission {
     id: "first-lesson", kicker: `Today's mission · ${nextLesson.minutes} min`, title: nextLesson.title,
     body: `Your first lesson, picked for your ${goal.label.toLowerCase()}.`, href: `/try/learn/${nextLesson.id}`, cta: "Start lesson",
   };
-  if (s.viewed.length === 0) {
-    const first = ordered[0];
+  if (met.length === 0) {
+    // Resume a person the Child opened but has not answered yet.
+    const first = ordered.find(item => s.viewed.includes(item.id)) ?? ordered[0];
+    const started = s.viewed.includes(first.id);
     return {
       id: "meet-person", kicker: "Today's mission · meet someone", title: `Meet ${personName(first)}`,
-      body: first.episode.dilemma, href: `/try/explore/${first.id}`, cta: `Meet ${personName(first)}`,
+      body: started ? `You opened ${personName(first)}'s story. Answer the dilemma to finish meeting them: ${first.episode.dilemma}` : first.episode.dilemma,
+      href: `/try/explore/${first.id}`, cta: started ? `Finish meeting ${personName(first)}` : `Meet ${personName(first)}`,
     };
   }
   if (p.receipts.length === 0 && p.requests.length === 0) {
-    const seen = ordered.find(item => item.practiceCode && s.viewed.includes(item.id)) ?? ordered.find(item => item.practiceCode)!;
+    const seen = ordered.find(item => item.practiceCode && met.includes(item.id)) ?? ordered.find(item => item.practiceCode)!;
     return {
       id: "first-choice", kicker: "Today's mission · decide", title: "Make your first practice choice",
       body: `You met ${personName(seen)}. Try a small practice choice with ${seen.name}, inside your ${p.key.maxPerAction}-credit Key.`,
@@ -294,7 +309,7 @@ export function nextMission(s: StoryState): Mission {
     id: "next-lesson", kicker: `Up next · ${nextLesson.minutes} min`, title: nextLesson.title,
     body: `Keep going: ${p.childCompleted.length} of ${path.length} lessons done.`, href: `/try/learn/${nextLesson.id}`, cta: "Continue learning",
   };
-  const unseen = ordered.find(item => !s.viewed.includes(item.id));
+  const unseen = ordered.find(item => !met.includes(item.id));
   if (unseen) return {
     id: "meet-next", kicker: "Up next · meet someone", title: `Meet ${personName(unseen)}`,
     body: unseen.episode.dilemma, href: `/try/explore/${unseen.id}`, cta: `Meet ${personName(unseen)}`,

@@ -182,7 +182,7 @@ export function Stat({ label, value, testId, hint }: { label: string; value: Rea
 export const LOOP_STEPS = [
   { id: "goal", label: "Goal", child: "Pick a dream", parent: "Picks a dream", href: "/try/goal" },
   { id: "learn", label: "Learn", child: "One short lesson", parent: "Learns an idea", href: "/try/learn" },
-  { id: "explore", label: "Meet", child: "Meet a company", parent: "Researches", href: "/try/explore" },
+  { id: "explore", label: "Meet", child: "Answer a dilemma", parent: "Answers a dilemma", href: "/try/explore" },
   { id: "decision", label: "Decide", child: "Make a choice", parent: "Decides in the Key", href: "/try/decision" },
   { id: "together", label: "Talk", child: "Talk it through", parent: "You talk together", href: "/try/together" },
 ] as const satisfies readonly { id: keyof ChapterStatus; label: string; child: string; parent: string; href: string }[];
@@ -212,5 +212,40 @@ export function JourneyTrack({ status, lens = "child", testId = "journey-track" 
         })}
       </ol>
     </nav>
+  );
+}
+
+/**
+ * One numbered step of a guided task. On phones only the current step is open
+ * (an accordion: a heading that contains a button, with a one-line summary);
+ * from the lg breakpoint every step is always open and the toggle is hidden.
+ */
+export function StepPanel({ n, title, hint, summary, done, open, onToggle, children, className = "", testId, ariaLabel }: {
+  n: number; title: string; hint?: ReactNode; summary?: ReactNode; done?: boolean; open: boolean; onToggle: () => void;
+  children: ReactNode; className?: string; testId?: string; ariaLabel?: string;
+}) {
+  const bodyId = `step-body-${n}`;
+  return (
+    <section data-testid={testId} aria-label={ariaLabel} data-step-open={open ? "true" : "false"}
+      className={`min-w-0 rounded-[20px] border bg-surface p-4 md:p-5 ${open ? "border-family-action/30" : "border-line-soft"} lg:border-line-soft ${className}`}>
+      <h2 className="lg:hidden">
+        <button type="button" aria-expanded={open} aria-controls={bodyId} onClick={onToggle} data-testid={`step-toggle-${n}`}
+          className="flex min-h-11 w-full items-center gap-3 text-left">
+          <span aria-hidden className={`grid size-8 shrink-0 place-items-center rounded-full text-[14px] font-extrabold ${done ? "bg-green-strong text-white" : open ? "bg-family-action text-white" : "bg-family-action-soft text-family-action"}`}>
+            {done ? <Check className="size-4"/> : n}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[17px] font-extrabold leading-6 text-navy-strong"><span className="sr-only">Step {n}: </span>{title}</span>
+            {!open && summary ? <span className="block truncate text-[13px] leading-5 text-ink-2">{summary}</span> : null}
+          </span>
+          <ChevronDown aria-hidden className={`size-5 shrink-0 text-ink-2 transition-transform ${open ? "rotate-180" : ""}`}/>
+        </button>
+      </h2>
+      <div className="hidden lg:block"><StepHeader n={n} title={title} hint={hint} done={done}/></div>
+      <div id={bodyId} className={open ? "mt-3 space-y-3" : "hidden lg:mt-3 lg:block lg:space-y-3"}>
+        {hint ? <p className="text-[13px] leading-5 text-ink-2 lg:hidden">{hint}</p> : null}
+        {children}
+      </div>
+    </section>
   );
 }

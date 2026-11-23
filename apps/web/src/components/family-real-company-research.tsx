@@ -9,11 +9,11 @@
  */
 import { useState } from "react";
 import Link from "next/link";
-import { ExternalLink } from "lucide-react";
+import { ArrowRight, ExternalLink } from "lucide-react";
 import { FamilyRealWorldPanel } from "@/components/family-real-world-panel";
 import { FamilyRealMarketPractice } from "@/components/family-real-market-practice";
 import { useRealMarketPractice } from "@/components/family-story-provider";
-import { RealityTag, Segmented, SourcesNote, StepHeader, pageTitle } from "@/components/family-story-ui";
+import { RealityTag, Segmented, SourcesNote, StepPanel, pageTitle } from "@/components/family-story-ui";
 import { REAL_COMPANY_RESEARCH, type PublicCompanyResearch } from "@/lib/family-real-companies";
 
 export function ExploreSections({ active }: { active: "story" | "real" }) {
@@ -27,6 +27,9 @@ export function ExploreSections({ active }: { active: "story" | "real" }) {
 
 export function RealCompanyResearch() {
   const [chosenId, setChosenId] = useState<PublicCompanyResearch["id"]>("apple");
+  // Phones show one step at a time; lg+ shows all four. Switching company restarts at step 1.
+  const [openStep, setOpenStep] = useState(1);
+  const toggle = (n: number) => setOpenStep(current => current === n ? 0 : n);
   const { market } = useRealMarketPractice();
   const selected = REAL_COMPANY_RESEARCH.find(company => company.id === chosenId) ?? REAL_COMPANY_RESEARCH[0];
 
@@ -37,7 +40,7 @@ export function RealCompanyResearch() {
           <div>
             <h1 className={pageTitle}>Real companies</h1>
             <p className="mt-1 max-w-[62ch] text-[15px] leading-6 text-ink-2">
-              Learn how a real business earns money, then practice with $1,000 of imaginary dollars. Four steps, about ten minutes.
+              Understand a real business, then practice with $1,000 of imaginary dollars.
             </p>
           </div>
           <RealityTag kind="real"/>
@@ -46,21 +49,20 @@ export function RealCompanyResearch() {
       </header>
 
       <section aria-label="Choose a real company" data-testid="real-company-picker">
-        <div role="group" aria-label="Real company" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div role="group" aria-label="Real company" className="grid grid-cols-4 gap-1.5 sm:gap-2">
           {REAL_COMPANY_RESEARCH.map(company => {
             const active = chosenId === company.id;
             const held = market.positions[company.id].sharesHundredths > 0;
             return (
               <div key={company.id} data-testid={"real-company-" + company.id}>
-                <button type="button" aria-pressed={active} onClick={() => setChosenId(company.id)}
-                  data-testid={"real-company-select-" + company.id}
-                  className={"flex min-h-14 w-full items-center justify-between gap-2 rounded-[16px] border px-3 py-2 text-left " +
+                <button type="button" aria-pressed={active} onClick={() => { setChosenId(company.id); setOpenStep(1); }}
+                  data-testid={"real-company-select-" + company.id} aria-label={`${company.name} (${company.ticker})${held ? ", you hold paper shares" : ""}`}
+                  className={"relative flex min-h-12 w-full flex-col justify-center rounded-[14px] border px-2 py-1.5 text-center sm:min-h-14 sm:items-start sm:px-3 sm:text-left " +
                     (active ? "border-family-action bg-family-action-soft ring-2 ring-family-action/20" : "border-line-soft bg-surface hover:border-family-action/40")}>
-                  <span className="min-w-0">
-                    <span className="block text-[15px] font-extrabold text-navy-strong">{company.name}</span>
-                    <span className="block text-[12px] font-bold text-ink-2">{company.ticker}<span className="hidden sm:inline"> · {company.sector}</span></span>
-                  </span>
-                  {held ? <span className="shrink-0 rounded-full bg-blue-soft px-2 py-0.5 text-[12px] font-bold text-blue-strong">held</span> : null}
+                  <span className="block text-[15px] font-extrabold text-navy-strong sm:hidden">{company.ticker}</span>
+                  <span className="block truncate text-[12px] font-bold text-ink-2 sm:text-[15px] sm:font-extrabold sm:text-navy-strong">{company.name}</span>
+                  <span className="hidden text-[12px] font-bold text-ink-2 sm:block">{company.ticker} · {company.sector}</span>
+                  {held ? <span aria-hidden className="absolute right-1.5 top-1.5 size-2.5 rounded-full bg-blue-strong"/> : null}
                 </button>
               </div>
             );
@@ -69,9 +71,10 @@ export function RealCompanyResearch() {
       </section>
 
       <section data-testid="real-active-company" aria-label={"Research " + selected.name} className="space-y-4">
-        <article className="rounded-[20px] border border-line-soft bg-surface p-4 md:p-5" aria-label={"Step 1: understand " + selected.name}>
-          <StepHeader n={1} title={"Understand " + selected.name} hint={`${selected.exchange} · ${selected.ticker} · ${selected.sector}`}/>
-          <div className="mt-3 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <StepPanel n={1} title={"Understand " + selected.name} hint={`${selected.exchange} · ${selected.ticker} · ${selected.sector}`}
+          summary="What it does, who pays and its official results" open={openStep === 1} onToggle={() => toggle(1)}
+          ariaLabel={"Step 1: understand " + selected.name} testId="real-step-1">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
             <div className="space-y-3 text-[15px] leading-6 text-navy">
               <p><strong className="text-navy-strong">What it does: </strong>{selected.model}</p>
               <p><strong className="text-navy-strong">Who pays: </strong>{selected.customers}</p>
@@ -89,9 +92,13 @@ export function RealCompanyResearch() {
             </div>
             <FamilyRealWorldPanel key={selected.id} company={selected} showChart={false}/>
           </div>
-        </article>
+          <button type="button" onClick={() => setOpenStep(2)} data-testid="real-step-1-next"
+            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-family-action px-6 text-[15px] font-bold text-white lg:hidden">
+            Next: read the price <ArrowRight aria-hidden className="size-4"/>
+          </button>
+        </StepPanel>
 
-        <FamilyRealMarketPractice key={"paper-" + selected.id} company={selected}/>
+        <FamilyRealMarketPractice key={"paper-" + selected.id} company={selected} openStep={openStep} setOpenStep={setOpenStep} toggle={toggle}/>
       </section>
 
       <SourcesNote testId="real-company-boundary">

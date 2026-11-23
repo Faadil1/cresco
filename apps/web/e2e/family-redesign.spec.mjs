@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { waitForFamilyReady } from "./family-ready.mjs";
+import { openRealStep, waitForFamilyReady } from "./family-ready.mjs";
 
 waitForFamilyReady(test);
 
@@ -87,6 +87,7 @@ test("A3/A7: real-company journey: business, source and date, opt-in chart, pape
   await expect(page.getByTestId("real-company-select-costco")).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("heading", { name: /step 1: understand costco/i })).toBeVisible();
   // Official figures keep their period, form, filing date and currency.
+  await openRealStep(page, 1);
   await expect(page.getByTestId("real-sec-costco")).toContainText(/fiscal period ending \d{4}-\d{2}-\d{2} · 10-K filed \d{4}-\d{2}-\d{2} · USD/);
   // Investor-relations links are no longer the first thing on the page; they sit inside step 1.
   await expect(page.getByRole("link", { name: /investor relations/i })).toBeHidden();
@@ -94,18 +95,23 @@ test("A3/A7: real-company journey: business, source and date, opt-in chart, pape
   await expect(page.getByRole("link", { name: /costco investor relations \(opens outside cresco\)/i })).toBeVisible();
   expect(net.external, "nothing third-party before the chart is requested").toEqual([]);
 
+  await openRealStep(page, 2);
   await page.getByTestId("real-chart-consent-costco").click();
   await expect(page.getByTestId("real-chart-widget-costco")).toBeVisible();
+  await openRealStep(page, 2);
   await page.getByTestId("market-price-input").fill("100.00");
   await page.getByTestId("market-quote-submit").click();
+  await openRealStep(page, 3);
   await page.getByTestId("market-quantity-input").fill("1");
   await page.getByTestId("market-buy").click();
   await expect(page.getByTestId("market-action-feedback")).toContainText(/no real order/i);
   await expect(page.getByTestId("market-explain-wait")).toBeVisible();
 
+  await openRealStep(page, 2);
   await page.getByTestId("market-price-input").fill("110.00");
   await page.getByTestId("market-quote-submit").click();
   await expect(page.getByTestId("market-explain")).toContainText(/up \$10\.00/);
+  await openRealStep(page, 4);
   await page.getByTestId("market-explain").getByRole("button", { name: /higher than the price you paid/i }).click();
   await expect(page.getByTestId("market-explain-feedback")).toContainText(/paper gain/i);
 
@@ -120,6 +126,12 @@ test("A3/A7: real-company journey: business, source and date, opt-in chart, pape
 test("A8: Parent journey: what needs you first, the same loop, a dated activity list, and a request decided once", async ({ page }) => {
   // A hard load resets the in-memory story, so the whole journey stays in-app.
   await page.goto("/try/explore/markets");
+  // Meet needs a meaningful interaction, not just opening the page.
+  await page.locator('nav[aria-label="Main"]:visible').getByRole("link", { name: "Home", exact: true }).click();
+  await expect(page.getByTestId("journey-track").locator('[data-step="explore"]')).toHaveAttribute("data-done", "false");
+  await page.goBack();
+  await expect(page).toHaveURL(/\/try\/explore\/markets$/);
+  await page.getByRole("button", { name: /compare food, wages and delivery costs with sales/i }).click();
   await page.getByTestId("practice-this").click();
   await page.getByRole("button", { name: /a bigger choice \(25\)/i }).click();
   await page.getByLabel(/it fits what i am saving for/i).check();
@@ -152,8 +164,41 @@ test("A10: keyboard users reach the main action and the switches, with visible s
   await page.keyboard.press("Enter");
   await expect(page.getByTestId("real-company-select-shopify")).toHaveAttribute("aria-pressed", "true");
   // Tab order reaches the price field without a pointer.
+  await openRealStep(page, 2);
   await page.getByTestId("market-price-input").focus();
   await page.keyboard.type("50.00");
   await page.keyboard.press("Tab");
+  await openRealStep(page, 2);
   await expect(page.getByTestId("market-quote-date")).toBeFocused();
+});
+
+test("A3 (phones): the real-company lab guides one step at a time and moves forward on its own", async ({ page }) => {
+  test.skip((page.viewportSize()?.width ?? 0) >= 1024, "lg+ shows all four steps at once");
+  await page.goto("/try/explore/real");
+  const open = n => expect(page.getByTestId(`step-toggle-${n}`)).toHaveAttribute("aria-expanded", "true");
+  const closed = n => expect(page.getByTestId(`step-toggle-${n}`)).toHaveAttribute("aria-expanded", "false");
+  await open(1); await closed(2); await closed(3); await closed(4);
+  await expect(page.getByTestId("step-toggle-2")).toContainText(/type the latest price/i);
+  await expect(page.getByTestId("market-price-input")).toBeHidden();
+  // Step 1 hands over to step 2.
+  await page.getByTestId("real-step-1-next").click();
+  await open(2); await closed(1);
+  await expect(page.getByTestId("real-chart-consent-apple")).toBeVisible();
+  await page.getByTestId("market-price-input").fill("200.00");
+  await page.getByTestId("market-quote-submit").click();
+  // Saving a price opens the trade; the summary of step 2 remembers the price.
+  await open(3);
+  await expect(page.getByTestId("step-toggle-2")).toContainText("$200.00");
+  await page.getByTestId("market-quantity-input").fill("1");
+  await page.getByTestId("market-buy").click();
+  // Trading opens "Explain the result", and the no-real-order feedback stays visible.
+  await open(4);
+  await expect(page.getByTestId("market-action-feedback")).toBeVisible();
+  await expect(page.getByTestId("market-action-feedback")).toContainText(/no real order/i);
+  await expect(page.getByTestId("market-explain-wait")).toBeVisible();
+  // Switching company restarts at step 1; the paper position is marked on the picker.
+  await page.getByTestId("real-company-select-costco").click();
+  await open(1);
+  await expect(page.getByTestId("real-company-select-apple")).toHaveAttribute("aria-label", /you hold paper shares/);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1)).toBe(false);
 });

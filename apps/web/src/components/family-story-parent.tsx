@@ -1,18 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { KeyRound } from "lucide-react";
 import { StoryVignette } from "@/components/illustrations/family-story";
 import { GoalArt } from "@/components/illustrations/objects";
 import { useFamilyStory } from "@/components/family-story-provider";
-import { ParentKey } from "@/components/family-public-studio";
 import {
-  ChapterHeading, JourneyTrack, ResultCard, kicker, panel, primaryBtn, secondaryBtn, sectionTitle,
+  ChapterHeading, JourneyTrack, ResultCard, Stat, kicker, panel, primaryBtn, secondaryBtn, sectionTitle, textLink,
 } from "@/components/family-story-ui";
 import {
-  PARENT_LEARNING, PRACTICE_ASSETS, remainingPeriod, selectedPracticeGoal, type PracticeRequest,
+  PARENT_LEARNING, PRACTICE_ASSETS, remainingPeriod, selectedPracticeGoal, type AssetCode, type PracticeRequest,
 } from "@/lib/family-public-practice";
-import { DECLINE_REASONS, GOAL_STORY, REASONS, chapterStatus, parentLessonNote } from "@/lib/family-story-state";
+import { DECLINE_REASONS, GOAL_STORY, REASONS, chapterStatus, metCases, parentLessonNote } from "@/lib/family-story-state";
 import { FAMILY_EXPLORE_CASES } from "@/lib/family-public-explore-data";
 
 const SIMULATED = "Parent role is simulated in this one browser. No guardian identity or consent is verified, and nothing real is approved.";
@@ -52,7 +52,8 @@ function activityOf(story: ReturnType<typeof useFamilyStory>["story"]): Activity
   }
   items.sort((x, y) => y.order - x.order);
   if (p.childCompleted.length) items.push({ id: "lessons", order: 0, tone: "info", title: `Finished ${p.childCompleted.length} lesson${p.childCompleted.length === 1 ? "" : "s"}`, detail: "Lessons never change the Key" });
-  if (story.viewed.length) items.push({ id: "met", order: 0, tone: "info", title: `Met ${story.viewed.length} invented ${story.viewed.length === 1 ? "person" : "people"} in Explore`, detail: `${story.researched.length} researched` });
+  const met = metCases(story);
+  if (met.length) items.push({ id: "met", order: 0, tone: "info", title: `Met ${met.length} invented ${met.length === 1 ? "person" : "people"} in Explore`, detail: `Answered their dilemma or research question · ${story.researched.length} researched correctly` });
   return items;
 }
 
@@ -141,7 +142,7 @@ export function ParentLearnHub() {
         ))}
       </ol>
       <p className="text-[12px] text-ink-3">Finishing Parent lessons never widens the Key. Only an explicit change on the Key page does.</p>
-      <Link href="/try/parent" className={secondaryBtn}>Parent home</Link>
+      <Link href="/try/parent" className={textLink}>Parent home</Link>
     </div>
   );
 }
@@ -168,10 +169,10 @@ export function ParentRequest() {
         <p className={`${panel} text-[14px] leading-6 text-navy-strong`} data-testid="parent-empty">
           A request appears here only after your child tries a practice choice above the Key. Nothing is pre-filled for you.
         </p>
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <Link href="/try/parent" className={secondaryBtn}>Parent home</Link>
-          <Link href="/try/decision" className={secondaryBtn}>Go to the Child&apos;s choice</Link>
-        </div>
+        <p className="flex flex-wrap gap-x-5 text-[14px]">
+          <Link href="/try/parent" className={textLink}>Parent home</Link>
+          <Link href="/try/decision" className={textLink}>Go to the Child&apos;s choice</Link>
+        </p>
       </div>
     );
   }
@@ -185,7 +186,7 @@ export function ParentRequest() {
   const others = p.requests.filter(r => r.id !== request.id);
   return (
     <div className="space-y-5">
-      <ChapterHeading kicker="Parent · request" title={`${request.amount} practice credits · ${request.asset}`}
+      <ChapterHeading title={`${request.amount} credits · ${company?.name ?? request.asset}`}
         intro={<span className="hidden md:inline">Your child asked for more than the Key allows. Read the exact request, then decide once.</span>}/>
       {/* A decision should put the outcome within the first phone viewport, not
           below a request summary whose actions have disappeared. */}
@@ -203,8 +204,7 @@ export function ParentRequest() {
           <div className="col-span-2"><dt className="text-ink-2">Exact simulated action</dt><dd className="font-bold text-navy-strong">Practice {request.asset} for {request.amount} credits</dd></div>
           <div className="col-span-2"><dt className="text-ink-2">Why your child chose it</dt><dd className="font-bold text-navy-strong" data-testid="child-reason">{reason?.label ?? "No reason given"}</dd></div>
           <div className="col-span-2" data-testid="parent-goal-card"><dt className="text-ink-2">Their goal</dt><dd className="font-bold text-navy-strong">{goal.label}: {p.saved} of {goal.target} credits set aside</dd></div>
-          <div><dt className="text-ink-2">Your standing Key</dt><dd className="font-bold text-navy-strong">{p.key.maxPerAction} credits per choice</dd></div>
-          <div><dt className="text-ink-2">Asked under</dt><dd className="font-bold text-navy-strong">{current ? "Your current Key" : "An older Key (changed since)"}</dd></div>
+          <div className="col-span-2"><dt className="text-ink-2">Your Key</dt><dd className="font-bold text-navy-strong">{p.key.maxPerAction} credits per choice · {current ? "asked under the current Key" : "asked under an older Key"}</dd></div>
         </dl>
         {company ? (
           <details className="mt-3 rounded-[18px] border border-green/20 bg-green-soft/40 px-3 py-2" data-testid="parent-human-story">
@@ -222,30 +222,31 @@ export function ParentRequest() {
             )}
           </details>
         ) : null}
-        <p className="mt-2 text-[12px] leading-4 text-ink-2">{SIMULATED}</p>
         {request.status === "pending" ? (
           <>
             <div className="mt-3 flex flex-col gap-2">
               <button type="button" className={primaryBtn} data-testid="approve-once"
                 onClick={() => dispatch({ type: "practice", action: { type: "respond", id: request.id, choice: "approve" } })}>Approve once #{request.id}</button>
-              <fieldset>
-                <legend className="text-[13px] font-bold text-navy-strong">Or decline because</legend>
-                <div className="mt-2 grid gap-2">
+              <fieldset className="mt-2">
+                <legend className="text-[14px] font-bold text-navy-strong">Or decline, and tell your child why</legend>
+                <div className="mt-2 grid gap-2 sm:grid-cols-3">
                   {DECLINE_REASONS.map(option => (
-                    <button key={option.id} type="button" className={secondaryBtn} data-testid={`decline-${option.id}`}
+                    <button key={option.id} type="button" data-testid={`decline-${option.id}`} aria-label={`Decline #${request.id}: ${option.label}`}
+                      className="min-h-12 rounded-[14px] border border-line bg-surface px-3 py-2 text-left text-[14px] font-semibold leading-5 text-navy-strong hover:border-family-action/40"
                       onClick={() => dispatch({ type: "practice", action: { type: "respond", id: request.id, choice: "decline" }, declineReason: option.id })}>
-                      Decline #{request.id}: {option.label}
+                      {option.label}
                     </button>
                   ))}
                 </div>
               </fieldset>
             </div>
-            <ul className="mt-4 list-disc space-y-1 pl-5 text-[12px] leading-5 text-navy">
+            <p className="mt-3 text-[13px] leading-5 text-ink-2">{SIMULATED}</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-[13px] leading-5 text-navy">
               <li><strong>Approve once</strong> lets this exact choice happen one time. Your Key stays the same.</li>
               <li><strong>Decline</strong> buys nothing. A reason helps your child learn from it.</li>
             </ul>
           </>
-        ) : null}
+        ) : <p className="mt-3 text-[13px] leading-5 text-ink-2">{SIMULATED}</p>}
       </article>
       {others.length ? (
         <section className={panel} aria-label="Other requests">
@@ -253,27 +254,81 @@ export function ParentRequest() {
           <ul className="mt-2 space-y-1 text-[13px] text-navy">{others.map(r => <li key={r.id}>#{r.id}: {r.amount} credits · {r.asset} · {r.status}</li>)}</ul>
         </section>
       ) : null}
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <Link href="/try/parent" className={secondaryBtn}>Parent home</Link>
-        <Link href="/try/outcome" className={secondaryBtn}>What happened</Link>
-      </div>
+      <p className="flex flex-wrap gap-x-5 text-[14px]">
+        <Link href="/try/parent" className={textLink}>Parent home</Link>
+        <Link href="/try/outcome" className={textLink}>What happened</Link>
+      </p>
     </div>
   );
 }
 
+/**
+ * The Parent's standing Key, in the same design as the rest of the app. The
+ * form only proposes values: the unchanged practice reducer validates them and
+ * is the only thing that changes the Key (and expires open requests).
+ */
 export function ParentKeyPage() {
   const { story, dispatch } = useFamilyStory();
+  const p = story.practice;
+  const [per, setPer] = useState(String(p.key.maxPerAction));
+  const [period, setPeriod] = useState(String(p.key.maxPeriod));
+  const [allowed, setAllowed] = useState<AssetCode[]>([...p.key.allowed]);
+  const open = p.requests.filter(r => r.status === "pending" || r.status === "approved-once").length;
+  const changed = Number(per) !== p.key.maxPerAction || Number(period) !== p.key.maxPeriod
+    || allowed.length !== p.key.allowed.length || allowed.some(code => !p.key.allowed.includes(code));
+  const input = "mt-1 block min-h-12 w-full rounded-[12px] border border-line bg-surface px-3 text-[16px] font-bold text-navy-strong";
+  const result = p.feedback.startsWith("Parent explicitly") || p.feedback.startsWith("Invalid Key");
   return (
     <div className="space-y-5">
-      <ParentKey state={story.practice} update={(maxPerAction, maxPeriod, allowed) => dispatch({ type: "practice", action: { type: "set-key", maxPerAction, maxPeriod, allowed } })}/>
-      <ResultCard tone="info" title={story.practice.feedback.startsWith("Parent explicitly") || story.practice.feedback.startsWith("Invalid Key")
-        ? story.practice.feedback : "Changing the Key is a separate, explicit act."} testId="key-result">
+      <ChapterHeading kicker="Parent · My Key" title="How much your child decides alone"
+        intro="Inside the Key, your child chooses without asking. Above it, the choice comes to you. Only you change it, here, on purpose."/>
+      <section className={`${panel} !p-4 md:!p-5`} aria-label="The Key right now" data-testid="parent-key-now">
+        <p className={`${kicker} text-green-strong`}>Right now</p>
+        <dl className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-3">
+          <Stat label="Alone, per choice" value={<>{p.key.maxPerAction} <span className="text-[14px] font-semibold text-ink-2">credits</span></>}/>
+          <Stat label="Left this period" value={<>{remainingPeriod(p)} <span className="text-[14px] font-semibold text-ink-2">of {p.key.maxPeriod}</span></>}/>
+          <div className="col-span-2 md:col-span-1"><Stat label="Companies allowed" value={<span className="text-[15px] leading-6">{p.key.allowed.map(code => PRACTICE_ASSETS.find(a => a.code === code)?.name ?? code).join(", ")}</span>}/></div>
+        </dl>
+      </section>
+      <form className={`${panel} !p-4 md:!p-5`} aria-labelledby="key-change-title"
+        onSubmit={event => { event.preventDefault(); dispatch({ type: "practice", action: { type: "set-key", maxPerAction: Number(per), maxPeriod: Number(period), allowed } }); }}>
+        <h2 id="key-change-title" className={sectionTitle}>Change the Key</h2>
+        <div className="mt-3 grid gap-4 sm:grid-cols-2">
+          <label className="text-[14px] font-bold text-navy-strong">Max credits per action
+            <span className="block text-[13px] font-normal text-ink-2">The most your child can choose alone at once</span>
+            <input aria-label="Max credits per action" className={input} type="number" inputMode="numeric" min="1" max="100" step="1" value={per} onChange={e => setPer(e.target.value)}/>
+          </label>
+          <label className="text-[14px] font-bold text-navy-strong">Total credits this practice period
+            <span className="block text-[13px] font-normal text-ink-2">Everything they can use alone before asking</span>
+            <input aria-label="Total credits this practice period" className={input} type="number" inputMode="numeric" min="1" max="100" step="1" value={period} onChange={e => setPeriod(e.target.value)}/>
+          </label>
+        </div>
+        <fieldset className="mt-4">
+          <legend className="text-[14px] font-bold text-navy-strong">Companies your child may practice with</legend>
+          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+            {PRACTICE_ASSETS.map(asset => (
+              <label key={asset.code} className={`flex min-h-12 items-center gap-3 rounded-[14px] border px-3 text-[14px] font-semibold text-navy-strong ${allowed.includes(asset.code) ? "border-green-strong bg-green-soft" : "border-line bg-surface"}`}>
+                <input type="checkbox" aria-label={`${asset.name} ${asset.code}`} checked={allowed.includes(asset.code)} className="size-4"
+                  onChange={e => setAllowed(v => e.target.checked ? [...v, asset.code] : v.filter(x => x !== asset.code))}/>
+                <span>{asset.name} <span className="text-[13px] text-ink-2">{asset.code}</span></span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        {changed && open ? (
+          <p className="mt-4 rounded-[14px] bg-yellow-soft px-3 py-2 text-[14px] leading-6 text-navy-strong" data-testid="key-change-warning">
+            Saving will expire {open} open request{open === 1 ? "" : "s"}. Your child would need to ask again under the new Key.
+          </p>
+        ) : null}
+        <button type="submit" className={`mt-4 w-full sm:w-auto ${primaryBtn}`} disabled={!changed}>Explicitly update standing Key</button>
+      </form>
+      <ResultCard tone={p.feedback.startsWith("Invalid Key") ? "stop" : "info"} title={result ? p.feedback : "Changing the Key is a separate, explicit act."} testId="key-result">
         <span>Any pending or approved-once request becomes stale when the Key changes. Lessons, badges and quizzes never change it.</span>
       </ResultCard>
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <Link href="/try/parent" className={secondaryBtn}>Parent home</Link>
-        <Link href="/try/outcome" className={secondaryBtn}>What happened</Link>
-      </div>
+      <p className="flex flex-wrap gap-x-5 text-[14px]">
+        <Link href="/try/parent" className={textLink}>Parent home</Link>
+        <Link href="/try/outcome" className={textLink}>What happened</Link>
+      </p>
     </div>
   );
 }

@@ -277,3 +277,9 @@ body {
 .cresco-family-app :where(input:not([type="checkbox"]), textarea, select) {
   accent-color: #1f5fd6;
 }
+
+/* Family design system: nothing smaller than 12px (issue #126). Scoped so the
+   canonical site's editorial kicker is unchanged. */
+.cresco-family-app .cresco-section-kicker {
+  font-size: 12px;
+}

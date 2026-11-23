@@ -119,7 +119,7 @@ export function ReadyChapter() {
       </div>
       <div className="mt-3 rounded-[14px] bg-green-soft px-3 py-3 text-[13px] leading-5 text-navy-strong" data-testid="ready-safety-summary">
         <p><strong>Your dream:</strong> {goal.label}. Learning helps you protect it.</p>
-        <p className="mt-1"><strong>My Key:</strong> Try up to {p.key.maxPerAction} fictional credits alone; a simulated Parent decides once on bigger choices.</p>
+        <p className="mt-1"><strong>My Key:</strong> Decide alone up to {p.key.maxPerAction} pretend credits a choice. Bigger choices go to your Parent, who can say yes once.</p>
         <p className="mt-1 text-[12px] text-ink-2">Practice only. No money moves; no guardian identity is verified.</p>
       </div>
       <details className="mt-3 rounded-[14px] border border-line-soft bg-surface-soft p-3" data-testid="ready-optional-saving">

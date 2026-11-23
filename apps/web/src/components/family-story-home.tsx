@@ -89,6 +89,11 @@ export function HomeScreen() {
               <p className="text-[13px] text-ink-2" data-testid="home-loop-count">{LOOP_STEPS.filter(step => status[step.id]).length} of 5 done</p>
             </div>
             <JourneyTrack status={status}/>
+            {LOOP_STEPS.every(step => status[step.id]) ? (
+              <p className="mt-3 rounded-[14px] bg-green-soft px-3 py-2 text-[14px] leading-6 text-navy-strong" data-testid="home-loop-complete">
+                <strong>You finished a full round.</strong> Every new lesson, person and choice makes the next round count. The next step is above.
+              </p>
+            ) : null}
           </section>
 
           {pending ? (

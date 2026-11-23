@@ -8,11 +8,11 @@ import { useFamilyStory } from "@/components/family-story-provider";
 import { LESSON_ACTIVITIES } from "@/lib/family-learning-depth";
 import { EXTENDED_LESSON_ACTIVITIES } from "@/lib/family-learning-expansion";
 import { FamilyLessonLab } from "@/components/family-lesson-lab";
-import { ResultCard, panel, primaryBtn, secondaryBtn } from "@/components/family-story-ui";
+import { JourneyTrack, ResultCard, pageTitle, panel, primaryBtn, secondaryBtn } from "@/components/family-story-ui";
 import {
   PARENT_LEARNING, selectedPracticeGoal,
 } from "@/lib/family-public-practice";
-import { GOAL_STORY, childLessonNote, childPathFor, parentLessonNote } from "@/lib/family-story-state";
+import { GOAL_STORY, chapterStatus, childLessonNote, childPathFor, parentLessonNote } from "@/lib/family-story-state";
 
 export { childPathFor } from "@/lib/family-story-state";
 const isParentLesson = (id: string) => PARENT_LEARNING.some(item => item.id === id);
@@ -27,8 +27,8 @@ export function LearnChapter() {
   return (
     <div className="space-y-4 md:space-y-5">
       <header>
-        <h1 className="font-display text-[26px] leading-tight text-navy-strong md:text-[32px]">Learn</h1>
-        <p className="text-[13px] text-ink-2">Short lessons for your <strong className="text-navy-strong">{goal.label.toLowerCase()}</strong>, {g.horizon} away.</p>
+        <h1 className={pageTitle}>Learn</h1>
+        <p className="mt-1 text-[15px] leading-6 text-ink-2">Short lessons for your <strong className="text-navy-strong">{goal.label.toLowerCase()}</strong>, {g.horizon} away.</p>
       </header>
       <div className="flex items-center gap-3">
         <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-green-soft" role="progressbar" aria-label="Child learning progress"
@@ -117,7 +117,7 @@ export function LessonReader({ id }: { id: string }) {
           </div>
           <span className="shrink-0 text-[12px] font-bold text-navy-strong">{onQuiz ? "Quick check" : `${slide + 1} of ${concepts.length}`}</span>
         </div>
-        <p className="cresco-section-kicker mt-4">{parent ? "Parent's lens" : "Child's lens"} · Lesson {index + 1} · {lesson.minutes} min</p>
+        <p className="cresco-section-kicker mt-4">{parent ? "Parent lesson" : "Lesson"} {index + 1} · {lesson.minutes} min</p>
         <h1 className="mt-1 font-display text-[clamp(24px,4.4vw,34px)] leading-[1.12] text-navy-strong">{lesson.title}</h1>
       </header>
 
@@ -186,7 +186,13 @@ export function LessonReader({ id }: { id: string }) {
                 </>
               )}
             </div>
-            <p className="mt-3 text-[12px] text-ink-3">Finishing a lesson never changes the practice Key, an approval or access to anything real.</p>
+            {!parent ? (
+              <div className="mx-auto mt-5 max-w-[460px] rounded-[16px] bg-surface-soft p-3 text-left" data-testid="lesson-loop">
+                <p className="mb-1 text-[13px] font-bold text-navy-strong">Your learning loop</p>
+                <JourneyTrack status={chapterStatus(story)} testId="lesson-loop-track"/>
+              </div>
+            ) : null}
+            <p className="mt-3 text-[13px] text-ink-2">Finishing a lesson never changes the practice Key, an approval or access to anything real.</p>
           </article>
         ) : (
           <article className={panel} data-testid="lesson-quiz">

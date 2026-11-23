@@ -228,3 +228,72 @@ Test changes to note:
 2. Decide whether to delete `/try/lab` (now demoted, linked only from Profile).
 3. Run real WebKit (iPhone) and the Windows smoke locally (commands in the PR).
 4. The learning-loop track uses the existing `chapterStatus`. "Meet" counts as done after opening one story; consider whether it should need the research answer.
+
+## 7. Review round 2 (2026-11-23, founder feedback on PR #127)
+
+### CI
+- **`cresco-web` failure, fixed.** The canonical `playwright.config.mjs` excluded Family specs by a hand-kept list, and `family-redesign.spec.mjs` was missing from it. CI therefore ran the redesign spec against the canonical Next app, which closes `/try/*`, and the hydration wait timed out (6 failures).
+  - Both configs now import one list: `apps/web/e2e/family-worker-specs.mjs`.
+  - `src/lib/playwright-config-split.test.ts` fails if the two configs drift again.
+  - The canonical config now lists 31 tests and no Family specs.
+- **"Hosted Family contract observation" is pre-existing and not caused by this branch.** It also fails on #124: it probes the live hosted site, and that site has no SHA attestation. Fixing it would need a deploy, which is out of scope.
+- **Real WebKit is now proven.** CI ran `Public Family iPhone WebKit + desktop Chromium` at 82/82, including the redesign spec on real iPhone WebKit.
+
+### Decisions applied
+- **`/try/lab`:** kept, reachable only from Profile. Unchanged.
+- **"Meet" in the learning loop:** completes only after a meaningful interaction, meaning the child answered the person's dilemma or got the research question right. Opening a company page no longer counts.
+  - The rule lives in `metCases()` in `family-story-state.ts`, a progress-only change; no Key, credit or approval logic changed.
+  - Home's mission resumes an unanswered person ("Finish meeting Mina").
+  - Explore badges now show Opened, Met or Researched.
+  - The Parent activity list counts only people the child has met, and the loop step reads "Answer a dilemma".
+
+### Real-company page on phones (target: 35% shorter)
+On phones the lab is now a **guided, one-step-at-a-time flow**:
+- Only the current step is open; the other steps show a one-line summary (e.g. "Your price: $200.00 · 2026-11-23").
+- Step 1 ends with "Next: read the price". Saving a price opens the trade step, and a trade opens "Explain the result". The no-real-order message stays visible outside the steps.
+- From the `lg` breakpoint, all four steps stay open as before.
+- The company picker is a single row of tickers, and a dot marks a company the child holds.
+
+| 390x844 (Chromium, 100% zoom) | Height | vs baseline 4,147px |
+|---|---|---|
+| Step 1 open (first visit; the longest state a child can reach) | 1,961 | **−53%** |
+| Step 2 open | 1,725 | −58% |
+| Step 3 open | 1,413 | −66% |
+| Step 4 open | 1,463 | −65% |
+| All four forced open (not reachable on a phone; shown for honesty) | 3,102 | −25% |
+
+Script: `ux-overhaul-2026-11-16/measure-real-company-phone.cjs`. Screens: `after/390-real-phone-step1.png`, `after/390-real-phone-step4.png`.
+
+### Cohesion pass over both journeys
+Both journeys were scripted end to end (`capture-journeys.cjs`) and every screen was reviewed at 390 and 1440. Screens are in `journeys/`.
+
+| Found | Fix |
+|---|---|
+| "Talk it through" showed two page titles (an embedded lab component) | Rebuilt natively: the Child's and Parent's views side by side (a hand-over cue on phones), plus "What you are talking about" and "Start the next round" |
+| The Parent's My Key page was the old lab component: oversized headings, "version / nonce 1/1", ticker-only checkboxes, a different button style | Rebuilt: plain "Right now" stats, labelled fields, company names with tickers, and a warning when saving would expire open requests. Save is disabled until something changes. The same reducer action and validation are used. |
+| The Outcome page had three giant stacked numbers and three equal buttons | One compact stats row and **one primary next step** ("Talk it through" right after a decision); the rest are text links |
+| The Decision page had 4 stacked full-width buttons below the main action | One primary button, then a row of text links |
+| The Parent request had a ticker in the title, "Decline #1:" button labels, and the "Approve once" button partly off the first iPhone screen | Company name in the title; decline reasons as compact choices (the accessible name keeps "Decline #N"); the Key rows merged; "Approve once" fully in the first screen (an existing test caught this) |
+| A child-lens chip on onboarding and lessons; "Child's lens" lesson labels; "fictional credits" in onboarding | Lens chip only on Parent and Together pages; "Lesson 3 · 6 min"; "pretend credits" everywhere a child reads |
+| No celebration when the loop is complete; no link between a lesson and the loop | "You finished a full round" on Home; loop progress on "Lesson complete" |
+| The real-company book said "pretend shares" (the pretend-credits word) | "paper shares" and "paper positions" |
+| The shared kicker label was 11px | 12px inside the Family app only |
+
+### Round 2 test results
+| Suite | Result |
+|---|---|
+| typecheck · lint (0 errors; 3 warnings pre-existing in unrelated files) · copy lint | pass |
+| vitest | 28 files, 193 tests |
+| `build-public-family` · `build:family` (placeholder dedicated origin) | PASS, not uploaded |
+| Family desktop Chromium (local wrangler) | 35/35, two consecutive runs |
+| Family iPhone 13 project run on Chromium (WebKit download is blocked here) | 48/48 (+1 desktop-only skip), two consecutive runs. Real WebKit runs in CI (`family-public-browser.yml`). |
+| Canonical config, local, on Chromium | 30 passed + 1 skipped, no Family specs. `next build` is blocked here by a security-advisory lookup, so this run used an older local `.next` build; CI is authoritative. |
+
+### Remaining issues for founder review
+1. **Not yet seen by children or parents.** All judgements here are heuristic and screenshot-based. A short moderated session with 2–3 families would be the next real evidence.
+2. **Home on a phone is taller (845 → 1,229px)** because the loop, the wallet and the Key are visible instead of hidden. The next step and the loop are in the first screen; the wallet needs a short scroll.
+3. **The real-company flow still needs a typed price**, because licensed end-of-day prices stay disabled until rights are confirmed. Children must read the price off the optional chart. This is the main friction left in that journey, and it is a licensing decision, not a UI one.
+4. **The classic lab (`/try/lab`)** was not restyled. It has 20+ text items under 12px and its own navigation. It is linked only from Profile, per your decision.
+5. **The Parent Learn hub and the lesson reader** were only lightly touched (labels, loop cue). The lesson slides keep their earlier layout.
+6. **Hosted-observation CI job** is still red, as on #124. It needs a deploy-side attestation.
+7. **Manual checks still needed:** Windows smoke (`scripts/family-v3-local-pilot.ps1`) and a real-device iPhone check. CI covers WebKit emulation, not hardware.

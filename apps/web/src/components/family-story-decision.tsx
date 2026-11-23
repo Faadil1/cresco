@@ -7,7 +7,7 @@ import { ArrowLeft, KeyRound } from "lucide-react";
 import { StoryVignette } from "@/components/illustrations/family-story";
 import { useFamilyStory } from "@/components/family-story-provider";
 import { KeyChip } from "@/components/family-story-explore";
-import { ChapterHeading, CompanyArt, panel, primaryBtn, secondaryBtn } from "@/components/family-story-ui";
+import { ChapterHeading, CompanyArt, panel, primaryBtn, secondaryBtn, textLink } from "@/components/family-story-ui";
 import { FAMILY_EXPLORE_CASES } from "@/lib/family-public-explore-data";
 import {
   PRACTICE_ASSETS, previewPracticeChoice, remainingCredits, type AssetCode,
@@ -118,14 +118,12 @@ function ChoiceForm({ code }: { code: AssetCode }) {
           ))}
         </div>
       </fieldset>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <button type="button" className={primaryBtn} data-testid="make-choice" disabled={disabled} onClick={submit}>{label[preview.kind] ?? "Choose another amount"}</button>
-        <button type="button" className={secondaryBtn} onClick={() => dispatch({ type: "pick-asset", code: null })}>Pick another company</button>
-      </div>
-      {preview.kind === "pending" ? <p className="text-[13px] text-ink-2">Your Parent is deciding. <Link className="font-bold text-green-strong underline underline-offset-4" href="/try/parent/request">Open the request</Link>.</p> : null}
-      <nav aria-label="Around this choice" className="flex flex-col gap-3 sm:flex-row sm:justify-between">
-        <Link href={`/try/explore/${item.id}`} className={secondaryBtn}><ArrowLeft aria-hidden className="size-4"/>About {asset.name}</Link>
-        <Link href="/try/outcome" className={secondaryBtn}>What happened</Link>
+      <button type="button" className={`w-full sm:w-auto ${primaryBtn}`} data-testid="make-choice" disabled={disabled} onClick={submit}>{label[preview.kind] ?? "Choose another amount"}</button>
+      {preview.kind === "pending" ? <p className="text-[14px] text-ink-2">Your Parent is deciding. <Link className="font-bold text-green-strong underline underline-offset-4" href="/try/parent/request">Open the request</Link>.</p> : null}
+      <nav aria-label="Around this choice" className="flex flex-wrap items-center gap-x-5 text-[14px]">
+        <button type="button" className={textLink} onClick={() => dispatch({ type: "pick-asset", code: null })}>Pick another company</button>
+        <Link href={`/try/explore/${item.id}`} className={textLink}><ArrowLeft aria-hidden className="size-4"/>About {asset.name}</Link>
+        <Link href="/try/outcome" className={textLink}>What happened</Link>
       </nav>
     </div>
   );

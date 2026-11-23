@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import { TradingViewOnDemand } from "@/components/family-real-world-panel";
 import licensedEodJson from "@/lib/family-market-approved-snapshot.json";
 import { ArrowDownRight, ArrowUpRight, RotateCcw } from "lucide-react";
-import { StepHeader } from "@/components/family-story-ui";
+import { StepPanel } from "@/components/family-story-ui";
 import { useRealMarketPractice } from "@/components/family-story-provider";
 import {
   QUOTE_REFERENCES, marketTradePreview, summarizeRealMarket,
@@ -62,7 +62,11 @@ function explainOptions(company: PublicCompanyResearch, direction: "up" | "down"
   ];
 }
 
-export function FamilyRealMarketPractice({ company }: { company: PublicCompanyResearch }) {
+export function FamilyRealMarketPractice({ company, openStep, setOpenStep, toggle }: {
+  company: PublicCompanyResearch;
+  /** Which step is open on phones (lg+ shows all). Owned by the page so step 1 can hand over. */
+  openStep: number; setOpenStep: (n: number) => void; toggle: (n: number) => void;
+}) {
   const { market, marketDispatch } = useRealMarketPractice();
   const [inputPrice, setInputPrice] = useState("");
   const [inputDate, setInputDate] = useState(() => new Date().toISOString().slice(0,10));
@@ -109,6 +113,8 @@ export function FamilyRealMarketPractice({ company }: { company: PublicCompanyRe
       asOf:inputDate,today,reference
     });
     setMessage("Price reference saved as USER-ENTERED, not verified. No shares were purchased.");
+    // Guide phones forward: trade next, or straight to explaining if shares are already held.
+    setOpenStep(localPosition.sharesHundredths > 0 ? 4 : 3);
   }
 
   function simulate(kind:"BUY"|"SELL") {
@@ -119,6 +125,7 @@ export function FamilyRealMarketPractice({ company }: { company: PublicCompanyRe
     }
     marketDispatch({type:"trade",kind,symbol:company.id,sharesHundredths:qty});
     setMessage(kind + " simulated for " + fmt(preview.totalCents) + " - no real order, no Parent approval, no payment.");
+    setOpenStep(4);
   }
 
   const position = metrics.holdings.find(h => h.id === company.id);
@@ -130,9 +137,10 @@ export function FamilyRealMarketPractice({ company }: { company: PublicCompanyRe
   return (
     <div className="space-y-4" data-testid="real-market-sandbox" aria-label="Real company paper portfolio">
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,.9fr)]" data-testid="market-workspace">
-        <section className="min-w-0 space-y-3 rounded-[20px] border border-line-soft bg-surface p-4 md:p-5" data-testid="market-chart-column" aria-label={"Step 2: read the price of " + company.ticker}>
-          <StepHeader n={2} title="Read the price" done={Boolean(quote)}
-            hint={<>Open the chart if you like, then type the latest price you see and its date. Shopify uses NASDAQ:SHOP in US dollars.</>}/>
+        <StepPanel n={2} title="Read the price" done={Boolean(quote)} open={openStep === 2} onToggle={() => toggle(2)}
+          testId="market-chart-column" ariaLabel={"Step 2: read the price of " + company.ticker}
+          summary={quote ? `Your price: ${fmt(quote.priceCents)} · ${quote.asOf}` : "Type the latest price and its date"}
+          hint={<>Open the chart if you like, then type the latest price you see and its date. Shopify uses NASDAQ:SHOP in US dollars.</>}>
           <TradingViewOnDemand company={company} />
           <div className="rounded-[16px] bg-surface-soft p-3 md:p-4" aria-label="Enter your quote">
             <div className="grid grid-cols-2 gap-3">
@@ -169,11 +177,12 @@ export function FamilyRealMarketPractice({ company }: { company: PublicCompanyRe
                 : "No price recorded yet. Save a price to unlock the paper trade."}
             </p>
           </div>
-        </section>
+        </StepPanel>
 
-        <section className="min-w-0 space-y-3 rounded-[20px] border border-line-soft bg-surface p-4 md:p-5" data-testid="market-order-column" aria-label="Paper trade">
-          <StepHeader n={3} title="Try a paper trade" done={market.receipts.some(r => r.symbol === company.id)}
-            hint={<>You have <strong className="text-navy-strong">{fmt(metrics.cashCents)}</strong> imaginary dollars. Fractions like 0.25 shares are fine.</>}/>
+        <StepPanel n={3} title="Try a paper trade" done={market.receipts.some(r => r.symbol === company.id)} open={openStep === 3} onToggle={() => toggle(3)}
+          testId="market-order-column" ariaLabel="Paper trade"
+          summary={`${fmt(metrics.cashCents)} to use · you hold ${(localPosition.sharesHundredths / 100).toFixed(2)} ${company.ticker}`}
+          hint={<>You have <strong className="text-navy-strong">{fmt(metrics.cashCents)}</strong> imaginary dollars. Fractions like 0.25 shares are fine.</>}>
           <label className="block text-[13px] font-bold text-navy-strong">
             Shares of {company.ticker}
             <input type="text" inputMode="decimal" value={quantity} onChange={event => setQuantity(event.target.value)}
@@ -195,14 +204,17 @@ export function FamilyRealMarketPractice({ company }: { company: PublicCompanyRe
           <p className="text-[13px] leading-5 text-ink-2" data-testid="market-selected-holding">
             You hold {(localPosition.sharesHundredths / 100).toFixed(2)} paper shares of {company.ticker}.
           </p>
-          {message ? <p role="status" data-testid="market-action-feedback"
-            className="rounded-[12px] border border-line-soft bg-blue-soft p-3 text-[13px] font-semibold text-navy-strong">{message}</p> : null}
-        </section>
+        </StepPanel>
       </div>
 
-      <section className="space-y-3 rounded-[20px] border border-line-soft bg-surface p-4 md:p-5" data-testid="market-holdings" aria-label="Explain the result">
-        <StepHeader n={4} title="Explain the result" done={explained !== null && options[explained]?.right}
-          hint="Change the price later (a new date), then explain why your paper value moved."/>
+      {/* Outside the steps so it stays visible on phones when the next step opens. */}
+      {message ? <p role="status" data-testid="market-action-feedback"
+        className="rounded-[12px] border border-line-soft bg-blue-soft p-3 text-[13px] font-semibold text-navy-strong">{message}</p> : null}
+
+      <StepPanel n={4} title="Explain the result" done={explained !== null && options[explained]?.right} open={openStep === 4} onToggle={() => toggle(4)}
+        testId="market-holdings" ariaLabel="Explain the result"
+        summary={metrics.unrealizedCents !== null && metrics.holdings.length ? `Gain or loss now: ${fmt(metrics.unrealizedCents)}` : "Why did your paper value move?"}
+        hint="Change the price later (a new date), then explain why your paper value moved.">
         <dl className="grid grid-cols-2 gap-2 md:grid-cols-4" data-testid="market-summary">
           {([
             ["Portfolio value", metrics.equityCents, "market-equity"],
@@ -210,9 +222,9 @@ export function FamilyRealMarketPractice({ company }: { company: PublicCompanyRe
             ["Gain or loss now", metrics.unrealizedCents, "market-unrealized"],
             ["Since the start", metrics.changeFromStartCents, "market-return"],
           ] as const).map(([label, value, id]) => (
-            <div key={id} className="rounded-[14px] bg-surface-soft p-3">
+            <div key={id} className="rounded-[14px] bg-surface-soft px-3 py-2 md:p-3">
               <dt className="text-[13px] font-semibold text-ink-2">{label}</dt>
-              <dd className="mt-0.5 text-[19px] font-extrabold text-navy-strong" data-testid={id}>{value === null ? "Needs a price" : fmt(value)}</dd>
+              <dd className="text-[17px] font-extrabold text-navy-strong md:mt-0.5 md:text-[19px]" data-testid={id}>{value === null ? "Needs a price" : fmt(value)}</dd>
             </div>
           ))}
         </dl>
@@ -223,7 +235,7 @@ export function FamilyRealMarketPractice({ company }: { company: PublicCompanyRe
               return (
                 <li key={h.id} className="grid gap-1 rounded-[14px] bg-surface-soft p-3 text-[13px] text-navy sm:grid-cols-[1fr_auto]">
                   <span><strong className="block text-[15px] text-navy-strong">{name}</strong>
-                    {(h.sharesHundredths / 100).toFixed(2)} pretend shares · cost {fmt(h.costBasisCents)}</span>
+                    {(h.sharesHundredths / 100).toFixed(2)} paper shares · cost {fmt(h.costBasisCents)}</span>
                   <span className="sm:text-right">
                     <strong className="block text-[15px] text-navy-strong">{h.valueCents === null ? "No valuation" : fmt(h.valueCents)}</strong>
                     {h.unrealizedCents === null ? "No price yet" : (h.unrealizedCents >= 0 ? "+" : "") + fmt(h.unrealizedCents) + " · price dated " + h.quote?.asOf}
@@ -232,7 +244,7 @@ export function FamilyRealMarketPractice({ company }: { company: PublicCompanyRe
               );
             })}
           </ul>
-        ) : <p className="text-[14px] leading-6 text-ink-2">No pretend holdings yet. Save a price and make a paper buy to see this change.</p>}
+        ) : <p className="text-[14px] leading-6 text-ink-2">No paper positions yet. Save a price and make a paper buy to see this change.</p>}
 
         {direction ? (
           <fieldset className="rounded-[16px] border border-family-action/25 bg-family-action-soft/50 p-3 md:p-4" data-testid="market-explain">
@@ -255,7 +267,8 @@ export function FamilyRealMarketPractice({ company }: { company: PublicCompanyRe
           </fieldset>
         ) : position ? (
           <p className="rounded-[14px] bg-surface-soft p-3 text-[14px] leading-6 text-navy" data-testid="market-explain-wait">
-            Nothing has moved yet. Come back with a newer price (a later date) and save it in step 2. Then explain what changed.
+            Nothing has moved yet. Come back with a newer price (a later date), then explain what changed.
+            <button type="button" onClick={() => setOpenStep(2)} className="mt-1 block min-h-11 text-[14px] font-bold text-family-action underline underline-offset-4 lg:hidden">Enter a newer price</button>
           </p>
         ) : null}
 
@@ -279,7 +292,7 @@ export function FamilyRealMarketPractice({ company }: { company: PublicCompanyRe
             )) : <li className="text-[13px] text-ink-2">No activity yet.</li>}
           </ul>
         ) : null}
-      </section>
+      </StepPanel>
     </div>
   );
 }

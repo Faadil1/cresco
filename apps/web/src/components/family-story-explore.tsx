@@ -12,7 +12,7 @@ import {
 } from "@/components/family-story-ui";
 import { FAMILY_EXPLORE_CASES, type FamilyExploreCase } from "@/lib/family-public-explore-data";
 import { PRACTICE_ASSETS, remainingPeriod, selectedPracticeGoal } from "@/lib/family-public-practice";
-import { goalForCase, interestMatches, orderExploreCases, personName } from "@/lib/family-story-state";
+import { goalForCase, interestMatches, metCases, orderExploreCases, personName } from "@/lib/family-story-state";
 
 export function KeyChip() {
   const { story } = useFamilyStory();
@@ -29,7 +29,8 @@ export function ExploreChapter() {
   const { story } = useFamilyStory();
   const cases = useMemo(() => orderExploreCases(story.interests, FAMILY_EXPLORE_CASES), [story.interests]);
   const goal = selectedPracticeGoal(story.practice);
-  const startHere = cases.find(item => !story.viewed.includes(item.id));
+  const met = metCases(story);
+  const startHere = cases.find(item => !met.includes(item.id));
   return (
     <div className="space-y-5">
       <header className="space-y-3">
@@ -46,7 +47,7 @@ export function ExploreChapter() {
       <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3" aria-label="Invented companies">
         {cases.map(item => {
           const match = interestMatches(story.interests, item)[0];
-          const seen = story.researched.includes(item.id) ? "Researched" : story.viewed.includes(item.id) ? "Opened" : null;
+          const seen = story.researched.includes(item.id) ? "Researched" : met.includes(item.id) ? "Met" : story.viewed.includes(item.id) ? "Opened" : null;
           const practice = item.practiceCode ? PRACTICE_ASSETS.find(a => a.code === item.practiceCode) : undefined;
           const isStart = item.id === startHere?.id;
           return (
