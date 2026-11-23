@@ -239,7 +239,7 @@ export type Mission = {
 /**
  * The one meaningful next step for the Child's Home, derived only from state.
  * It is a pointer, never an action: it cannot approve, buy or change the Key.
- * Order: unfinished setup, then anything waiting on a decision, then the
+ * Order: anything waiting on or answered by the Parent, then unfinished setup, then the
  * learn -> meet -> choose -> talk loop, then whatever is left to discover.
  */
 export function nextMission(s: StoryState): Mission {
@@ -254,10 +254,6 @@ export function nextMission(s: StoryState): Mission {
   const met = metCases(s);
   const asset = (code: string) => PRACTICE_ASSETS.find(a => a.code === code)?.name ?? code;
 
-  if (!s.goalChosen) return {
-    id: "choose-goal", kicker: "Start here", title: "Choose what you are saving for",
-    body: "Your lessons and choices will follow your dream. It takes ten seconds.", href: "/try/goal", cta: "Choose my dream",
-  };
   const approved = p.requests.find(r => r.status === "approved-once");
   if (approved) return {
     id: "use-approval", kicker: "Your Parent answered", title: "Your Parent said yes, once",
@@ -276,6 +272,12 @@ export function nextMission(s: StoryState): Mission {
   if (newestIsRequest && newest.status === "stale") return {
     id: "see-expired", kicker: "Something changed", title: "Your Parent changed My Key",
     body: "Your earlier ask expired. See what changed before choosing again.", href: "/try/outcome", cta: "See what changed",
+  };
+  // Setup comes after anything already in flight with the Parent, so an
+  // approval or answer is never hidden behind "choose a goal" (issue #130 P3).
+  if (!s.goalChosen) return {
+    id: "choose-goal", kicker: "Start here", title: "Choose what you are saving for",
+    body: "Your lessons and choices will follow your dream. It takes ten seconds.", href: "/try/goal", cta: "Choose my dream",
   };
   // Right after a real decision (a receipt or a Parent answer), talk about it before anything new.
   const decided = p.receipts.length > 0 || p.requests.some(r => r.status !== "pending");

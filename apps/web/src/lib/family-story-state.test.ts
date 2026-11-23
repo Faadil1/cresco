@@ -257,3 +257,18 @@ describe("Meet = a meaningful interaction (PR #127 decision)", () => {
   });
 });
 });
+
+describe("Home mission never hides a Parent answer behind setup (issue #130 P3)", () => {
+  it("an approval, pending ask, decline or expiry comes before 'choose a goal'", () => {
+    const p = (action: Parameters<typeof transitionStory>[1] extends infer A ? A : never) => action;
+    let s = initialStory();
+    expect(nextMission(s).id).toBe("choose-goal");
+    s = run(s, p({ type: "practice", action: { type: "buy", asset: "MKT", amount: 25 } }));
+    expect(nextMission(s).id).toBe("parent-deciding");
+    s = run(s, p({ type: "practice", action: { type: "respond", id: s.practice.requests[0].id, choice: "approve" } }));
+    expect(nextMission(s).id).toBe("use-approval");
+    s = run(s, p({ type: "practice", action: { type: "buy", asset: "MKT", amount: 25 } }));
+    // Used: nothing in flight any more, so setup is next again.
+    expect(nextMission(s).id).toBe("choose-goal");
+  });
+});
