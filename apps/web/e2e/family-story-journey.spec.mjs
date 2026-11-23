@@ -797,6 +797,12 @@ test("Profile can start over for a new family without a reload, and nothing carr
   await expect(page.getByTestId("home-goal-saved")).toHaveText("20/100");
   await tab(page, "Profile").click();
   await page.getByTestId("profile-reset").click();
+  await expect(page.getByRole("alertdialog", { name: "Start a new Family session?" })).toBeVisible();
+  await page.getByTestId("family-reset-cancel").click();
+  await expect(page).toHaveURL(/\/try\/profile$/);
+  await expect(page.getByTestId("profile-goal")).toContainText("20/100");
+  await page.getByTestId("profile-reset").click();
+  await page.getByTestId("family-reset-confirm").click();
   await expect(page).toHaveURL(/\/try$/);
   await expect(page.getByTestId("welcome-start")).toHaveText(/let's begin/i);
   await page.getByTestId("start-as-parent").click();
