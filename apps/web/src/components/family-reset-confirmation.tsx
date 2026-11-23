@@ -88,7 +88,7 @@ export function FamilyResetConfirmation({
             data-testid="family-reset-cancel"
             onClick={onCancel}
             className="min-h-11 rounded-full border border-line px-5 py-2 text-[13px] font-bold hover:bg-surface-soft focus-visible:outline-2 focus-visible:outline-offset-2"
-          >Cancel — keep my progress</button>
+          >Cancel - keep my progress</button>
           <button
             type="button"
             data-testid="family-reset-confirm"
