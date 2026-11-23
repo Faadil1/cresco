@@ -30,7 +30,7 @@ async function openPaperFromStory(page) {
   await page.getByTestId("portfolio-go-real").click();
 }
 
-test("new-family confirmation cancels without losing the paper book, then clears both tracks", async ({ page }) => {
+test("new-family confirmation cancels without losing the paper book, then clears both tracks", async ({ page }, testInfo) => {
   const forbidden = observeForbiddenNetwork(page);
   await seedPaperTrade(page);
   await tab(page, "Profile").click();
@@ -41,6 +41,7 @@ test("new-family confirmation cancels without losing the paper book, then clears
   await expect(dialog).toContainText("$1,000 imaginary USD paper portfolio");
   await expect(dialog).toContainText("15 credits per choice and 60 per period");
   await expect(page.getByTestId("family-reset-cancel")).toBeFocused();
+  await page.screenshot({ path: testInfo.outputPath("profile-reset-dialog.png"), fullPage: true });
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
   await expect(page).toHaveURL(/\/try\/profile$/);
@@ -55,6 +56,8 @@ test("new-family confirmation cancels without losing the paper book, then clears
   await page.getByTestId("family-reset-confirm").click();
   await expect(page).toHaveURL(/\/try$/);
   await page.getByTestId("welcome-start").click();
+  await tab(page, "Profile").click();
+  await expect(page.getByTestId("profile-screen").locator('a[href="/try/parent/key"]')).toContainText("Up to 15 credits a choice, 60 left");
   await openPaperFromStory(page);
   await expect(page.getByTestId("market-cash")).toContainText("$1,000.00");
   await expect(page.getByTestId("market-current-quote")).toContainText("No price recorded");
@@ -62,7 +65,7 @@ test("new-family confirmation cancels without losing the paper book, then clears
   expect(forbidden, "Reset is offline and never calls a financial API").toEqual([]);
 });
 
-test("lab Reset whole demo also resets the hidden paper book only after explicit confirmation", async ({ page }) => {
+test("lab Reset whole demo also resets the hidden paper book only after explicit confirmation", async ({ page }, testInfo) => {
   const forbidden = observeForbiddenNetwork(page);
   await seedPaperTrade(page);
   await tab(page, "Profile").click();
@@ -72,6 +75,7 @@ test("lab Reset whole demo also resets the hidden paper book only after explicit
   await page.getByRole("button", { name: "Reset whole demo" }).click();
   const dialog = page.getByRole("alertdialog", { name: "Reset the whole Family demo?" });
   await expect(dialog).toContainText("$1,000 imaginary USD paper portfolio");
+  await page.screenshot({ path: testInfo.outputPath("lab-reset-dialog.png"), fullPage: true });
   await page.getByTestId("family-reset-cancel").click();
   await expect(dialog).toHaveCount(0);
   await expect(page).toHaveURL(/\/try\/lab$/);
