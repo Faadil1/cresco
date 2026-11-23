@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowRight, CheckCircle2, ChevronRight, ExternalLink, PlayCircle } from "lucide-react";
+import { ArrowRight, BookOpen, CheckCircle2, ChevronRight, ExternalLink, PlayCircle } from "lucide-react";
 import { LessonIllustration } from "@/components/illustrations/scenes";
 import { useFamilyStory } from "@/components/family-story-provider";
 import { LESSON_ACTIVITIES } from "@/lib/family-learning-depth";
 import { EXTENDED_LESSON_ACTIVITIES } from "@/lib/family-learning-expansion";
 import { FamilyLessonLab } from "@/components/family-lesson-lab";
+import { InteractiveLessonBody } from "@/components/family-lesson-interactive";
+import { INTERACTIVE_LESSON_IDS, LESSON_CHAPTERS, interactiveLessonFor } from "@/lib/family-lesson-interactions";
 import { JourneyTrack, ResultCard, pageTitle, panel, primaryBtn, secondaryBtn } from "@/components/family-story-ui";
 import {
   PARENT_LEARNING, selectedPracticeGoal,
@@ -39,11 +41,11 @@ export function LearnChapter() {
       </div>
       {next ? (
         <section className="overflow-hidden rounded-[24px] border border-line-soft bg-surface shadow-sm md:grid md:grid-cols-[280px_1fr]" aria-labelledby="up-next-title" data-testid="learn-up-next-card">
-          {next.illustration ? <LessonIllustration kind={next.illustration} title={`${next.title} illustration`} className="block h-[150px] w-full md:h-full"/> : null}
+          <LessonIllustration kind={next.illustration ?? "piggy"} title={`${next.title} illustration`} className="block h-[150px] w-full md:h-full"/>
           <div className="p-4 md:p-6">
-            <p className="text-[12px] font-bold uppercase tracking-wider text-green-strong">Up next · {next.minutes} min</p>
+            <p className="text-[12px] font-bold uppercase tracking-wider text-green-strong">Up next · {next.minutes} min{(INTERACTIVE_LESSON_IDS as readonly string[]).includes(next.id) ? " · Interactive: decide, try, check" : ""}</p>
             <h2 id="up-next-title" className="mt-1 text-[21px] font-extrabold leading-7 text-navy-strong">{next.title}</h2>
-            <p className="mt-1 line-clamp-2 text-[13px] leading-5 text-ink-2">{next.concept}</p>
+            <p className="mt-1 line-clamp-2 text-[14px] leading-6 text-ink-2">{next.concept}</p>
             <Link href={`/try/learn/${next.id}`} className={`mt-3 w-full sm:w-auto ${primaryBtn}`} data-testid="learn-up-next">
               {done.length ? "Continue" : "Start"}<ArrowRight aria-hidden className="size-4"/>
             </Link>
@@ -54,30 +56,49 @@ export function LearnChapter() {
           <CheckCircle2 aria-hidden className="size-5"/>Path complete. Review any lesson below, or go and meet someone in Explore.
         </p>
       )}
-      <section aria-labelledby="path-title">
-        <h2 id="path-title" className="text-[17px] font-extrabold text-navy-strong">Your path</h2>
-        <ol className="mt-2 divide-y divide-line-soft rounded-[20px] border border-line-soft bg-surface" aria-label="All Child lessons">
-          {path.map((lesson, index) => {
-            const isDone = done.includes(lesson.id);
-            const isNext = lesson.id === next?.id;
+      <section aria-labelledby="path-title" data-testid="learn-chapters">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 id="path-title" className="text-[18px] font-extrabold text-navy-strong">All lessons</h2>
+          <p className="text-[13px] text-ink-2">Three chapters. Start anywhere; the highlighted one is next.</p>
+        </div>
+        <div className="mt-3 grid gap-3 lg:grid-cols-3">
+          {LESSON_CHAPTERS.map(chapter => {
+            const items = chapter.lessons.map(id => path.find(item => item.id === id)).filter((item): item is (typeof path)[number] => Boolean(item));
+            const chapterDone = items.filter(item => done.includes(item.id)).length;
             return (
-              <li key={lesson.id}>
-                <Link href={`/try/learn/${lesson.id}`} aria-current={isNext ? "step" : undefined}
-                  className={`flex min-h-16 items-center gap-3 px-3 py-2 hover:bg-surface-soft ${isNext ? "bg-family-action-soft/60" : ""}`}>
-                  <span aria-hidden className={`grid size-9 shrink-0 place-items-center rounded-full text-[13px] font-bold ${isDone ? "bg-green-strong text-white" : isNext ? "bg-family-action text-white" : "bg-surface-soft text-ink-2"}`}>
-                    {isDone ? <CheckCircle2 className="size-5"/> : isNext ? <PlayCircle className="size-5"/> : index + 1}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[15px] font-bold leading-5 text-navy-strong">{lesson.title}</span>
-                    <span className="block text-[12px] text-ink-2">{lesson.minutes} min · {isDone ? "Done · review" : isNext ? "Up next" : "Not started"}</span>
-                  </span>
-                  {isDone ? <span className="sr-only">Completed</span> : null}
-                  <ChevronRight aria-hidden className="size-5 shrink-0 text-ink-3"/>
-                </Link>
-              </li>
+              <section key={chapter.id} aria-labelledby={`chapter-${chapter.id}`} data-testid={`learn-chapter-${chapter.id}`}
+                className="min-w-0 rounded-[20px] border border-line-soft bg-surface p-3">
+                <header className="px-1 pb-2">
+                  <h3 id={`chapter-${chapter.id}`} className="text-[16px] font-extrabold text-navy-strong">{chapter.title}</h3>
+                  <p className="text-[13px] text-ink-2">{chapter.blurb} · <span data-testid={`learn-chapter-${chapter.id}-done`}>{chapterDone} of {items.length} done</span></p>
+                </header>
+                <ol aria-label={`${chapter.title} lessons`} className="divide-y divide-line-soft">
+                  {items.map(lesson => {
+                    const isDone = done.includes(lesson.id);
+                    const isNext = lesson.id === next?.id;
+                    const isInteractive = (INTERACTIVE_LESSON_IDS as readonly string[]).includes(lesson.id);
+                    return (
+                      <li key={lesson.id}>
+                        <Link href={`/try/learn/${lesson.id}`} aria-current={isNext ? "step" : undefined} data-testid={`learn-lesson-${lesson.id}`}
+                          className={`flex min-h-14 items-center gap-3 rounded-[12px] px-2 py-2 hover:bg-surface-soft ${isNext ? "bg-family-action-soft/70" : ""}`}>
+                          <span aria-hidden className={`grid size-8 shrink-0 place-items-center rounded-full ${isDone ? "bg-green-strong text-white" : isNext ? "bg-family-action text-white" : "bg-surface-soft text-ink-2"}`}>
+                            {isDone ? <CheckCircle2 className="size-5"/> : isNext ? <PlayCircle className="size-5"/> : <BookOpen className="size-4"/>}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-[15px] font-bold leading-5 text-navy-strong">{lesson.title}</span>
+                            <span className="block text-[13px] text-ink-2">{lesson.minutes} min · {isDone ? "Done · review" : isNext ? "Up next" : "Not started"}{isInteractive ? " · Interactive" : ""}</span>
+                          </span>
+                          {isDone ? <span className="sr-only">Completed</span> : null}
+                          <ChevronRight aria-hidden className="size-5 shrink-0 text-ink-3"/>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </section>
             );
           })}
-        </ol>
+        </div>
       </section>
       <p className="text-[13px] text-ink-2">Lessons never change My Key. A Parent has a separate path: <Link className="font-semibold text-family-action underline underline-offset-4" href="/try/parent/learn">Parent lessons</Link>.</p>
     </div>
@@ -108,6 +129,48 @@ export function LessonReader({ id }: { id: string }) {
   const following = lessons.slice(index + 1).find(item => !(parent ? story.practice.parentCompleted : story.practice.childCompleted).includes(item.id)) ?? lessons[index + 1];
   const correct = answer === lesson.answer;
   const complete = () => dispatch({ type: "practice", action: { type: "complete", role: parent ? "parent" : "child", lessonId: lesson.id } });
+  const doneView = (
+          <article className={`${panel} text-center`} data-testid="lesson-done">
+            <CheckCircle2 aria-hidden className="mx-auto size-12 text-green-strong"/>
+            <h2 className="mt-2 text-[22px] font-extrabold text-navy-strong" role="status">Lesson complete</h2>
+            <p className="mx-auto mt-1 max-w-[42ch] text-[14px] leading-6 text-ink-2">{lesson.explanation}</p>
+            <div className="mt-4 flex flex-col items-stretch gap-2 sm:flex-row sm:justify-center" data-testid="lesson-done-next">
+              {parent ? (
+                <>
+                  <Link href="/try/parent" className={primaryBtn}>Back to the Parent</Link>
+                  {following ? <Link href={`/try/learn/${following.id}`} className={secondaryBtn}>Next lesson: {following.title}</Link> : null}
+                </>
+              ) : (
+                <>
+                  <Link href="/try/home" className={primaryBtn} data-testid="lesson-back-home">Back to Home<ArrowRight aria-hidden className="size-4"/></Link>
+                  {following ? <Link href={`/try/learn/${following.id}`} className={secondaryBtn}>Next lesson: {following.title}</Link> : null}
+                  <Link href="/try/explore" className={secondaryBtn}>Explore companies</Link>
+                </>
+              )}
+            </div>
+            {!parent ? (
+              <div className="mx-auto mt-5 max-w-[460px] rounded-[16px] bg-surface-soft p-3 text-left" data-testid="lesson-loop">
+                <p className="mb-1 text-[13px] font-bold text-navy-strong">Your learning loop</p>
+                <JourneyTrack status={chapterStatus(story)} testId="lesson-loop-track"/>
+              </div>
+            ) : null}
+            <p className="mt-3 text-[13px] text-ink-2">Finishing a lesson never changes the practice Key, an approval or access to anything real.</p>
+          </article>
+  );
+  // Interactive lessons (issue #130): decide -> make it work -> check, same completion action.
+  const interactive = parent ? null : interactiveLessonFor(lesson.id, { label: goal.label, target: goal.target, saved: story.practice.saved });
+  if (interactive) {
+    return (
+      <div className="flex min-h-[calc(100dvh-170px)] flex-col">
+        <header className="mb-3">
+          <p className="cresco-section-kicker">Lesson {index + 1} · {lesson.minutes} min · Interactive</p>
+          <h1 className="mt-1 font-display text-[clamp(24px,4.4vw,34px)] leading-[1.12] text-navy-strong">{lesson.title}</h1>
+        </header>
+        <InteractiveLessonBody lesson={lesson} interactive={interactive} goal={{ label: goal.label, target: goal.target, saved: story.practice.saved }}
+          done={done} onComplete={complete} doneView={doneView}/>
+      </div>
+    );
+  }
   return (
     <div className="flex min-h-[calc(100dvh-170px)] flex-col">
       <header>
@@ -168,32 +231,7 @@ export function LessonReader({ id }: { id: string }) {
             </div>
           </article>
         ) : done ? (
-          <article className={`${panel} text-center`} data-testid="lesson-done">
-            <CheckCircle2 aria-hidden className="mx-auto size-12 text-green-strong"/>
-            <h2 className="mt-2 text-[22px] font-extrabold text-navy-strong" role="status">Lesson complete</h2>
-            <p className="mx-auto mt-1 max-w-[42ch] text-[14px] leading-6 text-ink-2">{lesson.explanation}</p>
-            <div className="mt-4 flex flex-col items-stretch gap-2 sm:flex-row sm:justify-center" data-testid="lesson-done-next">
-              {parent ? (
-                <>
-                  <Link href="/try/parent" className={primaryBtn}>Back to the Parent</Link>
-                  {following ? <Link href={`/try/learn/${following.id}`} className={secondaryBtn}>Next lesson: {following.title}</Link> : null}
-                </>
-              ) : (
-                <>
-                  <Link href="/try/home" className={primaryBtn} data-testid="lesson-back-home">Back to Home<ArrowRight aria-hidden className="size-4"/></Link>
-                  {following ? <Link href={`/try/learn/${following.id}`} className={secondaryBtn}>Next lesson: {following.title}</Link> : null}
-                  <Link href="/try/explore" className={secondaryBtn}>Explore companies</Link>
-                </>
-              )}
-            </div>
-            {!parent ? (
-              <div className="mx-auto mt-5 max-w-[460px] rounded-[16px] bg-surface-soft p-3 text-left" data-testid="lesson-loop">
-                <p className="mb-1 text-[13px] font-bold text-navy-strong">Your learning loop</p>
-                <JourneyTrack status={chapterStatus(story)} testId="lesson-loop-track"/>
-              </div>
-            ) : null}
-            <p className="mt-3 text-[13px] text-ink-2">Finishing a lesson never changes the practice Key, an approval or access to anything real.</p>
-          </article>
+          doneView
         ) : (
           <article className={panel} data-testid="lesson-quiz">
             {lesson.quizPrompt ? <p className="mb-3 rounded-[14px] bg-yellow-soft p-3 text-[13px] leading-6 text-navy">{lesson.quizPrompt}</p> : null}
