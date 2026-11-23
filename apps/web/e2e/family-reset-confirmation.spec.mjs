@@ -25,6 +25,20 @@ async function seedPaperTrade(page) {
   await expect(page.getByTestId("market-cash")).toContainText("$900.00");
 }
 
+async function finishSetupToHome(page) {
+  // After a confirmed reset (or a never-completed setup), welcome-start enters
+  // onboarding, which intentionally has no Main navigation.
+  const chapter = page.getByRole("navigation", { name: "Previous and next chapter" });
+  await expect(page).toHaveURL(/\/try\/goal$/);
+  await page.getByRole("radio", { name: /new bike/i }).click();
+  await chapter.getByRole("link", { name: "Next", exact: true }).click();
+  await expect(page).toHaveURL(/\/try\/goal\/interests$/);
+  await chapter.getByRole("link", { name: "Skip for now" }).click();
+  await expect(page).toHaveURL(/\/try\/goal\/ready$/);
+  await chapter.getByRole("link", { name: "Open my Home" }).click();
+  await expect(page).toHaveURL(/\/try\/home$/);
+}
+
 async function openPaperFromStory(page) {
   await tab(page, "Portfolio").click();
   await page.getByTestId("portfolio-go-real").click();
@@ -56,6 +70,7 @@ test("new-family confirmation cancels without losing the paper book, then clears
   await page.getByTestId("family-reset-confirm").click();
   await expect(page).toHaveURL(/\/try$/);
   await page.getByTestId("welcome-start").click();
+  await finishSetupToHome(page);
   await tab(page, "Profile").click();
   await expect(page.getByTestId("profile-screen").locator('a[href="/try/parent/key"]')).toContainText("Up to 15 credits a choice, 60 left");
   await openPaperFromStory(page);
@@ -83,6 +98,7 @@ test("lab Reset whole demo also resets the hidden paper book only after explicit
   // Cancel leaves all hidden paper state intact across the shared /try layout.
   await page.getByRole("link", { name: /take the illustrated story/i }).first().click();
   await page.getByTestId("welcome-start").click();
+  await finishSetupToHome(page);
   await openPaperFromStory(page);
   await expect(page.getByTestId("market-cash")).toContainText("$900.00");
 
@@ -93,6 +109,7 @@ test("lab Reset whole demo also resets the hidden paper book only after explicit
   await expect(dialog).toHaveCount(0);
   await page.getByRole("link", { name: /take the illustrated story/i }).first().click();
   await page.getByTestId("welcome-start").click();
+  await finishSetupToHome(page);
   await openPaperFromStory(page);
   await expect(page.getByTestId("market-cash")).toContainText("$1,000.00");
   await expect(page.getByTestId("market-holdings")).toContainText("No pretend holdings yet");
