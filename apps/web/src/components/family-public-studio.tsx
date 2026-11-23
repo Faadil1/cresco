@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useFamilyStory } from "@/components/family-story-provider";
+import { FamilyResetConfirmation } from "@/components/family-reset-confirmation";
 import { LessonIllustration } from "@/components/illustrations/scenes";
 import { GoalArt } from "@/components/illustrations/objects";
 import { BadgeArt } from "@/components/illustrations/badges";
@@ -446,6 +447,7 @@ export function FamilyPublicStudio() {
   const [role, setRole] = useState<FamilyRole>("child");
   const [childTab, setChildTab] = useState<ChildTab>("home");
   const [parentTab, setParentTab] = useState<ParentTab>("overview");
+  const [confirmReset, setConfirmReset] = useState(false);
   const pending = state.requests.filter(r => r.status === "pending").length;
   // On a narrow screen, the user explicitly selected Requests to act on an
   // exception. Bring the exact decision card into view instead of leaving
@@ -620,12 +622,24 @@ export function FamilyPublicStudio() {
         <p aria-live="polite" role="status" className="min-w-0 flex-1 basis-[14rem] text-[12px] font-semibold leading-5 md:text-[13px] text-navy-strong md:leading-6">{state.feedback}</p>
         <div className="flex w-full items-center gap-2 md:w-auto">
           {outcomeAction ? <button type="button" className={`${primary} !px-4 !py-2 md:!px-5 md:!py-3`} onClick={outcomeAction.run}>{outcomeAction.label}</button> : null}
-          <button type="button" aria-label="Reset whole demo" className={`${secondary} !px-4 !py-2 md:!px-5 md:!py-3`} onClick={() => { dispatch({ type: "reset" }); setRole("child"); setChildTab("home"); setParentTab("overview"); }}>
+          <button type="button" aria-label="Reset whole demo" className={`${secondary} !px-4 !py-2 md:!px-5 md:!py-3`} onClick={() => setConfirmReset(true)}>
             <RotateCcw aria-hidden className="mr-1 inline size-4"/> Reset<span className="hidden md:inline">&nbsp;whole demo</span>
           </button>
         </div>
       </div>
-      <p className="mt-3 text-[12px] leading-5 text-ink-3">Public educational simulation in this browser tab only. Refreshing resets all lessons, balances, requests and badges. No sign-in, third-party finance data, wallet, server write, blockchain execution or real Parent verification. Sample companies and sample prices are not investment advice.</p>
+      <FamilyResetConfirmation
+        open={confirmReset}
+        title="Reset the whole Family demo?"
+        onCancel={() => setConfirmReset(false)}
+        onConfirm={() => {
+          setConfirmReset(false);
+          dispatch({ type: "reset" });
+          setRole("child");
+          setChildTab("home");
+          setParentTab("overview");
+        }}
+      />
+      <p className="mt-3 text-[12px] leading-5 text-ink-3">Public educational simulation in this browser tab only. Refreshing or resetting the whole demo clears all lessons, balances, requests, badges, the $1,000 imaginary USD paper portfolio and its prices, and restores the simulated My Key to its starting limits (15 credits per choice, 60 per period). No sign-in, third-party finance data, wallet, server write, blockchain execution or real Parent verification. Sample companies and sample prices are not investment advice.</p>
     </section>
   );
 }
