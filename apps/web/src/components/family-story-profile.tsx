@@ -8,10 +8,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BookOpen, ChevronRight, HeartHandshake, KeyRound, RotateCcw, ShieldCheck, Sparkles, Target, Users } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { KidBust } from "@/components/illustrations/people";
 import { BadgeArt } from "@/components/illustrations/badges";
 import { useFamilyStory } from "@/components/family-story-provider";
+import { FamilyResetConfirmation } from "@/components/family-reset-confirmation";
 import { panel } from "@/components/family-story-ui";
 import { remainingPeriod, selectedPracticeGoal } from "@/lib/family-public-practice";
 import { GOAL_STORY, INTERESTS, childPathFor, practiceWins } from "@/lib/family-story-state";
@@ -33,6 +34,7 @@ function Row({ href, icon, title, detail, testId }: { href: string; icon: ReactN
 
 export function ProfileScreen() {
   const router = useRouter();
+  const [confirmReset, setConfirmReset] = useState(false);
   const { story, dispatch } = useFamilyStory();
   const p = story.practice;
   const goal = selectedPracticeGoal(p);
@@ -88,16 +90,27 @@ export function ProfileScreen() {
           <li>Inside My Key you decide alone. Above it, a simulated Parent decides once, for that exact choice.</li>
           <li>Companies and people are invented. Prices are examples, not advice.</li>
           <li>Nothing is saved: a full refresh starts a new family session.</li>
+          <li>Starting a new family also clears the separate $1,000 imaginary USD paper portfolio and resets the simulated My Key to its starting limits.</li>
         </ul>
         <div className="mt-3 flex flex-wrap gap-2">
           <Link href="/try/lab" className="inline-flex min-h-11 items-center rounded-full border border-line px-4 text-[13px] font-bold text-navy-strong">Free practice lab</Link>
           <button type="button" data-testid="profile-reset"
-            onClick={() => { dispatch({ type: "practice", action: { type: "reset" } }); router.push("/try"); }}
+            onClick={() => setConfirmReset(true)}
             className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line px-4 text-[13px] font-bold text-navy-strong">
             <RotateCcw aria-hidden className="size-4"/>Start over for a new family
           </button>
         </div>
       </section>
+      <FamilyResetConfirmation
+        open={confirmReset}
+        title="Start a new Family session?"
+        onCancel={() => setConfirmReset(false)}
+        onConfirm={() => {
+          setConfirmReset(false);
+          dispatch({ type: "practice", action: { type: "reset" } });
+          router.push("/try");
+        }}
+      />
     </div>
   );
 }
