@@ -297,3 +297,102 @@ Both journeys were scripted end to end (`capture-journeys.cjs`) and every screen
 5. **The Parent Learn hub and the lesson reader** were only lightly touched (labels, loop cue). The lesson slides keep their earlier layout.
 6. **Hosted-observation CI job** is still red, as on #124. It needs a deploy-side attestation.
 7. **Manual checks still needed:** Windows smoke (`scripts/family-v3-local-pilot.ps1`) and a real-device iPhone check. CI covers WebKit emulation, not hardware.
+
+## 8. Issue #130 acceptance pass (2026-11-23)
+
+Brief: Faadil1/cresco#130, on the same draft PR #127.
+
+| | |
+|---|---|
+| Baseline | `ead820841301ff4872a0237840b93bb0a7fc39c4` |
+| Code tested | `91d384c` (P1 `c87de60`, P2 `f43b24f`, P3 `91d384c`) |
+| Docs commit | This section, plus screenshots, on top of the tested code. It changes no code. |
+
+### Evidence and limits
+- **Video:** the founder's OptiPlex recording `20261123-0413-38.9585717.mp4` was **not available** to me. The observations in #130 (unused desktop width, Learn as a list, real companies in finance terms, the Parent cycle not yet verified) are taken from the issue as hypotheses, not from my viewing.
+- **Builds compared:** before/after captures come from two local builds served side by side by Wrangler, the baseline `ead8208` (port 3101) and the tested code `91d384c` (port 3100). Chromium, 100% zoom, CSS viewports 390x844 (touch) and 1440x900.
+- **Where to find them:** `ux-overhaul-2026-11-16/issue-130/{before,after}/`, produced by `capture-130.cjs`.
+- **Not tested:** no family or child user testing has happened. Every UX judgement here is heuristic.
+
+### P1: Learning that teaches through action
+- **Observed:** "Save for a goal" and "Practice with risk" were 3 reading slides with a 2-option exercise and a recall quiz. The Learn page was one 17-row list, which left wide desktops half empty.
+- **Implemented:**
+  - Reusable lesson beats: `src/lib/family-lesson-interactions.ts` (pure, unit-tested) and `src/components/family-lesson-interactive.tsx` (`DecideBeatView`, `LabBeatView`, `CheckBeatView`, `InteractiveLessonBody`).
+  - Each of the two lessons is now **decide → make it work → check**. The decide beat shows its consequence with worked numbers from the child's own goal. The lab has a stated goal to reach, such as "15 or less per period, inside your Key" or "a drop that costs exactly 5". The check reuses the vetted question with a specific hint for each wrong answer and free retries.
+  - The vetted scenes stay under "Read the full lesson".
+  - Completion only goes through the unchanged `complete` action, after a correct check. Opening or leaving a lesson completes nothing.
+  - The Learn page shows three chapters (Money basics; Companies and shares; Risk and choices) with done counts, Up next and "Interactive" markers. All 17 lessons stay one click away. Parent lessons are unchanged and stay separate.
+- **Tested:**
+  - Unit: `family-lesson-interactions.test.ts` (numbers, gating, chapter coverage) and `family-lesson-interactive.test.tsx` (completes once, only after a correct check; wrong answers retryable).
+  - E2E `family-story-journey.spec.mjs`, "an interactive lesson teaches through a decision…": a first-time child picks a goal, completes c-save with a wrong-then-right answer and goes Home. Only Learn moves; 1 of 17 done; the Money chapter shows 1 of 5. Opening c-risk and leaving completes nothing.
+
+| Height (px) | 390 before | 390 after | 1440 before | 1440 after |
+|---|---|---|---|---|
+| Learn | 1,847 | 2,260 | 1,711 | **1,095** |
+
+### P2: real-company exercise a child can follow
+- **Observed:** step 1 opened with company and finance wording. Pricing was only "type a price". "View on TradingView" was a link sitting next to the chart button, so one tap could leave Cresco by accident.
+- **Implemented:**
+  - Step 1: a one-sentence explanation, "How money comes in" with a concrete example, and tap-to-explain terms for revenue, profit and reference price.
+  - Plain labels: "Revenue: money customers paid" and "Profit: money left after costs". A new line, "Out of every $100 customers paid, about $X was left as profit", is arithmetic on the official SEC figures (Apple 28, Microsoft 40, Costco 3, Shopify 11).
+  - "Why would someone choose it?" with gentle feedback. A paper buy waits for a reason.
+  - Step 2 gives an a/b/c sequence and a clear message for an invalid price. The TradingView link appears only after opting into the chart.
+  - SEC period, form, filing date and USD stay visible.
+- **Unchanged:** sandbox logic, SEC snapshots and the EOD snapshot (`DISABLED`). No prices are invented.
+- **Tested:**
+  - Unit: `family-real-company-explainers.test.ts`.
+  - E2E `family-acceptance-130.spec.mjs` P2, on phone and desktop: Apple and Shopify; missing and invalid price; a valid dated price labelled `NOT VERIFIED`; a 0.25 fractional buy; a later price; value and P&L; explaining the direction wrong then right; the fictional Portfolio unchanged (100); the paper book showing both companies; reset; **zero third-party requests**.
+
+| Height (px) | 390 before | 390 after | 1440 before | 1440 after |
+|---|---|---|---|---|
+| Real companies, step 1 | 1,961 | 2,478 | 1,933 | 2,153 |
+| Real companies, explained state | 1,992 | 1,992 | 2,344 | 2,668 |
+
+The added explanation and the reason question make step 1 longer. On a phone it is still **−40% against the original 4,147px**.
+
+### P3: simulated Child → Parent → Child cycle
+- **Tested end to end** in `family-acceptance-130.spec.mjs` P3, at **1440x900, 1280x800 and phone**, asserting state and not screenshots. In order:
+  1. Inside the Key, a 10-credit choice gives a receipt and no request; spent 10, free 90.
+  2. 25 credits is blocked and creates a request carrying the reason "curious"; nothing is bought. Sending the same ask again is disabled ("already sent").
+  3. The Parent sees the company, amount and reason, plus the simulated notice. **Approve once** works by keyboard, and the Key stays at 15.
+  4. The Child uses the approval (spent 35). The same 25 then shows "used" and is disabled.
+  5. A **decline with reason** ("too big") buys nothing. The Child sees why, the same 20 is disabled as "declined", and 10 inside the Key works.
+  6. A **Key change** to 20 per choice first warns "will expire 1 open request". The request becomes **stale**: no Approve button. Under the new Key the same 30 needs the Parent again and is never silently allowed.
+  7. The Parent timeline shows 3 asks with the right statuses and reasons, plus 3 practice choices.
+  8. A reload resets everything. No cookies, no local or session storage, no network writes, no external hosts.
+- **Defect found and fixed:** a Parent's approval or decision was hidden behind "Choose what you are saving for" on Home whenever the child hadn't picked a goal yet. Home's mission now puts anything in flight with the Parent before setup. The change is mission order only (`family-story-state.ts`) and is unit-tested. `family-public-practice.ts` is unchanged.
+
+### Safeguards (diff against `ead8208`)
+- `family-public-practice.ts`, `family-real-market-sandbox.ts`, the SEC snapshots, `family-market-approved-snapshot.json` (`DISABLED`), Wrangler/vite configs, build scripts and workflows: **unchanged**.
+- `family-story-state.ts`: progress and mission order only.
+- No new network, storage, identity, analytics or account.
+
+### Founder's Windows test steps (PowerShell, no deploy)
+```
+git fetch origin claude/family-ux-overhaul-2026-11-16
+git checkout claude/family-ux-overhaul-2026-11-16
+git log -1 --format=%H
+cd apps\web
+npm.cmd ci --no-audit --no-fund
+npm.cmd run build:public-family
+npm.cmd run start:vinext -- --ip 127.0.0.1 --port 3100
+```
+Then open `http://127.0.0.1:3100/try` (Edge, 100% zoom) and check:
+1. **Lesson:** "Let's begin" → New bike → Skip → Open my Home → Start lesson. Pick each answer in step 1 and read the consequences. Move the slider until the green goal message appears. In the check, pick a wrong answer first (you get a hint), then the right one → Complete lesson → Back to Home. Only "Learn" is ticked.
+2. **Real company:** Explore → Real companies → Apple. Tap "What is revenue?", pick a reason, type 200 → Save → 0.25 → Paper buy. Type 220 with today's date → Save. Step 4: choose the explanation.
+3. **Parent cycle:** Explore → Neighborhood Markets → answer Mina → Practice → "A bigger choice (25)" → Ask my Parent → Hand the phone to your Parent → Approve once → Hand back → use the approval. Then repeat with a decline, and with a Key change (Parent → My Key → 20 → Explicitly update standing Key).
+4. Refresh the page: everything resets.
+
+Optional automated run on Windows (after the build above, with the server stopped):
+```
+npx playwright install chromium webkit
+npx playwright test -c playwright.family-public.config.mjs
+```
+
+### Remaining unknowns and gaps
+1. **No user testing.** No family or child has used this; clarity and engagement are heuristic.
+2. **Interactive lessons:** only 2 of 17 child lessons use the new format; the primitives are ready for more.
+3. **Prices are typed by the child.** Licensed end-of-day prices stay disabled until redistribution, derived-data and cache rights are confirmed.
+4. **Longer pages in places:** real-company step 1 and Learn on a phone are longer than at `ead8208`, because of added explanation and chapter headers.
+5. **Simulated Parent only.** There is no real guardian identity, consent, second device or sync; this is by design, but it is not proven family authority.
+6. **Pre-existing CI failure:** the hosted-observation job is still red, unrelated to this branch.
