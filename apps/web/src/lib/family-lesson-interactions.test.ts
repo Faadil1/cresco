@@ -1,23 +1,62 @@
 import { describe, expect, it } from "vitest";
 import { CHILD_LEARNING, PARENT_LEARNING } from "./family-public-practice";
 import {
-  INTERACTIVE_LESSON_IDS, LESSON_CHAPTERS, beatComplete, interactiveLessonFor, labResult,
+  INTERACTIVE_LESSON_IDS, LESSON_CHAPTERS, allocationProblems, beatComplete, interactiveLessonFor, labResult,
   type DecideBeat, type LabBeat,
 } from "./family-lesson-interactions";
 
 const bike = { label: "New bike", target: 60, saved: 0 };
 
 describe("interactive lessons (issue #130)", () => {
-  it("exist for one saving lesson and one risk lesson, and never for Parent lessons", () => {
-    expect([...INTERACTIVE_LESSON_IDS]).toEqual(["c-save", "c-risk"]);
+  it("cover all 17 Child lessons, never Parent lessons, each ending in its vetted check with a hint per wrong answer", () => {
+    expect([...INTERACTIVE_LESSON_IDS].sort()).toEqual(CHILD_LEARNING.map(item => item.id).sort());
+    expect(INTERACTIVE_LESSON_IDS).toHaveLength(17);
     for (const lesson of PARENT_LEARNING) expect(interactiveLessonFor(lesson.id, bike)).toBeNull();
     for (const id of INTERACTIVE_LESSON_IDS) {
       const lesson = interactiveLessonFor(id, bike)!;
-      expect(lesson.beats.map(b => b.kind)).toEqual(["decide", "lab", "check"]);
+      expect(lesson.beats.at(-1)!.kind, id).toBe("check");
+      expect(lesson.beats.length, id).toBeGreaterThanOrEqual(3);
       // The check reuses the lesson's vetted question; every wrong answer has a specific hint.
       const vetted = CHILD_LEARNING.find(item => item.id === id)!;
-      const check = lesson.beats[2] as { hints: string[] };
+      const check = lesson.beats.at(-1) as { hints: string[] };
       vetted.choices.forEach((_, i) => expect(Boolean(check.hints[i]), `${id} hint ${i}`).toBe(i !== vetted.answer));
+      if (id !== "c-save" && id !== "c-risk") expect(lesson.objective, id).toBeTruthy();
+    }
+  });
+
+  it("use varied activities, not slider clones", () => {
+    const kinds = INTERACTIVE_LESSON_IDS.flatMap(id => interactiveLessonFor(id, bike)!.beats.filter(b => b.kind !== "check").map(b => b.kind));
+    expect(new Set(kinds)).toEqual(new Set(["decide", "lab", "sort", "allocate"]));
+    expect(kinds.filter(k => k === "lab").length).toBeLessThan(kinds.length / 3);
+    for (const id of INTERACTIVE_LESSON_IDS) {
+      const beats = interactiveLessonFor(id, bike)!.beats.filter(b => b.kind !== "check");
+      // Two different activities per lesson, except two linked decisions in Compare prices / Time matters.
+      if (!["c-price", "c-volatility"].includes(id)) expect(new Set(beats.map(b => b.kind)).size, id).toBe(2);
+    }
+  });
+
+  it("every activity in every lesson can actually be completed", () => {
+    for (const id of INTERACTIVE_LESSON_IDS) {
+      for (const beat of interactiveLessonFor(id, bike)!.beats) {
+        if (beat.kind === "decide") expect(beatComplete(beat, { picked: beat.options[0].id }, bike)).toBe(true);
+        if (beat.kind === "sort") {
+          const wrong = Object.fromEntries(beat.items.map(item => [item.id, beat.buckets.find(b => b.id !== item.bucket)!.id]));
+          expect(beatComplete(beat, { sorted: wrong }, bike), `${id} wrong sort`).toBe(false);
+          expect(beatComplete(beat, { sorted: Object.fromEntries(beat.items.map(item => [item.id, item.bucket])) }, bike), `${id} sort`).toBe(true);
+        }
+        if (beat.kind === "lab") {
+          const reachable = Array.from({ length: (beat.max - beat.min) / beat.step + 1 }, (_, i) => beat.min + i * beat.step).some(v => labResult(beat, bike, v).met);
+          expect(reachable, `${id} lab goal reachable`).toBe(true);
+          expect(labResult(beat, bike, beat.start).met, `${id} lab not solved at start`).toBe(false);
+        }
+        if (beat.kind === "allocate") {
+          const start = Object.fromEntries(beat.buckets.map(b => [b.id, b.start]));
+          expect(allocationProblems(beat, start).length, `${id} allocate not solved at start`).toBeGreaterThan(0);
+          const values = Array.from({ length: beat.total / beat.step + 1 }, (_, i) => i * beat.step);
+          const found = values.some(a => values.some(b => values.some(c => allocationProblems(beat, { [beat.buckets[0].id]: a, [beat.buckets[1].id]: b, [beat.buckets[2].id]: c }).length === 0)));
+          expect(found, `${id} allocation solvable`).toBe(true);
+        }
+      }
     }
   });
 

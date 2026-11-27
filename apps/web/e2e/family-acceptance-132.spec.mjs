@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { openRealStep, waitForFamilyReady } from "./family-ready.mjs";
+import { completeInteractiveLesson, openRealStep, waitForFamilyReady } from "./family-ready.mjs";
 
 waitForFamilyReady(test);
 
@@ -124,4 +124,45 @@ test("P0 (phone, touch): jump to step 1, choose, come back to the trade, buy 0.2
   await expect(page.getByTestId("step-toggle-3")).toHaveAttribute("aria-expanded", "true");
   await expect(page.getByTestId("market-buy")).toBeInViewport();
   await finishAndVerify(page, net);
+});
+
+// ---------------------------------------------------------------------------
+// P1: all 17 Child lessons are interactive. Complete every one in-app, prove a
+// wrong answer is explained and blocks completion, progress counts each lesson
+// exactly once, and neither ledger nor the Key moves.
+// ---------------------------------------------------------------------------
+test("P1: all 17 Child lessons teach through activities and complete exactly once", async ({ page }, testInfo) => {
+  test.slow();
+  const net = watch(page);
+  await page.goto("/try/learn");
+  const ids = await page.getByTestId("learn-chapters").locator("a[data-testid^=learn-lesson-]").evaluateAll(links => links.map(a => a.dataset.testid.replace("learn-lesson-", "")));
+  expect(ids).toHaveLength(17);
+  for (const [index, id] of ids.entries()) {
+    await page.getByTestId(`learn-lesson-${id}`).click();
+    await expect(page.getByTestId("lesson-interactive"), id).toBeVisible();
+    await expect(page.getByText(/interactive/i).first()).toBeVisible();
+    await completeInteractiveLesson(page);
+    if (index === 0) await testInfo.attach("p1-first-lesson-done.png", { body: await page.screenshot(), contentType: "image/png" });
+    // Back to Learn in-app (the close button); progress grows by exactly one.
+    await page.getByRole("link", { name: /close lesson/i }).click();
+    await expect(page.getByTestId("learn-progress")).toContainText(`${index + 1} of 17`);
+    await expect(page.getByTestId(`learn-lesson-${id}`)).toContainText(/done/i);
+  }
+  // Re-doing a finished lesson does not count twice.
+  await page.getByTestId(`learn-lesson-${ids[0]}`).click();
+  await page.getByRole("link", { name: /close lesson/i }).click();
+  await expect(page.getByTestId("learn-progress")).toContainText("17 of 17");
+  await expect(page.getByTestId("learn-complete")).toBeVisible();
+  // Learning never moves money or the Key.
+  await tab(page, "Portfolio").click();
+  await expect(page.getByTestId("portfolio-available")).toHaveText("100");
+  await expect(page.getByTestId("portfolio-spent")).toHaveText("0");
+  await page.getByTestId("portfolio-sections").getByRole("link", { name: "Paper dollars" }).click();
+  await expect(page.getByTestId("paper-cash")).toContainText("$1,000.00");
+  await tab(page, "Home").click();
+  await expect(page.getByTestId("home-key")).toContainText("15 credits");
+  await tab(page, "Profile").click();
+  await expect(page.getByTestId("profile-wins")).toContainText(/finished child lessons\s*earned/i);
+  expect(net.writes).toEqual([]);
+  expect(net.external).toEqual([]);
 });

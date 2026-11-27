@@ -167,7 +167,7 @@ export function LessonReader({ id }: { id: string }) {
           <h1 className="mt-1 font-display text-[clamp(24px,4.4vw,34px)] leading-[1.12] text-navy-strong">{lesson.title}</h1>
         </header>
         <InteractiveLessonBody lesson={lesson} interactive={interactive} goal={{ label: goal.label, target: goal.target, saved: story.practice.saved }}
-          done={done} onComplete={complete} doneView={doneView}/>
+          done={done} onComplete={complete} doneView={doneView} note={note}/>
       </div>
     );
   }

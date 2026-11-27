@@ -48,8 +48,33 @@ async function advanceLessonToQuiz(page) {
     const lab = page.getByTestId("beat-lab");
     if (await lab.isVisible() && await page.getByTestId("lab-goal-met").count() === 0) {
       await expect(page.getByRole("button", { name: /next idea|quick check/i })).toBeDisabled();
-      await lab.getByRole("slider").fill((await lab.getAttribute("data-lab")) === "savings" ? "8" : "25");
+      await lab.getByRole("slider").fill({ savings: "8", drop: "25", fees: "3", profit: "100", grocery: "35" }[await lab.getAttribute("data-lab")]);
       await expect(page.getByTestId("lab-goal-met")).toBeVisible();
+    }
+    const sort = page.getByTestId("beat-sort");
+    if (await sort.isVisible() && await page.getByTestId("sort-progress").evaluate(el => !/^(\d+) of \1 /.test(el.textContent))) {
+      await expect(page.getByRole("button", { name: /next idea|quick check/i })).toBeDisabled();
+      for (const item of await sort.locator("li[data-testid^=sort-item-]").all()) {
+        for (const bucket of await item.getByRole("button").all()) {
+          if ((await item.getAttribute("data-state")) === "right") break;
+          await bucket.click();
+        }
+        await expect(item).toHaveAttribute("data-state", "right");
+      }
+    }
+    const allocate = page.getByTestId("beat-allocate");
+    if (await allocate.isVisible() && await page.getByTestId("allocate-met").count() === 0) {
+      await expect(page.getByRole("button", { name: /next idea|quick check/i })).toBeDisabled();
+      for (let guard = 0; guard < 30 && await page.getByTestId("allocate-met").count() === 0; guard++) {
+        const problems = await page.getByTestId("allocate-problems").innerText();
+        const needs = /(.+) needs at least/.exec(problems);
+        const over = /(.+) is more than/.exec(problems);
+        if (needs) await page.getByRole("button", { name: `More for ${needs[1].trim()}` }).click();
+        else if (over) await page.getByRole("button", { name: `Less for ${over[1].trim()}` }).click();
+        else if (/still to place/.test(problems)) await allocate.getByRole("button", { name: /^More for/ }).last().click();
+        else await allocate.getByRole("button", { name: /^Less for/ }).last().click();
+      }
+      await expect(page.getByTestId("allocate-met")).toBeVisible();
     }
     const exercise = page.getByTestId("lesson-applied-exercise");
     if (await exercise.isVisible() && await page.getByTestId("applied-feedback").count() === 0) {
@@ -124,7 +149,7 @@ test("the whole story: goal, lesson, research, blocked choice, Parent approval, 
   await page.getByTestId("learn-up-next").click();
   await expect(page).toHaveURL(/\/try\/learn\/original-why-prices-move$/);
   await expect(page.getByTestId("goal-note")).toContainText(/gaming setup/i);
-  await expect(page.getByTestId("lesson-slide").locator("svg").first()).toBeVisible();
+  await expect(page.getByTestId("lesson-interactive").locator("svg").first()).toBeVisible();
   await advanceLessonToQuiz(page);
   const choices = page.locator("[data-testid=lesson-quiz] fieldset button");
   // A wrong answer is explained and does not complete the lesson.
@@ -912,22 +937,16 @@ test("empty Portfolio teaches real portfolio mechanics without inventing a holdi
 
 test("hands-on grocery and price-risk labs calculate consequences without changing the child's credit balance", async ({ page }, testInfo) => {
   const net = watch(page);
-  for (const part of [
-    { id: "c-explore", title: /mina.s grocery cover its costs/i, slider: "Delivery cost", testid: "lab-grocery-result", initial: /15 pretend credits left after costs/, changed: /25 pretend credits short after costs/ },
-  ]) {
-    await page.goto("/try/learn/" + part.id);
-    await page.getByRole("button", { name: /next idea/i }).click();
-    const exercise = page.getByTestId("lesson-applied-exercise");
-    await expect(exercise).toBeVisible();
-    await exercise.getByRole("button").first().click();
-    await expect(page.getByTestId("applied-feedback")).toBeVisible();
-    await page.getByRole("button", { name: /next idea/i }).click();
-    await expect(page.getByTestId("lesson-math-lab")).toContainText(part.title);
-    await expect(page.getByTestId(part.testid)).toContainText(part.initial);
-    await page.getByRole("slider", { name: part.slider }).press("End");
-    await expect(page.getByTestId(part.testid)).toContainText(part.changed);
-    await testInfo.attach("hands-on-" + part.id + ".png", { body: await page.screenshot(), contentType: "image/png" });
-  }
+  // c-explore is interactive (issue #132): find the delivery bill that wipes out Mina's earnings.
+  await page.goto("/try/learn/c-explore");
+  await page.getByRole("button", { name: /sales and the costs of running the shop/i }).click();
+  await page.getByRole("button", { name: /next idea/i }).click();
+  await expect(page.getByTestId("lab-grocery-result")).toContainText(/= 20 credits left/);
+  await page.getByRole("slider", { name: "Delivery cost" }).press("End");
+  await expect(page.getByTestId("lab-grocery-result")).toContainText(/25 credits short/);
+  await page.getByRole("slider", { name: "Delivery cost" }).fill("35");
+  await expect(page.getByTestId("lab-goal-met")).toBeVisible();
+  await testInfo.attach("hands-on-c-explore.png", { body: await page.screenshot(), contentType: "image/png" });
   // c-risk is interactive (issue #130): choose, see both outcomes, then measure a loss to an exact goal.
   await page.goto("/try/learn/c-risk");
   await page.getByRole("button", { name: /10 in orchard, 10 in the basket fund/i }).click();
@@ -990,12 +1009,15 @@ test("the expanded curriculum has 17 Child lessons and 7 Parent lessons with mul
   await expect(page.getByTestId("learn-chapters").getByRole("list")).toHaveCount(3);
   await page.getByRole("link", { name: /recognize scams and promises/i }).click();
   await expect(page).toHaveURL(/\/try\/learn\/c-scams$/);
-  await expect(page.getByTestId("lesson-slide")).toContainText("Notice the pressure");
-  await page.getByRole("button", { name: /next idea/i }).click();
-  const exercise = page.getByTestId("lesson-applied-exercise");
-  await expect(exercise).toContainText(/social message/i);
-  await exercise.getByRole("button").first().click();
-  await expect(page.getByTestId("applied-feedback")).toBeVisible();
+  // Interactive (issue #132): sorting red flags gives explained feedback and a free retry.
+  await expect(page.getByTestId("beat-sort")).toContainText(/red flag or safe sign/i);
+  const item = page.getByTestId("sort-item-double");
+  await item.getByRole("button", { name: "Safe sign" }).click();
+  await expect(item).toHaveAttribute("data-state", "wrong");
+  await expect(item).toContainText(/nobody can guarantee/i);
+  await item.getByRole("button", { name: "Red flag" }).click();
+  await expect(item).toHaveAttribute("data-state", "right");
+  await expect(page.getByTestId("lesson-read-more")).toContainText(/notice the pressure/i);
   await page.goto("/try/parent/learn");
   await expect(page.getByRole("list", { name: /parent lessons/i }).getByRole("listitem")).toHaveCount(7);
   expectCleanNetwork(net);

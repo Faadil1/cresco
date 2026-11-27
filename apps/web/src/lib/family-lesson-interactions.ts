@@ -9,6 +9,7 @@
  * approves anything or persists. All numbers are invented classroom examples.
  */
 import { priceDrop, savingsPlan } from "./family-learning-lab";
+import { LESSON_CATALOGUE } from "./family-lesson-catalogue";
 
 export type DecisionOption = {
   id: string;
@@ -18,16 +19,32 @@ export type DecisionOption = {
   /** Worked numbers shown with the consequence. */
   numbers: { label: string; value: string }[];
 };
-export type DecideBeat = { kind: "decide"; id: string; title: string; situation: string; question: string; options: DecisionOption[]; insight: string };
+export type DecideBeat = {
+  kind: "decide"; id: string; title: string; situation: string; question: string; options: DecisionOption[]; insight: string;
+  /** Optional invented price line to read before deciding (illustrative only). */
+  chart?: { label: string; points: number[] };
+};
 export type LabBeat = {
   kind: "lab"; id: string; title: string; prompt: string;
-  lab: "savings" | "drop";
+  lab: "savings" | "drop" | "fees" | "profit" | "grocery";
   /** Slider range and starting value. */
   min: number; max: number; step: number; start: number;
 };
 export type CheckBeat = { kind: "check"; id: string; hints: [string, string, string] };
-export type Beat = DecideBeat | LabBeat | CheckBeat;
-export type InteractiveLesson = { id: string; intro: string; beats: Beat[] };
+/** Put each item in the right group (tap a group per item; no dragging). Immediate, explained feedback. */
+export type SortBeat = {
+  kind: "sort"; id: string; title: string; prompt: string;
+  buckets: { id: string; label: string }[];
+  items: { id: string; label: string; bucket: string; why: string }[];
+};
+/** Share a total across buckets with + and - buttons until every rule holds. */
+export type AllocateBeat = {
+  kind: "allocate"; id: string; title: string; prompt: string; total: number; step: number;
+  buckets: { id: string; label: string; min?: number; max?: number; start: number }[];
+  success: string;
+};
+export type Beat = DecideBeat | LabBeat | CheckBeat | SortBeat | AllocateBeat;
+export type InteractiveLesson = { id: string; intro: string; beats: Beat[]; /** What the Child should be able to do afterwards. */ objective?: string };
 
 /** The goal context a lesson is personalised with (the Child's chosen goal). */
 export type LessonGoal = { label: string; target: number; saved: number };
@@ -46,21 +63,58 @@ export function labResult(beat: LabBeat, goal: LessonGoal, value: number): { tex
         : `${plan.stillNeeded} credits still needed ÷ ${plan.periods} period${plan.periods === 1 ? "" : "s"} = ${plan.perPeriod} credits each period.`,
     };
   }
+  if (beat.lab === "fees") {
+    // 5 credits of gain a year for 5 years; the fee is taken every year.
+    const gain = 5 * 5, fees = value * 5, kept = gain - fees;
+    return { met: fees > gain / 2, text: `Gain over 5 years: ${gain} credits. Fees: ${value} a year x 5 = ${fees}. You keep ${kept}.` };
+  }
+  if (beat.lab === "profit") {
+    const profit = 100 - value;
+    return { met: profit === 0, text: profit > 0 ? `Sales 100 - costs ${value} = ${profit} credits of profit.` : profit < 0 ? `Sales 100 - costs ${value} = a loss of ${-profit} credits.` : "Sales 100 - costs 100 = 0. No profit and no loss: the break-even point." };
+  }
+  if (beat.lab === "grocery") {
+    const left = 100 - 65 - value;
+    return { met: left === 0, text: left > 0 ? `100 sales - 65 other costs - ${value} delivery = ${left} credits left.` : left < 0 ? `100 sales - 65 other costs - ${value} delivery = ${-left} credits short.` : "100 - 65 - 35 = 0. The shop only just covers its costs." };
+  }
   const drop = priceDrop(20, value);
   return { met: drop.lost === 5, text: `20 credits become ${drop.afterDrop.toFixed(2)}. That is ${drop.lost.toFixed(2)} lost in the example.` };
 }
 
+/** Problems with an allocation, in plain words; empty means every rule holds. */
+export function allocationProblems(beat: AllocateBeat, values: Record<string, number>): string[] {
+  const sum = beat.buckets.reduce((total, b) => total + (values[b.id] ?? b.start), 0);
+  const problems: string[] = [];
+  if (sum < beat.total) problems.push(`${beat.total - sum} credits still to place.`);
+  if (sum > beat.total) problems.push(`That is ${sum - beat.total} more than the ${beat.total} you have.`);
+  for (const b of beat.buckets) {
+    const v = values[b.id] ?? b.start;
+    if (b.min !== undefined && v < b.min) problems.push(`${b.label} needs at least ${b.min}.`);
+    if (b.max !== undefined && v > b.max) problems.push(`${b.label} is more than ${b.max}: too much in one place.`);
+  }
+  return problems;
+}
+
 /** What the "goal met" line says for a lab. */
 export function labGoalMessage(beat: LabBeat, goal: LessonGoal): string {
-  return beat.lab === "savings"
-    ? `A plan of 15 credits or less each period fits inside your Key, so you can keep saving for your ${goal.label.toLowerCase()} without asking.`
-    : "A 25% drop turns 20 credits into 15. You just measured a loss instead of guessing it.";
+  switch (beat.lab) {
+    case "savings": return `A plan of 15 credits or less each period fits inside your Key, so you can keep saving for your ${goal.label.toLowerCase()} without asking.`;
+    case "fees": return "A small fee that repeats every year can eat more than half of a gain. Always read the fees.";
+    case "profit": return "Break-even: everything customers paid went on costs. Profit only starts after that point.";
+    case "grocery": return "You found the delivery bill that wipes out Mina's earnings. More customers do not help if costs grow faster.";
+    default: return "A 25% drop turns 20 credits into 15. You just measured a loss instead of guessing it.";
+  }
 }
 
 /** Has the Child done enough in this beat to move on? A decision needs a pick; a lab needs its goal met. */
-export function beatComplete(beat: Beat, state: { picked?: string | null; labValue?: number; correct?: boolean }, goal: LessonGoal): boolean {
+export type BeatState = {
+  picked?: string | null; labValue?: number; correct?: boolean;
+  sorted?: Record<string, string>; allocation?: Record<string, number>;
+};
+export function beatComplete(beat: Beat, state: BeatState, goal: LessonGoal): boolean {
   if (beat.kind === "decide") return Boolean(state.picked && beat.options.some(option => option.id === state.picked));
   if (beat.kind === "lab") return state.labValue !== undefined && labResult(beat, goal, state.labValue).met;
+  if (beat.kind === "sort") return beat.items.every(item => state.sorted?.[item.id] === item.bucket);
+  if (beat.kind === "allocate") return state.allocation !== undefined && allocationProblems(beat, state.allocation).length === 0;
   return state.correct === true;
 }
 
@@ -131,7 +185,7 @@ export function interactiveLessonFor(id: string, goal: LessonGoal): InteractiveL
       ],
     };
   }
-  return null;
+  return LESSON_CATALOGUE[id] ?? null;
 }
 
 /** Lesson chapters for the Learn page. Every Child lesson belongs to exactly one. */
@@ -143,4 +197,4 @@ export const LESSON_CHAPTERS: readonly { id: string; title: string; blurb: strin
   { id: "risk", title: "Risk and choices", blurb: "Why prices move and how to spread risk",
     lessons: ["c-risk", "original-why-prices-move", "original-risk-and-reward", "original-build-your-portfolio", "c-funds", "c-volatility"] },
 ];
-export const INTERACTIVE_LESSON_IDS = ["c-save", "c-risk"] as const;
+export const INTERACTIVE_LESSON_IDS = ["c-save", "c-risk", ...Object.keys(LESSON_CATALOGUE)] as readonly string[];
