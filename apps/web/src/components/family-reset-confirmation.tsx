@@ -81,13 +81,13 @@ export function FamilyResetConfirmation({
           <p>Your separate <strong>$1,000 imaginary USD paper portfolio</strong> also restarts. All entered prices, pretend holdings and activity will be erased.</p>
           <p className="font-semibold">There is no undo. No real money, accounts or trades are involved.</p>
         </div>
-        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
           <button
             ref={cancelRef}
             type="button"
             data-testid="family-reset-cancel"
             onClick={onCancel}
-            className="min-h-11 rounded-full border border-line px-5 py-2 text-[13px] font-bold hover:bg-surface-soft focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="min-h-11 rounded-full bg-navy-strong px-5 py-2 text-[13px] font-bold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2"
           >Cancel - keep my progress</button>
           <button
             type="button"
@@ -97,7 +97,7 @@ export function FamilyResetConfirmation({
               confirmHandled.current = true;
               onConfirm();
             }}
-            className="min-h-11 rounded-full bg-navy-strong px-5 py-2 text-[13px] font-bold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="min-h-11 rounded-full border border-line bg-transparent px-5 py-2 text-[13px] font-bold text-navy-strong hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2"
           >Reset the whole Family demo</button>
         </div>
       </div>
