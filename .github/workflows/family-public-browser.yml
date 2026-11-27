@@ -11,6 +11,9 @@ on:
     paths:
       - "apps/web/src/components/family-only-home.tsx"
       - "apps/web/src/components/family-public-studio.tsx"
+      - "apps/web/src/components/family-reset-confirmation.tsx"
+      - "apps/web/src/components/family-reset-confirmation.test.tsx"
+      - "apps/web/e2e/family-reset-confirmation.spec.mjs"
       - "apps/web/src/components/family-public-portfolio.tsx"
       - "apps/web/src/components/family-real-market-practice.tsx"
       - "apps/web/src/components/family-story-provider.tsx"
