@@ -180,3 +180,20 @@ test("visual: motion respects reduced-motion, the goal jar is described, the tra
   await page.locator('nav[aria-label="Main"]:visible').getByRole("link", { name: "Home", exact: true }).click();
   await expect(page.getByTestId("goal-jar")).toHaveAttribute("aria-label", /0 of 60 pretend credits saved/);
 });
+
+test("prices: automatic data is honestly unavailable, and an old manual price is flagged as stale", async ({ page }) => {
+  const net = watch(page);
+  await page.goto("/try/explore/real");
+  await openRealStep(page, 2);
+  await expect(page.getByTestId("market-source-status")).toHaveAttribute("data-status", "manual-only");
+  await expect(page.getByTestId("market-source-status")).toContainText(/not available yet/i);
+  await expect(page.getByTestId("market-approved-quote")).toHaveCount(0);
+  // TEST DATA: a synthetic 100.00 dated 30 days ago.
+  const old = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
+  await page.getByTestId("market-quote-date").fill(old);
+  await page.getByTestId("market-price-input").fill(TEST_PRICE);
+  await page.getByTestId("market-quote-submit").click();
+  await openRealStep(page, 2);
+  await expect(page.getByTestId("market-price-stale")).toContainText(/30 days old/);
+  expect(net.external).toEqual([]);
+});

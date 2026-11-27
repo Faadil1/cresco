@@ -96,6 +96,8 @@ export function FamilyRealMarketPractice({ company, openStep, setOpenStep, toggl
   const canSavePrice = priceCentsFromInput(inputPrice) > 0 && priceCentsFromInput(inputPrice) <= 100000000 &&
     validCalendarDate && inputDate <= today && (!quote || inputDate >= quote.asOf);
   const isDateTooEarly = Boolean(quote && inputDate < quote.asOf);
+  // How old the saved price is (calendar days). Shown as a warning, never used to invent a newer one.
+  const quoteAgeDays = quote ? Math.max(0, Math.round((Date.parse(today + "T00:00:00Z") - Date.parse(quote.asOf + "T00:00:00Z")) / 864e5)) : null;
   // Auto-use an approved, bundled, dated EOD close when licensed rights exist.
   // Never fetch a provider from a child's browser or overwrite a same-day
   // manually entered price. This is inactive in the initial empty build.
@@ -184,6 +186,17 @@ export function FamilyRealMarketPractice({ company, openStep, setOpenStep, toggl
                 ? (quote.provenance === "LICENSED_EOD_SNAPSHOT" ? "Licensed EOD close " : "User-entered ") + company.ticker + ": " + fmt(quote.priceCents) + " · " + quote.asOf + " · " + quote.reference + (quote.provenance === "LICENSED_EOD_SNAPSHOT" ? " (DATED CLOSE, NOT LIVE)" : " (NOT VERIFIED)")
                 : "No price recorded yet. Save a price to unlock the paper trade."}
             </p>
+            <p className="mt-2 flex items-start gap-2 rounded-[12px] bg-surface px-3 py-2 text-[13px] leading-5 text-ink-2" data-testid="market-source-status" data-status={APPROVED_EOD.status === "APPROVED_SNAPSHOT" ? "licensed" : "manual-only"}>
+              <span aria-hidden className={`mt-1.5 size-2 shrink-0 rounded-full ${APPROVED_EOD.status === "APPROVED_SNAPSHOT" ? "bg-green-strong" : "bg-ink-3"}`}/>
+              {APPROVED_EOD.status === "APPROVED_SNAPSHOT"
+                ? `Automatic prices: a licensed end-of-day close (not live)${approvedQuote ? `, dated ${approvedQuote.asOf}` : ""}.`
+                : "Automatic prices: not available yet (waiting for a data licence). Type the price you read and its date."}
+            </p>
+            {quoteAgeDays !== null && quoteAgeDays > 7 ? (
+              <p className="mt-2 rounded-[12px] bg-yellow-soft px-3 py-2 text-[13px] font-semibold leading-5 text-navy-strong" data-testid="market-price-stale">
+                Your price is {quoteAgeDays} days old. Prices change: type a newer one with today&apos;s date before you judge a gain or loss.
+              </p>
+            ) : null}
           </div>
         </StepPanel>
 
