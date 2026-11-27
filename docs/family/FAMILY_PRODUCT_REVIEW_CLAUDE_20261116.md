@@ -396,3 +396,114 @@ npx playwright test -c playwright.family-public.config.mjs
 4. **Longer pages in places:** real-company step 1 and Learn on a phone are longer than at `ead8208`, because of added explanation and chapter headers.
 5. **Simulated Parent only.** There is no real guardian identity, consent, second device or sync; this is by design, but it is not proven family authority.
 6. **Pre-existing CI failure:** the hosted-observation job is still red, unrelated to this branch.
+
+## 9. Issue #132: paper buy unblocked, 17 interactive lessons, visual pass, market-data memo (2026-11-27)
+
+Brief: Faadil1/cresco#132, plus the founder's chat brief. Same draft PR #127.
+
+| | |
+|---|---|
+| Baseline | `08bd8269c7faa8f2d95086a11a63515e2ae91dc0` |
+| Commits | P0 `107b8d2`, curriculum `24bd0bb`, visual `2f660ff`, memo + price status `12647d4`, docs (this section) on top |
+| Evidence | `ux-overhaul-2026-11-16/issue-132/{before,after}/`, from `capture-132.cjs` and `capture-p0.cjs` |
+| How captured | Two local Wrangler builds side by side (baseline :3101, new :3100). Chromium, 100% zoom, viewports 1440x900, 1280x800, 390x844 and 375x812. |
+| Limits | The recording `20261127-0654-04.5943254.mp4` was **not available**; its observations come from the issue. No user testing. |
+
+### P0: Paper buy left blocked (fixed first)
+- **Root cause (confirmed in code):**
+  - The reason prompt lived only in step 1.
+  - The trade showed "First, say why… in step 1" with a "Go to step 1" button marked `lg:hidden`, and that button only changed the phone stepper.
+  - On desktop there was no visible action, so a child who answered the SEC profit quiz and saved a price was stuck.
+  - Before/after: `1440-p0-blocked-buy.png`.
+- **Fix:**
+  - The reason question now appears **at the point of action**, bound to the same state as step 1. Nothing is auto-selected, nothing trades automatically, and price and quantity stay as typed. The box then confirms "Reason saved. Paper buy is unlocked."
+  - "See this question in step 1, with the company facts" scrolls to the question and focuses it on every viewport. "Back to the paper trade" returns focus to Paper buy.
+  - The reason is labelled "not a quiz", so it reads as distinct from the SEC "more sales, less profit?" check.
+  - The paper-loss explanation now says "realized **paper** loss… no real money".
+- **Regression tests** (`e2e/family-acceptance-132.spec.mjs`):
+  - Follows the founder's order exactly at **1440x900 and 1280x800 by keyboard, and on phone by touch**: SEC quiz only, a missing price, an invalid price, then the 100.00 **test input** (labelled as test data), a blocked buy, recovery, a reason, a 0.25 buy → **$975.00**.
+  - Microsoft still needs its own reason, the 100 pretend credits are untouched, and there are no external requests.
+
+### P1: all 17 Child lessons interactive (17 of 17 converted)
+- **New accessible activity types:**
+  - *Sort:* tap a group per item, with an explanation for each item and free retries.
+  - *Allocate:* +/- buttons until the rules hold.
+  - New labs for repeated fees, profit break-even and Mina's grocery.
+  - Decisions can include an invented price line, labelled "illustrative only".
+- **All tap or keyboard based:** no dragging, no streaks and no rewards.
+
+| Chapter | Lesson | Activities (objective in `family-lesson-catalogue.ts`) |
+|---|---|---|
+| Money | Save for a goal | decide (a tempting tip) + lab (plan 15 or less per period) |
+| Money | Needs, wants and a budget | allocate 30 credits (bus first) + sort needs and wants |
+| Money | Compare prices and value | decide on cost per bowl + decide on total cost with delivery |
+| Money | Fees and hidden costs | decide (same gain, different fee) + lab (a yearly fee eating more than half of the gain) |
+| Money | Recognize scams and promises | sort red flags and safe signs + decide on a "send your login" message |
+| Companies | Know what you own | decide (busier means better?) + grocery break-even lab |
+| Companies | What Is a Stock? | sort customer or part owner + decide (10 of 1,000 shares) |
+| Companies | Why Companies Sell Shares | decide (loan vs selling 20%) + sort true or false |
+| Companies | Stock vs. Tokenized Security | sort useful questions + decide (same name, same thing?) |
+| Companies | Revenue, costs and profit | decide (100 sales, 105 bills) + break-even lab |
+| Companies | Research a real company | sort fact or guess + decide on a first source |
+| Risk | Practice with risk | decide (one company or two) + measure-a-loss lab |
+| Risk | Why Prices Move | decide with an invented price line + sort what can move a price |
+| Risk | Risk & Reward | decide (steady vs wild, with a deadline) + measure-a-loss lab |
+| Risk | Build Your Portfolio | allocate 20 with no holding over half + decide (count names or weights) |
+| Risk | Funds, baskets and diversification | decide (two funds with the same holdings) + sort what to check |
+| Risk | Why prices move and time matters | decide (one bad day) + decide (time horizon) |
+
+- **Every lesson keeps:** its vetted check question, now with a hint for each wrong answer; its full text and sources under "Read the full lesson"; its personal goal note; and completion only through the unchanged `complete` action.
+- **Tests:**
+  - Unit: all 17 are interactive and Parent lessons are not; activity types vary; every activity is solvable and not pre-solved.
+  - E2E (phone and desktop): completes all 17 in-app with a wrong answer first. Progress counts each lesson exactly once, a revisit does not count twice, credits/paper/Key are unchanged, and the badge is earned.
+
+### Visual pass
+- **Learn:** a learning trail per chapter, with stops for done, next (a soft glow) and ahead, plus chapter art. On desktop the three trails sit side by side. It is still an ordered list of links.
+- **Home:** an original goal-jar illustration fills as credits are saved, with a text alternative.
+- **Lessons:** two columns on wide screens (the activity, plus a context panel with picture, aim, goal note and the full lesson); "You can now…" on completion.
+- **Motion:** short pop/rise feedback that switches off under `prefers-reduced-motion` (tested).
+- **Inspiration only:** Duolingo's progression and Greenlight/GoHenry's plain hierarchy. No copied branding, assets or layouts, and no gambling-like cues.
+
+| Height (px) | Before | After |
+|---|---|---|
+| Learn, 1440 | 1,095 | 1,181 |
+| Learn, 390 | 2,260 | 2,560 (+13%, trail spacing) |
+| Budget lesson, 1440 | 972 | 928 |
+| Scams lesson, 390 | 1,079 | 1,469 (a real activity replaces one reading card) |
+| Home, 390 | 1,229 | 1,291 |
+
+Portfolio, Paper and Parent are unchanged. No horizontal overflow at any of the 4 viewports.
+
+### Market data
+See `docs/family/MARKET_DATA_PROVIDER_DECISION_20261127.md`.
+- **Status: BLOCKED.** No keys, purchases or bundled prices.
+- **Twelve Data:** needs a Redistribution Rights add-on for showing prices to end users.
+- **Marketstack:** public pages say nothing about redistribution.
+- **To send:** six written questions for the founder to put to both providers.
+- **In the app:** step 2 now says plainly that automatic prices are not available yet, and flags a manual price older than 7 days.
+
+### Tests (local)
+
+| Suite | Result |
+|---|---|
+| vitest | 203 |
+| typecheck · lint (0 errors) · copy lint | pass |
+| Public Family build | PASS |
+| Family desktop Chromium | 45/45, twice |
+| Family iPhone 13 project (Chromium) | 54/54, twice; real WebKit runs in CI |
+
+### Safeguards
+Unchanged against `08bd826`:
+- `family-public-practice.ts`, `family-real-market-sandbox.ts`
+- SEC snapshots, the EOD snapshot (`DISABLED`) and the importer
+- Wrangler/vite configs, build scripts and workflows
+
+The Parent is still a single-browser simulation.
+
+### Remaining limitations
+1. **No family testing.** Engagement and clarity remain hypotheses.
+2. **Prices are still typed in.** Licensed automatic prices are blocked on written rights and cost.
+3. **Some pages are longer:** Learn on phones (+13%) and some lessons on phones, because of the added activities.
+4. **The Parent lessons (7)** keep the earlier reading format.
+5. **Classic lab (`/try/lab`)** not restyled.
+6. **Hosted-observation CI:** still red, pre-existing and unrelated.
