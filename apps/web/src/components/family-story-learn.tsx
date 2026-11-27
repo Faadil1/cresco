@@ -9,7 +9,7 @@ import { LESSON_ACTIVITIES } from "@/lib/family-learning-depth";
 import { EXTENDED_LESSON_ACTIVITIES } from "@/lib/family-learning-expansion";
 import { FamilyLessonLab } from "@/components/family-lesson-lab";
 import { InteractiveLessonBody } from "@/components/family-lesson-interactive";
-import { INTERACTIVE_LESSON_IDS, LESSON_CHAPTERS, interactiveLessonFor } from "@/lib/family-lesson-interactions";
+import { LESSON_CHAPTERS, interactiveLessonFor } from "@/lib/family-lesson-interactions";
 import { JourneyTrack, ResultCard, pageTitle, panel, primaryBtn, secondaryBtn } from "@/components/family-story-ui";
 import {
   PARENT_LEARNING, selectedPracticeGoal,
@@ -43,7 +43,7 @@ export function LearnChapter() {
         <section className="overflow-hidden rounded-[24px] border border-line-soft bg-surface shadow-sm md:grid md:grid-cols-[280px_1fr]" aria-labelledby="up-next-title" data-testid="learn-up-next-card">
           <LessonIllustration kind={next.illustration ?? "piggy"} title={`${next.title} illustration`} className="block h-[150px] w-full md:h-full"/>
           <div className="p-4 md:p-6">
-            <p className="text-[12px] font-bold uppercase tracking-wider text-green-strong">Up next · {next.minutes} min{(INTERACTIVE_LESSON_IDS as readonly string[]).includes(next.id) ? " · Interactive: decide, try, check" : ""}</p>
+            <p className="text-[12px] font-bold uppercase tracking-wider text-green-strong">Up next · {next.minutes} min · Decide, try, check</p>
             <h2 id="up-next-title" className="mt-1 text-[21px] font-extrabold leading-7 text-navy-strong">{next.title}</h2>
             <p className="mt-1 line-clamp-2 text-[14px] leading-6 text-ink-2">{next.concept}</p>
             <Link href={`/try/learn/${next.id}`} className={`mt-3 w-full sm:w-auto ${primaryBtn}`} data-testid="learn-up-next">
@@ -58,35 +58,45 @@ export function LearnChapter() {
       )}
       <section aria-labelledby="path-title" data-testid="learn-chapters">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="path-title" className="text-[18px] font-extrabold text-navy-strong">All lessons</h2>
-          <p className="text-[13px] text-ink-2">Three chapters. Start anywhere; the highlighted one is next.</p>
+          <h2 id="path-title" className="text-[18px] font-extrabold text-navy-strong">Your learning trail</h2>
+          <p className="text-[13px] text-ink-2">Three chapters. Every stop is open; the glowing one is next.</p>
         </div>
-        <div className="mt-3 grid gap-3 lg:grid-cols-3">
+        <div className="mt-3 grid gap-4 lg:grid-cols-3">
           {LESSON_CHAPTERS.map(chapter => {
             const items = chapter.lessons.map(id => path.find(item => item.id === id)).filter((item): item is (typeof path)[number] => Boolean(item));
             const chapterDone = items.filter(item => done.includes(item.id)).length;
+            const art = ({ money: "piggy", companies: "storefront", risk: "chart" } as const)[chapter.id as "money" | "companies" | "risk"] ?? "piggy";
             return (
               <section key={chapter.id} aria-labelledby={`chapter-${chapter.id}`} data-testid={`learn-chapter-${chapter.id}`}
-                className="min-w-0 rounded-[20px] border border-line-soft bg-surface p-3">
-                <header className="px-1 pb-2">
-                  <h3 id={`chapter-${chapter.id}`} className="text-[16px] font-extrabold text-navy-strong">{chapter.title}</h3>
-                  <p className="text-[13px] text-ink-2">{chapter.blurb} · <span data-testid={`learn-chapter-${chapter.id}-done`}>{chapterDone} of {items.length} done</span></p>
+                className="min-w-0 overflow-hidden rounded-[24px] border border-line-soft bg-surface">
+                <header className="flex items-center gap-3 border-b border-line-soft bg-surface-soft/70 px-4 py-3">
+                  <LessonIllustration kind={art} title={`${chapter.title} illustration`} className="h-14 w-16 shrink-0 overflow-hidden rounded-[14px] bg-surface"/>
+                  <div className="min-w-0 flex-1">
+                    <h3 id={`chapter-${chapter.id}`} className="text-[17px] font-extrabold leading-6 text-navy-strong">{chapter.title}</h3>
+                    <p className="text-[13px] leading-5 text-ink-2">{chapter.blurb}</p>
+                    <span className="mt-1 inline-block rounded-full bg-surface px-2.5 py-0.5 text-[12px] font-extrabold text-green-strong" data-testid={`learn-chapter-${chapter.id}-done`}>{chapterDone} of {items.length} done</span>
+                  </div>
                 </header>
-                <ol aria-label={`${chapter.title} lessons`} className="divide-y divide-line-soft">
-                  {items.map(lesson => {
+                {/* A winding trail of stops: still an ordered list of links for keyboards and screen readers. */}
+                <ol aria-label={`${chapter.title} lessons`} className="relative px-3 py-3">
+                  {items.map((lesson, i) => {
                     const isDone = done.includes(lesson.id);
                     const isNext = lesson.id === next?.id;
-                    const isInteractive = (INTERACTIVE_LESSON_IDS as readonly string[]).includes(lesson.id);
+                    const offset = [0, 1, 2, 1, 0, 1][i % 6];
                     return (
-                      <li key={lesson.id}>
+                      <li key={lesson.id} className="relative">
+                        {i < items.length - 1 ? <span aria-hidden className="absolute left-[calc(var(--trail-x)+26px)] top-[52px] h-[calc(100%-36px)] border-l-[3px] border-dotted border-line" style={{ ["--trail-x" as string]: `${offset * 18}px` }}/> : null}
                         <Link href={`/try/learn/${lesson.id}`} aria-current={isNext ? "step" : undefined} data-testid={`learn-lesson-${lesson.id}`}
-                          className={`flex min-h-14 items-center gap-3 rounded-[12px] px-2 py-2 hover:bg-surface-soft ${isNext ? "bg-family-action-soft/70" : ""}`}>
-                          <span aria-hidden className={`grid size-8 shrink-0 place-items-center rounded-full ${isDone ? "bg-green-strong text-white" : isNext ? "bg-family-action text-white" : "bg-surface-soft text-ink-2"}`}>
-                            {isDone ? <CheckCircle2 className="size-5"/> : isNext ? <PlayCircle className="size-5"/> : <BookOpen className="size-4"/>}
+                          className={`group relative flex min-h-[68px] items-center gap-3 rounded-[16px] px-1 py-1.5 hover:bg-surface-soft ${isNext ? "bg-family-action-soft/60" : ""}`}>
+                          <span aria-hidden className="shrink-0" style={{ paddingLeft: `${offset * 18}px` }}>
+                            <span className={`grid size-[52px] place-items-center rounded-full border-4 shadow-sm transition-transform group-hover:scale-105 motion-reduce:transition-none ${isDone ? "border-green-strong bg-green-strong text-white" : isNext ? "anim-glow border-family-action bg-family-action text-white" : "border-line bg-surface text-ink-2"}`}>
+                              {isDone ? <CheckCircle2 className="size-6"/> : isNext ? <PlayCircle className="size-6"/> : <BookOpen className="size-5"/>}
+                            </span>
                           </span>
                           <span className="min-w-0 flex-1">
+                            {isNext ? <span className="mb-0.5 inline-block rounded-full bg-family-action px-2 py-0.5 text-[12px] font-extrabold text-white">Up next</span> : null}
                             <span className="block text-[15px] font-bold leading-5 text-navy-strong">{lesson.title}</span>
-                            <span className="block text-[13px] text-ink-2">{lesson.minutes} min · {isDone ? "Done · review" : isNext ? "Up next" : "Not started"}{isInteractive ? " · Interactive" : ""}</span>
+                            <span className="block text-[13px] text-ink-2">{lesson.minutes} min · {isDone ? "Done · review" : isNext ? "Start here" : "Not started"}</span>
                           </span>
                           {isDone ? <span className="sr-only">Completed</span> : null}
                           <ChevronRight aria-hidden className="size-5 shrink-0 text-ink-3"/>
@@ -129,10 +139,13 @@ export function LessonReader({ id }: { id: string }) {
   const following = lessons.slice(index + 1).find(item => !(parent ? story.practice.parentCompleted : story.practice.childCompleted).includes(item.id)) ?? lessons[index + 1];
   const correct = answer === lesson.answer;
   const complete = () => dispatch({ type: "practice", action: { type: "complete", role: parent ? "parent" : "child", lessonId: lesson.id } });
+  // Interactive lessons (issues #130, #132): activities then a check, same completion action.
+  const interactive = parent ? null : interactiveLessonFor(lesson.id, { label: goal.label, target: goal.target, saved: story.practice.saved });
   const doneView = (
           <article className={`${panel} text-center`} data-testid="lesson-done">
             <CheckCircle2 aria-hidden className="mx-auto size-12 text-green-strong"/>
-            <h2 className="mt-2 text-[22px] font-extrabold text-navy-strong" role="status">Lesson complete</h2>
+            <h2 className="anim-pop mt-2 text-[22px] font-extrabold text-navy-strong" role="status">Lesson complete</h2>
+            {interactive?.objective ? <p className="mx-auto mt-2 max-w-[44ch] rounded-[14px] bg-green-soft px-3 py-2 text-[15px] font-semibold leading-6 text-green-strong" data-testid="lesson-objective"><span className="font-extrabold">You can now: </span>{interactive.objective.charAt(0).toLowerCase() + interactive.objective.slice(1)}</p> : null}
             <p className="mx-auto mt-1 max-w-[42ch] text-[14px] leading-6 text-ink-2">{lesson.explanation}</p>
             <div className="mt-4 flex flex-col items-stretch gap-2 sm:flex-row sm:justify-center" data-testid="lesson-done-next">
               {parent ? (
@@ -157,8 +170,6 @@ export function LessonReader({ id }: { id: string }) {
             <p className="mt-3 text-[13px] text-ink-2">Finishing a lesson never changes the practice Key, an approval or access to anything real.</p>
           </article>
   );
-  // Interactive lessons (issue #130): decide -> make it work -> check, same completion action.
-  const interactive = parent ? null : interactiveLessonFor(lesson.id, { label: goal.label, target: goal.target, saved: story.practice.saved });
   if (interactive) {
     return (
       <div className="flex min-h-[calc(100dvh-170px)] flex-col">
@@ -172,7 +183,7 @@ export function LessonReader({ id }: { id: string }) {
     );
   }
   return (
-    <div className="flex min-h-[calc(100dvh-170px)] flex-col">
+    <div className="mx-auto flex min-h-[calc(100dvh-170px)] w-full max-w-[720px] flex-col">
       <header>
         <div className="flex items-center gap-3">
           <div className="flex flex-1 gap-1.5" role="progressbar" aria-label="Lesson steps" aria-valuemin={1} aria-valuemax={total} aria-valuenow={slide + 1}>

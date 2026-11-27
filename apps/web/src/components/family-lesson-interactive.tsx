@@ -36,7 +36,7 @@ export function DecideBeatView({ beat, picked, onPick }: { beat: DecideBeat; pic
         ))}
       </div>
       {choice ? (
-        <div role="status" data-testid="decision-consequence" data-tone={choice.tone} className={`rounded-[16px] border p-4 ${toneRing[choice.tone]}`}>
+        <div role="status" key={choice.id} data-testid="decision-consequence" data-tone={choice.tone} className={`anim-rise rounded-[16px] border p-4 ${toneRing[choice.tone]}`}>
           <p className="text-[15px] font-bold leading-6 text-navy-strong">What happens next</p>
           <p className="mt-1 text-[15px] leading-6 text-navy">{choice.consequence}</p>
           <dl className="mt-3 grid grid-cols-2 gap-2">
@@ -70,7 +70,7 @@ export function LabBeatView({ beat, goal, value, onChange }: { beat: LabBeat; go
         <output data-testid={`lab-${beat.lab === "drop" ? "risk" : beat.lab}-result`} className="mt-3 block rounded-[12px] bg-surface p-3 text-[16px] font-bold text-navy-strong">{result.text}</output>
       </div>
       {result.met
-        ? <p role="status" data-testid="lab-goal-met" className="flex items-start gap-2 rounded-[14px] bg-green-soft p-3 text-[15px] font-semibold leading-6 text-green-strong"><CheckCircle2 aria-hidden className="mt-1 size-4 shrink-0"/>{labGoalMessage(beat, goal)}</p>
+        ? <p role="status" data-testid="lab-goal-met" className="anim-pop flex items-start gap-2 rounded-[14px] bg-green-soft p-3 text-[15px] font-semibold leading-6 text-green-strong"><CheckCircle2 aria-hidden className="mt-1 size-4 shrink-0"/>{labGoalMessage(beat, goal)}</p>
         : <p className="text-[13px] font-semibold text-family-action">Move the slider until the goal is met.</p>}
       <p className="text-[13px] text-ink-2">An invented classroom example. It spends nothing and changes no balance.</p>
     </section>
@@ -138,7 +138,7 @@ export function SortBeatView({ beat, sorted, onSort }: { beat: SortBeat; sorted:
                   </button>
                 ))}
               </div>
-              {choice ? <p role="status" className="mt-2 text-[14px] leading-5 text-navy">{right ? "Yes. " : "Not quite, try the other group. "}{item.why}</p> : null}
+              {choice ? <p role="status" key={choice} className="anim-rise mt-2 text-[14px] leading-5 text-navy">{right ? "Yes. " : "Not quite, try the other group. "}{item.why}</p> : null}
             </li>
           );
         })}
@@ -176,7 +176,7 @@ export function AllocateBeatView({ beat, values, onChange }: { beat: AllocateBea
       <p className="text-[14px] font-semibold text-navy-strong" data-testid="allocate-total">Placed: {sum} of {beat.total} credits</p>
       {problems.length
         ? <ul className="list-disc space-y-0.5 pl-5 text-[14px] leading-6 text-orange-text" data-testid="allocate-problems">{problems.map(p => <li key={p}>{p}</li>)}</ul>
-        : <p role="status" data-testid="allocate-met" className="flex items-start gap-2 rounded-[14px] bg-green-soft p-3 text-[15px] font-semibold leading-6 text-green-strong"><CheckCircle2 aria-hidden className="mt-1 size-4 shrink-0"/>{beat.success}</p>}
+        : <p role="status" data-testid="allocate-met" className="anim-pop flex items-start gap-2 rounded-[14px] bg-green-soft p-3 text-[15px] font-semibold leading-6 text-green-strong"><CheckCircle2 aria-hidden className="mt-1 size-4 shrink-0"/>{beat.success}</p>}
       <p className="text-[13px] text-ink-2">Pretend credits in a lesson. Nothing is spent and your balance does not change.</p>
     </section>
   );
@@ -201,7 +201,7 @@ export function InteractiveLessonBody({ lesson, interactive, goal, done, onCompl
   const allocation = beat.kind === "allocate" ? Object.fromEntries(beat.buckets.map(b => [b.id, allocs[beat.id]?.[b.id] ?? b.start])) : undefined;
   const complete = beatComplete(beat, { picked: picked[beat.id], labValue, correct: answer === lesson.answer, sorted: sorts[beat.id], allocation }, goal);
   const isCheck = beat.kind === "check";
-  if (done && isCheck) return <>{doneView}</>;
+  if (done && isCheck) return <div className="mx-auto w-full max-w-[720px]">{doneView}</div>;
   return (
     <div className="flex flex-1 flex-col" data-testid="lesson-interactive">
       <div className="flex items-center gap-3">
@@ -213,11 +213,13 @@ export function InteractiveLessonBody({ lesson, interactive, goal, done, onCompl
       {step === 0 ? (
         <div className="mt-3 space-y-2">
           <p className="text-[14px] leading-6 text-ink-2">{interactive.intro}</p>
-          {note ? <p data-testid="goal-note" className="rounded-[14px] bg-yellow-soft px-3 py-2 text-[14px] leading-6 text-navy-strong"><strong>For your {goal.label.toLowerCase()}: </strong>{note.replace(/^For your [^:]+:\s*/, "")}</p> : null}
+          {note ? <p data-testid="goal-note" className="lg:hidden rounded-[14px] bg-yellow-soft px-3 py-2 text-[14px] leading-6 text-navy-strong"><strong>For your {goal.label.toLowerCase()}: </strong>{note.replace(/^For your [^:]+:\s*/, "")}</p> : null}
         </div>
       ) : null}
-      <article className={`${panel} mt-3 flex-1 overflow-hidden !p-0`}>
-        {beat.kind === "decide" ? <LessonIllustration kind={lesson.illustration ?? "piggy"} title={`${lesson.title} illustration`} className="block h-auto max-h-[160px] w-full"/> : null}
+      {/* Wide screens: the activity plus a context panel (picture, aim, goal, full lesson). */}
+      <div className="mt-3 grid flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
+        <article className={`${panel} min-w-0 overflow-hidden !p-0`}>
+        {beat.kind === "decide" ? <LessonIllustration kind={lesson.illustration ?? "piggy"} title={`${lesson.title} illustration`} className="block h-auto max-h-[160px] w-full lg:hidden"/> : null}
         <div className="p-4 md:p-6">
           {beat.kind === "decide" ? <DecideBeatView beat={beat} picked={picked[beat.id] ?? null} onPick={id => setPicked(p => ({ ...p, [beat.id]: id }))}/> : null}
           {beat.kind === "lab" ? <LabBeatView beat={beat} goal={goal} value={labValue ?? beat.start} onChange={v => setLabs(l => ({ ...l, [beat.id]: v }))}/> : null}
@@ -226,21 +228,31 @@ export function InteractiveLessonBody({ lesson, interactive, goal, done, onCompl
           {beat.kind === "check" ? <CheckBeatView beat={beat} lesson={lesson} answer={answer} onAnswer={setAnswer}/> : null}
         </div>
       </article>
-      {lesson.sections?.length ? (
-        <details className="mt-3 rounded-[16px] border border-line-soft bg-surface px-4 py-1" data-testid="lesson-read-more">
-          <summary className="flex min-h-11 cursor-pointer items-center text-[14px] font-bold text-navy-strong">Read the full lesson ({lesson.sections.length} short ideas)</summary>
-          <div className="space-y-3 pb-3">
-            {lesson.sections.map(section => (
-              <div key={section.title}>
-                <h3 className="text-[15px] font-bold text-navy-strong">{section.title}</h3>
-                <p className="text-[14px] leading-6 text-navy">{section.body}</p>
-                {section.realityCheck ? <p className="mt-1 text-[13px] leading-5 text-ink-2"><strong>Reality check: </strong>{section.realityCheck}</p> : null}
-                {section.source ? <p className="mt-1 text-[13px] leading-5 text-ink-2">Source: <a href={section.source.url} target="_blank" rel="noopener noreferrer" className="font-semibold text-family-action underline underline-offset-4">{section.source.organization}: {section.source.title} (opens outside Cresco)</a>, checked {section.source.verifiedAt}</p> : null}
-              </div>
-            ))}
+        <aside className="space-y-3 lg:sticky lg:top-4" aria-label="About this lesson">
+          <div className="hidden overflow-hidden rounded-[20px] border border-line-soft bg-surface lg:block" data-testid="lesson-context">
+            <LessonIllustration kind={lesson.illustration ?? "piggy"} title={`${lesson.title} illustration`} className="block h-auto max-h-[170px] w-full bg-surface-soft"/>
+            <div className="space-y-2 p-4">
+              {interactive.objective ? <p className="text-[14px] leading-6 text-navy"><strong className="block text-[12px] font-extrabold uppercase tracking-[0.08em] text-green-strong">In this lesson you will</strong>{interactive.objective}</p> : null}
+              {note ? <p data-testid="goal-note-side" className="rounded-[12px] bg-yellow-soft px-3 py-2 text-[14px] leading-6 text-navy-strong"><strong>For your {goal.label.toLowerCase()}: </strong>{note.replace(/^For your [^:]+:\s*/, "")}</p> : null}
+            </div>
           </div>
-        </details>
-      ) : null}
+        {lesson.sections?.length ? (
+          <details className="mt-3 rounded-[16px] border border-line-soft bg-surface px-4 py-1" data-testid="lesson-read-more">
+            <summary className="flex min-h-11 cursor-pointer items-center text-[14px] font-bold text-navy-strong">Read the full lesson ({lesson.sections.length} short ideas)</summary>
+            <div className="space-y-3 pb-3">
+              {lesson.sections.map(section => (
+                <div key={section.title}>
+                  <h3 className="text-[15px] font-bold text-navy-strong">{section.title}</h3>
+                  <p className="text-[14px] leading-6 text-navy">{section.body}</p>
+                  {section.realityCheck ? <p className="mt-1 text-[13px] leading-5 text-ink-2"><strong>Reality check: </strong>{section.realityCheck}</p> : null}
+                  {section.source ? <p className="mt-1 text-[13px] leading-5 text-ink-2">Source: <a href={section.source.url} target="_blank" rel="noopener noreferrer" className="font-semibold text-family-action underline underline-offset-4">{section.source.organization}: {section.source.title} (opens outside Cresco)</a>, checked {section.source.verifiedAt}</p> : null}
+                </div>
+              ))}
+            </div>
+          </details>
+        ) : null}
+        </aside>
+      </div>
       <div className="sticky bottom-0 z-10 -mx-4 mt-4 flex items-center gap-3 bg-gradient-to-t from-bg via-bg to-bg/0 px-4 pb-3 pt-4">
         <button type="button" className={`${secondaryBtn} !px-4`} disabled={step === 0} onClick={() => setStep(step - 1)}>Back</button>
         {isCheck

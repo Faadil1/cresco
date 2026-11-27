@@ -46,6 +46,35 @@ export function GoalCard({ compact = false }: { compact?: boolean }) {
   );
 }
 
+/**
+ * The goal jar: saved pretend credits shown as a jar filling up. Original
+ * artwork, a text alternative for screen readers, motion off when reduced.
+ */
+export function GoalJar({ saved, target, label }: { saved: number; target: number; label: string }) {
+  const pct = Math.max(0, Math.min(1, target ? saved / target : 0));
+  const fillTop = 104 - 78 * pct;
+  return (
+    <svg viewBox="0 0 84 112" role="img" aria-label={`Goal jar for ${label}: ${saved} of ${target} pretend credits saved`} data-testid="goal-jar" className="h-[104px] w-[78px] shrink-0">
+      <defs><clipPath id="jar-inside"><path d="M16 30 Q12 34 12 44 V96 Q12 106 24 106 H60 Q72 106 72 96 V44 Q72 34 68 30 Z"/></clipPath></defs>
+      <rect x="22" y="14" width="40" height="12" rx="4" className="fill-[#d9cdb5]"/>
+      <rect x="26" y="8" width="32" height="8" rx="3" className="fill-[#b9a88a]"/>
+      <g clipPath="url(#jar-inside)">
+        <rect x="0" y="0" width="84" height="112" className="fill-[#f6f1e6]"/>
+        {pct > 0 ? (
+          <g className="anim-fill">
+            <rect x="0" y={fillTop} width="84" height={112 - fillTop} className="fill-green-strong/85"/>
+            {Array.from({ length: Math.round(pct * 6) }, (_, i) => (
+              <ellipse key={i} cx={24 + (i % 3) * 18} cy={100 - Math.floor(i / 3) * 10} rx="7" ry="3.5" className="fill-[#e8c46a]" stroke="#b8902f" strokeWidth="1"/>
+            ))}
+          </g>
+        ) : null}
+      </g>
+      <path d="M16 30 Q12 34 12 44 V96 Q12 106 24 106 H60 Q72 106 72 96 V44 Q72 34 68 30 Z" fill="none" stroke="#23334a" strokeWidth="3" strokeLinejoin="round"/>
+      <path d="M20 46 V88" stroke="#fff" strokeOpacity=".7" strokeWidth="4" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
 export function HomeScreen() {
   const { story, dispatch } = useFamilyStory();
   const { market } = useRealMarketPractice();
@@ -106,13 +135,14 @@ export function HomeScreen() {
 
         <aside className="min-w-0 space-y-4" aria-label="My credits and key">
           <section className={`${panel} !p-4 md:!p-5`} data-testid="home-goal-summary" aria-labelledby="wallet-title">
-            <div className="flex items-center gap-3">
-              <GoalArt goal={goal.id} className="h-12 w-14 shrink-0"/>
+            <div className="flex items-center gap-4">
+              <GoalJar saved={p.saved} target={goal.target} label={story.goalChosen ? goal.label : "your dream"}/>
               <div className="min-w-0 flex-1">
-                <h2 id="wallet-title" className="text-[16px] font-extrabold text-navy-strong">{story.goalChosen ? goal.label : "Your dream"}</h2>
+                <p className="flex items-center gap-2 text-[13px] font-semibold text-ink-2"><GoalArt goal={goal.id} className="h-7 w-8 shrink-0"/>Saving for</p>
+                <h2 id="wallet-title" className="text-[18px] font-extrabold leading-6 text-navy-strong">{story.goalChosen ? goal.label : "Your dream"}</h2>
                 <p className="text-[13px] text-ink-2">{GOAL_STORY[goal.id].horizon} away</p>
+                <p className="mt-1 text-[13px] text-ink-2"><strong className="text-[24px] font-extrabold text-navy-strong" data-testid="home-goal-saved">{p.saved}/{goal.target}</strong> saved</p>
               </div>
-              <p className="text-right text-[13px] text-ink-2"><strong className="block text-[20px] text-navy-strong" data-testid="home-goal-saved">{p.saved}/{goal.target}</strong>saved</p>
             </div>
             <div className="mt-3 flex h-3 overflow-hidden rounded-full bg-surface-soft" role="img" data-testid="home-credit-bar"
               aria-label={`Out of 100 pretend credits: ${p.saved} saved for your goal, ${p.spent} used in practice choices, ${free} free`}>

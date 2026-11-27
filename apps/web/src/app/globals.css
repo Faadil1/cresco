@@ -283,3 +283,18 @@ body {
 .cresco-family-app .cresco-section-kicker {
   font-size: 12px;
 }
+
+/* Family feedback motion (issue #132): short, calm, purposeful; never loops on
+   rewards and switches off completely for reduced-motion users. */
+@keyframes cresco-pop { from { transform: scale(.94); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes cresco-rise { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes cresco-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(31, 95, 214, .32); } 50% { box-shadow: 0 0 0 9px rgba(31, 95, 214, 0); } }
+@keyframes cresco-fill { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.cresco-family-app .anim-pop { animation: cresco-pop .28s cubic-bezier(.2, .8, .2, 1) both; }
+.cresco-family-app .anim-rise { animation: cresco-rise .32s ease-out both; }
+.cresco-family-app .anim-glow { animation: cresco-glow 2.6s ease-in-out infinite; }
+.cresco-family-app .anim-fill { transform-origin: bottom; animation: cresco-fill .6s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .cresco-family-app .anim-pop, .cresco-family-app .anim-rise,
+  .cresco-family-app .anim-glow, .cresco-family-app .anim-fill { animation: none; }
+}

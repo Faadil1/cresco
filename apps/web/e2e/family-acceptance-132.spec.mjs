@@ -166,3 +166,17 @@ test("P1: all 17 Child lessons teach through activities and complete exactly onc
   expect(net.writes).toEqual([]);
   expect(net.external).toEqual([]);
 });
+
+test("visual: motion respects reduced-motion, the goal jar is described, the trail stays a plain list", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/try/learn");
+  const next = page.getByTestId("learn-chapters").locator("[aria-current=step] .anim-glow");
+  await expect(next).toHaveCount(1);
+  expect(await next.evaluate(el => getComputedStyle(el).animationName)).toBe("none");
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  expect(await next.evaluate(el => getComputedStyle(el).animationName)).toBe("cresco-glow");
+  // 17 stops, each a real link with a readable name.
+  await expect(page.getByTestId("learn-chapters").getByRole("listitem")).toHaveCount(17);
+  await page.locator('nav[aria-label="Main"]:visible').getByRole("link", { name: "Home", exact: true }).click();
+  await expect(page.getByTestId("goal-jar")).toHaveAttribute("aria-label", /0 of 60 pretend credits saved/);
+});

@@ -207,14 +207,14 @@ function FocusShell({ pathname, children }: { pathname: string; children: ReactN
   const close = parent ? "/try/parent/learn" : "/try/learn";
   return (
     <div className="min-h-dvh">
-      <header className="mx-auto flex max-w-[720px] items-center justify-between gap-3 px-4 pt-3 md:pt-6">
+      <header className="mx-auto flex max-w-[1040px] items-center justify-between gap-3 px-4 pt-3 md:px-8 md:pt-6">
         <Link href={close} aria-label={parent ? "Close lesson, back to Parent lessons" : "Close lesson, back to Learn"}
           className="grid size-11 place-items-center rounded-full border border-line bg-surface text-navy-strong hover:bg-surface-soft">
           <X aria-hidden className="size-5"/>
         </Link>
         {parent ? <LensChip pathname={pathname}/> : null}
       </header>
-      <main id="main" className="mx-auto w-full max-w-[720px] px-4 pb-10 pt-3">
+      <main id="main" className="mx-auto w-full max-w-[1040px] px-4 pb-10 pt-3 md:px-8">
         {children}
         <SafetyFooter compact/>
       </main>

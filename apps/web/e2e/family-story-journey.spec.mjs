@@ -149,7 +149,7 @@ test("the whole story: goal, lesson, research, blocked choice, Parent approval, 
   await page.getByTestId("learn-up-next").click();
   await expect(page).toHaveURL(/\/try\/learn\/original-why-prices-move$/);
   await expect(page.getByTestId("goal-note")).toContainText(/gaming setup/i);
-  await expect(page.getByTestId("lesson-interactive").locator("svg").first()).toBeVisible();
+  await expect(page.getByTestId("lesson-interactive").locator("svg:visible").first()).toBeVisible();
   await advanceLessonToQuiz(page);
   const choices = page.locator("[data-testid=lesson-quiz] fieldset button");
   // A wrong answer is explained and does not complete the lesson.

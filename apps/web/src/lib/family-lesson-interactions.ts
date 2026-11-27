@@ -124,7 +124,8 @@ export function interactiveLessonFor(id: string, goal: LessonGoal): InteractiveL
     const stillNeeded = Math.max(0, goal.target - 20);
     const afterDrop = priceDrop(20, 25).afterDrop;
     return {
-      id, intro: `Three quick moves: decide, make a plan work, then check yourself. Your ${g} needs ${goal.target} pretend credits.`,
+      id, objective: "Keep money you need soon safe, and plan how much to set aside each period.",
+      intro: `Three quick moves: decide, make a plan work, then check yourself. Your ${g} needs ${goal.target} pretend credits.`,
       beats: [
         {
           kind: "decide", id: "save-decide", title: "A tempting tip",
@@ -158,7 +159,8 @@ export function interactiveLessonFor(id: string, goal: LessonGoal): InteractiveL
     const allIn = priceDrop(20, 30).afterDrop;
     const split = priceDrop(10, 30).afterDrop + priceDrop(10, 15).afterDrop;
     return {
-      id, intro: "Three quick moves: choose how to place 20 credits, measure a loss, then check yourself.",
+      id, objective: "See that spreading out changes how much one bad month can hurt, without removing risk.",
+      intro: "Three quick moves: choose how to place 20 credits, measure a loss, then check yourself.",
       beats: [
         {
           kind: "decide", id: "risk-decide", title: "One company or two?",
