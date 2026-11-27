@@ -188,3 +188,15 @@ exact_next_action: >-
   -> exact one-use execution/refusal -> receipt/history/recovery. Preserve the fixed CANONICAL_LIVE lab as a regression
   and judge view, not as the product definition. Public deployment remains separately blocked on Cloudflare credentials
   and requires explicit human authorization. No live Devnet run, deploy, mainnet action, or PR merge is implied.
+# --- APPENDED (proposed by PBPD workspace R2, 2026-11-27; history above intentionally unchanged) ---
+canonical_baseline_refresh_2026_11_27:
+  status: SOURCE_REFRESH_RECORDED__AWAITING_OWNER_ADOPTION
+  previous_pin: {version: 0.1.59-adaptive-best-of-system-execution-v1-promoted, commit: cdb55dbfe41fdfcb2f5e9232517fbb058c8b4c9b, reconciled_at: 2026-10-11}
+  current_canon: {version: 0.1.59-adaptive-best-of-system-execution-v1-promoted, commit: e7ec928e4cb70f279dc233bacc5e8f7a9f87d710}
+  delta: "36 commits; same version label; adds lifecycle-coverage checker and CROSS-SYSTEM-OPEN-WORK (3 Cresco items)"
+  family_product_semantics_delta: NON_MATERIAL
+  governance_delta: MATERIAL__FAMILY_COVERAGE_MANIFEST_REQUIRED
+  family_coverage_manifest_candidate: "state/BUILD-LIFECYCLE-COVERAGE-MANIFEST.yaml (draft only; source https://github.com/Faadil1/faadil-agent-system/blob/528edd1a8f10529291222e2d9f7bb1bd8e5576bf/projects/cresco-family-canon-pbpd-continuity-2026-11-23/.pbpd/state/BUILD-LIFECYCLE-COVERAGE-MANIFEST.yaml)"
+  family_prd_addendum_candidate: "product/PRD.md (draft v0.3 addendum; source https://github.com/Faadil1/faadil-agent-system/blob/528edd1a8f10529291222e2d9f7bb1bd8e5576bf/projects/cresco-family-canon-pbpd-continuity-2026-11-23/artifacts/FAMILY-PRD-ADDENDUM-v0.3.PROPOSED.md)"
+  carried_open_work: [MULTI_LLM_NATIVE_HOST_ACTIVATION, CRESCO_MULTI_LLM_MERGE_AND_RELEASE_SAFETY, CRESCO_FAMILY_REAL_PRODUCT_DEPTH]
+  affected_transition_blocked: true

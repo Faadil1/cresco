@@ -1,0 +1,118 @@
+version: 0.1.6
+template: BUILD_LIFECYCLE_COVERAGE_MANIFEST   # Canon templates/BUILD-LIFECYCLE-COVERAGE-MANIFEST.yaml @ e7ec928
+status: PROJECT_INSTANCE_CANDIDATE   # Cresco draft branch; owner adoption and terminal readiness remain unapproved
+project: cresco-family
+project_type: EDUCATIONAL_FAMILY_PRODUCT_SIMULATION
+repository: Faadil1/cresco
+source_of_truth: "Faadil1/cresco product/PRD.md v0.2 + draft v0.3 addendum + docs/family/REAL_MARKET_PAPER_PRACTICE_V1.md; behavioral evidence from PR #131 e351ea3"
+current_owner: "PBPD owns the external workspace; Cresco Family product owner = Faadil1; this branch is draft-only review"
+current_stage: BUILDER_CONTINUITY__DRAFT_CANDIDATE_CI_GREEN__NOT_READY
+exact_next_gate: FAMILY_PRD_AND_COVERAGE_DRAFT_REVIEW
+exact_next_action: "Owner reviews this draft PR and performs visual/physical-device acceptance of the Family journey; no merge or deploy inferred"
+last_updated: 2026-11-27
+
+bootstrap:
+  faadil_system_router_activated: false   # not invoked in this session
+  project_profile_resolved: true
+  lifecycle_manifest_created_at_first_material_build_touch: false   # created late (R2), not backdated
+  chat_memory_used_as_only_gate_source: false
+
+canonical_baseline_reconciliation:
+  current_central_version: 0.1.59-adaptive-best-of-system-execution-v1-promoted
+  current_central_commit: e7ec928e4cb70f279dc233bacc5e8f7a9f87d710
+  project_pinned_version: 0.1.59-adaptive-best-of-system-execution-v1-promoted
+  project_pinned_commit: cdb55dbfe41fdfcb2f5e9232517fbb058c8b4c9b
+  baseline_delta_status: SOURCE_REFRESH_REQUIRED__DELTA_ANALYZED_NON_MATERIAL_TO_FAMILY_PRODUCT_SEMANTICS
+  delta_reason: "see https://github.com/Faadil1/faadil-agent-system/blob/528edd1a8f10529291222e2d9f7bb1bd8e5576bf/projects/cresco-family-canon-pbpd-continuity-2026-11-23/work/CANON-PIN-DELTA-cdb55db-e7ec928.md: 36 commits, same version label; adds lifecycle-coverage checker, LLM-agnostic router, gateway prebuild validator, CROSS-SYSTEM-OPEN-WORK with 3 Cresco items"
+  last_canonical_reconciliation_at: 2026-11-27
+  affected_transition_blocked: true   # draft append-only record does not authorize adoption or unblock transition
+
+capabilities:
+  - {capability: faadil_system_router, owner: faadil-agent-system, status: UNKNOWN, evidence_pointer: null, not_applicable_reason: null, reconstruction_note: "router not invoked for this mission"}
+  - {capability: opportunity_or_domain_intelligence, owner: Faadil1, status: NOT_APPLICABLE_WITH_REASON, evidence_pointer: null, not_applicable_reason: "existing authorized product; no opportunity selection in this mission", reconstruction_note: null}
+  - {capability: authorization_owner, owner: Faadil1, status: SATISFIED, evidence_pointer: "https://github.com/Faadil1/faadil-agent-system/blob/528edd1a8f10529291222e2d9f7bb1bd8e5576bf/projects/cresco-family-canon-pbpd-continuity-2026-11-23/incoming/AUTHORIZATION-BASIS.yaml (unsigned owner instruction, scoped)", not_applicable_reason: null, reconstruction_note: null}
+  - {capability: problem_worthiness_or_problem_reality, owner: Faadil1, status: UNKNOWN, evidence_pointer: null, not_applicable_reason: null, reconstruction_note: "no Family user research located"}
+  - {capability: negative_event_gate, owner: PBPD, status: MISSING, evidence_pointer: null, not_applicable_reason: null, reconstruction_note: "PRD criterion 12 (public negative event) unproven for Family"}
+  - {capability: product_reality_and_production_evidence, owner: PBPD, status: MISSING, evidence_pointer: null, not_applicable_reason: null, reconstruction_note: "reality LOCAL/CI only; no deployed Family runtime; hosted observation job failing (NEG-06)"}
+  - {capability: prototype_killer_or_simpler_alternative_challenge, owner: PBPD, status: UNKNOWN, evidence_pointer: null, not_applicable_reason: null, reconstruction_note: null}
+  - {capability: living_PRD, owner: Faadil1, status: MISSING, evidence_pointer: "https://github.com/Faadil1/faadil-agent-system/blob/528edd1a8f10529291222e2d9f7bb1bd8e5576bf/projects/cresco-family-canon-pbpd-continuity-2026-11-23/artifacts/FAMILY-PRD-ADDENDUM-v0.3.PROPOSED.md", not_applicable_reason: null, reconstruction_note: "v0.2 lacked credit/paper/reset obligations; draft addendum now present in product/PRD.md; owner adoption remains open"}
+  - {capability: spec_kit_or_equivalent, owner: PBPD, status: NOT_APPLICABLE_WITH_REASON, evidence_pointer: null, not_applicable_reason: "docs/family/*.md design notes serve as specs; no separate spec kit adopted", reconstruction_note: null}
+  - {capability: production_owner, owner: PBPD, status: SATISFIED, evidence_pointer: "https://github.com/Faadil1/faadil-agent-system/blob/528edd1a8f10529291222e2d9f7bb1bd8e5576bf/projects/cresco-family-canon-pbpd-continuity-2026-11-23/.pbpd/state/AUTHORITY-STATE.yaml write_owner", not_applicable_reason: null, reconstruction_note: null}
+  - {capability: adaptive_best_of_system_execution, owner: PBPD, status: NOT_APPLICABLE_WITH_REASON, evidence_pointer: null, not_applicable_reason: "deterministic test/state work; owner forbade new multi-LLM comparison; single executor", reconstruction_note: null}
+  - {capability: evidence_and_evaluation, owner: PBPD, status: SATISFIED, evidence_pointer: "https://github.com/Faadil1/faadil-agent-system/blob/528edd1a8f10529291222e2d9f7bb1bd8e5576bf/projects/cresco-family-canon-pbpd-continuity-2026-11-23/.pbpd/state/EVIDENCE-LEDGER.yaml EV-01..EV-11", not_applicable_reason: null, reconstruction_note: null}
+  - {capability: eval_driven_reliability, owner: PBPD, status: NOT_APPLICABLE_WITH_REASON, evidence_pointer: null, not_applicable_reason: "no stochastic/model-mediated load-bearing behavior in Family demo", reconstruction_note: null}
+  - {capability: engineering_quality_assurance, owner: PBPD, status: SATISFIED, evidence_pointer: "https://github.com/Faadil1/faadil-agent-system/blob/528edd1a8f10529291222e2d9f7bb1bd8e5576bf/projects/cresco-family-canon-pbpd-continuity-2026-11-23/.pbpd/state/EVIDENCE-LEDGER.yaml EV-06..EV-09 (CI all 4 workflows SUCCESS at tree 83e57e0)", not_applicable_reason: null, reconstruction_note: null}
+  - {capability: design_experience_assurance, owner: trace, status: MISSING, evidence_pointer: null, not_applicable_reason: null, reconstruction_note: "screenshots not inspected (NEG-07); founder visual acceptance open"}
+  - {capability: winner_intelligence, owner: hackathon_opportunity_intelligence, status: NOT_APPLICABLE_WITH_REASON, evidence_pointer: null, not_applicable_reason: "Family is not a competition submission (World Fair is a distinct program)", reconstruction_note: null}
+  - {capability: competitive_collision, owner: hackathon_opportunity_intelligence, status: NOT_APPLICABLE_WITH_REASON, evidence_pointer: null, not_applicable_reason: "not a competition submission", reconstruction_note: null}
+  - {capability: post_build_reconciliation, owner: PBPD, status: UNKNOWN, evidence_pointer: null, not_applicable_reason: null, reconstruction_note: "nothing merged/built for release"}
+  - {capability: terminal_assurance, owner: project_finisher, status: MISSING, evidence_pointer: null, not_applicable_reason: null, reconstruction_note: "FINISHER_INTAKE_BLOCKED: no BUILD_CANDIDATE_READY, no signed receiver authorization"}
+  - {capability: protected_human_action, owner: human, status: MISSING, evidence_pointer: null, not_applicable_reason: null, reconstruction_note: "merge/deploy/founder acceptance pending"}
+  - {capability: post_mortem_and_learning, owner: PBPD, status: UNKNOWN, evidence_pointer: null, not_applicable_reason: null, reconstruction_note: null}
+
+product_depth_and_live_reality:
+  applicable: true
+  product_intent:
+    prd_source: "Faadil1/cresco product/PRD.md v0.2 (+ proposed v0.3 addendum)"
+    complete_product_outcome: "Family learns bounded financial autonomy: Child acts within a Parent-set Key with 100 practice credits, asks at the boundary, Parent decides Not this time / Allow once / Widen; separate $1,000 imaginary-USD paper portfolio on user-entered dated prices; informed global reset with no-op Cancel. Simulation only."
+    non_commodity_advantage: "Exact one-use exception vs standing-Key widening, with learning/score/market data never minting authority"
+    essential_user_journeys:
+      - {name: "J1 Child in-bounds choice within My Key", capabilities: [FAM-01], status: CI_PASS_NOT_ACCEPTED, evidence_pointer: "https://github.com/Faadil1/faadil-agent-system/blob/528edd1a8f10529291222e2d9f7bb1bd8e5576bf/projects/cresco-family-canon-pbpd-continuity-2026-11-23/.pbpd/state/EVIDENCE-LEDGER.yaml (EV-09; PR #131 behavioral source only)"}
+      - {name: "J2 Boundary ask -> Parent decision (once / widen / decline), replay refuses", capabilities: [FAM-02], status: CI_PASS_NOT_ACCEPTED, evidence_pointer: "https://github.com/Faadil1/faadil-agent-system/blob/528edd1a8f10529291222e2d9f7bb1bd8e5576bf/projects/cresco-family-canon-pbpd-continuity-2026-11-23/.pbpd/state/EVIDENCE-LEDGER.yaml (EV-09; PR #131 behavioral source only)"}
+      - {name: "J3 Key change invalidates stale ask; learning never widens Key", capabilities: [FAM-03, FAM-07], status: CI_PASS_NOT_ACCEPTED, evidence_pointer: "https://github.com/Faadil1/faadil-agent-system/blob/528edd1a8f10529291222e2d9f7bb1bd8e5576bf/projects/cresco-family-canon-pbpd-continuity-2026-11-23/.pbpd/state/EVIDENCE-LEDGER.yaml (EV-09; PR #131 behavioral source only)"}
+      - {name: "J4 Paper portfolio on separate $1,000 ledger with fail-closed trades", capabilities: [FAM-04, FAM-05], status: CI_PASS_NOT_ACCEPTED, evidence_pointer: "https://github.com/Faadil1/faadil-agent-system/blob/528edd1a8f10529291222e2d9f7bb1bd8e5576bf/projects/cresco-family-canon-pbpd-continuity-2026-11-23/.pbpd/state/EVIDENCE-LEDGER.yaml (EV-09; PR #131 behavioral source only)"}
+      - {name: "J5 Informed global reset; Cancel mutates nothing", capabilities: [FAM-06], status: CI_PASS_NOT_ACCEPTED, evidence_pointer: "https://github.com/Faadil1/faadil-agent-system/blob/528edd1a8f10529291222e2d9f7bb1bd8e5576bf/projects/cresco-family-canon-pbpd-continuity-2026-11-23/.pbpd/state/EVIDENCE-LEDGER.yaml (EV-09; PR #131 behavioral source only)"}
+      - {name: "J6 No-login public demo with no outbound requests", capabilities: [FAM-08], status: CI_PASS_NOT_ACCEPTED, evidence_pointer: "https://github.com/Faadil1/faadil-agent-system/blob/528edd1a8f10529291222e2d9f7bb1bd8e5576bf/projects/cresco-family-canon-pbpd-continuity-2026-11-23/.pbpd/state/EVIDENCE-LEDGER.yaml (EV-09; PR #131 behavioral source only)"}
+  live_core_loop: NOT_PROVEN   # no deployed Family runtime
+  load_bearing_integration: NOT_APPLICABLE_OFFLINE_BY_DESIGN
+  real_consequence: NOT_APPLICABLE_SIMULATION_ONLY
+  representative_scenario_depth: CI_PASS   # 74 browser scenarios incl. negatives
+  failure_and_recovery: CI_PASS
+  real_user_surface: UNKNOWN
+  external_user_or_operator_evidence: MISSING
+  organic_usage_boundary: UNKNOWN
+  time_to_first_value: UNKNOWN
+  operational_economics: NOT_APPLICABLE_NO_BACKEND
+  shared_product_core: UNKNOWN
+  reality_ledger: "https://github.com/Faadil1/faadil-agent-system/blob/528edd1a8f10529291222e2d9f7bb1bd8e5576bf/projects/cresco-family-canon-pbpd-continuity-2026-11-23/.pbpd/state/EVIDENCE-LEDGER.yaml"
+  post_vertical_slice_depth_gap_review: UNKNOWN   # docs/family/PRODUCT_DEPTH_REVIEW_2026-11-01_FR.md exists, not re-reviewed here
+  product_workstream_priority:
+    first_live_slice_proven: false
+    remaining_material_depth_gaps:
+      - "Founder visual/physical-device acceptance (CROSS-SYSTEM-OPEN-WORK CRESCO_FAMILY_REAL_PRODUCT_DEPTH)"
+      - "PRD v0.2 missing credit/paper/reset obligations (addendum proposed)"
+      - "PRD criteria 9, 11, 12 (capital path) not covered by Family surface"
+      - "Paper-practice launch gates 1-5"
+      - "Hosted contract observation failure (3 missing routes)"
+    current_primary_workstream: STATE_AND_PRD_RECONCILIATION
+    next_highest_value_depth_delta: "Founder acceptance of the Family journey on CI artifact screenshots + physical phone"
+    valid_stop_condition: "Cresco write access unavailable to this host; protected merge/deploy not authorized"
+    demo_packaging_allowed: false
+    workstream_drift_status: NONE
+    last_priority_reconciliation_at: 2026-11-27
+    material_user_capability_delta_since_previous_milestone: "NONE in product (test-only fix); reset journey now CI-proven on WebKit+Chromium"
+  observability_and_receipts: UNKNOWN
+  judge_or_operator_self_serve: NOT_APPLICABLE_WITH_REASON
+  setup_and_reproducibility: "LOCAL reproduction documented in EVIDENCE-LEDGER EV-01..EV-04"
+  clean_room_core_path: UNKNOWN
+  external_dependency_failure_behavior: NOT_APPLICABLE_OFFLINE_BY_DESIGN
+  production_like_behavior: NOT_PROVEN
+  evidence_pointer: "https://github.com/Faadil1/faadil-agent-system/blob/528edd1a8f10529291222e2d9f7bb1bd8e5576bf/projects/cresco-family-canon-pbpd-continuity-2026-11-23/.pbpd/state/EVIDENCE-LEDGER.yaml"
+  unresolved_gaps:
+    - founder_visual_acceptance
+    - physical_device_acceptance
+    - prd_v0_3_adoption
+    - prd_criteria_9_11_12
+    - paper_launch_gates_1_5
+    - hosted_contract_observation_failure
+    - cresco_state_canon_pin_refresh
+
+behavior_reliability: {applicable: false, status: NOT_APPLICABLE, ledger_pointer: null, case_set_version: null, baseline_run_pointer: null, candidate_run_pointer: null, full_applicable_regression_suite_run: false, critical_cases_resolved: false, stochastic_thresholds_predeclared: false, trajectory_assurance_resolved: false, material_model_graders_calibrated: false, significant_failures_promoted_or_classified: false, open_critical_regressions: [], offline_eval_not_misrepresented_as_live_or_production_evidence: true}
+submission_execution: {applicable: false, submission_status: NOT_STARTED}
+competitive_judge_cycle: {applicable: false, public_surface_exposes_internal_process_theater: false}
+
+missing: [negative_event_gate, product_reality_and_production_evidence, living_PRD, design_experience_assurance, terminal_assurance, protected_human_action]
+triggered_but_unresolved: [canonical_baseline_pin_refresh_in_cresco_state]
+human_overrides: []
+reconstructed_artifacts: []
+terminal_completeness_allowed: false

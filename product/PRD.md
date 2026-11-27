@@ -139,3 +139,52 @@ The build must truthfully prove:
 Every build follows the five-part failure pattern defined in [docs/BUILD-QUALITY-RULES.md](../docs/BUILD-QUALITY-RULES.md).
 
 **Real failure > fake success.**
+
+---
+
+## Family simulation — v0.3 addendum (DRAFT, pending owner review)
+
+Status: PROPOSED by PBPD workspace R2, 2026-11-27. Additive to `product/PRD.md` v0.2; removes or weakens nothing.
+Prepared for owner review on an isolated Cresco draft branch. This draft does not adopt or expand authority. Source: [PBPD R2 proposed addendum](https://github.com/Faadil1/faadil-agent-system/blob/528edd1a8f10529291222e2d9f7bb1bd8e5576bf/projects/cresco-family-canon-pbpd-continuity-2026-11-23/artifacts/FAMILY-PRD-ADDENDUM-v0.3.PROPOSED.md).
+Every number below was read from the code at `e351ea3`. None of it is new scope.
+
+## Why
+v0.2 defines the Key, Allow once and the invariants. The Family obligations that #129/#131 build and test exist only in
+`docs/family/*.md` and in the code. A PRD-level completeness check therefore can't see them.
+
+### A. Two strictly separate practice ledgers
+| Ledger | Initial | Source |
+|---|---|---|
+| Fictional practice credits | **100** invented credits (`remainingCredits = 100 - saved - spent`) | `apps/web/src/lib/family-public-practice.ts` |
+| Real-company paper portfolio | **$1,000 imaginary USD** (`INITIAL_PAPER_CASH_CENTS = 100000`) | `apps/web/src/lib/family-real-market-sandbox.ts` |
+
+- A paper trade never moves credits, and a credit action never moves paper cash.
+- Ledger transactions do not expand the standing Key or Parent limits. An explicitly confirmed new-family reset is the separate, simulated session-initialization action below.
+
+### B. Simulated Parent / My Key defaults
+Key v1, nonce 1, `maxPerAction` 15, `maxPeriod` 60, allowed `ORC, MKT, BKT`. It is an educational simulation, not a verified guardian identity or real authority.
+
+### C. Paper-practice rules (from REAL_MARKET_PAPER_PRACTICE_V1)
+- Prices are user-entered, dated, labelled USER-ENTERED, NOT VERIFIED. There is no scraping and no live quote.
+- A dormant licensed end-of-day path exists (`apps/web/src/lib/family-market-approved-snapshot.json`, importer per `docs/family/REAL_MARKET_COMPACT_PROVIDER_V2.md`). It is `DISABLED` with no quotes, so **no automatic price is currently shown**. Enabling it requires separately verified display, derived-data and cache rights plus owner approval. When enabled, it is labelled DATED CLOSE, NOT LIVE. This addendum does not authorize it.
+- Trades fail closed on: missing price, overspend, selling shares not owned, invalid, future or reversed dates.
+- No persistence, cookies, server writes, identities, market requests or telemetry.
+
+### D. Informed global reset
+- A destructive reset of both tracks requires an explicit dialog. **Cancel**, Escape or the backdrop are a no-op: the paper book, credits and Key stay unchanged.
+- **Confirm** clears both tracks: credits back to 100 / Key v1, paper back to $1,000 with no holdings.
+- Profile reset returns to `/try`; starting again follows the onboarding path (goal → interests → ready → Home). Lab reset stays in Lab and returns to Child/Home and Parent Overview; entering the illustrated story after reset starts onboarding.
+- The paper portfolio can also be restarted on its own.
+
+### E. Acceptance additions (Technical success criteria 13–16)
+13. Paper actions leave the credit ledger unchanged, and the reverse holds.
+14. Cancel on the global reset mutates nothing on either track.
+15. Confirmed reset restores both initial states; Profile returns to `/try`, Lab remains in Lab, and the next illustrated-story start requires onboarding.
+16. Each criterion passes on iPhone WebKit and desktop Chromium at the exact candidate tree.
+
+### F. Scope clarification
+- Criteria 9 (market evidence fails closed), 11 (PENDING/UNKNOWN execution) and 12 (public negative event) belong to the capital / World Fair path. The offline Family simulation does **not** satisfy them, and they stay OPEN at the overall Cresco/capital program level; no global descope or eligibility change is authorized.
+- World Fair `docs/worlds-fair/product/PRD.md` is a distinct program. Its evidence is never Family proof.
+
+### G. Open launch gates carried forward unchanged
+Paper-practice gates 1–5; founder visual and physical-device acceptance; minors' privacy review; no child-facing public deployment without separate authorization.
