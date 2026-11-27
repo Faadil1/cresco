@@ -165,7 +165,8 @@ v0.2 defines the Key, Allow once and the invariants. The Family obligations that
 Key v1, nonce 1, `maxPerAction` 15, `maxPeriod` 60, allowed `ORC, MKT, BKT`. It is an educational simulation, not a verified guardian identity or real authority.
 
 ### C. Paper-practice rules (from REAL_MARKET_PAPER_PRACTICE_V1)
-- Prices are user-entered, dated, labelled USER-ENTERED, NOT VERIFIED. There is no automatic quote and no scraping.
+- Prices are user-entered, dated, labelled USER-ENTERED, NOT VERIFIED. There is no scraping and no live quote.
+- A dormant licensed end-of-day path exists (`apps/web/src/lib/family-market-approved-snapshot.json`, importer per `docs/family/REAL_MARKET_COMPACT_PROVIDER_V2.md`). It is `DISABLED` with no quotes, so **no automatic price is currently shown**. Enabling it requires separately verified display, derived-data and cache rights plus owner approval. When enabled, it is labelled DATED CLOSE, NOT LIVE. This addendum does not authorize it.
 - Trades fail closed on: missing price, overspend, selling shares not owned, invalid, future or reversed dates.
 - No persistence, cookies, server writes, identities, market requests or telemetry.
 
