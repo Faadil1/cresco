@@ -14,7 +14,7 @@ import { FamilyRealWorldPanel } from "@/components/family-real-world-panel";
 import { FamilyRealMarketPractice } from "@/components/family-real-market-practice";
 import { useRealMarketPractice } from "@/components/family-story-provider";
 import { RealityTag, Segmented, SourcesNote, StepPanel, Term, pageTitle } from "@/components/family-story-ui";
-import { COMPANY_EXPLAINERS, MONEY_TERMS } from "@/lib/family-real-company-explainers";
+import { COMPANY_EXPLAINERS, MONEY_TERMS, type ChooseReason } from "@/lib/family-real-company-explainers";
 import { REAL_COMPANY_RESEARCH, type PublicCompanyResearch } from "@/lib/family-real-companies";
 
 export function ExploreSections({ active }: { active: "story" | "real" }) {
@@ -26,6 +26,29 @@ export function ExploreSections({ active }: { active: "story" | "real" }) {
   );
 }
 
+/** Runs after React commits and the browser lays out, so scroll/focus target the new DOM. */
+const afterPaint = (fn: () => void) => requestAnimationFrame(() => requestAnimationFrame(fn));
+
+/** The company-choice reason. One state, shown in step 1 and, when needed, right at the trade. */
+function ReasonChoices({ reasons, selected, onPick, testId, compact = false }: {
+  reasons: readonly ChooseReason[]; selected: string | undefined; onPick: (id: string) => void; testId: string; compact?: boolean;
+}) {
+  const chosen = reasons.find(item => item.id === selected);
+  return (
+    <>
+      <div className={`mt-2 grid gap-2 ${compact ? "" : ""}`} role="group" aria-label="Your reason for choosing this company">
+        {reasons.map(item => (
+          <button key={item.id} type="button" aria-pressed={selected === item.id} onClick={() => onPick(item.id)}
+            className={`min-h-12 rounded-[14px] border px-3 py-2 text-left text-[14px] font-semibold leading-5 text-navy-strong ${selected === item.id ? (item.strong ? "border-green-strong bg-green-soft" : "border-orange/50 bg-yellow-soft") : "border-line bg-surface hover:border-family-action/40"}`}>
+            {item.label}
+          </button>
+        ))}
+      </div>
+      {chosen ? <p role="status" data-testid={testId} data-strong={chosen.strong ? "true" : "false"} className="mt-2 rounded-[12px] bg-surface p-3 text-[14px] leading-6 text-navy-strong">{chosen.feedback}</p> : null}
+    </>
+  );
+}
+
 export function RealCompanyResearch() {
   const [chosenId, setChosenId] = useState<PublicCompanyResearch["id"]>("apple");
   // Phones show one step at a time; lg+ shows all four. Switching company restarts at step 1.
@@ -33,11 +56,34 @@ export function RealCompanyResearch() {
   const toggle = (n: number) => setOpenStep(current => current === n ? 0 : n);
   // "Why would you choose it?" per company: asked before any paper buy (issue #130 P2).
   const [reasons, setReasons] = useState<Partial<Record<PublicCompanyResearch["id"], string>>>({});
+  // Set when the Child jumped from the trade to the reason question, so we can offer the way back.
+  const [returnToTrade, setReturnToTrade] = useState(false);
   const { market } = useRealMarketPractice();
   const selected = REAL_COMPANY_RESEARCH.find(company => company.id === chosenId) ?? REAL_COMPANY_RESEARCH[0];
   const explainer = COMPANY_EXPLAINERS[selected.id];
   const reasonId = reasons[selected.id];
   const reason = explainer.reasons.find(item => item.id === reasonId);
+  const pickReason = (id: string) => setReasons(r => ({ ...r, [selected.id]: id }));
+  // Visible, keyboard-reachable recovery on every viewport (issue #132 P0): open step 1 on
+  // phones, then scroll to the question and focus it on every size.
+  const jumpToReason = () => {
+    setOpenStep(1);
+    setReturnToTrade(true);
+    afterPaint(() => {
+      const field = document.getElementById(`real-reason-${selected.id}`);
+      field?.scrollIntoView({ block: "center", behavior: "auto" });
+      (field?.querySelector("button") as HTMLButtonElement | null)?.focus({ preventScroll: true });
+    });
+  };
+  const backToTrade = () => {
+    setReturnToTrade(false);
+    setOpenStep(3);
+    afterPaint(() => {
+      const buy = document.querySelector<HTMLButtonElement>('[data-testid="market-buy"]');
+      buy?.scrollIntoView({ block: "center", behavior: "auto" });
+      buy?.focus({ preventScroll: true });
+    });
+  };
 
   return (
     <div className="space-y-5" data-testid="real-companies-screen">
@@ -61,7 +107,7 @@ export function RealCompanyResearch() {
             const held = market.positions[company.id].sharesHundredths > 0;
             return (
               <div key={company.id} data-testid={"real-company-" + company.id}>
-                <button type="button" aria-pressed={active} onClick={() => { setChosenId(company.id); setOpenStep(1); }}
+                <button type="button" aria-pressed={active} onClick={() => { setChosenId(company.id); setOpenStep(1); setReturnToTrade(false); }}
                   data-testid={"real-company-select-" + company.id} aria-label={`${company.name} (${company.ticker})${held ? ", you hold paper shares" : ""}`}
                   className={"relative flex min-h-12 w-full flex-col justify-center rounded-[14px] border px-2 py-1.5 text-center sm:min-h-14 sm:items-start sm:px-3 sm:text-left " +
                     (active ? "border-family-action bg-family-action-soft ring-2 ring-family-action/20" : "border-line-soft bg-surface hover:border-family-action/40")}>
@@ -86,19 +132,16 @@ export function RealCompanyResearch() {
               <p><strong className="text-navy-strong">How money comes in: </strong>{explainer.moneyExample}{" "}
                 <Term word="What is revenue?" definition={MONEY_TERMS.revenue} testId="term-revenue"/></p>
               <p><strong className="text-navy-strong">Who pays: </strong>{selected.customers}</p>
-              <fieldset className="rounded-[16px] border border-family-action/25 bg-family-action-soft/40 p-3" data-testid="real-reason">
-                <legend className="px-1 text-[15px] font-extrabold text-navy-strong">Why would someone choose {selected.name}?</legend>
-                <p className="px-1 text-[13px] text-ink-2">Pick the reason closest to yours. You need one before a paper buy.</p>
-                <div className="mt-2 grid gap-2">
-                  {explainer.reasons.map(item => (
-                    <button key={item.id} type="button" aria-pressed={reasonId === item.id}
-                      onClick={() => setReasons(r => ({ ...r, [selected.id]: item.id }))}
-                      className={`min-h-12 rounded-[14px] border px-3 py-2 text-left text-[14px] font-semibold leading-5 text-navy-strong ${reasonId === item.id ? (item.strong ? "border-green-strong bg-green-soft" : "border-orange/50 bg-yellow-soft") : "border-line bg-surface hover:border-family-action/40"}`}>
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-                {reason ? <p role="status" data-testid="real-reason-feedback" data-strong={reason.strong ? "true" : "false"} className="mt-2 rounded-[12px] bg-surface p-3 text-[14px] leading-6 text-navy-strong">{reason.feedback}</p> : null}
+              <fieldset id={`real-reason-${selected.id}`} tabIndex={-1} className="scroll-mt-24 rounded-[16px] border border-family-action/25 bg-family-action-soft/40 p-3 outline-none" data-testid="real-reason">
+                <legend className="px-1 text-[15px] font-extrabold text-navy-strong">Your reason: why would someone choose {selected.name}?</legend>
+                <p className="px-1 text-[13px] text-ink-2">This is not a quiz. Pick the reason closest to yours; you need one before a paper buy.</p>
+                <ReasonChoices reasons={explainer.reasons} selected={reasonId} onPick={pickReason} testId="real-reason-feedback"/>
+                {reason && returnToTrade ? (
+                  <button type="button" onClick={backToTrade} data-testid="real-reason-back-to-trade"
+                    className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-full bg-family-action px-4 text-[14px] font-bold text-white">
+                    Back to the paper trade <ArrowRight aria-hidden className="size-4"/>
+                  </button>
+                ) : null}
               </fieldset>
               <p className="rounded-[14px] bg-yellow-soft p-3 text-[14px] text-navy-strong"><strong>A question to ask: </strong>{selected.researchQuestion}</p>
               <details key={selected.id} className="rounded-[14px] border border-line-soft px-3 py-1" data-testid="real-risks">
@@ -121,7 +164,8 @@ export function RealCompanyResearch() {
         </StepPanel>
 
         <FamilyRealMarketPractice key={"paper-" + selected.id} company={selected} openStep={openStep} setOpenStep={setOpenStep} toggle={toggle}
-          reasonChosen={Boolean(reason)} onNeedReason={() => setOpenStep(1)}/>
+          reasonChosen={Boolean(reason)} onNeedReason={jumpToReason}
+          reasonPrompt={<ReasonChoices reasons={explainer.reasons} selected={reasonId} onPick={pickReason} testId="market-reason-inline-feedback" compact/>}/>
       </section>
 
       <SourcesNote testId="real-company-boundary">

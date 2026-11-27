@@ -5,7 +5,7 @@
  * Every dollar and share is imaginary. The quotes are user-entered and never
  * represented as verified market feeds. There is no network or brokerage.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { TradingViewOnDemand } from "@/components/family-real-world-panel";
 import licensedEodJson from "@/lib/family-market-approved-snapshot.json";
 import { ArrowDownRight, ArrowUpRight, RotateCcw } from "lucide-react";
@@ -50,7 +50,7 @@ function explainOptions(company: PublicCompanyResearch, direction: "up" | "down"
     { text: `${company.name} must have lost money as a business.`, right: false,
       why: "Not necessarily. A share price can fall while a company still earns a profit. Check the SEC results in step 1: they did not change." },
     { text: "The price you entered is lower than the price you paid, so your paper shares are worth less.", right: true,
-      why: "Yes. A paper loss only means today's price is below your buying price. It becomes a real loss only if you sell at that price." },
+      why: "Yes. A paper loss only means today's price is below your buying price. It becomes a realized paper loss only if you sell at that price. No real money is involved here." },
     { text: "Cresco took a fee from your paper dollars.", right: false,
       why: "No. There are no fees here. The difference comes only from the two prices you entered." },
   ] : [
@@ -63,8 +63,10 @@ function explainOptions(company: PublicCompanyResearch, direction: "up" | "down"
   ];
 }
 
-export function FamilyRealMarketPractice({ company, openStep, setOpenStep, toggle, reasonChosen = true, onNeedReason }: {
+export function FamilyRealMarketPractice({ company, openStep, setOpenStep, toggle, reasonChosen = true, onNeedReason, reasonPrompt }: {
   company: PublicCompanyResearch;
+  /** The same reason choices as step 1 (shared state), shown at the trade when missing. */
+  reasonPrompt?: ReactNode;
   /** The Child said why they would choose this company (step 1). Paper buys wait for it. */
   reasonChosen?: boolean; onNeedReason?: () => void;
   /** Which step is open on phones (lg+ shows all). Owned by the page so step 1 can hand over. */
@@ -78,6 +80,8 @@ export function FamilyRealMarketPractice({ company, openStep, setOpenStep, toggl
   const [message, setMessage] = useState("");
   const [showHistory, setShowHistory] = useState(false);
   const [explained, setExplained] = useState<number | null>(null);
+  // The Child answered the reason right here at the trade: keep the confirmation visible.
+  const [pickedHere, setPickedHere] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
   const approvedQuote = APPROVED_EOD.status === "APPROVED_SNAPSHOT" ? APPROVED_EOD.quotes[company.id] : undefined;
   const quote = market.quotes[company.id];
@@ -195,11 +199,22 @@ export function FamilyRealMarketPractice({ company, openStep, setOpenStep, toggl
           <p className="rounded-[12px] bg-surface-soft px-3 py-2 text-[14px] leading-6 text-navy" data-testid="market-trade-preview">
             {buy.allowed ? "This would cost " + fmt(buy.totalCents) + " of imaginary dollars." : buy.reason}
           </p>
-          {!reasonChosen ? (
-            <p className="rounded-[12px] bg-yellow-soft px-3 py-2 text-[14px] leading-6 text-navy-strong" data-testid="market-need-reason">
-              First, say why you would choose {company.name} in step 1. Then the paper buy unlocks.{" "}
-              {onNeedReason ? <button type="button" onClick={onNeedReason} className="font-bold text-family-action underline underline-offset-4 lg:hidden">Go to step 1</button> : null}
-            </p>
+          {!reasonChosen || pickedHere ? (
+            <div onClickCapture={() => setPickedHere(true)}
+              className={`rounded-[14px] border px-3 py-3 text-[14px] leading-6 text-navy-strong ${reasonChosen ? "border-green/40 bg-green-soft" : "border-orange/40 bg-yellow-soft"}`}
+              data-testid="market-need-reason" data-met={reasonChosen ? "true" : "false"} role="group" aria-labelledby={`need-reason-${company.id}`}>
+              <p id={`need-reason-${company.id}`} className="font-bold">
+                {reasonChosen ? "Reason saved. Paper buy is unlocked." : `One thing before you buy: why would you choose ${company.name}?`}
+              </p>
+              {!reasonChosen ? <p className="text-[13px] text-ink-2">Pick the reason closest to yours. Your price and number of shares stay as they are.</p> : null}
+              {reasonPrompt}
+              {onNeedReason && !reasonChosen ? (
+                <button type="button" onClick={onNeedReason} data-testid="market-need-reason-jump"
+                  className="mt-1 inline-flex min-h-11 items-center text-[14px] font-bold text-family-action underline underline-offset-4">
+                  See this question in step 1, with the company facts
+                </button>
+              ) : null}
+            </div>
           ) : null}
           <div className="grid grid-cols-2 gap-2">
             <button type="button" onClick={() => simulate("BUY")} disabled={!buy.allowed || !reasonChosen} data-testid="market-buy"
