@@ -15,6 +15,28 @@ function observeForbiddenNetwork(page) {
   return forbidden;
 }
 
+// UX-1: the safe action must be first visually as well as in keyboard order.
+async function expectSafeResetActionFirst(page) {
+  const cancel = page.getByTestId("family-reset-cancel");
+  const confirm = page.getByTestId("family-reset-confirm");
+  await expect(cancel).toBeVisible();
+  await expect(confirm).toBeVisible();
+  await expect(cancel).toBeFocused();
+  await expect(confirm).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  const cancelBackground = await cancel.evaluate(element => getComputedStyle(element).backgroundColor);
+  expect(cancelBackground).not.toBe("rgba(0, 0, 0, 0)");
+  const a = await cancel.boundingBox();
+  const b = await confirm.boundingBox();
+  expect(a).not.toBeNull();
+  expect(b).not.toBeNull();
+  const narrow = await page.evaluate(() => matchMedia("(min-width: 640px)").matches === false);
+  if (narrow) {
+    expect(a.y + a.height).toBeLessThanOrEqual(b.y + 1);
+  } else {
+    expect(a.x + a.width).toBeLessThanOrEqual(b.x + 1);
+  }
+}
+
 async function seedPaperTrade(page) {
   await page.goto("/try/portfolio/companies");
   await expect(page.getByTestId("market-cash")).toContainText("$1,000.00");
@@ -54,7 +76,7 @@ test("new-family confirmation cancels without losing the paper book, then clears
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText("$1,000 imaginary USD paper portfolio");
   await expect(dialog).toContainText("15 credits per choice and 60 per period");
-  await expect(page.getByTestId("family-reset-cancel")).toBeFocused();
+  await expectSafeResetActionFirst(page);
   await page.screenshot({ path: testInfo.outputPath("profile-reset-dialog.png"), fullPage: true });
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
@@ -90,6 +112,7 @@ test("lab Reset whole demo also resets the hidden paper book only after explicit
   await page.getByRole("button", { name: "Reset whole demo" }).click();
   const dialog = page.getByRole("alertdialog", { name: "Reset the whole Family demo?" });
   await expect(dialog).toContainText("$1,000 imaginary USD paper portfolio");
+  await expectSafeResetActionFirst(page);
   await page.screenshot({ path: testInfo.outputPath("lab-reset-dialog.png"), fullPage: true });
   await page.getByTestId("family-reset-cancel").click();
   await expect(dialog).toHaveCount(0);
