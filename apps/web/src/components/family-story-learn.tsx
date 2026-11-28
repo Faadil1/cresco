@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowRight, BookOpen, CheckCircle2, ChevronRight, ExternalLink, PlayCircle } from "lucide-react";
+import { ArrowRight, Check, CheckCircle2, ExternalLink, Play } from "lucide-react";
 import { LessonIllustration } from "@/components/illustrations/scenes";
+import { ChapterEmblem, ChapterLandscape, MountainScene, type ChapterScene } from "@/components/illustrations/adventure";
+import { GoalJar } from "@/components/family-story-home";
 import { useFamilyStory } from "@/components/family-story-provider";
 import { LESSON_ACTIVITIES } from "@/lib/family-learning-depth";
 import { EXTENDED_LESSON_ACTIVITIES } from "@/lib/family-learning-expansion";
@@ -19,6 +21,24 @@ import { GOAL_STORY, chapterStatus, childLessonNote, childPathFor, parentLessonN
 export { childPathFor } from "@/lib/family-story-state";
 const isParentLesson = (id: string) => PARENT_LEARNING.some(item => item.id === id);
 
+/** Horizontal position of each trail stop, as a fraction of the free width: a gentle S-curve. */
+const TRAIL_X = [0.06, 0.48, 0.9, 0.7, 0.24, 0.56] as const;
+const CHAPTER_SCENE: Record<string, ChapterScene> = { money: "meadow", companies: "town", risk: "peaks" };
+
+/** One curved dashed segment between two stops (stretches with the row; stroke stays constant). */
+function TrailSegment({ from, to }: { from: number; to: number }) {
+  const lo = Math.min(from, to), span = Math.abs(from - to);
+  const ltr = from <= to;
+  const d = `M${ltr ? 0 : 100} 0 C${ltr ? 0 : 100} 55 ${ltr ? 100 : 0} 45 ${ltr ? 100 : 0} 100`;
+  return (
+    <svg aria-hidden viewBox="0 0 100 100" preserveAspectRatio="none" overflow="visible" className="trail-seg pointer-events-none absolute top-[44px] h-[88px]"
+      style={{ left: `calc(${lo} * (100% - var(--reserve)) + 30px)`, width: `max(1px, calc(${span} * (100% - var(--reserve))))` }}>
+      <path d={d} fill="none" stroke="#fff9ec" strokeOpacity=".95" strokeWidth="12" strokeLinecap="round"/>
+      <path d={d} fill="none" stroke="#d99a2b" strokeOpacity=".55" strokeWidth="3" strokeDasharray="3 9" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
 export function LearnChapter() {
   const { story } = useFamilyStory();
   const goal = selectedPracticeGoal(story.practice);
@@ -26,90 +46,117 @@ export function LearnChapter() {
   const path = childPathFor(goal.id);
   const done = story.practice.childCompleted;
   const next = path.find(item => !done.includes(item.id));
+  const chapters = LESSON_CHAPTERS.map(chapter => {
+    const items = chapter.lessons.map(id => path.find(item => item.id === id)).filter((item): item is (typeof path)[number] => Boolean(item));
+    return { ...chapter, items, done: items.filter(item => done.includes(item.id)).length, scene: CHAPTER_SCENE[chapter.id] ?? "meadow" };
+  });
+  const order = chapters.flatMap(chapter => chapter.items.map(item => item.id));
   return (
-    <div className="space-y-4 md:space-y-5">
-      <header>
-        <h1 className={pageTitle}>Learn</h1>
-        <p className="mt-1 text-[15px] leading-6 text-ink-2">Short lessons for your <strong className="text-navy-strong">{goal.label.toLowerCase()}</strong>, {g.horizon} away.</p>
-      </header>
-      <div className="flex items-center gap-3">
-        <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-green-soft" role="progressbar" aria-label="Child learning progress"
-          aria-valuemin={0} aria-valuemax={path.length} aria-valuenow={done.length}>
-          <div className="h-full rounded-full bg-green-strong" style={{ width: `${100 * done.length / path.length}%` }}/>
+    <div className="space-y-5 pt-1 md:pt-4">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className={pageTitle}>Learn</h1>
+          <p className="mt-1 text-[15px] leading-6 text-ink-2">An adventure in three chapters for your <strong className="text-navy-strong">{goal.label.toLowerCase()}</strong>, {g.horizon} away. Every stop is open.</p>
         </div>
-        <span data-testid="learn-progress" className="shrink-0 text-[13px] font-semibold text-navy-strong">{done.length} of {path.length} lessons done</span>
-      </div>
-      {next ? (
-        <section className="overflow-hidden rounded-[24px] border border-line-soft bg-surface shadow-sm md:grid md:grid-cols-[280px_1fr]" aria-labelledby="up-next-title" data-testid="learn-up-next-card">
-          <LessonIllustration kind={next.illustration ?? "piggy"} title={`${next.title} illustration`} className="block h-[150px] w-full md:h-full"/>
-          <div className="p-4 md:p-6">
-            <p className="text-[12px] font-bold uppercase tracking-wider text-green-strong">Up next · {next.minutes} min · Decide, try, check</p>
-            <h2 id="up-next-title" className="mt-1 text-[21px] font-extrabold leading-7 text-navy-strong">{next.title}</h2>
-            <p className="mt-1 line-clamp-2 text-[14px] leading-6 text-ink-2">{next.concept}</p>
-            <Link href={`/try/learn/${next.id}`} className={`mt-3 w-full sm:w-auto ${primaryBtn}`} data-testid="learn-up-next">
-              {done.length ? "Continue" : "Start"}<ArrowRight aria-hidden className="size-4"/>
-            </Link>
+        <div className="flex min-w-[220px] items-center gap-3 rounded-full border border-line-soft bg-surface px-4 py-2 shadow-sm">
+          <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-green-soft" role="progressbar" aria-label="Child learning progress"
+            aria-valuemin={0} aria-valuemax={path.length} aria-valuenow={done.length}>
+            <div className="h-full rounded-full bg-green-strong" style={{ width: `${100 * done.length / path.length}%` }}/>
           </div>
-        </section>
-      ) : (
-        <p className="flex items-center gap-2 rounded-[18px] bg-green-soft p-4 text-[14px] font-semibold text-green-strong" data-testid="learn-complete">
-          <CheckCircle2 aria-hidden className="size-5"/>Path complete. Review any lesson below, or go and meet someone in Explore.
-        </p>
-      )}
-      <section aria-labelledby="path-title" data-testid="learn-chapters">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="path-title" className="text-[18px] font-extrabold text-navy-strong">Your learning trail</h2>
-          <p className="text-[13px] text-ink-2">Three chapters. Every stop is open; the glowing one is next.</p>
+          <span data-testid="learn-progress" className="shrink-0 text-[13px] font-extrabold text-navy-strong">{done.length} of {path.length} lessons done</span>
         </div>
-        <div className="mt-3 grid gap-4 lg:grid-cols-3">
-          {LESSON_CHAPTERS.map(chapter => {
-            const items = chapter.lessons.map(id => path.find(item => item.id === id)).filter((item): item is (typeof path)[number] => Boolean(item));
-            const chapterDone = items.filter(item => done.includes(item.id)).length;
-            const art = ({ money: "piggy", companies: "storefront", risk: "chart" } as const)[chapter.id as "money" | "companies" | "risk"] ?? "piggy";
-            return (
-              <section key={chapter.id} aria-labelledby={`chapter-${chapter.id}`} data-testid={`learn-chapter-${chapter.id}`}
-                className="min-w-0 overflow-hidden rounded-[24px] border border-line-soft bg-surface">
-                <header className="flex items-center gap-3 border-b border-line-soft bg-surface-soft/70 px-4 py-3">
-                  <LessonIllustration kind={art} title={`${chapter.title} illustration`} className="h-14 w-16 shrink-0 overflow-hidden rounded-[14px] bg-surface"/>
+      </header>
+
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-6">
+        {/* Companion column: up next first on phones, beside the trail on desktop. */}
+        <aside className="min-w-0 space-y-4 lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1 lg:self-start" aria-label="Up next and your goal">
+          {next ? (
+            <section className="family-card overflow-hidden border border-family-action/15 max-lg:grid max-lg:grid-cols-[120px_1fr] sm:max-lg:grid-cols-[180px_1fr]" aria-labelledby="up-next-title" data-testid="learn-up-next-card">
+              <div className="relative h-full min-h-[150px] overflow-hidden bg-[linear-gradient(170deg,#5936c7,#8a6ee6_70%,#c7b8f5)] lg:h-[150px]">
+                <MountainScene className="absolute inset-0 h-full w-full"/>
+              </div>
+              <div className="p-4 lg:p-5">
+                <p className="text-[12px] font-extrabold uppercase tracking-wider text-family-action">Up next · {next.minutes} min</p>
+                <h2 id="up-next-title" className="mt-1 font-display text-[20px] leading-6 text-navy-strong">{next.title}</h2>
+                <p className="mt-1 line-clamp-2 text-[14px] leading-5 text-ink-2">{next.concept}</p>
+                <Link href={`/try/learn/${next.id}`} className={`mt-3 w-full ${primaryBtn} !min-h-11 !px-4`} data-testid="learn-up-next">
+                  {done.length ? "Continue" : "Start"}<ArrowRight aria-hidden className="size-4"/>
+                </Link>
+              </div>
+            </section>
+          ) : (
+            <p className="flex items-center gap-2 rounded-[20px] bg-green-soft p-4 text-[14px] font-semibold text-green-strong" data-testid="learn-complete">
+              <CheckCircle2 aria-hidden className="size-5 shrink-0"/>Trail complete. Review any lesson, or go and meet someone in Explore.
+            </p>
+          )}
+          <section className="family-card hidden border border-line-soft p-5 lg:block" aria-labelledby="learn-goal-title">
+            <div className="flex items-center gap-3">
+              <GoalJar saved={story.practice.saved} target={goal.target} label={story.goalChosen ? goal.label : "your dream"} className="h-[76px] w-[62px]"/>
+              <div className="min-w-0">
+                <h2 id="learn-goal-title" className="text-[15px] font-extrabold leading-5 text-navy-strong">Why these lessons?</h2>
+                <p className="mt-1 text-[13px] leading-5 text-ink-2">Each one helps you plan your {goal.label.toLowerCase()}: budgets, prices, companies and risk.</p>
+              </div>
+            </div>
+            <ul className="mt-4 space-y-3">
+              {chapters.map((chapter, n) => (
+                <li key={chapter.id} className="flex items-center gap-3">
+                  <ChapterEmblem scene={chapter.scene} className="h-9 w-10 shrink-0"/>
                   <div className="min-w-0 flex-1">
-                    <h3 id={`chapter-${chapter.id}`} className="text-[17px] font-extrabold leading-6 text-navy-strong">{chapter.title}</h3>
-                    <p className="text-[13px] leading-5 text-ink-2">{chapter.blurb}</p>
-                    <span className="mt-1 inline-block rounded-full bg-surface px-2.5 py-0.5 text-[12px] font-extrabold text-green-strong" data-testid={`learn-chapter-${chapter.id}-done`}>{chapterDone} of {items.length} done</span>
+                    <p className="flex justify-between gap-2 text-[13px] font-bold text-navy-strong"><span className="truncate">{n + 1}. {chapter.title}</span><span className="shrink-0 text-ink-2">{chapter.done}/{chapter.items.length}</span></p>
+                    <div aria-hidden className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-soft"><div className="h-full rounded-full bg-green-strong" style={{ width: `${100 * chapter.done / Math.max(1, chapter.items.length)}%` }}/></div>
                   </div>
-                </header>
-                {/* A winding trail of stops: still an ordered list of links for keyboards and screen readers. */}
-                <ol aria-label={`${chapter.title} lessons`} className="relative px-3 py-3">
-                  {items.map((lesson, i) => {
-                    const isDone = done.includes(lesson.id);
-                    const isNext = lesson.id === next?.id;
-                    const offset = [0, 1, 2, 1, 0, 1][i % 6];
-                    return (
-                      <li key={lesson.id} className="relative">
-                        {i < items.length - 1 ? <span aria-hidden className="absolute left-[calc(var(--trail-x)+26px)] top-[52px] h-[calc(100%-36px)] border-l-[3px] border-dotted border-line" style={{ ["--trail-x" as string]: `${offset * 18}px` }}/> : null}
+                </li>
+              ))}
+            </ul>
+          </section>
+        </aside>
+
+        {/* The trail: an ordered list of real links on illustrated chapter landscapes. */}
+        <section aria-labelledby="path-title" data-testid="learn-chapters" className="min-w-0 space-y-5 lg:col-start-1 lg:row-start-1">
+          <h2 id="path-title" className="sr-only">Your learning trail</h2>
+          {chapters.map((chapter, n) => (
+            <section key={chapter.id} aria-labelledby={`chapter-${chapter.id}`} data-testid={`learn-chapter-${chapter.id}`}
+              className="relative isolate overflow-hidden rounded-[28px] border border-line-soft shadow-[var(--cresco-shadow-card)]">
+              <ChapterLandscape scene={chapter.scene} className="absolute inset-0 -z-10 h-full w-full"/>
+              <header className="mx-3 mt-3 flex items-center gap-3 rounded-[20px] border-2 border-[#ecd9ad] bg-[#fff6df]/95 p-3 shadow-sm sm:mx-5 sm:mt-5 sm:max-w-[440px] sm:p-4">
+                <ChapterEmblem scene={chapter.scene} className="h-12 w-14 shrink-0"/>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[12px] font-extrabold uppercase tracking-wider text-orange-text">Chapter {n + 1}</p>
+                  <h3 id={`chapter-${chapter.id}`} className="font-display text-[19px] leading-6 text-navy-strong">{chapter.title}</h3>
+                  <p className="text-[13px] leading-5 text-ink-2">{chapter.blurb}</p>
+                </div>
+                <span className="shrink-0 self-start rounded-full bg-surface px-2.5 py-1 text-[12px] font-extrabold text-green-strong" data-testid={`learn-chapter-${chapter.id}-done`}>{chapter.done} of {chapter.items.length} done</span>
+              </header>
+              <ol aria-label={`${chapter.title} lessons`} className="relative px-3 pb-4 pt-2 [--reserve:236px] sm:px-6 sm:[--reserve:330px]">
+                {chapter.items.map((lesson, i) => {
+                  const isDone = done.includes(lesson.id);
+                  const isNext = lesson.id === next?.id;
+                  const x = TRAIL_X[i % TRAIL_X.length];
+                  const stop = order.indexOf(lesson.id) + 1;
+                  return (
+                    <li key={lesson.id} className="relative h-[88px]">
+                      {i < chapter.items.length - 1 ? <TrailSegment from={x} to={TRAIL_X[(i + 1) % TRAIL_X.length]}/> : null}
+                      <div className="absolute inset-y-0" style={{ left: `calc(${x} * (100% - var(--reserve)))` }}>
                         <Link href={`/try/learn/${lesson.id}`} aria-current={isNext ? "step" : undefined} data-testid={`learn-lesson-${lesson.id}`}
-                          className={`group relative flex min-h-[68px] items-center gap-3 rounded-[16px] px-1 py-1.5 hover:bg-surface-soft ${isNext ? "bg-family-action-soft/60" : ""}`}>
-                          <span aria-hidden className="shrink-0" style={{ paddingLeft: `${offset * 18}px` }}>
-                            <span className={`grid size-[52px] place-items-center rounded-full border-4 shadow-sm transition-transform group-hover:scale-105 motion-reduce:transition-none ${isDone ? "border-green-strong bg-green-strong text-white" : isNext ? "anim-glow border-family-action bg-family-action text-white" : "border-line bg-surface text-ink-2"}`}>
-                              {isDone ? <CheckCircle2 className="size-6"/> : isNext ? <PlayCircle className="size-6"/> : <BookOpen className="size-5"/>}
-                            </span>
+                          className="group flex h-full items-center gap-2.5 rounded-[20px] focus-visible:outline-offset-2">
+                          <span aria-hidden className={`grid size-[60px] shrink-0 place-items-center rounded-full border-[5px] border-white text-[18px] font-extrabold shadow-[0_8px_18px_-10px_rgba(16,45,54,.6)] transition-transform group-hover:scale-105 motion-reduce:transition-none ${isDone ? "bg-green-strong text-white" : isNext ? "anim-glow bg-family-action text-white" : "bg-surface text-navy-strong"}`}>
+                            {isDone ? <Check className="size-7" strokeWidth={3.2}/> : isNext ? <Play className="ml-0.5 size-6 fill-white"/> : stop}
                           </span>
-                          <span className="min-w-0 flex-1">
-                            {isNext ? <span className="mb-0.5 inline-block rounded-full bg-family-action px-2 py-0.5 text-[12px] font-extrabold text-white">Up next</span> : null}
-                            <span className="block text-[15px] font-bold leading-5 text-navy-strong">{lesson.title}</span>
-                            <span className="block text-[13px] text-ink-2">{lesson.minutes} min · {isDone ? "Done · review" : isNext ? "Start here" : "Not started"}</span>
+                          <span className={`block w-max max-w-[calc(var(--reserve)-72px)] rounded-[16px] px-3 py-1.5 shadow-[0_6px_16px_-10px_rgba(16,45,54,.5)] ${isNext ? "bg-family-action text-white" : "bg-surface/95 text-navy-strong group-hover:bg-surface"}`}>
+                            <span className="block text-[15px] font-extrabold leading-5">{lesson.title}</span>
+                            <span className={`block text-[12px] font-semibold leading-4 ${isNext ? "text-white/90" : "text-ink-2"}`}>{isNext ? "Up next · " : ""}{lesson.minutes} min{isDone ? " · Done, review" : ""}</span>
                           </span>
                           {isDone ? <span className="sr-only">Completed</span> : null}
-                          <ChevronRight aria-hidden className="size-5 shrink-0 text-ink-3"/>
                         </Link>
-                      </li>
-                    );
-                  })}
-                </ol>
-              </section>
-            );
-          })}
-        </div>
-      </section>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          ))}
+        </section>
+      </div>
       <p className="text-[13px] text-ink-2">Lessons never change My Key. A Parent has a separate path: <Link className="font-semibold text-family-action underline underline-offset-4" href="/try/parent/learn">Parent lessons</Link>.</p>
     </div>
   );

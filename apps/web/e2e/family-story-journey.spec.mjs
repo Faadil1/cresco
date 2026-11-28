@@ -554,7 +554,7 @@ test("the goal chapter records an actual Child choice rather than silently accep
   await expect(page).toHaveURL(/\/try\/goal\/ready$/);
   await openHomeFromReady(page);
   // Once a goal is chosen, Home is titled by it.
-  await expect(page.getByRole("heading", { level: 1, name: /saving for a family trip/i })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /on the trail to your family trip/i })).toBeVisible();
   await expect(page.getByTestId("home-goal-summary")).toContainText(/family trip/i);
   expectCleanNetwork(net);
 });

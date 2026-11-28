@@ -52,7 +52,7 @@ test("A2: Home shows the next step, the learning loop and the wallet, and the lo
   await expect(page.getByTestId("journey-track")).toHaveAttribute("data-done", "1");
   await expect(page.getByTestId("journey-track").locator('[data-step="goal"]')).toHaveAttribute("data-done", "true");
   await expect(page.getByTestId("journey-track").locator('[aria-current="step"]')).toHaveAttribute("data-step", "learn");
-  await expect(page.getByRole("heading", { level: 1 })).toContainText(/saving for a new bike/i);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(/on the trail to your new bike/i);
 
   // Wallet: setting aside moves credits from free to saved, visibly.
   await page.getByTestId("home-save").click();
