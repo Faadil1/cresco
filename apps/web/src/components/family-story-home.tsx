@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import Link from "next/link";
 import { ArrowRight, KeyRound, PiggyBank, Target, Users } from "lucide-react";
 import { GoalArt } from "@/components/illustrations/objects";
@@ -51,36 +52,46 @@ export function GoalCard({ compact = false }: { compact?: boolean }) {
  * coins. Original artwork, a real text alternative, motion off when reduced.
  */
 export function GoalJar({ saved, target, label, className = "h-[132px] w-[106px]" }: { saved: number; target: number; label: string; className?: string }) {
+  const u = "jar" + useId().replace(/[^a-zA-Z0-9]/g, "");
   const pct = Math.max(0, Math.min(1, target ? saved / target : 0));
-  const fillTop = 136 - 92 * pct;
+  const fillTop = 136 - 90 * pct;
   const coins = Math.round(pct * 9);
+  const body = "M24 40 Q14 46 14 60 V124 Q14 140 32 140 H88 Q106 140 106 124 V60 Q106 46 96 40 Z";
   return (
     <svg viewBox="0 0 120 150" role="img" aria-label={`Goal jar for ${label}: ${saved} of ${target} pretend credits saved`} data-testid="goal-jar" className={`shrink-0 ${className}`}>
       <defs>
-        <clipPath id="jar-inside"><path d="M24 40 Q14 46 14 60 V124 Q14 140 32 140 H88 Q106 140 106 124 V60 Q106 46 96 40 Z"/></clipPath>
-        <linearGradient id="jar-liquid" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#6fd39b"/><stop offset="1" stopColor="#1f8a60"/></linearGradient>
+        <clipPath id={`${u}-in`}><path d={body}/></clipPath>
+        <linearGradient id={`${u}-glass`} x1="0" x2="1"><stop offset="0" stopColor="#f4fbff"/><stop offset=".5" stopColor="#e6f5f2"/><stop offset="1" stopColor="#cfe9e4"/></linearGradient>
+        <linearGradient id={`${u}-liquid`} x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#7fdcaa"/><stop offset=".5" stopColor="#3fb57a"/><stop offset="1" stopColor="#147b56"/></linearGradient>
+        <radialGradient id={`${u}-coin`} cx=".4" cy=".3"><stop offset="0" stopColor="#fff0b8"/><stop offset=".6" stopColor="#f6c76a"/><stop offset="1" stopColor="#e2a73d"/></radialGradient>
+        <linearGradient id={`${u}-lid`} x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#ffe08f"/><stop offset="1" stopColor="#e2a73d"/></linearGradient>
       </defs>
-      <ellipse cx="60" cy="144" rx="44" ry="5" fill="#102d36" opacity=".08"/>
-      <g clipPath="url(#jar-inside)">
-        <rect x="0" y="0" width="120" height="150" fill="#eef8f6"/>
+      <ellipse cx="60" cy="145" rx="46" ry="5" fill="#102d36" opacity=".12"/>
+      <g clipPath={`url(#${u}-in)`}>
+        <rect x="0" y="0" width="120" height="150" fill={`url(#${u}-glass)`}/>
         {pct > 0 ? (
           <g className="anim-fill">
-            <rect x="0" y={fillTop} width="120" height={150 - fillTop} fill="url(#jar-liquid)"/>
-            <path d={`M0 ${fillTop} q30 -5 60 0 t60 0 v4 h-120z`} fill="#a6e6c1" opacity=".7"/>
+            <rect x="0" y={fillTop} width="120" height={150 - fillTop} fill={`url(#${u}-liquid)`}/>
+            <path d={`M0 ${fillTop} q15 -4 30 0 t30 0 t30 0 t30 0 v5 h-120z`} fill="#b5f0cf" opacity=".75"/>
             {Array.from({ length: coins }, (_, i) => (
-              <g key={i} transform={`translate(${30 + (i % 3) * 30 - (Math.floor(i / 3) % 2) * 8} ${132 - Math.floor(i / 3) * 9})`}>
-                <ellipse rx="12" ry="5" fill="#d99a2b"/><ellipse cy="-2" rx="12" ry="5" fill="#f6c76a"/><ellipse cy="-2" rx="6" ry="2" fill="#ffe3a3"/>
+              <g key={i} transform={`translate(${30 + (i % 3) * 30 - (Math.floor(i / 3) % 2) * 8} ${133 - Math.floor(i / 3) * 9})`}>
+                <ellipse rx="12.5" ry="5" fill="#c98b26"/><ellipse cy="-2.2" rx="12.5" ry="5" fill={`url(#${u}-coin)`}/>
+                <ellipse cy="-2.2" rx="7" ry="2.2" fill="none" stroke="#c98b26" strokeWidth="1" opacity=".6"/>
               </g>
             ))}
+            <g fill="#fff" opacity=".6"><circle cx="86" cy={Math.min(130, fillTop + 14)} r="2.2"/><circle cx="80" cy={Math.min(134, fillTop + 26)} r="1.4"/><circle cx="92" cy={Math.min(132, fillTop + 30)} r="1.2"/></g>
           </g>
         ) : null}
+        <path d="M96 52 Q104 60 104 74 V120" stroke="#9bc9c1" strokeWidth="6" strokeLinecap="round" fill="none" opacity=".45"/>
       </g>
-      <path d="M24 40 Q14 46 14 60 V124 Q14 140 32 140 H88 Q106 140 106 124 V60 Q106 46 96 40 Z" fill="none" stroke="#102d36" strokeWidth="3.5" strokeLinejoin="round"/>
-      <rect x="26" y="26" width="68" height="16" rx="6" fill="#f6c76a" stroke="#102d36" strokeWidth="3"/>
-      <path d="M38 28 v12 M50 28 v12 M62 28 v12 M74 28 v12 M86 28 v12" stroke="#d99a2b" strokeWidth="2"/>
-      <rect x="36" y="16" width="48" height="12" rx="5" fill="#5936c7" stroke="#102d36" strokeWidth="3"/>
-      <path d="M26 62 V118" stroke="#fff" strokeOpacity=".85" strokeWidth="6" strokeLinecap="round"/>
-      <path d="M36 58 V70" stroke="#fff" strokeOpacity=".6" strokeWidth="4" strokeLinecap="round"/>
+      <path d={body} fill="none" stroke="#102d36" strokeWidth="3.5" strokeLinejoin="round"/>
+      <path d="M22 41 H98" stroke="#102d36" strokeWidth="3" strokeLinecap="round"/>
+      <rect x="25" y="25" width="70" height="17" rx="6" fill={`url(#${u}-lid)`} stroke="#102d36" strokeWidth="3"/>
+      <path d="M37 27 v13 M49 27 v13 M61 27 v13 M73 27 v13 M85 27 v13" stroke="#c98b26" strokeWidth="2" opacity=".8"/>
+      <rect x="36" y="15" width="48" height="12" rx="5" fill="#5936c7" stroke="#102d36" strokeWidth="3"/>
+      <rect x="40" y="17" width="20" height="3" rx="1.5" fill="#fff" opacity=".35"/>
+      <path d="M25 62 V118" stroke="#fff" strokeOpacity=".9" strokeWidth="6" strokeLinecap="round"/>
+      <path d="M35 58 V68" stroke="#fff" strokeOpacity=".7" strokeWidth="4" strokeLinecap="round"/>
     </svg>
   );
 }
@@ -100,18 +111,18 @@ export function HomeScreen() {
 
   return (
     <div className="pt-1 md:pt-4" data-testid="home-screen">
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-x-6 lg:gap-y-5">
+      <div className="grid gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-x-6 lg:gap-y-5">
         {/* 1. The illustrated welcome: the real goal, never an invented child. */}
         <section className="order-1 relative isolate min-h-[196px] overflow-hidden rounded-[28px] bg-[linear-gradient(170deg,#4a2bab_0%,#5936c7_38%,#8a6ee6_72%,#c7b8f5_100%)] text-white sm:min-h-[300px] lg:col-span-2 lg:row-start-1 lg:min-h-[330px]"
           data-testid="home-focus" aria-labelledby="home-title">
-          <MountainScene explorer={false} className="pointer-events-none absolute bottom-0 right-0 -z-10 h-[64%] w-full sm:h-[70%] lg:h-full lg:w-[66%]"/>
-          <ExplorerKid className="pointer-events-none absolute bottom-2 right-3 -z-10 h-[124px] w-[74px] sm:bottom-6 sm:right-[12%] sm:h-[150px] sm:w-[90px] lg:bottom-16 lg:right-auto lg:left-[44%] lg:h-[190px] lg:w-[114px]"/>
-          <div className="max-w-[72%] px-5 pb-5 pt-5 sm:max-w-[60%] sm:px-7 sm:pt-7 lg:max-w-[44%] lg:px-10 lg:pt-10">
+          <MountainScene explorer={false} className="pointer-events-none absolute bottom-0 right-0 -z-10 h-[120px] w-full sm:h-[62%] lg:h-full lg:w-[66%]"/>
+          <ExplorerKid ground className="pointer-events-none absolute bottom-3 right-4 -z-10 h-[108px] w-[65px] sm:bottom-7 sm:right-[12%] sm:h-[150px] sm:w-[90px] lg:bottom-[92px] lg:right-auto lg:left-[44%] lg:h-[180px] lg:w-[108px]"/>
+          <div className="max-w-[78%] px-5 pb-[86px] pt-4 sm:max-w-[60%] sm:pb-5 sm:px-7 sm:pt-7 lg:max-w-[44%] lg:px-10 lg:pt-10">
             <div className="flex flex-wrap items-center gap-2">
               <p className={`${kicker} text-white/90`}>My Cresco</p>
               <RealityTag kind="pretend" label="Pretend credits · no real money"/>
             </div>
-            <h1 id="home-title" className="mt-2 font-display text-[26px] leading-[1.1] sm:text-[34px] lg:text-[40px]">
+            <h1 id="home-title" className="mt-2 font-display text-[26px] leading-[1.1] [text-shadow:0_2px_12px_rgba(42,20,120,.45)] sm:text-[34px] lg:text-[40px]">
               {story.goalChosen ? <>On the trail to your {goal.label.toLowerCase()}</> : <>Your money adventure starts here</>}
             </h1>
             <p className="mt-2 hidden max-w-[34ch] text-[16px] font-semibold leading-6 text-white/90 sm:block">

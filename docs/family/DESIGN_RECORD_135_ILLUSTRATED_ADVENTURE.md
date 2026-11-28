@@ -30,3 +30,39 @@ Business logic, reducers, the 17 interactive lessons and their activities, objec
 
 ## Evidence
 `docs/family/ux-overhaul-2026-11-16/issue-135/before|after/` at 1440×900, 1280×800, 390×844 and 375×812 (Chromium, `deviceScaleFactor` 1, zoom 100%): fresh Home, fresh Learn, Home with a goal, a lesson, a finished lesson, Home and Learn after two lessons. `metrics.json` records page height and horizontal overflow (none). Script: `issue-135/capture-135.mjs`.
+
+## Round 2 (2026-11-28): illustration depth and polish
+Founder feedback: keep the palette, typography, desktop composition and illustrated trail; the illustrations needed more depth, personality and polish.
+
+- **Lighting and depth:** every mountain has a lit face and a shadow face (light from the upper right), with snow caps, ridge lines and haze between layers. The sun has a glow; there are soft clouds and birds.
+- **Foliage and ground:** two-tone pines with a lit edge, round trees in three canopy masses (one autumn variant), bushes with berries, rocks, flowers, grass tufts and ground shadows.
+- **Explorer:** gradient clothes and skin, layered hair with a highlight, eyebrows, eyes with catch-lights, freckles, an open smile, a detailed backpack (pocket, buckle, rolled blanket), socks and boots. On Home the explorer stands on a small grassy knoll instead of floating.
+- **Home landscape:** a second, nearer peak, a lake with ripples, a sandy trail with edges and pebbles, and a waving goal flag.
+- **Chapter landscapes:**
+  - Money basics: a river with ripples and a wooden bridge.
+  - Companies and shares: a high street with a bakery (striped awning), a bike shop, a fruit stall, bunting, a lamp post and a cobbled street.
+  - Risk and choices: lit peaks with a flag, a tent, a campfire and a lake.
+  - All three are anchored to the top, so the landmark is always visible, and the scenery continues down without hard edges.
+- **Trail and stops:** a sandy path with an edge, a centre line of pebbles and a soft shadow. Stops are glossy, with a top highlight and a pressed-button shadow. Chapter headers are wooden signs on a post, and each chapter's progress chip sits under its description.
+- **Goal jar:** glass gradient, rim, a liquid surface and bubbles, coins with a sheen, and a lid with ridges.
+- **Phones:**
+  - The welcome text is kept above a fixed landscape band, with a soft text shadow, so white text never sits on light green.
+  - The mission button and the learning loop still fit on the first iPhone screen, as required by test A2.
+
+Still original SVG, still no external assets, and decorative art is still hidden from screen readers.
+
+## Windows local review (founder's PC)
+Run in PowerShell. Use these direct steps: the pinned V3 pilot launcher (`family-v3-local-pilot.ps1`) refuses this candidate by design (see PR #127), and its pinned commit is unchanged.
+```
+git fetch origin claude/family-ux-overhaul-2026-11-16
+git checkout claude/family-ux-overhaul-2026-11-16
+git pull --ff-only
+git log -1 --format=%H
+cd apps\web
+npm.cmd ci --no-audit --no-fund
+npm.cmd run build:public-family
+npm.cmd run start:vinext -- --ip 127.0.0.1 --port 3100
+```
+Then open http://127.0.0.1:3100/try/home and http://127.0.0.1:3100/try/learn. State lives in memory, so a refresh starts a new family.
+- **Phone view:** use Edge DevTools device mode (iPhone 12 Pro, 390×844).
+- **Goal and progress:** to see Home with a goal and progress, start at http://127.0.0.1:3100/try, choose a goal and finish a lesson.

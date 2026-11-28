@@ -33,8 +33,10 @@ function TrailSegment({ from, to }: { from: number; to: number }) {
   return (
     <svg aria-hidden viewBox="0 0 100 100" preserveAspectRatio="none" overflow="visible" className="trail-seg pointer-events-none absolute top-[44px] h-[88px]"
       style={{ left: `calc(${lo} * (100% - var(--reserve)) + 30px)`, width: `max(1px, calc(${span} * (100% - var(--reserve))))` }}>
-      <path d={d} fill="none" stroke="#fff9ec" strokeOpacity=".95" strokeWidth="12" strokeLinecap="round"/>
-      <path d={d} fill="none" stroke="#d99a2b" strokeOpacity=".55" strokeWidth="3" strokeDasharray="3 9" strokeLinecap="round"/>
+      <path d={d} fill="none" stroke="#0b3b2b" strokeOpacity=".08" strokeWidth="20" strokeLinecap="round" transform="translate(0 3)"/>
+      <path d={d} fill="none" stroke="#e3c78d" strokeWidth="18" strokeLinecap="round"/>
+      <path d={d} fill="none" stroke="#f8e8c2" strokeWidth="13" strokeLinecap="round"/>
+      <path d={d} fill="none" stroke="#d6b672" strokeOpacity=".8" strokeWidth="3" strokeDasharray="2 12" strokeLinecap="round"/>
     </svg>
   );
 }
@@ -118,16 +120,17 @@ export function LearnChapter() {
             <section key={chapter.id} aria-labelledby={`chapter-${chapter.id}`} data-testid={`learn-chapter-${chapter.id}`}
               className="relative isolate overflow-hidden rounded-[28px] border border-line-soft shadow-[var(--cresco-shadow-card)]">
               <ChapterLandscape scene={chapter.scene} className="absolute inset-0 -z-10 h-full w-full"/>
-              <header className="mx-3 mt-3 flex items-center gap-3 rounded-[20px] border-2 border-[#ecd9ad] bg-[#fff6df]/95 p-3 shadow-sm sm:mx-5 sm:mt-5 sm:max-w-[440px] sm:p-4">
-                <ChapterEmblem scene={chapter.scene} className="h-12 w-14 shrink-0"/>
+              <header className="relative mx-3 mt-3 flex items-center gap-3 rounded-[20px] border-[3px] border-[#c99a62] bg-[linear-gradient(180deg,#fffaf0,#fbefd3)] p-3 shadow-[0_4px_0_#a8744a,0_14px_24px_-14px_rgba(16,45,54,.55)] sm:mx-5 sm:mt-5 sm:max-w-[460px] sm:p-4">
+                <span aria-hidden className="absolute -bottom-[22px] left-8 z-[-1] h-6 w-3 rounded-b bg-[#8a5a35]"/>
+                <span aria-hidden className="grid size-16 shrink-0 place-items-center rounded-[16px] bg-[radial-gradient(circle_at_50%_40%,#ffffff,#eaf7ef)] ring-2 ring-[#ecd9ad]"><ChapterEmblem scene={chapter.scene} className="h-12 w-14"/></span>
                 <div className="min-w-0 flex-1">
                   <p className="text-[12px] font-extrabold uppercase tracking-wider text-orange-text">Chapter {n + 1}</p>
                   <h3 id={`chapter-${chapter.id}`} className="font-display text-[19px] leading-6 text-navy-strong">{chapter.title}</h3>
                   <p className="text-[13px] leading-5 text-ink-2">{chapter.blurb}</p>
+                  <span className="mt-1.5 inline-block rounded-full bg-green-soft px-2.5 py-0.5 text-[12px] font-extrabold text-green-strong" data-testid={`learn-chapter-${chapter.id}-done`}>{chapter.done} of {chapter.items.length} done</span>
                 </div>
-                <span className="shrink-0 self-start rounded-full bg-surface px-2.5 py-1 text-[12px] font-extrabold text-green-strong" data-testid={`learn-chapter-${chapter.id}-done`}>{chapter.done} of {chapter.items.length} done</span>
               </header>
-              <ol aria-label={`${chapter.title} lessons`} className="relative px-3 pb-4 pt-2 [--reserve:236px] sm:px-6 sm:[--reserve:330px]">
+              <ol aria-label={`${chapter.title} lessons`} className="relative px-3 pb-5 pt-4 [--reserve:236px] sm:px-6 sm:[--reserve:330px]">
                 {chapter.items.map((lesson, i) => {
                   const isDone = done.includes(lesson.id);
                   const isNext = lesson.id === next?.id;
@@ -139,10 +142,10 @@ export function LearnChapter() {
                       <div className="absolute inset-y-0" style={{ left: `calc(${x} * (100% - var(--reserve)))` }}>
                         <Link href={`/try/learn/${lesson.id}`} aria-current={isNext ? "step" : undefined} data-testid={`learn-lesson-${lesson.id}`}
                           className="group flex h-full items-center gap-2.5 rounded-[20px] focus-visible:outline-offset-2">
-                          <span aria-hidden className={`grid size-[60px] shrink-0 place-items-center rounded-full border-[5px] border-white text-[18px] font-extrabold shadow-[0_8px_18px_-10px_rgba(16,45,54,.6)] transition-transform group-hover:scale-105 motion-reduce:transition-none ${isDone ? "bg-green-strong text-white" : isNext ? "anim-glow bg-family-action text-white" : "bg-surface text-navy-strong"}`}>
+                          <span aria-hidden className={`relative grid size-[60px] shrink-0 place-items-center rounded-full border-[5px] border-white text-[19px] font-black shadow-[0_3px_0_rgba(16,45,54,.18),0_10px_20px_-10px_rgba(16,45,54,.7)] transition-transform group-hover:-translate-y-0.5 group-hover:scale-105 motion-reduce:transition-none before:absolute before:inset-x-2 before:top-1 before:h-1/3 before:rounded-full before:bg-white/25 ${isDone ? "bg-[radial-gradient(circle_at_35%_30%,#34b27a,#147b56_70%)] text-white" : isNext ? "anim-glow bg-[radial-gradient(circle_at_35%_30%,#8a6ee6,#5936c7_70%)] text-white" : "bg-[radial-gradient(circle_at_35%_30%,#ffffff,#f3ead6_80%)] text-navy-strong"}`}>
                             {isDone ? <Check className="size-7" strokeWidth={3.2}/> : isNext ? <Play className="ml-0.5 size-6 fill-white"/> : stop}
                           </span>
-                          <span className={`block w-max max-w-[calc(var(--reserve)-72px)] rounded-[16px] px-3 py-1.5 shadow-[0_6px_16px_-10px_rgba(16,45,54,.5)] ${isNext ? "bg-family-action text-white" : "bg-surface/95 text-navy-strong group-hover:bg-surface"}`}>
+                          <span className={`block w-max max-w-[calc(var(--reserve)-72px)] rounded-[16px] px-3 py-1.5 shadow-[0_2px_0_rgba(16,45,54,.08),0_8px_18px_-10px_rgba(16,45,54,.55)] ring-1 ${isNext ? "bg-family-action text-white ring-white/30" : "bg-surface/95 text-navy-strong ring-black/5 group-hover:bg-surface"}`}>
                             <span className="block text-[15px] font-extrabold leading-5">{lesson.title}</span>
                             <span className={`block text-[12px] font-semibold leading-4 ${isNext ? "text-white/90" : "text-ink-2"}`}>{isNext ? "Up next · " : ""}{lesson.minutes} min{isDone ? " · Done, review" : ""}</span>
                           </span>
