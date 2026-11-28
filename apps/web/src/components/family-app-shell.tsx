@@ -36,6 +36,11 @@ const PARENT_ICONS: Record<ParentTabId, LucideIcon> = {
   overview: LayoutDashboard, request: Inbox, key: KeyRound, learn: GraduationCap,
 };
 
+/** The existing Cresco wordmark with a small "Family" label (no new logo). */
+function FamilyPill() {
+  return <span aria-hidden className="rounded-full bg-green-soft px-2 py-0.5 text-[12px] font-extrabold text-green-strong">Family</span>;
+}
+
 export function LensChip({ pathname }: { pathname: string }) {
   const lens = lensOfPath(pathname);
   return (
@@ -66,10 +71,10 @@ function ChildSideNav({ current }: { current: FamilyTabId | null }) {
   const p = story.practice;
   const pending = p.requests.filter(r => r.status === "pending").length;
   return (
-    <aside className="sticky top-0 hidden h-dvh shrink-0 flex-col border-r border-line-soft bg-surface/90 px-3 py-6 md:flex md:w-[96px] lg:w-[244px] lg:px-5">
+    <aside className="sticky top-0 hidden h-dvh shrink-0 flex-col border-r border-line-soft bg-surface/80 px-3 py-6 backdrop-blur md:flex md:w-[96px] lg:w-[244px] lg:px-5">
       <Link href="/try/home" className="mb-8 flex min-h-11 items-center justify-center lg:justify-start" aria-label="Cresco Family home">
         <span className="lg:hidden"><CrescoMark className="size-9"/></span>
-        <span className="hidden lg:block"><Wordmark size="sm"/></span>
+        <span className="hidden items-center gap-2 lg:flex"><Wordmark size="sm"/><FamilyPill/></span>
       </Link>
       <nav aria-label="Main">
         <ul className="space-y-1.5">
@@ -137,7 +142,7 @@ function ChildShell({ pathname, children }: { pathname: string; children: ReactN
       <ChildSideNav current={current}/>
       <div className="min-w-0 flex-1">
         <header className="flex min-h-14 items-center justify-between gap-2 px-4 pt-3 md:justify-end md:px-10 md:pt-6">
-          <Link href="/try/home" aria-label="Cresco Family home" className="inline-flex min-h-11 items-center md:hidden"><Wordmark size="sm"/></Link>
+          <Link href="/try/home" aria-label="Cresco Family home" className="inline-flex min-h-11 items-center gap-2 md:hidden"><Wordmark size="sm"/>{lensOfPath(pathname) === "child" ? <FamilyPill/> : null}</Link>
           <div className="flex items-center gap-2">
             {lensOfPath(pathname) !== "child" ? <LensChip pathname={pathname}/> : null}
             <Link href="/try/parent" aria-label={`Parent's view${pending ? `, ${pending} waiting` : ""}`}

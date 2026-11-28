@@ -82,9 +82,9 @@
   --color-loss-text: var(--cresco-loss-text);
   --color-warning: var(--cresco-warning);
   /* Cresco Family app: the original product's bright, friendly action blue. */
-  --color-family-action: #1f5fd6;
-  --color-family-action-hover: #174bb0;
-  --color-family-action-soft: #e8effc;
+  --color-family-action: #5936c7;
+  --color-family-action-hover: #4a2bab;
+  --color-family-action-soft: #eee8fc;
   --color-line: var(--cresco-border);
   --color-line-soft: var(--cresco-border-soft);
 
@@ -270,12 +270,50 @@ body {
    use the friendly heavy sans of the old app instead of the editorial serif.
    Scoped to the Family shell; the canonical site is unchanged. */
 .cresco-family-app .font-display {
-  font-family: "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif;
-  font-weight: 800;
-  letter-spacing: -0.025em;
+  font-family: "Nunito Variable", "Inter Variable", ui-rounded, ui-sans-serif, system-ui, sans-serif;
+  font-weight: 850;
+  letter-spacing: -0.02em;
 }
+
+/* Issue #135, "Grow your money skills": the approved illustrated art direction.
+   Family-scoped token overrides (the canonical site keeps its palette). Text
+   pairs are checked for WCAG AA: ink #102d36, forest #147b56 and violet #5936c7
+   all exceed 4.5:1 on ivory and white. Green, amber and red stay reserved for
+   real states, never for decorative profit excitement. */
+.cresco-family-app {
+  --cresco-bg: #fff9ec;            /* warm ivory */
+  --cresco-surface: #fffefa;
+  --cresco-surface-soft: #f7f0e1;
+  --cresco-navy: #1d3c45;
+  --cresco-navy-strong: #102d36;   /* deep ink */
+  --cresco-text-secondary: #46606a;
+  --cresco-text-muted: #566c74;
+  --cresco-green: #1f8a60;
+  --cresco-green-strong: #147b56;  /* forest */
+  --cresco-green-soft: #ddf5e8;    /* mint */
+  --cresco-blue-soft: #dcebfa;     /* sky */
+  --cresco-yellow: #f6c76a;        /* warm amber (fills only) */
+  --cresco-yellow-soft: #fff1d2;
+  --cresco-lavender: #5936c7;      /* action violet */
+  --cresco-lavender-soft: #eee8fc; /* soft lavender */
+  --cresco-border: #ebdfc8;
+  --cresco-border-soft: #f1e8d6;
+  --cresco-shadow-card: 0 1px 0 rgba(16, 45, 54, .04), 0 18px 40px -28px rgba(16, 45, 54, .35);
+  font-family: "Nunito Variable", "Inter Variable", ui-rounded, ui-sans-serif, system-ui, sans-serif;
+  background:
+    radial-gradient(circle at 92% 0%, rgba(238, 232, 252, .9), transparent 34%),
+    radial-gradient(circle at 0% 100%, rgba(221, 245, 232, .7), transparent 40%),
+    var(--cresco-bg);
+}
+.cresco-family-app .family-card {
+  border-radius: 24px;
+  background: var(--cresco-surface);
+  box-shadow: var(--cresco-shadow-card);
+}
+/* A dashed trail segment keeps its stroke under any stretch. */
+.cresco-family-app .trail-seg path { vector-effect: non-scaling-stroke; }
 .cresco-family-app :where(input:not([type="checkbox"]), textarea, select) {
-  accent-color: #1f5fd6;
+  accent-color: #5936c7;
 }
 
 /* Family design system: nothing smaller than 12px (issue #126). Scoped so the
@@ -288,7 +326,7 @@ body {
    rewards and switches off completely for reduced-motion users. */
 @keyframes cresco-pop { from { transform: scale(.94); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes cresco-rise { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
-@keyframes cresco-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(31, 95, 214, .32); } 50% { box-shadow: 0 0 0 9px rgba(31, 95, 214, 0); } }
+@keyframes cresco-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(89, 54, 199, .34); } 50% { box-shadow: 0 0 0 9px rgba(89, 54, 199, 0); } }
 @keyframes cresco-fill { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 .cresco-family-app .anim-pop { animation: cresco-pop .28s cubic-bezier(.2, .8, .2, 1) both; }
 .cresco-family-app .anim-rise { animation: cresco-rise .32s ease-out both; }

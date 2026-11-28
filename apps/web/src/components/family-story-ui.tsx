@@ -20,13 +20,13 @@ import type { ChapterStatus } from "@/lib/family-story-state";
  * One primary action per view. Reality is shown with ONE tag per world:
  * Pretend (yellow), Real company + paper $ (blue), Parent (lavender).
  */
-export const panel = "rounded-[20px] border border-line-soft bg-surface p-5 md:p-6";
+export const panel = "rounded-[24px] border border-line-soft bg-surface p-5 shadow-[var(--cresco-shadow-card)] md:p-6";
 export const small = "text-[13px] leading-6 text-ink-2";
-export const pageTitle = "font-display text-[26px] leading-[1.15] text-navy-strong md:text-[34px]";
+export const pageTitle = "font-display text-[28px] leading-[1.12] text-navy-strong md:text-[36px]";
 export const sectionTitle = "text-[20px] font-extrabold leading-7 text-navy-strong";
 export const kicker = "text-[12px] font-extrabold uppercase tracking-[0.08em]";
 export const textLink = "inline-flex min-h-11 items-center gap-1 text-[14px] font-bold text-family-action underline-offset-4 hover:underline";
-export const primaryBtn = "inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-family-action px-6 py-3 text-[15px] font-bold text-white shadow-[0_12px_26px_-17px_rgba(31,95,214,.7)] hover:bg-family-action-hover disabled:cursor-not-allowed disabled:opacity-50";
+export const primaryBtn = "inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-family-action px-6 py-3 text-[15px] font-bold text-white shadow-[0_14px_28px_-16px_rgba(89,54,199,.75)] hover:bg-family-action-hover disabled:cursor-not-allowed disabled:opacity-50";
 export const secondaryBtn = "inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-line bg-surface px-6 py-3 text-[15px] font-bold text-navy-strong hover:bg-family-action-soft disabled:cursor-not-allowed disabled:opacity-50";
 
 /** Page heading with optional art. Art is decorative; its title says what it shows. */
@@ -197,10 +197,11 @@ export function JourneyTrack({ status, lens = "child", testId = "journey-track" 
           const isDone = status[step.id];
           const isCurrent = step.id === current;
           return (
-            <li key={step.id} className="min-w-0">
+            <li key={step.id} className="relative min-w-0">
+              {i < LOOP_STEPS.length - 1 ? <span aria-hidden className={`absolute left-[calc(50%+20px)] right-[calc(-50%+20px)] top-[25px] border-t-[3px] ${isDone ? "border-green-strong/60" : "border-dashed border-line"}`}/> : null}
               <Link href={step.href} aria-current={isCurrent ? "step" : undefined} data-step={step.id} data-done={isDone ? "true" : "false"}
                 className="group flex min-h-11 flex-col items-center gap-1 rounded-[14px] px-1 py-1.5 text-center hover:bg-surface-soft">
-                <span aria-hidden className={`grid size-8 place-items-center rounded-full border-2 text-[13px] font-extrabold ${isDone ? "border-green-strong bg-green-strong text-white" : isCurrent ? "border-family-action bg-family-action-soft text-family-action" : "border-line bg-surface text-ink-2"}`}>
+                <span aria-hidden className={`relative grid size-9 place-items-center rounded-full border-[3px] text-[14px] font-extrabold shadow-sm ${isDone ? "border-white bg-green-strong text-white" : isCurrent ? "border-white bg-family-action text-white ring-4 ring-family-action/20" : "border-white bg-surface-soft text-ink-2"}`}>
                   {isDone ? <Check className="size-4" strokeWidth={3}/> : i + 1}
                 </span>
                 <span className={`text-[12px] font-extrabold leading-4 ${isCurrent ? "text-family-action" : "text-navy-strong"}`}>{step.label}</span>

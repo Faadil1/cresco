@@ -1,3 +1,4 @@
+import "@fontsource-variable/nunito";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { FamilyStoryProvider } from "@/components/family-story-provider";
