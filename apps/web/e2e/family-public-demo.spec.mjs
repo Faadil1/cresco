@@ -1,4 +1,7 @@
 import { test, expect, devices } from "@playwright/test";
+import { waitForFamilyReady } from "./family-ready.mjs";
+
+waitForFamilyReady(test);
 
 test.use({ ...devices["iPhone 13"] });
 
@@ -11,8 +14,9 @@ test("public Family gives Child + Parent a complete practice loop without sign-i
   });
 
   await page.goto("/try/lab");
-  await expect(page.getByRole("heading", { name: /a whole family can learn to decide/i })).toBeVisible();
-  await expect(page.getByText(/two simulated perspectives\. pretend credits only/i)).toBeVisible();
+  // The lab is the demoted classic layout (it returned HTTP 500 at baseline 3fbc92b0).
+  await expect(page.getByRole("heading", { name: /classic practice lab/i })).toBeVisible();
+  await expect(page.getByText(/same pretend credits and key as the main app/i)).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Child demo navigation" })).toBeInViewport();
   await expect(page.getByTestId("family-public-studio")).toBeVisible();
   await expect(page.getByTestId("practice-available")).toHaveText("100");

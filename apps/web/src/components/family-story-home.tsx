@@ -1,12 +1,14 @@
 "use client";
 
+import { useId } from "react";
 import Link from "next/link";
-import { ArrowRight, KeyRound, PiggyBank } from "lucide-react";
+import { ArrowRight, KeyRound, PiggyBank, Target, Users } from "lucide-react";
 import { GoalArt } from "@/components/illustrations/objects";
+import { ExplorerKid, MountainScene } from "@/components/illustrations/adventure";
 import { useFamilyStory } from "@/components/family-story-provider";
-import { primaryBtn } from "@/components/family-story-ui";
+import { JourneyTrack, LOOP_STEPS, RealityTag, kicker, primaryBtn } from "@/components/family-story-ui";
 import { remainingCredits, remainingPeriod, selectedPracticeGoal } from "@/lib/family-public-practice";
-import { GOAL_STORY, nextMission } from "@/lib/family-story-state";
+import { GOAL_STORY, chapterStatus, childPathFor, nextMission } from "@/lib/family-story-state";
 
 /**
  * One destination, one next step. The persistent shell already owns all five
@@ -24,7 +26,7 @@ export function GoalCard({ compact = false }: { compact?: boolean }) {
       <div className="flex items-center gap-3">
         <GoalArt goal={goal.id} className={compact ? "h-12 w-14 shrink-0" : "h-16 w-20 shrink-0"}/>
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-bold text-ink-2">Saving for</p>
+          <p className="text-[12px] font-bold text-ink-2">Saving for</p>
           <p className="text-[18px] font-extrabold text-navy-strong">{story.goalChosen ? goal.label : "Your dream"}</p>
           <p className="text-[12px] text-ink-2">{GOAL_STORY[goal.id].horizon} away</p>
         </div>
@@ -45,65 +47,177 @@ export function GoalCard({ compact = false }: { compact?: boolean }) {
   );
 }
 
+/**
+ * The goal jar: saved pretend credits shown as a glass jar filling up with
+ * coins. Original artwork, a real text alternative, motion off when reduced.
+ */
+export function GoalJar({ saved, target, label, className = "h-[132px] w-[106px]" }: { saved: number; target: number; label: string; className?: string }) {
+  const u = "jar" + useId().replace(/[^a-zA-Z0-9]/g, "");
+  const pct = Math.max(0, Math.min(1, target ? saved / target : 0));
+  const fillTop = 136 - 90 * pct;
+  const coins = Math.round(pct * 9);
+  const body = "M24 40 Q14 46 14 60 V124 Q14 140 32 140 H88 Q106 140 106 124 V60 Q106 46 96 40 Z";
+  return (
+    <svg viewBox="0 0 120 150" role="img" aria-label={`Goal jar for ${label}: ${saved} of ${target} pretend credits saved`} data-testid="goal-jar" className={`shrink-0 ${className}`}>
+      <defs>
+        <clipPath id={`${u}-in`}><path d={body}/></clipPath>
+        <linearGradient id={`${u}-glass`} x1="0" x2="1"><stop offset="0" stopColor="#f4fbff"/><stop offset=".5" stopColor="#e6f5f2"/><stop offset="1" stopColor="#cfe9e4"/></linearGradient>
+        <linearGradient id={`${u}-liquid`} x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#7fdcaa"/><stop offset=".5" stopColor="#3fb57a"/><stop offset="1" stopColor="#147b56"/></linearGradient>
+        <radialGradient id={`${u}-coin`} cx=".4" cy=".3"><stop offset="0" stopColor="#fff0b8"/><stop offset=".6" stopColor="#f6c76a"/><stop offset="1" stopColor="#e2a73d"/></radialGradient>
+        <linearGradient id={`${u}-lid`} x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#ffe08f"/><stop offset="1" stopColor="#e2a73d"/></linearGradient>
+      </defs>
+      <ellipse cx="60" cy="145" rx="46" ry="5" fill="#102d36" opacity=".12"/>
+      <g clipPath={`url(#${u}-in)`}>
+        <rect x="0" y="0" width="120" height="150" fill={`url(#${u}-glass)`}/>
+        {pct > 0 ? (
+          <g className="anim-fill">
+            <rect x="0" y={fillTop} width="120" height={150 - fillTop} fill={`url(#${u}-liquid)`}/>
+            <path d={`M0 ${fillTop} q15 -4 30 0 t30 0 t30 0 t30 0 v5 h-120z`} fill="#b5f0cf" opacity=".75"/>
+            {Array.from({ length: coins }, (_, i) => (
+              <g key={i} transform={`translate(${30 + (i % 3) * 30 - (Math.floor(i / 3) % 2) * 8} ${133 - Math.floor(i / 3) * 9})`}>
+                <ellipse rx="12.5" ry="5" fill="#c98b26"/><ellipse cy="-2.2" rx="12.5" ry="5" fill={`url(#${u}-coin)`}/>
+                <ellipse cy="-2.2" rx="7" ry="2.2" fill="none" stroke="#c98b26" strokeWidth="1" opacity=".6"/>
+              </g>
+            ))}
+            <g fill="#fff" opacity=".6"><circle cx="86" cy={Math.min(130, fillTop + 14)} r="2.2"/><circle cx="80" cy={Math.min(134, fillTop + 26)} r="1.4"/><circle cx="92" cy={Math.min(132, fillTop + 30)} r="1.2"/></g>
+          </g>
+        ) : null}
+        <path d="M96 52 Q104 60 104 74 V120" stroke="#9bc9c1" strokeWidth="6" strokeLinecap="round" fill="none" opacity=".45"/>
+      </g>
+      <path d={body} fill="none" stroke="#102d36" strokeWidth="3.5" strokeLinejoin="round"/>
+      <path d="M22 41 H98" stroke="#102d36" strokeWidth="3" strokeLinecap="round"/>
+      <rect x="25" y="25" width="70" height="17" rx="6" fill={`url(#${u}-lid)`} stroke="#102d36" strokeWidth="3"/>
+      <path d="M37 27 v13 M49 27 v13 M61 27 v13 M73 27 v13 M85 27 v13" stroke="#c98b26" strokeWidth="2" opacity=".8"/>
+      <rect x="36" y="15" width="48" height="12" rx="5" fill="#5936c7" stroke="#102d36" strokeWidth="3"/>
+      <rect x="40" y="17" width="20" height="3" rx="1.5" fill="#fff" opacity=".35"/>
+      <path d="M25 62 V118" stroke="#fff" strokeOpacity=".9" strokeWidth="6" strokeLinecap="round"/>
+      <path d="M35 58 V68" stroke="#fff" strokeOpacity=".7" strokeWidth="4" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
 export function HomeScreen() {
   const { story, dispatch } = useFamilyStory();
   const p = story.practice;
   const goal = selectedPracticeGoal(p);
   const mission = nextMission(story);
-  const percent = Math.min(100, Math.round(p.saved / goal.target * 100));
+  const status = chapterStatus(story);
+  const free = remainingCredits(p);
+  const lessons = childPathFor(goal.id);
   const pending = p.requests.some(request => request.status === "pending" || request.status === "approved-once");
+  const percent = Math.min(100, Math.round(p.saved / goal.target * 100));
+  const goalName = story.goalChosen ? goal.label : "Your dream";
+  const loopDone = LOOP_STEPS.filter(step => status[step.id]).length;
 
   return (
-    <div className="mx-auto max-w-[660px] pt-4 md:pt-10" data-testid="home-screen">
-      <header className="mb-6">
-        <p className="text-[11px] font-extrabold uppercase tracking-wider text-green-strong">My Cresco</p>
-        <h1 className="mt-1 font-display text-[28px] leading-tight text-navy-strong md:text-[36px]">Ready for your next step?</h1>
-      </header>
-
-      <section className="rounded-[28px] border border-green/25 bg-green-soft px-5 py-6 md:px-8 md:py-9"
-        data-testid="home-focus" aria-label="Your next step">
-        <div data-testid="home-mission" data-mission={mission.id}>
-          <p className="text-[11px] font-extrabold uppercase tracking-wider text-green-strong">Just one thing today</p>
-          <h2 className="mt-2 font-display text-[25px] font-bold leading-tight text-navy-strong md:text-[31px]">{mission.title}</h2>
-          <p className="mt-2 max-w-[44ch] text-[14px] leading-6 text-navy">{mission.body}</p>
-          <Link href={mission.href} className={`mt-5 w-full sm:w-auto ${primaryBtn}`} data-testid="home-mission-go">
-            {mission.cta}<ArrowRight aria-hidden className="size-4"/>
-          </Link>
-        </div>
-      </section>
-
-      <section aria-label="Goal progress" className="mt-5 flex items-center gap-3 rounded-[20px] border border-line-soft bg-surface px-3 py-3 sm:px-4" data-testid="home-goal-summary">
-        <GoalArt goal={goal.id} className="h-12 w-14 shrink-0"/>
-        <div className="min-w-0 flex-1">
-          <p className="text-[12px] font-semibold text-ink-2">Saving for {story.goalChosen ? goal.label : "your dream"}</p>
-          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-soft" role="progressbar" aria-label={`${goal.label} savings`} aria-valuemin={0} aria-valuemax={goal.target} aria-valuenow={p.saved}>
-            <div className="h-full rounded-full bg-green-strong" style={{ width: `${percent}%` }}/>
+    <div className="pt-1 md:pt-4" data-testid="home-screen">
+      <div className="grid gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-x-6 lg:gap-y-5">
+        {/* 1. The illustrated welcome: the real goal, never an invented child. */}
+        <section className="order-1 relative isolate min-h-[196px] overflow-hidden rounded-[28px] bg-[linear-gradient(170deg,#4a2bab_0%,#5936c7_38%,#8a6ee6_72%,#c7b8f5_100%)] text-white sm:min-h-[300px] lg:col-span-2 lg:row-start-1 lg:min-h-[330px]"
+          data-testid="home-focus" aria-labelledby="home-title">
+          <MountainScene explorer={false} className="pointer-events-none absolute bottom-0 right-0 -z-10 h-[120px] w-full sm:h-[62%] lg:h-full lg:w-[66%]"/>
+          <ExplorerKid ground className="pointer-events-none absolute bottom-3 right-4 -z-10 h-[108px] w-[65px] sm:bottom-7 sm:right-[12%] sm:h-[150px] sm:w-[90px] lg:bottom-[92px] lg:right-auto lg:left-[44%] lg:h-[180px] lg:w-[108px]"/>
+          <div className="max-w-[78%] px-5 pb-[86px] pt-4 sm:max-w-[60%] sm:pb-5 sm:px-7 sm:pt-7 lg:max-w-[44%] lg:px-10 lg:pt-10">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className={`${kicker} text-white/90`}>My Cresco</p>
+              <RealityTag kind="pretend" label="Pretend credits · no real money"/>
+            </div>
+            <h1 id="home-title" className="mt-2 font-display text-[26px] leading-[1.1] [text-shadow:0_2px_12px_rgba(42,20,120,.45)] sm:text-[34px] lg:text-[40px]">
+              {story.goalChosen ? <>On the trail to your {goal.label.toLowerCase()}</> : <>Your money adventure starts here</>}
+            </h1>
+            <p className="mt-2 hidden max-w-[34ch] text-[16px] font-semibold leading-6 text-white/90 sm:block">
+              {story.goalChosen
+                ? (p.saved ? `${percent}% of the way there, one step at a time.` : "Every step on the trail teaches you something new.")
+                : "Pick something to save for, then learn, meet, decide and talk it through."}
+            </p>
           </div>
-        </div>
-        <p className="shrink-0 text-right text-[12px] text-ink-2"><strong className="block text-[16px] text-navy-strong" data-testid="home-goal-saved">{p.saved}/{goal.target}</strong>saved</p>
-      </section>
+        </section>
 
-      <details className="mt-2 rounded-[16px] px-3 py-2 text-[13px] text-ink-2" data-testid="home-extras">
-        <summary className="cursor-pointer font-semibold text-family-action">Savings and practice limits</summary>
-        <div className="mt-3 space-y-3">
+        {/* 2. The goal jar: the real saved and target values from the practice state. */}
+        <section className="family-card order-4 relative z-10 border border-line-soft p-4 sm:p-5 lg:col-start-2 lg:row-start-2 lg:mx-0 lg:-mt-20 lg:mr-5 lg:self-start lg:p-5"
+          data-testid="home-goal-summary" aria-labelledby="wallet-title">
+          <div className="flex items-center gap-4">
+            <div className="flex shrink-0 justify-center rounded-[20px] bg-[radial-gradient(circle_at_50%_70%,#ddf5e8,transparent_70%)]">
+              <GoalJar saved={p.saved} target={goal.target} label={story.goalChosen ? goal.label : "your dream"} className="h-[112px] w-[90px] lg:h-[128px] lg:w-[102px]"/>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] font-bold text-ink-2">Your goal</p>
+              <h2 id="wallet-title" className="flex items-center gap-2 font-display text-[22px] leading-7 text-navy-strong">
+                {goalName}{story.goalChosen ? <GoalArt goal={goal.id} className="h-7 w-9 shrink-0"/> : null}
+              </h2>
+              <div className="mt-2 flex items-center gap-2">
+                <div className="h-3 flex-1 overflow-hidden rounded-full bg-green-soft" role="progressbar" aria-label={`${goalName} savings`} aria-valuemin={0} aria-valuemax={goal.target} aria-valuenow={p.saved}>
+                  <div className="h-full rounded-full bg-[linear-gradient(90deg,#2f9e6b,#147b56)]" style={{ width: `${percent}%` }}/>
+                </div>
+                <span className="text-[15px] font-extrabold text-green-strong">{percent}%</span>
+              </div>
+              <p className="mt-1 text-[14px] text-ink-2"><strong className="text-navy-strong" data-testid="home-goal-saved">{p.saved}/{goal.target}</strong> pretend credits saved · {GOAL_STORY[goal.id].horizon} away</p>
+            </div>
+          </div>
           {story.goalChosen ? (
-            <button type="button" disabled={remainingCredits(p) < 20} data-testid="home-save"
+            <button type="button" disabled={free < 20} data-testid="home-save"
               onClick={() => dispatch({ type: "practice", action: { type: "save" } })}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-green/40 bg-surface px-4 text-[13px] font-bold text-green-strong disabled:opacity-50">
-              <PiggyBank aria-hidden className="size-4"/>Set aside 20
+              className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border-2 border-green-strong/30 bg-surface px-4 text-[14px] font-extrabold text-green-strong hover:bg-green-soft disabled:opacity-50">
+              <PiggyBank aria-hidden className="size-4"/>Set aside 20 for my goal
             </button>
           ) : null}
-          <div className="flex items-start gap-2 text-[12px] leading-5" data-testid="home-key">
-            <KeyRound aria-hidden className="mt-0.5 size-4 shrink-0 text-green-strong"/>
-            <span>My Key: {p.key.maxPerAction} credits per choice, {remainingPeriod(p)} available this period. All credits are fictional; no real money.</span>
+        </section>
+
+        {/* 3. One next mission, one primary action. */}
+        <section className="family-card order-2 relative z-10 border border-family-action/15 p-4 sm:p-6 lg:col-start-1 lg:row-start-2 lg:ml-5 lg:-mt-20"
+          data-testid="home-mission" data-mission={mission.id} aria-labelledby="mission-title">
+          <div className="flex items-start gap-4">
+            <span aria-hidden className="hidden size-14 shrink-0 place-items-center rounded-[18px] bg-family-action-soft text-family-action sm:grid"><Target className="size-7"/></span>
+            <div className="min-w-0 flex-1">
+              <p className={`${kicker} text-family-action`}>Your next mission · {mission.kicker.replace(/^Today's mission · /i, "")}</p>
+              <h2 id="mission-title" className="mt-1 font-display text-[23px] leading-tight text-navy-strong md:text-[27px]">{mission.title}</h2>
+              <p className="mt-1.5 max-w-[52ch] text-[15px] leading-6 text-navy">{mission.body}</p>
+              <Link href={mission.href} className={`mt-4 w-full sm:w-auto ${primaryBtn}`} data-testid="home-mission-go">
+                {mission.cta}<ArrowRight aria-hidden className="size-4"/>
+              </Link>
+              {pending ? (
+                <p data-testid="home-parent-preview" className="mt-4 flex items-start gap-2 rounded-[18px] border border-family-action/20 bg-lavender-soft px-4 py-3 text-[14px] leading-6 text-navy-strong">
+                  <Users aria-hidden className="mt-1 size-4 shrink-0 text-family-action"/>
+                  <span>Something is with your Parent. This mission shows you exactly what to do next.</span>
+                </p>
+              ) : null}
+            </div>
           </div>
-        </div>
-      </details>
-      {pending ? (
-        <p data-testid="home-parent-preview" className="mt-3 text-[13px] leading-6 text-family-action">
-          Your next step includes a simulated Parent decision, shown when you select the main action above.
-        </p>
-      ) : null}
+        </section>
+
+
+        {/* 4. The learning loop as a short trail. */}
+        <section className="family-card order-3 border border-line-soft p-4 md:p-5 lg:col-start-1 lg:row-start-3" aria-labelledby="loop-title">
+          <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 id="loop-title" className="font-display text-[18px] text-navy-strong">My learning loop</h2>
+            <p className="text-[13px] text-ink-2"><span data-testid="home-loop-count">{loopDone} of 5 done</span> · <Link href="/try/learn" className="font-bold text-family-action underline-offset-4 hover:underline" data-testid="home-to-learn">{p.childCompleted.length} of {lessons.length} lessons</Link></p>
+          </div>
+          <JourneyTrack status={status}/>
+          {loopDone === LOOP_STEPS.length ? (
+            <p className="mt-3 rounded-[14px] bg-green-soft px-3 py-2 text-[14px] leading-6 text-navy-strong" data-testid="home-loop-complete">
+              <strong>You finished a full round.</strong> Every new lesson, person and choice makes the next round count. Your next mission is above.
+            </p>
+          ) : null}
+        </section>
+
+        {/* Credits and My Key: under the goal on desktop, below the loop on phones (never above the mission). */}
+        <section className="family-card order-5 border border-line-soft p-4 lg:col-start-2 lg:row-start-3 lg:self-start lg:p-5" aria-label="My credits and key">
+          <div className="flex h-2.5 overflow-hidden rounded-full bg-surface-soft" role="img" data-testid="home-credit-bar"
+            aria-label={`Out of 100 pretend credits: ${p.saved} saved for your goal, ${p.spent} used in practice choices, ${free} free`}>
+            <span className="bg-green-strong" style={{ width: `${p.saved}%` }}/>
+            <span className="bg-yellow" style={{ width: `${p.spent}%` }}/>
+          </div>
+          <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-ink-2">
+            <li><span aria-hidden className="mr-1.5 inline-block size-2.5 rounded-full bg-green-strong"/>Saved {p.saved}</li>
+            <li><span aria-hidden className="mr-1.5 inline-block size-2.5 rounded-full bg-yellow"/>In practice {p.spent}</li>
+            <li><span aria-hidden className="mr-1.5 inline-block size-2.5 rounded-full border border-line bg-surface-soft"/>Free {free}</li>
+          </ul>
+          <p className="mt-3 flex items-start gap-2 border-t border-line-soft pt-3 text-[13px] leading-5 text-navy" data-testid="home-key">
+            <KeyRound aria-hidden className="mt-0.5 size-4 shrink-0 text-green-strong"/>
+            <span><strong>My Key:</strong> I decide alone up to {p.key.maxPerAction} credits a choice ({remainingPeriod(p)} left this period). Bigger choices go to my Parent.</span>
+          </p>
+        </section>
+      </div>
     </div>
   );
 }

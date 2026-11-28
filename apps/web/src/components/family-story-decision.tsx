@@ -7,7 +7,7 @@ import { ArrowLeft, KeyRound } from "lucide-react";
 import { StoryVignette } from "@/components/illustrations/family-story";
 import { useFamilyStory } from "@/components/family-story-provider";
 import { KeyChip } from "@/components/family-story-explore";
-import { ChapterHeading, CompanyArt, panel, primaryBtn, secondaryBtn } from "@/components/family-story-ui";
+import { ChapterHeading, CompanyArt, panel, primaryBtn, secondaryBtn, textLink } from "@/components/family-story-ui";
 import { FAMILY_EXPLORE_CASES } from "@/lib/family-public-explore-data";
 import {
   PRACTICE_ASSETS, previewPracticeChoice, remainingCredits, type AssetCode,
@@ -22,8 +22,8 @@ function Chooser() {
   const { story, dispatch } = useFamilyStory();
   return (
     <div className="space-y-5">
-      <ChapterHeading kicker="Explore · practice choice" title="Which company do you want to practice with?"
-        intro="Practice choices exist for three of the six invented companies. The other three are research only."
+      <ChapterHeading kicker="Pretend · practice choice" title="Which company do you want to practice with?"
+        intro="Three of the six invented companies offer a practice choice. The other three are research only."
         art={<StoryVignette role="teen" className="block h-auto w-full rounded-[20px]" title="An illustrated teenager deciding what to practice"/>}/>
       <KeyChip/>
       <ul className="grid gap-3 md:grid-cols-3" aria-label="Companies you can practice with">
@@ -34,7 +34,7 @@ function Chooser() {
             <li key={asset.code} className={`${panel} !p-4`}>
               <CompanyArt id={item.id} name={asset.name} className="mb-3 block h-auto max-h-[120px] w-full overflow-hidden rounded-[14px]"/>
               <h2 className="text-[18px] font-bold text-navy-strong">{asset.name}</h2>
-              <p className="text-[12px] text-ink-2">{asset.price} credits per unit · {researched ? "researched" : "not researched yet"}</p>
+              <p className="text-[13px] text-ink-2">{asset.price} credits per unit · {researched ? "researched" : "not researched yet"}</p>
               <button type="button" className={`mt-3 w-full ${primaryBtn}`} onClick={() => dispatch({ type: "pick-asset", code: asset.code })}>Choose {asset.code}</button>
               {!researched ? <Link href={`/try/explore/${item.id}`} className="mt-2 inline-flex min-h-11 items-center text-[13px] font-bold text-green-strong underline underline-offset-4">Research it first</Link> : null}
             </li>
@@ -72,7 +72,7 @@ function ChoiceForm({ code }: { code: AssetCode }) {
   };
   return (
     <div className="space-y-5">
-      <ChapterHeading kicker="Explore · practice choice" title={`Practice with ${asset.name}`}
+      <ChapterHeading kicker="Pretend · practice choice" title={`Practice with ${asset.name}`}
         intro={<>{asset.description} Practice price: <strong>{asset.price} credits per unit</strong>.</>}
         art={<CompanyArt id={item.id} name={asset.name} className="hidden h-auto w-full overflow-hidden rounded-[20px] border border-line-soft md:block"/>}/>
       <section className={panel} aria-labelledby="amount-title">
@@ -92,7 +92,7 @@ function ChoiceForm({ code }: { code: AssetCode }) {
             <div className={`h-full rounded-full ${preview.kind === "inside-key" || preview.kind === "approved-once" ? "bg-green-strong" : "bg-orange"}`} style={{ width: `${Math.min(100, (Number.isFinite(n) ? n : 0) / scale * 100)}%` }}/>
             <div className="absolute inset-y-0 w-0.5 bg-navy-strong" style={{ left: `${limit / scale * 100}%` }}/>
           </div>
-          <p className="mt-1 text-[11px] text-ink-2">The line is your Key limit ({limit}).</p>
+          <p className="mt-1 text-[13px] text-ink-2">The dark line is your Key limit ({limit}). Above it, your Parent decides.</p>
         </div>
         <p data-testid="limit-preview" data-preview-kind={preview.kind} className={`mt-3 rounded-[14px] px-4 py-3 text-[14px] font-semibold leading-6 ${toneFor(preview.kind)}`}>
           <KeyRound aria-hidden className="mr-1.5 inline size-4"/>{preview.message}
@@ -109,7 +109,7 @@ function ChoiceForm({ code }: { code: AssetCode }) {
         </p>
       ) : null}
       <fieldset className={panel}>
-        <legend className="px-1 text-[16px] font-bold text-navy-strong">Why this choice? <span className="text-[13px] font-normal text-ink-3">Your Parent sees this if it needs approval.</span></legend>
+        <legend className="px-1 text-[16px] font-bold text-navy-strong">Why this choice? <span className="block text-[13px] font-normal text-ink-2">Your Parent sees this if it needs a yes.</span></legend>
         <div className="mt-2 grid gap-2">
           {REASONS.map(option => (
             <label key={option.id} className={`flex min-h-12 items-center gap-3 rounded-[14px] border px-3 text-[14px] font-semibold ${reason === option.id ? "border-green-strong bg-green-soft text-navy-strong" : "border-line bg-surface text-ink-2"}`}>
@@ -118,14 +118,12 @@ function ChoiceForm({ code }: { code: AssetCode }) {
           ))}
         </div>
       </fieldset>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <button type="button" className={primaryBtn} data-testid="make-choice" disabled={disabled} onClick={submit}>{label[preview.kind] ?? "Choose another amount"}</button>
-        <button type="button" className={secondaryBtn} onClick={() => dispatch({ type: "pick-asset", code: null })}>Pick another company</button>
-      </div>
-      {preview.kind === "pending" ? <p className="text-[13px] text-ink-2">Your Parent is deciding. <Link className="font-bold text-green-strong underline underline-offset-4" href="/try/parent/request">Open the request</Link>.</p> : null}
-      <nav aria-label="Around this choice" className="flex flex-col gap-3 sm:flex-row sm:justify-between">
-        <Link href={`/try/explore/${item.id}`} className={secondaryBtn}><ArrowLeft aria-hidden className="size-4"/>About {asset.name}</Link>
-        <Link href="/try/outcome" className={secondaryBtn}>What happened</Link>
+      <button type="button" className={`w-full sm:w-auto ${primaryBtn}`} data-testid="make-choice" disabled={disabled} onClick={submit}>{label[preview.kind] ?? "Choose another amount"}</button>
+      {preview.kind === "pending" ? <p className="text-[14px] text-ink-2">Your Parent is deciding. <Link className="font-bold text-green-strong underline underline-offset-4" href="/try/parent/request">Open the request</Link>.</p> : null}
+      <nav aria-label="Around this choice" className="flex flex-wrap items-center gap-x-5 text-[14px]">
+        <button type="button" className={textLink} onClick={() => dispatch({ type: "pick-asset", code: null })}>Pick another company</button>
+        <Link href={`/try/explore/${item.id}`} className={textLink}><ArrowLeft aria-hidden className="size-4"/>About {asset.name}</Link>
+        <Link href="/try/outcome" className={textLink}>What happened</Link>
       </nav>
     </div>
   );

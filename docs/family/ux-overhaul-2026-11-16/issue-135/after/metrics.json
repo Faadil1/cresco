@@ -1,0 +1,226 @@
+[
+ {
+  "vp": "1440",
+  "name": "home-fresh",
+  "height": 900,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 1440
+ },
+ {
+  "vp": "1440",
+  "name": "learn-fresh",
+  "height": 2419,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 1440
+ },
+ {
+  "vp": "1440",
+  "name": "home-goal",
+  "height": 911,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 1440
+ },
+ {
+  "vp": "1440",
+  "name": "lesson",
+  "height": 919,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 1440
+ },
+ {
+  "vp": "1440",
+  "name": "lesson-done",
+  "height": 919,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 1440
+ },
+ {
+  "vp": "1440",
+  "name": "home-progress",
+  "height": 911,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 1440
+ },
+ {
+  "vp": "1440",
+  "name": "learn-progress",
+  "height": 2419,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 1440
+ },
+ {
+  "vp": "1280",
+  "name": "home-fresh",
+  "height": 892,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 1280
+ },
+ {
+  "vp": "1280",
+  "name": "learn-fresh",
+  "height": 2419,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 1280
+ },
+ {
+  "vp": "1280",
+  "name": "home-goal",
+  "height": 911,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 1280
+ },
+ {
+  "vp": "1280",
+  "name": "lesson",
+  "height": 915,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 1280
+ },
+ {
+  "vp": "1280",
+  "name": "lesson-done",
+  "height": 819,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 1280
+ },
+ {
+  "vp": "1280",
+  "name": "home-progress",
+  "height": 911,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 1280
+ },
+ {
+  "vp": "1280",
+  "name": "learn-progress",
+  "height": 2419,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 1280
+ },
+ {
+  "vp": "390",
+  "name": "home-fresh",
+  "height": 1333,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 390
+ },
+ {
+  "vp": "390",
+  "name": "learn-fresh",
+  "height": 2845,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 390
+ },
+ {
+  "vp": "390",
+  "name": "home-goal",
+  "height": 1308,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 390
+ },
+ {
+  "vp": "390",
+  "name": "lesson",
+  "height": 1113,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 390
+ },
+ {
+  "vp": "390",
+  "name": "lesson-done",
+  "height": 944,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 390
+ },
+ {
+  "vp": "390",
+  "name": "home-progress",
+  "height": 1356,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 390
+ },
+ {
+  "vp": "390",
+  "name": "learn-progress",
+  "height": 2845,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 390
+ },
+ {
+  "vp": "375",
+  "name": "home-fresh",
+  "height": 1333,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 375
+ },
+ {
+  "vp": "375",
+  "name": "learn-fresh",
+  "height": 2845,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 375
+ },
+ {
+  "vp": "375",
+  "name": "home-goal",
+  "height": 1308,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 375
+ },
+ {
+  "vp": "375",
+  "name": "lesson",
+  "height": 1131,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 375
+ },
+ {
+  "vp": "375",
+  "name": "lesson-done",
+  "height": 944,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 375
+ },
+ {
+  "vp": "375",
+  "name": "home-progress",
+  "height": 1356,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 375
+ },
+ {
+  "vp": "375",
+  "name": "learn-progress",
+  "height": 2845,
+  "overflow": false,
+  "dpr": 1,
+  "iw": 375
+ }
+]

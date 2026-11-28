@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { FAMILY_WORKER_DESKTOP_SPECS, FAMILY_WORKER_MOBILE_SPECS } from "./e2e/family-worker-specs.mjs";
 
 // Exercise the exact Cloudflare/Vite Family artifact via local Wrangler.
 // No remote Cloudflare deployment, external API or invitation is needed.
@@ -10,12 +11,12 @@ export default defineConfig({
   projects: [
     {
       name: "public-family-webkit",
-      testMatch: ["family-public-demo.spec.mjs", "family-story-journey.spec.mjs", "family-real-world.spec.mjs"],
+      testMatch: FAMILY_WORKER_MOBILE_SPECS,
       use: { ...devices["iPhone 13"], browserName: "webkit" },
     },
     {
       name: "public-family-desktop",
-      testMatch: ["family-story-journey.spec.mjs", "family-real-world.spec.mjs"],
+      testMatch: FAMILY_WORKER_DESKTOP_SPECS,
       use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 900 }, browserName: "chromium" },
     },
   ],

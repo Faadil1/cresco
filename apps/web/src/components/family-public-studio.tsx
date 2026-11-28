@@ -355,12 +355,12 @@ function Requests({ state, decide }: {
 }
 type ChildDiscussion = NonNullable<FamilyPracticeState["discussion"]["child"]>;
 type ParentDiscussion = NonNullable<FamilyPracticeState["discussion"]["parent"]>;
-const childChoices: { id: ChildDiscussion; title: string; why: string }[] = [
+export const childChoices: { id: ChildDiscussion; title: string; why: string }[] = [
   { id: "save-first", title: "Save first for the near-term bike goal", why: "Short timelines make preserving the goal important." },
   { id: "practice-small", title: "Practice a small fictional choice", why: "A small practice example helps me understand uncertainty." },
   { id: "ask-together", title: "Not sure yet, talk through the options", why: "Questions are a good reason to learn together." },
 ];
-const parentChoices: { id: ParentDiscussion; title: string; why: string }[] = [
+export const parentChoices: { id: ParentDiscussion; title: string; why: string }[] = [
   { id: "protect-goal", title: "Protect the child's short-term goal", why: "Make room for savings without confusing it with investing." },
   { id: "small-limit", title: "Agree on a small practice boundary", why: "Let the child practice independently inside an explicit Key." },
   { id: "review-risk", title: "Discuss risk before changing any limits", why: "Understand possible losses; this answer does not change My Key." },

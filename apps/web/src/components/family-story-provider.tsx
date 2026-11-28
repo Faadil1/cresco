@@ -5,7 +5,7 @@
  * so normal navigation, Back and Forward keep it; a full page load resets it.
  * No storage, no cookie, no network, no identity.
  */
-import { createContext, useCallback, useContext, useMemo, useReducer, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, type ReactNode } from "react";
 import { initialStory, transitionStory, type StoryAction, type StoryState } from "@/lib/family-story-state";
 import { transitionFamilyPractice } from "@/lib/family-public-practice";
 import { initialRealMarketState, transitionRealMarket, type RealMarketAction, type RealMarketState } from "@/lib/family-real-market-sandbox";
@@ -24,6 +24,12 @@ const RealMarketContext = createContext<RealMarketContextValue | null>(null);
 export function FamilyStoryProvider({ children }: { children: ReactNode }) {
   const [story, storyDispatch] = useReducer(transitionStory, undefined, initialStory);
   const [market, marketDispatch] = useReducer(transitionRealMarket, undefined, initialRealMarketState);
+  // Marks the moment the Family app is interactive (used by browser tests to
+  // avoid clicking server-rendered buttons before React has attached).
+  useEffect(() => {
+    document.documentElement.dataset.familyReady = "1";
+    return () => { delete document.documentElement.dataset.familyReady; };
+  }, []);
   // A new Family session must clear BOTH the original practice and the
   // separate imaginary USD book. Neither reducer can alter the other.
   const dispatch = useCallback((action: StoryAction) => {

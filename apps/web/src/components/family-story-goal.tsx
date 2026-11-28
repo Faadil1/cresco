@@ -62,7 +62,7 @@ export function GoalChapter() {
                 tone[option.id], selected ? "border-family-action ring-2 ring-family-action" : "border-line-soft"].join(" ")}>
               <GoalArt goal={option.id} className="h-16 w-20 md:h-20 md:w-28"/>
               <span className="text-[13px] font-bold leading-4 text-navy-strong md:text-[15px]">{option.label}</span>
-              <span className="text-[11px] text-ink-2">{option.target} credits</span>
+              <span className="text-[12px] text-ink-2">{option.target} credits</span>
             </button>
           );
         })}
@@ -119,7 +119,7 @@ export function ReadyChapter() {
       </div>
       <div className="mt-3 rounded-[14px] bg-green-soft px-3 py-3 text-[13px] leading-5 text-navy-strong" data-testid="ready-safety-summary">
         <p><strong>Your dream:</strong> {goal.label}. Learning helps you protect it.</p>
-        <p className="mt-1"><strong>My Key:</strong> Try up to {p.key.maxPerAction} fictional credits alone; a simulated Parent decides once on bigger choices.</p>
+        <p className="mt-1"><strong>My Key:</strong> Decide alone up to {p.key.maxPerAction} pretend credits a choice. Bigger choices go to your Parent, who can say yes once.</p>
         <p className="mt-1 text-[12px] text-ink-2">Practice only. No money moves; no guardian identity is verified.</p>
       </div>
       <details className="mt-3 rounded-[14px] border border-line-soft bg-surface-soft p-3" data-testid="ready-optional-saving">

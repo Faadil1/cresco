@@ -1,4 +1,5 @@
 import { defineConfig } from "@playwright/test";
+import { FAMILY_WORKER_SPECS } from "./e2e/family-worker-specs.mjs";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -9,7 +10,9 @@ export default defineConfig({
   // playwright.family-public.config.mjs (iPhone WebKit + desktop Chromium).
   // The canonical Next app must not expose /try/*; don't accidentally test
   // Family-only pages against its intentionally closed routes.
-  testIgnore: ["family-public-demo.spec.mjs", "family-story-journey.spec.mjs", "family-real-world.spec.mjs"],
+  // Single shared list (e2e/family-worker-specs.mjs), so a new Family spec
+  // cannot silently run here against the canonical app again (PR #127 CI).
+  testIgnore: [...FAMILY_WORKER_SPECS, "family-ready.mjs", "family-worker-specs.mjs"],
   timeout: 30_000,
   retries: 1,
   use: {

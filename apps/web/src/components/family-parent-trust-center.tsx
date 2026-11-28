@@ -143,7 +143,7 @@ export function FamilyParentTrustCenter() {
                 <Icon aria-hidden className="size-5" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-[10px] font-bold uppercase tracking-wider text-ink-3">{eyebrow}</span>
+                <span className="block text-[12px] font-bold uppercase tracking-wider text-ink-3">{eyebrow}</span>
                 <span className="mt-1 block text-[15px] font-bold text-navy-strong">{title}</span>
               </span>
               <span aria-hidden className="text-xl text-ink-2 group-open:rotate-45">+</span>

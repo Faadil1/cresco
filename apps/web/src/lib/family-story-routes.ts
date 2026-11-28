@@ -32,8 +32,10 @@ export const FAMILY_APP_TABS: readonly { id: FamilyTabId; path: string; label: s
 export function tabOfPath(pathname: string): FamilyTabId | null {
   if (pathname === "/try/home" || pathname === "/try/together") return "home";
   if (pathname === "/try/learn" || (pathname.startsWith("/try/learn/") && !pathname.startsWith("/try/learn/p-"))) return "learn";
-  if (pathname.startsWith("/try/explore") || pathname === "/try/decision") return "explore";
-  if (pathname === "/try/portfolio" || pathname.startsWith("/try/portfolio/") || pathname === "/try/outcome") return "portfolio";
+  // Real companies are something to explore (learn about a business); the
+  // older /try/portfolio/companies address is kept as an alias of /try/explore/real.
+  if (pathname.startsWith("/try/explore") || pathname === "/try/decision" || pathname === "/try/portfolio/companies") return "explore";
+  if (pathname === "/try/portfolio" || pathname === "/try/portfolio/paper" || pathname === "/try/outcome") return "portfolio";
   if (pathname === "/try/profile") return "profile";
   return null;
 }
@@ -72,7 +74,7 @@ export function shellModeOfPath(pathname: string): ShellMode {
 
 const FIXED_STORY_PATHS = new Set([
   "/try", "/try/lab", "/try/goal", "/try/goal/interests", "/try/goal/ready",
-  "/try/home", "/try/learn", "/try/explore", "/try/decision", "/try/portfolio", "/try/portfolio/companies", "/try/profile",
+  "/try/home", "/try/learn", "/try/explore", "/try/explore/real", "/try/decision", "/try/portfolio", "/try/portfolio/paper", "/try/portfolio/companies", "/try/profile",
   "/try/parent", "/try/parent/learn", "/try/parent/key", "/try/parent/request",
   "/try/outcome", "/try/together",
 ]);
